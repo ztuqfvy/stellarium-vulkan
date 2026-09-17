@@ -1,0 +1,21 @@
+# 构建产物
+build*/
+cmake-build-*/
+CMakeLists.txt.user
+*.o
+*.dylib.orig
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+.qtc_clangd/
+compile_commands.json
+
+# 独立化工具的临时副本（materialize-resources.mjs）
+.tmp-resource-*/
+
+# 测试输出
+tests/ui/**/test_*.qml.user

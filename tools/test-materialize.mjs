@@ -1,0 +1,26 @@
+// Isolated fixture test. Never materializes the project's real resource links.
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),'stellarium-materialize-test-'));
+const root=path.join(temp,'work'), source=path.join(temp,'original');
+fs.mkdirSync(path.join(root,'tools'),{recursive:true});
+fs.mkdirSync(path.join(root,'docs/vulkan'),{recursive:true});
+fs.mkdirSync(path.join(source,'textures/nested'),{recursive:true});
+const input=Buffer.from('fixture resource; original must stay unchanged\n');
+fs.writeFileSync(path.join(source,'textures/nested/test.txt'),input);
+fs.symlinkSync(path.join(source,'textures'),path.join(root,'textures'));
+fs.copyFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)),'materialize-resources.mjs'),path.join(root,'tools/materialize-resources.mjs'));
+const manifest={resources:[{path:'textures',target:path.join(source,'textures'),files:[{path:'textures/nested/test.txt',bytes:input.length,sha256:crypto.createHash('sha256').update(input).digest('hex')}]}]};
+fs.writeFileSync(path.join(root,'docs/vulkan/source-manifest.json'),JSON.stringify(manifest));
+const run=()=>execFileSync(process.execPath,[path.join(root,'tools/materialize-resources.mjs'),'--copy'],{encoding:'utf8'});
+console.log(run().trim());
+assert(!fs.lstatSync(path.join(root,'textures')).isSymbolicLink());
+assert.deepEqual(fs.readFileSync(path.join(root,'textures/nested/test.txt')),input);
+assert.deepEqual(fs.readFileSync(path.join(source,'textures/nested/test.txt')),input);
+assert.match(run(),/Already independent/);
+console.log(`PASS: copy, original preservation, and repeated invocation. Test fixture retained at ${temp}`);
