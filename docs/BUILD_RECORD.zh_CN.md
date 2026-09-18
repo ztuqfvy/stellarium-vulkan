@@ -59,3 +59,39 @@ mkdir -p ~/qt_demo/stellarium_vulkan/profile
 ```
 
 - 个人版 QML 应用（A1 起）的配置同样必须落在独立目录，不碰上述全局路径。
+
+## 2026-09-18｜A1：stelQuickUI Vulkan 宿主构建与验收
+
+构建：`cmake -B build-ui -S src/ui -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/qt` → `cmake --build build-ui`，零错误。
+
+### 关键发现与修复
+
+1. **MoltenVK portability 驱动**：手写 vkCreateInstance 必须设
+   `VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR` 并启用 `VK_KHR_portability_enumeration`
+   扩展，否则返回 VK_ERROR_INCOMPATIBLE_DRIVER(-9)。Qt 的 QVulkanInstance 内部已自动处理，
+   手写探针必须显式对齐（VkDeviceProbe.cpp 已修）。
+2. **ICD 环境变量**：Homebrew loader 默认搜索路径含 `/opt/homebrew/etc/vulkan/icd.d`，
+   `VK_DRIVER_FILES` 实际非必需；`QT_VULKAN_LIB` 仍必需（Qt 默认 dlopen("vulkan") 找不到）。
+3. **Qt 6.11.2 崩溃路径**：Vulkan 无法加载时场景图阶段直接 SIGSEGV（退出码 139）。
+   已用 QVulkanInstance::create() 预检兜住：失败 → 明确报错 → 退出码 3。
+
+### 验收结果
+
+| 场景 | 结果 | 退出码 |
+|---|---|---|
+| 正向（Vulkan 可用） | probe: Apple M3 / api 1.1.357 / MoltenVK 0.2.2210；runtimeApi=Vulkan | 0 |
+| 负向（禁用 Vulkan） | "QVulkanInstance::create() 失败——Vulkan 不可用"，明确报错 | 3（无崩溃） |
+
+运行命令：
+
+```sh
+export QT_VULKAN_LIB=/opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib
+STELQUICK_AUTOTEST_SECONDS=6 ./build-ui/stelQuickUI.app/Contents/MacOS/stelQuickUI
+```
+
+（环境变量 `VK_DRIVER_FILES` 可省；诊断页显示设备/DPR/版本信息。）
+
+### 待办（A1 剩余手动项）
+
+- [ ] 缩放、关闭、重开 ×N 无错（手动）
+- [ ] 鸿蒙真机最小 QML/Vulkan 窗口探测（前后台、触摸、DPR、交换链恢复）
