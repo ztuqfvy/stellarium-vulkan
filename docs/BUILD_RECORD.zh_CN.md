@@ -93,5 +93,85 @@ STELQUICK_AUTOTEST_SECONDS=6 ./build-ui/stelQuickUI.app/Contents/MacOS/stelQuick
 
 ### 待办（A1 剩余手动项）
 
-- [ ] 缩放、关闭、重开 ×N 无错（手动）
+- [x] 缩放、关闭、重开无错 → 已自动化（Q-WIN-01..06），见下节
 - [ ] 鸿蒙真机最小 QML/Vulkan 窗口探测（前后台、触摸、DPR、交换链恢复）
+
+---
+
+## 2026-09-18｜A1 交互缺陷：macOS 下每帧 present 阻塞 5 秒（已修）
+
+### 现象（用户上报）
+
+双击运行 `stelQuickUI.app` 后：窗口缩放卡 1-2 秒、Command+Tab 切回卡 1-2 秒、
+Command+Q 退出卡 1-2 秒、缩放时窗口内容**被拉伸而非等比例重排**。
+
+### 证据链
+
+`QSG_RENDER_TIMING=1` 逐帧计时：
+
+```
+qt.scenegraph.general: threaded render loop
+qt.gui.metal: Timed out waiting for display lock
+syncAndRender: frame rendered in 5079ms, sync=51, render=20, swap=5008   ← present 5008ms
+```
+
+- 渲染本身 20ms，**swap（present）5008ms**，且每帧如此；12 秒只渲染 3 帧（0.25 FPS）。
+- 全零环境变量无关；与 QML 结构无关（诊断页无逐帧绑定）；与 VkDeviceProbe 无关。
+
+### 根因
+
+Qt 6.11.2 默认**线程化渲染循环**下，macOS 的 `QMetalLayer` 显示锁协议（Qt 提交
+`9122d826`「Present Metal layer with transaction during display cycle」引入）：
+
+- `qtbase/src/gui/platform/darwin/qmetallayer.mm`：`setNeedsDisplayInRect` 里
+  `displayLock.tryLockForWrite(5s)` —— 拿不到写锁就等满 5 秒后放弃；
+- `qtbase/src/plugins/platforms/cocoa/qnsview_drawing.mm`：`displayLayer:` 之后才
+  **通过排队调用**释放锁，即锁要跨越整个显示周期；
+- 于是主线程的显示请求与渲染线程的 present 互相等待，present 被拖到 5 秒超时。
+
+四症状同源：present 停滞 → 主线程卡 → Command+Tab/Command+Q 都在等它；
+同时 `CAMetalLayer` 的 drawable 尺寸滞后于新的 layer bounds，旧 drawable 被拉伸填充新尺寸，
+表现为"拉伸而非等比例缩放"（Qt 自身 `layerContentsPlacement = TopLeft`，不缩放，故拉伸只可能来自陈旧 drawable）。
+
+### 处置
+
+应用 Qt 上游在**引入这套机制的同一次提交**中保留的官方逃生门（commit message 原文：
+"It will disable the locked Metal layer, and all code paths that depend on it."）：
+
+```cpp
+// src/ui/main.cpp: applyMacOsVulkanWorkaround()
+qputenv("QT_MTL_NO_TRANSACTION", "1");   // 保留线程化渲染循环，仅关闭锁定图层路径
+```
+
+覆盖开关（用于 A/B 测量，勿在生产构建里改）：`STELQUICK_RENDER_WORKAROUND=transaction-off|basic-loop|none`。
+
+**为什么不用 `QSG_RENDER_LOOP=basic`**：它也能消除锁竞争（实测 swap 0-9ms），但把场景图
+渲染搬回 GUI 线程——A3 后接入真实天空渲染时会直接阻塞输入处理。作为备选保留。
+
+### 修复前后对照（同一自动测量，`STELQUICK_WINDOW_TEST=1 STEPS=8`）
+
+| 配置 | maxStallMs | maxResizeMs | maxFrameGapMs | 判定 |
+|---|---|---|---|---|
+| `none`（复现故障） | **10017** | **5099** | 10016 | FAIL |
+| `transaction-off`（默认） | **75** | **68** | 75 | PASS |
+| `basic-loop`（备选） | — | — | — | 能跑通（swap 0-9ms、0 次锁超时），但持续满帧空转且被长跑看门狗打断，未纳入默认 |
+
+> 口径说明：`none` 行在加入"预热 3 帧排除"之前测得（当时预热混入约 264ms）；
+> 即便扣除也不影响 FAIL 判定（10017ms 是两次 5 秒锁超时叠加，量级差 40 倍）。
+> 默认配置另跑过完整 24 步（54 次操作）：maxStall 52ms / maxResize 46ms / maxFrameGap 64ms，PASS。
+
+启停开销（`STELQUICK_AUTOTEST_SECONDS=5` 的墙钟时间）：`none` = 15.97s → `transaction-off` = 5.38s。
+
+### 新增：窗口交互自测模式
+
+把 A1 原"手动点击"验收项变成可重复的自动测量（退出码 0 / 4，可接 CI）：
+
+```sh
+BIN=./build-ui/stelQuickUI.app/Contents/MacOS/stelQuickUI
+STELQUICK_WINDOW_TEST=1 STELQUICK_WINDOW_TEST_STEPS=8 $BIN
+# → WINDOWTEST: 结果 steps=22 maxStallMs=75 maxResizeMs=68 maxFrameGapMs=75 阈值=250ms VERDICT=PASS
+```
+
+指标含义：`maxStallMs` 主线程事件循环最大停顿（16ms 心跳实测）；
+`maxResizeMs` 单次几何变更阻塞时长；`maxFrameGapMs` 相邻帧最大间隔。
+预热 3 帧不计入。用例编号 Q-WIN-01..06，见软件测试文档 6.4 节。
