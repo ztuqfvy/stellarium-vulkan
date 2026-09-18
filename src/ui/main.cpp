@@ -16,6 +16,7 @@
  *   export QT_VULKAN_LIB=/opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib
  */
 #include <QGuiApplication>
+#include <QFileInfo>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickWindow>
@@ -25,8 +26,41 @@
 #include <QVulkanInstance>
 #include <cstdio>
 
+namespace {
+
+// 自动定位 Vulkan 加载库：QT_VULKAN_LIB 未设时按候选路径探测。
+// 目的：双击/直接运行也能起来，不要求用户手动 export（2026-09-18 用户反馈）。
+// 顺序：环境变量 > 应用包内 Frameworks > Homebrew/本地安装路径。
+void ensureVulkanLoaderPath()
+{
+#ifdef Q_OS_MACOS
+    if (!qEnvironmentVariableIsEmpty("QT_VULKAN_LIB"))
+        return; // 用户显式指定，尊重
+
+    const QString appDir = QCoreApplication::applicationDirPath();
+    const QStringList candidates = {
+        appDir + QStringLiteral("/../Frameworks/libvulkan.1.dylib"), // 打包后的自包含位置
+        QStringLiteral("/opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib"),
+        QStringLiteral("/opt/homebrew/lib/libvulkan.1.dylib"),
+        QStringLiteral("/usr/local/lib/libvulkan.1.dylib"),
+    };
+    for (const QString &path : candidates) {
+        if (QFileInfo::exists(path)) {
+            qputenv("QT_VULKAN_LIB", path.toUtf8());
+            std::printf("STELQUICK: 自动定位 Vulkan 加载库 %s\n", path.toUtf8().constData());
+            std::fflush(stdout);
+            return;
+        }
+    }
+#endif // Q_OS_MACOS
+}
+
+} // namespace
+
 #include "ui/quick/BackendInfo.hpp"
+#ifdef STELQUICK_VULKAN_PROBE
 #include "render/vulkan/VkDeviceProbe.hpp"
+#endif
 
 namespace {
 
@@ -56,6 +90,8 @@ int main(int argc, char **argv)
     // 2. Vulkan 实例预检（负向测试 P-CFG 前置）：QVulkanInstance::create() 失败时
     //    必须明确报错并以退出码 3 结束。跳过此步时 Qt 6.11 会在场景图初始化阶段
     //    SIGSEGV（实测 2026-09-18），拿不到诊断页显示机会。
+    ensureVulkanLoaderPath(); // 先自动定位加载库，避免"必须手动 export 才能跑"
+
     QVulkanInstance vulkanInstance;
     if (!vulkanInstance.create()) {
         std::fprintf(stderr,
@@ -65,10 +101,10 @@ int main(int argc, char **argv)
         return 3;
     }
 
-    // 3. Vulkan 设备探针（诊断数据，不参与渲染）
-    const stelapp::VulkanProbeResult probeResult = stelapp::VkDeviceProbe::probe();
-
+    // 3. Vulkan 设备探针（诊断数据，不参与渲染；鸿蒙构建可关闭）
     auto *backendInfo = new stelapp::BackendInfo(&app);
+#ifdef STELQUICK_VULKAN_PROBE
+    const stelapp::VulkanProbeResult probeResult = stelapp::VkDeviceProbe::probe();
     backendInfo->applyProbe(probeResult);
     std::printf("STELQUICK: probe ok=%d device=%s api=%s driver=%s err=%s\n",
                 probeResult.ok ? 1 : 0,
@@ -77,6 +113,10 @@ int main(int argc, char **argv)
                 probeResult.driverVersion.toUtf8().constData(),
                 probeResult.error.toUtf8().constData());
     std::fflush(stdout);
+#else
+    backendInfo->applyProbeUnavailable(
+        QStringLiteral("本构建未启用 VkDeviceProbe（STELQUICK_VULKAN_PROBE=OFF，鸿蒙交叉编译）"));
+#endif
     qmlRegisterSingletonInstance("StelQuickUI", 1, 0, "BackendInfo", backendInfo);
 
     // 3. 加载 QML

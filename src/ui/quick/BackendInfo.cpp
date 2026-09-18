@@ -25,6 +25,11 @@ void BackendInfo::applyProbe(const VulkanProbeResult &probe)
     // 但探针失败要显示给诊断页（probeError 非空）。
 }
 
+void BackendInfo::applyProbeUnavailable(const QString &reason)
+{
+    m_probeError = reason;
+}
+
 void BackendInfo::applyRuntimeApi(const QString &apiName)
 {
     m_runtimeApiName = apiName;

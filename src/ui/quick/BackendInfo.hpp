@@ -45,6 +45,8 @@ public:
 
     // 填充探针结果（应用启动时调用一次）
     void applyProbe(const VulkanProbeResult &probe);
+    // 探针未编译进本构建时调用（如鸿蒙交叉编译，OHOS NDK 不保证提供 libvulkan）
+    void applyProbeUnavailable(const QString &reason);
     // 写入运行时实际 API 名并做判定（sceneGraphInitialized 回调）
     void applyRuntimeApi(const QString &apiName);
 

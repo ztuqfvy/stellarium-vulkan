@@ -19,15 +19,25 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Quick Qml Gui Core)
-find_package(Vulkan REQUIRED)
 
-qt_add_executable(stelQuickUI
+# Vulkan 设备探针：桌面默认开；鸿蒙交叉编译时由命令行关闭（OHOS NDK 不保证提供 libvulkan）
+option(STELQUICK_VULKAN_PROBE "构建 VkDeviceProbe（需要有 Vulkan 加载库）" ON)
+
+set(stelQuickUI_SOURCES
     main.cpp
     quick/BackendInfo.hpp
     quick/BackendInfo.cpp
-    ../render/vulkan/VkDeviceProbe.hpp
-    ../render/vulkan/VkDeviceProbe.cpp
 )
+
+if(STELQUICK_VULKAN_PROBE)
+    find_package(Vulkan REQUIRED)
+    list(APPEND stelQuickUI_SOURCES
+        ../render/vulkan/VkDeviceProbe.hpp
+        ../render/vulkan/VkDeviceProbe.cpp
+    )
+endif()
+
+qt_add_executable(stelQuickUI ${stelQuickUI_SOURCES})
 
 qt_add_qml_module(stelQuickUI
     URI StelQuickUI
@@ -48,5 +58,28 @@ target_link_libraries(stelQuickUI PRIVATE
     Qt6::Qml
     Qt6::Gui
     Qt6::Core
-    Vulkan::Vulkan
 )
+
+if(STELQUICK_VULKAN_PROBE)
+    target_link_libraries(stelQuickUI PRIVATE Vulkan::Vulkan)
+    target_compile_definitions(stelQuickUI PRIVATE STELQUICK_VULKAN_PROBE=1)
+endif()
+
+# macOS 专有：应用包（可从 Finder 双击）+ rpath 让 Qt 的 dlopen("libvulkan.dylib") 命中
+if(APPLE)
+    set_target_properties(stelQuickUI PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_NAME "stelQuickUI"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "org.stellarium.vulkan.stelquickui"
+        BUILD_RPATH "/opt/homebrew/opt/vulkan-loader/lib"
+        INSTALL_RPATH "@executable_path/../Frameworks;/opt/homebrew/opt/vulkan-loader/lib"
+    )
+endif()
+
+# 说明：main.cpp 另有 QT_VULKAN_LIB 自动探测兜底（不依赖环境变量即可运行）。
+# TODO（打包阶段）：把 libvulkan.1.dylib + libMoltenVK.dylib + MoltenVK_icd.json
+# 复制进 <bundle>/Contents/Frameworks 并改写 ICD 的 library_path，实现自包含分发。
+# 鸿蒙交叉编译（见 docs/HARMONY_PROBE.zh_CN.md）：
+#   ~/Qt/6.12.0/harmonyos_arm64_v8a/bin/qt-cmake -S src/ui -B build-harmony \
+#     -DCMAKE_FIND_ROOT_PATH=$HOME/.local/opt/ohos/additional-packages \
+#     -DSTELQUICK_VULKAN_PROBE=OFF
