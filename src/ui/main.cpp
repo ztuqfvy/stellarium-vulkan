@@ -7,10 +7,12 @@
  *   3. 加载 QML，场景图初始化后读实际 API；非 Vulkan 则 backendOk=false，
  *      延迟数秒让诊断页显示错误后以退出码 3 结束——禁止静默回退 Metal/GL。
  *
- * 自动化验收（测试文档 P-LIF / Q- 系列前置）：
+ * 自动化验收（测试文档 P-LIF / Q- / I-STC- 系列前置）：
  *   STELQUICK_AUTOTEST_SECONDS=N → N 秒后自动退出（返回码见下）。
  *   STELQUICK_WINDOW_TEST=1      → 交互回归自测（缩放 + 隐藏/显示），见文件末尾。
- * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败。
+ *   STELQUICK_A2_CHECK=1         → A2 静态图逐像素校验（用例 I-STC-01/02）。
+ * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
+ *         5 A2 静态图校验失败；6 A2 校验手段不可用（不得据此声称通过）。
  *
  * 运行：直接双击 stelQuickUI.app 即可（main.cpp 自动定位 Vulkan 加载库）。
  */
@@ -19,11 +21,13 @@
 #include <QFileInfo>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQmlEngine>
 #include <QQuickWindow>
 #include <QSGRendererInterface>
 #include <QTimer>
 #include <QUrl>
 #include <QVulkanInstance>
+#include <QtMath>
 #include <cstdio>
 #include <memory>
 
@@ -100,6 +104,11 @@ void ensureVulkanLoaderPath()
 #ifdef STELQUICK_VULKAN_PROBE
 #include "render/vulkan/VkDeviceProbe.hpp"
 #endif
+// A2：静态帧通路（邮箱 → 视口 → 上屏 → 自动像素校验）
+#include "render/legacy/FrameMailbox.hpp"
+#include "render/legacy/StaticFrameSource.hpp"
+#include "ui/A2FrameCheck.hpp"
+#include "ui/quick/SkyViewport.hpp"
 
 namespace {
 
@@ -263,7 +272,21 @@ int main(int argc, char **argv)
     applyMacOsVulkanWorkaround();
 
     // 1. 必须在创建任何窗口之前显式选择后端（计划一第 2 节）
-    QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
+    //
+    // 默认强制 Vulkan，且失败不静默回退（A1 验收要求）。
+    // STELQUICK_GRAPHICS_API=metal|opengl 只用于**诊断对照**：把同一份场景换成别的
+    // 后端跑，用来隔离"Vulkan/MoltenVK 专用缺陷"与"通用渲染缺陷"。正常验收不得使用。
+    const QByteArray apiOverride = qgetenv("STELQUICK_GRAPHICS_API").trimmed().toLower();
+    const bool wantVulkan = apiOverride.isEmpty() || apiOverride == "vulkan";
+    QSGRendererInterface::GraphicsApi wantedApi = QSGRendererInterface::Vulkan;
+    if (apiOverride == "metal")
+        wantedApi = QSGRendererInterface::Metal;
+    else if (apiOverride == "opengl" || apiOverride == "gl")
+        wantedApi = QSGRendererInterface::OpenGL;
+    if (!wantVulkan)
+        std::printf("STELQUICK: 诊断对照模式——请求后端 %s（非验收配置）\n",
+                    apiOverride.constData());
+    QQuickWindow::setGraphicsApi(wantedApi);
 
     QGuiApplication app(argc, argv);
     app.setApplicationName("stelQuickUI");
@@ -275,6 +298,19 @@ int main(int argc, char **argv)
     ensureVulkanLoaderPath(); // 先自动定位加载库，避免"必须手动 export 才能跑"
 
     QVulkanInstance vulkanInstance;
+
+    // MoltenVK portability 坑（第三处，2026-09-20 A2 定位）：
+    // 不开 VK_KHR_get_physical_device_properties2 时，MoltenVK 打印
+    //   "VK_KHR_portability_subset should be enabled ... Expect problems."
+    // 实际后果：Image/QSGImageNode 这类 QSGTextureMaterial 纹理全部静默渲染为黑
+    // （文字、纯色矩形正常）。MoltenVK 1.4.2 + Qt 6.11.2 + Apple M3 实测，
+    // Qt RHI 自己不会加这个实例扩展，必须应用侧显式开。
+    // 注意必须在 create() 之前设置。
+    QByteArrayList vkInstanceExtensions = vulkanInstance.extensions();
+    if (!vkInstanceExtensions.contains("VK_KHR_get_physical_device_properties2"))
+        vkInstanceExtensions << "VK_KHR_get_physical_device_properties2";
+    vulkanInstance.setExtensions(vkInstanceExtensions);
+
     if (!vulkanInstance.create()) {
         std::fprintf(stderr,
                      "A1 失败：QVulkanInstance::create() 失败——Vulkan 不可用"
@@ -301,6 +337,16 @@ int main(int argc, char **argv)
 #endif
     qmlRegisterSingletonInstance("StelQuickUI", 1, 0, "BackendInfo", backendInfo);
 
+    // A2：SkyViewport 由 QML 实例化，帧邮箱由 C++ 装配点注入（A3 起改由 AppFacade 持有）。
+    // 邮箱声明在 engine 之前，保证比所有 FrameLease 活得久（FrameLease 的生命周期契约）。
+    qmlRegisterType<stelapp::SkyViewport>("StelQuickUI", 1, 0, "SkyViewport");
+    stelapp::FrameMailbox frameMailbox;
+
+    const bool a2Check = qEnvironmentVariableIsSet("STELQUICK_A2_CHECK");
+    // 起始页：A2 校验必须停在天空页；手动模式下可用 STELQUICK_PAGE 指定
+    const QString startPage = a2Check ? QStringLiteral("sky")
+                                      : qEnvironmentVariable("STELQUICK_PAGE", QStringLiteral("diag"));
+
     // 3. 加载 QML
     QQmlApplicationEngine engine;
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
@@ -313,8 +359,20 @@ int main(int argc, char **argv)
         return 2;
     }
 
+    // 注意：不能用 setContextProperty 注入起始页——QML 根对象自己声明了同名属性会遮蔽上下文属性
+    // （2026-09-20 实测：视口尺寸 0x0，页面压根没切过去）。改为加载后显式赋值。
+    window->setProperty("startPage", startPage);
+
     // 预检通过的实例挂到窗口，避免 "No QVulkanInstance set" 崩溃路径
     window->setVulkanInstance(&vulkanInstance);
+
+    // A2 装配点：找到 QML 实例化的天空视口，注入帧邮箱
+    auto *skyViewport = window->findChild<stelapp::SkyViewport *>(QStringLiteral("skyViewport"));
+    if (skyViewport) {
+        skyViewport->setFrameMailbox(&frameMailbox);
+    } else {
+        std::fprintf(stderr, "提示：未找到 SkyViewport（skyViewport），A2 帧通路不可用\n");
+    }
 
     const int baseW = window->width();
     const int baseH = window->height();
@@ -322,13 +380,17 @@ int main(int argc, char **argv)
     // 场景图初始化后校验实际 API（后端必须在创建窗口前选定，此处只能确认）
     bool backendOk = false;
     QObject::connect(window, &QQuickWindow::sceneGraphInitialized, window,
-                     [&window, backendInfo, &backendOk]() {
+                     [&window, backendInfo, &backendOk, skyViewport, wantedApi]() {
                          QSGRendererInterface *rif = window->rendererInterface();
                          const auto api = rif ? rif->graphicsApi()
                                               : QSGRendererInterface::Unknown;
                          const QString name = QString::fromUtf8(apiName(api));
                          backendInfo->applyRuntimeApi(name);
-                         backendOk = backendInfo->backendOk();
+                         // backendOk = 实际后端与请求后端一致（默认请求即 Vulkan）
+                         backendOk = (api == wantedApi);
+                         // 视口也要知道后端判定：非 Vulkan 时进入 error 态而不是假装 ready（Q-001）
+                         if (skyViewport)
+                             skyViewport->applyBackendResult(name, backendOk);
 
                          std::printf("STELQUICK: runtimeApi=%s backendOk=%d device=%s\n",
                                      name.toUtf8().constData(), backendOk ? 1 : 0,
@@ -336,12 +398,55 @@ int main(int argc, char **argv)
                          std::fflush(stdout);
                          if (!backendOk) {
                              std::fprintf(stderr,
-                                          "A1 失败：请求 Vulkan，实际 %s。禁止静默回退，程序将退出。\n",
-                                          name.toUtf8().constData());
+                                          "A1 失败：请求 %s，实际 %s。禁止静默回退，程序将退出。\n",
+                                          apiName(wantedApi), name.toUtf8().constData());
                          }
                      });
 
     window->show();
+
+    // A2 静态图自动校验（用例 I-STC-01/02）：投递测试图案 → 等上传确认 → 抓帧逐像素比对
+    if (a2Check) {
+        if (!skyViewport) {
+            std::fprintf(stderr, "A2 校验失败：未找到 SkyViewport\n");
+            return 6;
+        }
+        stelapp::A2FrameCheck::runStartupSequence(
+            &app, window, skyViewport, &frameMailbox,
+            [&app](const stelapp::A2CheckResult &result) {
+                std::printf("A2CHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("A2CHECK:%s\n", line.toUtf8().constData());
+                if (!result.checkRan) {
+                    std::printf("A2CHECK: VERDICT=UNAVAILABLE（校验手段不可用，不得据此声称通过）\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("A2CHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 5);
+            });
+        const int rc = app.exec();
+        return (rc == 0 && !backendOk) ? 3 : rc;
+    }
+
+    // 手动查看模式：投递一次静态测试图案，便于人眼确认通路已通。
+    // 说明：静态帧源只投一次，窗口后续缩放不会重新生成图案（图案会被缩放显示）；
+    // A2 主体接入真实产帧后，此段整体删除。
+    if (skyViewport) {
+        QTimer::singleShot(300, &app, [&frameMailbox, skyViewport, window]() {
+            const QSize logical(qRound(skyViewport->width()), qRound(skyViewport->height()));
+            QString error;
+            const bool ok = stelapp::StaticFrameSource::publishTestPattern(
+                frameMailbox, logical, window->effectiveDevicePixelRatio(), 1, 1, &error);
+            std::printf("A2: 静态测试图案%s（逻辑 %dx%d）%s%s\n",
+                        ok ? "已投递" : "投递失败",
+                        logical.width(), logical.height(),
+                        error.isEmpty() ? "" : "原因：", error.toUtf8().constData());
+            std::fflush(stdout);
+        });
+    }
 
     // 交互回归自测模式（自动化 A1 手动项）
     if (qEnvironmentVariableIsSet("STELQUICK_WINDOW_TEST")) {
@@ -350,10 +455,24 @@ int main(int argc, char **argv)
         return backendOk ? rc : 3;
     }
 
-    // 自动验收模式：N 秒后自动退出，返回码反映后端判定
+    // 自动验收模式：N 秒后自动退出，返回码反映后端判定。
+    // 附加：STELQUICK_GRAB_AT_SECONDS=N + STELQUICK_GRAB_PATH=<png>
+    //   在第 N 秒抓一帧窗口内容存盘（固定场景图像比对的通用手段，不依赖 A2 校验）。
     const int autoSeconds = qEnvironmentVariableIntValue("STELQUICK_AUTOTEST_SECONDS");
     if (autoSeconds > 0) {
         QTimer::singleShot(autoSeconds * 1000, &app, &QCoreApplication::quit);
+    }
+    const int grabAt = qEnvironmentVariableIntValue("STELQUICK_GRAB_AT_SECONDS");
+    const QString grabPath = qEnvironmentVariable("STELQUICK_GRAB_PATH");
+    if (grabAt > 0 && !grabPath.isEmpty()) {
+        QTimer::singleShot(grabAt * 1000, &app, [window, grabPath]() {
+            const QImage grabbed = window->grabWindow();
+            const bool ok = !grabbed.isNull() && grabbed.save(grabPath);
+            std::printf("STELQUICK: 抓帧 %s → %s（%dx%d）\n",
+                        ok ? "成功" : "失败", grabPath.toUtf8().constData(),
+                        grabbed.width(), grabbed.height());
+            std::fflush(stdout);
+        });
     }
 
     const int rc = app.exec();

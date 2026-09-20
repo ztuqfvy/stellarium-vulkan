@@ -175,3 +175,54 @@ STELQUICK_WINDOW_TEST=1 STELQUICK_WINDOW_TEST_STEPS=8 $BIN
 指标含义：`maxStallMs` 主线程事件循环最大停顿（16ms 心跳实测）；
 `maxResizeMs` 单次几何变更阻塞时长；`maxFrameGapMs` 相邻帧最大间隔。
 预热 3 帧不计入。用例编号 Q-WIN-01..06，见软件测试文档 6.4 节。
+
+## 2026-09-20｜A2 第一步：静态图帧桥（Metal/OpenGL PASS，Vulkan 黑屏定性）
+
+### 交付
+
+- `src/render/legacy/FrameMailbox`（3 槽位有界、丢旧帧、世代拒收、统计、跨线程唤醒回调）
+- `src/render/legacy/TestPattern` / `StaticFrameSource`（四类传输错误可被单点像素抓出的测试图案）
+- `src/ui/quick/SkyViewport`（场景图线程取帧 → createTextureFromImage → QSGImageNode）
+- `src/ui/A2FrameCheck`（STELQUICK_A2_CHECK=1 自动校验：投递 → 等上传 → grabWindow 逐像素比对 12 探针）
+- 通用抓帧：`STELQUICK_GRAB_AT_SECONDS=N STELQUICK_GRAB_PATH=<png>`（任意页面，固定场景比对用）
+- 后端对照开关：`STELQUICK_GRAPHICS_API=vulkan|metal|opengl`（仅诊断，验收仍强制 Vulkan）
+
+### 校验结果（同一代码，三后端）
+
+| 后端 | 12 探针 | 说明 |
+|---|---|---|
+| Metal | **0 失败，偏差全 0** | 坐标换算/DPR/行距/通道序/方向全部正确 |
+| OpenGL | 0 失败 | |
+| **Vulkan** | **12/12 全黑** | 视口区域采样为黑；文字/纯色矩形正常 |
+
+### Vulkan 黑屏定性（2026-09-20，Apple M3 / MoltenVK 1.4.2 / Qt 6.11.2）
+
+症状：QSGTextureMaterial 路径（QML Image、QSGImageNode）内容静默渲染为黑；
+距离场文字（glyph atlas）、纯色 Rectangle 正常。无 MoltenVK 校验错误输出。
+
+已排除（全部实测）：
+1. 像素内存生命周期（深拷贝 QImage 后建纹理）——无效
+2. pipeline cache 损坏（清缓存重跑）——无效
+3. MVK Metal Argument Buffers（0/1 强制）——无效
+4. `VK_KHR_get_physical_device_properties2` 未启用（MoltenVK "Expect problems" 警告）——
+   已修（main.cpp 显式加实例扩展，警告消除）但黑屏不变
+5. alpha 通道标志 / opaque 材质变体——无效
+6. 官方 Qt 套件对照——**不可行**：官方 macOS 二进制未编 Vulkan 支持（仅 Homebrew 版有）
+7. `QSG_RENDER_LOOP=basic`——A2 校验序列不兼容（不退出），已另行记录
+
+连带修复的真 bug：
+- SkyViewport 节点重建（缩放/抓帧）后不补挂纹理 → 批渲染器每帧
+  "No QSGTexture provided from updateSampledImage()"。现在重建时补挂旧纹理，
+  且首帧前挂 1x1 占位纹理（空纹理材质在 basic 循环下会饿死事件循环）。
+- MainWindow.qml 缺 `import StelQuickUI 1.0` → 页头 BackendInfo ReferenceError。
+- main.cpp 增加实例扩展 `VK_KHR_get_physical_device_properties2`（portability 设备正确姿势）。
+
+**结论：应用侧管线正确（Metal 逐像素全对），缺陷位于 Qt 6.11.2 Vulkan RHI ×
+MoltenVK 1.4.2 的静态图像纹理路径。后续动作：向 Qt 报告（附本记录作最小复现说明），
+或试验其他 MoltenVK 版本（需下载，网络受限暂缓）。A2 后续开发（动态帧产供）不受阻塞——
+管线逻辑已在 Metal/OpenGL 证明，Vulkan 修复后无需改动应用代码。**
+
+### 已知限制
+
+- `STELQUICK_RENDER_WORKAROUND=basic-loop` + `STELQUICK_A2_CHECK=1`：校验序列不退出（诊断模式兼容性，不阻塞主线）
+- 系统 `screencapture` 无屏幕录制权限，屏幕级取证不可用（仅 Qt grabWindow 路径）

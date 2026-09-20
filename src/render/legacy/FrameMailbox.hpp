@@ -1,8 +1,8 @@
 /*
- * FrameMailbox — 有界 CPU 帧中转邮箱（骨架，未实现）。
+ * FrameMailbox — 有界 CPU 帧中转邮箱（A2 实现）。
  *
  * 职责：旧 GL 宿主（生产者）与 Qt Quick 渲染线程（消费者）之间传递不可变天空帧快照。
- *   - 2–3 个槽位，只保留最新完整帧；忙时丢旧帧，不积压。
+ *   - 3 个槽位（kFrameSlotCount），只保留最新完整帧；忙时丢旧帧，不积压。
  *   - 帧元数据：帧编号、状态编号、尺寸、格式、行步长、色彩、方向、世代。
  * 禁止：生产者不得覆盖消费者正在读取的数据。
  *
@@ -10,11 +10,22 @@
  *   生产者 THREAD: gl-ctx    （旧 GL 上下文所属线程读回帧后投递）
  *   消费者 THREAD: scenegraph（场景图线程 takeLatestFrame 后上传纹理）
  * 实现顺序：A2（先静态图，后动态天空）。测试用例：U-FRM-01..05、P-BRG-01..04。
+ *
+ * 实现说明（2026-09-20）：
+ *   - 互斥锁只保护**簿记**（槽位状态、序号、引用计数）；像素拷贝在锁外进行，
+ *     期间槽位处于 kWriting，生产者与消费者都会跳过它，因此不需要持锁做 memcpy。
+ *   - 同一时刻**只允许一个生产者线程**（契约如此：旧 GL 上下文只有一个）。
+ *     若将来出现多生产者，需在 kWriting 的选取上加独占标记。
+ *   - 尺寸世代（sizeGeneration）变化时，旧世代帧一律拒收；消费者已持有的租约不受影响。
  */
 #pragma once
 
 #include <QtGlobal>
+#include <QMutex>
 #include <QSize>
+#include <QVector>
+#include <atomic>
+#include <functional>
 
 namespace stelapp {
 
@@ -40,26 +51,106 @@ struct LegacyFrame
     quint8 *pixels = nullptr;
 };
 
+class FrameMailbox;
+
+// ── 租约（RAII）──────────────────────────────────────────────────────────
+// 消费者持有租约期间，该槽位不会被生产者复用；析构即归还。
+// 生命周期约束：FrameMailbox 必须比所有租约活得更久。
+class FrameLease
+{
+public:
+    FrameLease() = default;
+    ~FrameLease() { reset(); }
+    FrameLease(const FrameLease &) = delete;
+    FrameLease &operator=(const FrameLease &) = delete;
+    FrameLease(FrameLease &&other) noexcept;
+    FrameLease &operator=(FrameLease &&other) noexcept;
+
+    bool valid() const { return m_mailbox != nullptr && m_slot >= 0; }
+    // valid() 为 false 时返回零值帧（frameNumber == 0），调用方无需特判。
+    const LegacyFrame &frame() const;
+    void reset();
+
+private:
+    friend class FrameMailbox;
+    FrameLease(FrameMailbox *mailbox, int slot) : m_mailbox(mailbox), m_slot(slot) {}
+    FrameMailbox *m_mailbox = nullptr;
+    int m_slot = -1;
+};
+
+// ── 邮箱 ─────────────────────────────────────────────────────────────────
 class FrameMailbox
 {
 public:
-    // 槽位数：kFrameSlotCount（2–3，实现时定稿）。
-    // 生产者 THREAD: gl-ctx：投递最新帧；忙时覆盖最旧完整帧之外仍被读取者跳过。
-    // void publishFrame(LegacyFrame frame);
+    static constexpr int kFrameSlotCount = 3;
 
-    // 消费者 THREAD: scenegraph：取最新完整帧；使用期间邮箱不得回收该槽位。
-    // 返回空 LegacyFrame（frameNumber==0）表示无新帧。
-    // LegacyFrame takeLatestFrame();
+    FrameMailbox() = default;
+    ~FrameMailbox();
+    FrameMailbox(const FrameMailbox &) = delete;
+    FrameMailbox &operator=(const FrameMailbox &) = delete;
 
-    // 诊断统计（帧桥长跑 P-BRG-01..04 用）：丢帧数、帧年龄、队列长度、内存占用。
-    // struct Stats { quint64 droppedFrames; double avgFrameAgeMs; double p95FrameAgeMs; ... };
-    // Stats stats() const;
+    // 帧到达回调（唤醒消费者重绘）。
+    // 契约：**装配期设置一次，运行期不再变更**（因此读取无需加锁）；
+    // 回调在**生产者线程**上被调用，实现必须自己不碰 QML 场景图对象（通常做法是投递队列事件）。
+    // 消费者（SkyViewport）在析构时必须清空，避免回调打到已销毁对象上。
+    using FrameAvailableCallback = std::function<void()>;
+    void setFrameAvailableCallback(FrameAvailableCallback callback);
+
+    // 生产者 THREAD: gl-ctx。投递完整帧（元数据 + 像素）。
+    // 返回值的语义：
+    //   true  — 已投递（可能覆盖了更旧的完整帧，属设计内行为）
+    //   false — 帧被丢弃：无可用槽位（全部在用/写入中）、世代不符、或帧序号不新
+    // 像素格式必须与 LegacyFrame 注释中的契约一致；byteCount 必须等于
+    // physicalSize.height() * rowStride。
+    bool publishFrame(const LegacyFrame &source, const quint8 *pixels, qsizetype byteCount);
+
+    // 生产者 THREAD: gl-ctx。尺寸变化时调用：递增世代并废弃所有旧世代槽位。
+    // 返回新的 sizeGeneration，生产者应把该值写入后续帧。
+    quint32 bumpSizeGeneration();
+
+    // 消费者 THREAD: scenegraph。取最新完整帧；无完整帧时返回无效租约。
+    FrameLease takeLatestFrame();
+
+    // 诊断（任意线程）：最新完整帧的帧编号。
+    quint64 latestCompletedFrameNumber() const;
+
+    struct Stats
+    {
+        quint64 published = 0;        // 成功投递次数
+        quint64 dropped = 0;          // 丢弃次数（U-FRM-01/05）
+        quint64 leased = 0;           // 被消费者取走的次数
+        quint32 sizeGeneration = 0;   // 当前尺寸世代
+        int completeSlots = 0;        // 当前完整槽位数（≤ kFrameSlotCount，即"队列长度有界"）
+        int readersHeld = 0;          // 正被读取的槽位数
+        qint64 latestFrameAgeMs = -1; // 最新完整帧的年龄（毫秒），无完整帧为 -1
+        qsizetype bytesPerFrame = 0;  // 每帧字节数（内存占用依据）
+    };
+    Stats stats() const;
 
 private:
-    // 槽位池 + 世代锁/原子序号；实现要点：
-    //   1. 生产者写 kWriting 槽位，写完置 kComplete 并更新最新序号。
-    //   2. 消费者按最新序号取帧，使用期持有槽位引用计数，生产者跳过在用槽位。
-    //   3. 尺寸世代变化时废弃全部旧槽位（拒收旧世代帧）。
+    friend class FrameLease;
+    void releaseSlot(int slot);
+
+    struct Slot
+    {
+        LegacyFrame frame;
+        QVector<quint8> buffer;
+        FrameState state = FrameState::kEmpty;
+        int readers = 0;
+        qint64 publishMs = 0;
+    };
+
+    // 必须在持锁状态下调用；返回 -1 表示无可用槽位。
+    // 选取顺序：空槽位 > 最旧的完整且无人读取的槽位；跳过 kWriting 与 readers > 0。
+    int pickWritableSlotLocked() const;
+
+    mutable QMutex m_mutex;
+    Slot m_slots[kFrameSlotCount];
+    quint64 m_published = 0;
+    quint64 m_dropped = 0;
+    quint64 m_leased = 0;
+    quint32 m_sizeGeneration = 1;
+    FrameAvailableCallback m_onFrameAvailable;   // 装配期设置一次，运行期只读
 };
 
 } // namespace stelapp

@@ -25,8 +25,19 @@ option(STELQUICK_VULKAN_PROBE "构建 VkDeviceProbe（需要有 Vulkan 加载库
 
 set(stelQuickUI_SOURCES
     main.cpp
+    A2FrameCheck.hpp
+    A2FrameCheck.cpp
     quick/BackendInfo.hpp
     quick/BackendInfo.cpp
+    quick/SkyViewport.hpp
+    quick/SkyViewport.cpp
+    # A2 帧桥：邮箱 + 测试图案 + 开发期帧源（A2 主体完成后 StaticFrameSource 被旧 GL 读回替换）
+    ../render/legacy/FrameMailbox.hpp
+    ../render/legacy/FrameMailbox.cpp
+    ../render/legacy/TestPattern.hpp
+    ../render/legacy/TestPattern.cpp
+    ../render/legacy/StaticFrameSource.hpp
+    ../render/legacy/StaticFrameSource.cpp
 )
 
 if(STELQUICK_VULKAN_PROBE)
@@ -47,6 +58,7 @@ qt_add_qml_module(stelQuickUI
     QML_FILES
         qml/MainWindow.qml
         qml/DiagnosticPage.qml
+        qml/SkyTestPage.qml
     NO_PLUGIN
 )
 
