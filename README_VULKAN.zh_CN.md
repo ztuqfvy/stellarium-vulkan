@@ -1,6 +1,67 @@
-# Stellarium Vulkan 迁移研究工作副本
+# Stellarium QML/Vulkan 重写（工作仓库）
 
-整理日期：2026-09-17。这里目前仍是 OpenGL 源码，**尚未实现 Vulkan 渲染器**。
+> **仓库**：<https://github.com/ztuqfvy/stellarium-vulkan> （公开）
+>
+> 上游基座：Stellarium 26.1（GPL-2.0-or-later，见 `COPYING`）。本仓库是在该版本源码
+> 快照上做的个人 QML 界面重写 + Vulkan 后端分支，不等待上游接受。
+
+## 这是一个什么项目
+
+把 Stellarium 的界面层从 Qt Widgets 重写为 **Qt Quick (QML)**，渲染后端走
+**Vulkan RHI**，为后续的平台适配（HarmonyOS 等）留出路径。桌面优先。
+
+**当前进度**：A0 基线 / A1（Vulkan 宿主 + 诊断页 + 交互自测）/ A2 第一步（静态图帧桥 +
+逐像素校验）已完成。A2 第二步（真实天空动态帧产供）进行中。
+
+### 目前唯一未决的技术问题
+
+Qt 6.11.2 的 Vulkan RHI 在**静态图像纹理**路径（`QSGTextureMaterial` /
+`QSGImageNode` / `createTextureFromImage`）上，在 macOS + MoltenVK 下**静默渲染为黑**
+（距离场文字、纯色矩形均正常；同代码 Metal/OpenGL 逐像素全对）。
+正在通过 Windows + 原生 NVIDIA 驱动做**跨驱动形态反证**来定性。
+
+## 快速开始
+
+```sh
+git clone https://github.com/ztuqfvy/stellarium-vulkan.git
+cd stellarium-vulkan
+
+# 只编 QML/Vulkan 宿主（独立工程，15 个文件，不需要根构建的那一堆依赖）
+cmake -B build-ui -S src/ui -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/qt   # macOS
+cmake --build build-ui --parallel
+```
+
+Windows 构建见 [`docs/WINDOWS_BUILD.zh_CN.md`](docs/WINDOWS_BUILD.zh_CN.md)。
+
+### 自动化验收（不要用"手动点几下"当验收）
+
+```sh
+BIN=./build-ui/stelQuickUI.app/Contents/MacOS/stelQuickUI
+
+STELQUICK_AUTOTEST_SECONDS=5 $BIN                  # 后端是否真为 Vulkan
+STELQUICK_A2_CHECK=1          $BIN                 # 12 探针逐像素校验（退出码 0/5/6）
+STELQUICK_WINDOW_TEST=1       $BIN                 # 缩放/隐藏显示的主线程停顿测量（0/4）
+STELQUICK_GRAPHICS_API=metal  $BIN                 # 诊断对照后端（metal|opengl|d3d11|d3d12）
+```
+
+## 文档索引
+
+| 文档 | 内容 |
+|---|---|
+| [`docs/BUILD_RECORD.zh_CN.md`](docs/BUILD_RECORD.zh_CN.md) | **构建与环境记录（证据链）**：每个阶段的现象、根因、修复与实测数据 |
+| [`docs/WINDOWS_BUILD.zh_CN.md`](docs/WINDOWS_BUILD.zh_CN.md) | Windows 构建步骤 + 跨驱动形态对照协议 + 结果回传格式 |
+| [`docs/CODING_STANDARD.zh_CN.md`](docs/CODING_STANDARD.zh_CN.md) | 编码规范（英文标识符 + 中文注释；命名不混用） |
+| [`docs/HARMONY_PROBE.zh_CN.md`](docs/HARMONY_PROBE.zh_CN.md) | 鸿蒙交叉编译与真机探测（当前阶段已后置） |
+| `docs/plans/` | 开发计划与可行性调研 |
+
+> 运行纪律：一切测试运行都必须用独立配置目录（`--user-dir`），不得触碰用户全局配置。
+
+---
+
+## 附：A0 源码快照说明（历史，2026-09-17）
+
+整理日期：2026-09-17。以下描述的是仓库初始快照的构成，其中"尚未实现 Vulkan 渲染器"
+一句已被上文进度取代。
 
 ## 从哪里开始
 
