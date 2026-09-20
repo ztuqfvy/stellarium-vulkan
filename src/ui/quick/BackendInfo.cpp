@@ -12,6 +12,7 @@ QString BackendInfo::deviceName() const { return m_deviceName; }
 QString BackendInfo::vulkanVersion() const { return m_vulkanVersion; }
 QString BackendInfo::driverVersion() const { return m_driverVersion; }
 QString BackendInfo::probeError() const { return m_probeError; }
+bool BackendInfo::portabilityDriver() const { return m_portabilityDriver; }
 QString BackendInfo::runtimeApiName() const { return m_runtimeApiName; }
 bool BackendInfo::backendOk() const { return m_backendOk; }
 
@@ -21,6 +22,7 @@ void BackendInfo::applyProbe(const VulkanProbeResult &probe)
     m_vulkanVersion = probe.apiVersion;
     m_driverVersion = probe.driverVersion;
     m_probeError = probe.error;
+    m_portabilityDriver = probe.portabilityDriver;
     // 探针失败不立即判死：Qt 可能仍有其他渲染路径；最终判定以运行时 API 为准。
     // 但探针失败要显示给诊断页（probeError 非空）。
 }

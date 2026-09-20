@@ -274,18 +274,28 @@ int main(int argc, char **argv)
     // 1. 必须在创建任何窗口之前显式选择后端（计划一第 2 节）
     //
     // 默认强制 Vulkan，且失败不静默回退（A1 验收要求）。
-    // STELQUICK_GRAPHICS_API=metal|opengl 只用于**诊断对照**：把同一份场景换成别的
-    // 后端跑，用来隔离"Vulkan/MoltenVK 专用缺陷"与"通用渲染缺陷"。正常验收不得使用。
+    // STELQUICK_GRAPHICS_API 只用于**诊断对照**：把同一份场景换成别的后端跑，
+    // 用来隔离"Vulkan 专用缺陷"与"通用渲染缺陷"。正常验收不得使用。
+    //   metal  — macOS 对照组（MoltenVK 之外的原生 Metal RHI）
+    //   opengl — 跨平台对照组
+    //   d3d11 / d3d12 — Windows 对照组（D3D11 是 Qt 在 Windows 的默认后端，
+    //                   比 OpenGL 更贴近"该平台的健康基线"，故 Windows 上首选它做对照）
     const QByteArray apiOverride = qgetenv("STELQUICK_GRAPHICS_API").trimmed().toLower();
-    const bool wantVulkan = apiOverride.isEmpty() || apiOverride == "vulkan";
     QSGRendererInterface::GraphicsApi wantedApi = QSGRendererInterface::Vulkan;
     if (apiOverride == "metal")
         wantedApi = QSGRendererInterface::Metal;
     else if (apiOverride == "opengl" || apiOverride == "gl")
         wantedApi = QSGRendererInterface::OpenGL;
-    if (!wantVulkan)
+    else if (apiOverride == "d3d11" || apiOverride == "direct3d11")
+        wantedApi = QSGRendererInterface::Direct3D11;
+    else if (apiOverride == "d3d12" || apiOverride == "direct3d12")
+        wantedApi = QSGRendererInterface::Direct3D12;
+    else if (!apiOverride.isEmpty() && apiOverride != "vulkan")
+        std::printf("STELQUICK: 未识别的后端名 \"%s\"，按 Vulkan 处理\n", apiOverride.constData());
+    // 只有真的切到了非 Vulkan 后端才算"对照模式"（未识别名回落到 Vulkan 时不算）
+    if (wantedApi != QSGRendererInterface::Vulkan)
         std::printf("STELQUICK: 诊断对照模式——请求后端 %s（非验收配置）\n",
-                    apiOverride.constData());
+                    apiName(wantedApi));
     QQuickWindow::setGraphicsApi(wantedApi);
 
     QGuiApplication app(argc, argv);
@@ -324,11 +334,12 @@ int main(int argc, char **argv)
 #ifdef STELQUICK_VULKAN_PROBE
     const stelapp::VulkanProbeResult probeResult = stelapp::VkDeviceProbe::probe();
     backendInfo->applyProbe(probeResult);
-    std::printf("STELQUICK: probe ok=%d device=%s api=%s driver=%s err=%s\n",
+    std::printf("STELQUICK: probe ok=%d device=%s api=%s driver=%s portability=%d err=%s\n",
                 probeResult.ok ? 1 : 0,
                 probeResult.deviceName.toUtf8().constData(),
                 probeResult.apiVersion.toUtf8().constData(),
                 probeResult.driverVersion.toUtf8().constData(),
+                probeResult.portabilityDriver ? 1 : 0,
                 probeResult.error.toUtf8().constData());
     std::fflush(stdout);
 #else

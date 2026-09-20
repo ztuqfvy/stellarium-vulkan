@@ -226,3 +226,50 @@ MoltenVK 1.4.2 的静态图像纹理路径。后续动作：向 Qt 报告（附�
 
 - `STELQUICK_RENDER_WORKAROUND=basic-loop` + `STELQUICK_A2_CHECK=1`：校验序列不退出（诊断模式兼容性，不阻塞主线）
 - 系统 `screencapture` 无屏幕录制权限，屏幕级取证不可用（仅 Qt grabWindow 路径）
+
+---
+
+## 2026-09-20｜Windows 移植准备（跨驱动形态对照）
+
+### 动机
+
+A2 黑屏的现有定性是"Qt 6.11.2 Vulkan RHI × MoltenVK 1.4.2 缺陷"，但**只有一个数据点**：
+macOS 上的 MoltenVK。要把它变成可归因的结论，需要换掉"驱动形态"这一个自变量再测一次。
+Windows + RTX 4060 提供平台原生 Vulkan 驱动，是最经济的一次反证：
+12 探针全对 → 缺陷在 MoltenVK 侧；仍全黑 → 缺陷在 Qt 的纹理路径本身。
+
+参见 `docs/WINDOWS_BUILD.zh_CN.md`（含完整步骤、结果矩阵、结果回传模板）。
+
+### 移植前必须修的四处（本轮已修，macOS 侧零回归）
+
+| # | 问题 | 后果（若不修） | 处置 |
+|---|---|---|---|
+| 1 | `qt_add_executable` 在 Windows 默认 `WIN32_EXECUTABLE=TRUE`（GUI 子系统） | 进程不挂父控制台 → **全部 printf 诊断与退出码证据丢失**，A2CHECK/WINDOWTEST 全部失效 | CMakeLists 强制 `WIN32_EXECUTABLE FALSE` |
+| 2 | 源码为 UTF-8 **无 BOM** 且含大量中文注释 | MSVC 按 GBK 解释 → C4819、注释串码，字符串字面量可能被多字节截断 | 加 MSVC `/utf-8` |
+| 3 | `VkDeviceProbe` 无条件启用 `VK_KHR_portability_enumeration` | 原生 NVIDIA 驱动不提供该扩展 → `vkCreateInstance` 返回 `-7 EXTENSION_NOT_PRESENT` → **"探针失败、Qt 渲染正常"的假故障** | 改为先 `vkEnumerateInstanceExtensionProperties` 枚举、存在才启用；结果写入诊断页新行"驱动类型" |
+| 4 | `STELQUICK_GRAPHICS_API` 只认 `metal\|opengl` | Windows 上拿不到最贴近平台基线的对照组（D3D11 是 Qt 在 Windows 的默认后端） | 补 `d3d11` / `d3d12`；顺带修正"未识别后端名"时误报"对照模式"的日志 |
+
+附带：`find_package(Vulkan REQUIRED)` 改为 `QUIET` + 自动降级（无 SDK 也能构建与渲染，
+只是缺探针诊断数据），并给出告警说明；新增 `deploy` 目标（windeployqt）。
+
+### 自变量显式化：诊断页新增"驱动类型"行
+
+`VulkanProbeResult` / `BackendInfo` 增加 `portabilityDriver`，
+诊断页显示 `portability 转译层（MoltenVK）` 或 `平台原生驱动（<os>）`。
+跨平台对照必须同时记录这一行，否则渲染差异无法归因到驱动形态。
+
+### macOS 回归验证（改动后重跑，确认没有把基线搞坏）
+
+| 用例 | 改动前 | 改动后 |
+|---|---|---|
+| `STELQUICK_GRAPHICS_API=metal STELQUICK_A2_CHECK=1` | 12 探针 0 失败 / PASS | **0 失败 / PASS（rc=0）** |
+| `STELQUICK_GRAPHICS_API=opengl STELQUICK_A2_CHECK=1` | 0 失败 / PASS | **0 失败 / PASS** |
+| 默认 Vulkan + `STELQUICK_A2_CHECK=1` | 12/12 全黑 / FAIL | **12/12 全黑 / FAIL（rc=5，行为不变）** |
+| `STELQUICK_WINDOW_TEST=1 STEPS=8` | maxStall 75ms / PASS | **maxStall 43ms / maxResize 30ms / maxFrameGap 65ms / PASS（rc=0）** |
+| 探针输出 | `device=Apple M3 api=1.1.357 driver=0.2.2210` | 同（另新增 `portabilityDriver=true`） |
+
+### 范围边界（写进 CMakeLists 注释，防止后续走偏）
+
+Windows 侧只编 `src/ui` 独立工程（15 个文件）。**不**在 Windows 上碰 Stellarium 根构建——
+根构建的依赖面（Qt6 WebEngine/Charts/MultiMedia、libnova、gettext…）与本次要回答的问题无关，
+强行一起做会把变量搅浑。

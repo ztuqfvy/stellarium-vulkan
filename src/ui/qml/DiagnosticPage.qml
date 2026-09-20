@@ -78,7 +78,20 @@ Pane {
                 Label { text: "Vulkan API 版本"; color: "#5a5e66"; font.pixelSize: 14 }
                 Label { text: BackendInfo.vulkanVersion; font.pixelSize: 14 }
 
-                Label { text: "驱动（MoltenVK 转译）"; color: "#5a5e66"; font.pixelSize: 14 }
+                Label { text: "驱动类型"; color: "#5a5e66"; font.pixelSize: 14 }
+                Label {
+                    // 跨平台注明：这一行是"驱动形态"这个自变量的显式记录。
+                    // 对照实验（macOS MoltenVK vs Windows 原生驱动）必须同时记录本行，
+                    // 否则无法把渲染差异归因到驱动形态上。
+                    text: BackendInfo.probeError !== "" ? "（探针无结果）"
+                          : (BackendInfo.portabilityDriver
+                             ? "portability 转译层（MoltenVK）"
+                             : "平台原生驱动（" + Qt.platform.os + "）")
+                    font.pixelSize: 14
+                    font.bold: true
+                }
+
+                Label { text: "驱动版本"; color: "#5a5e66"; font.pixelSize: 14 }
                 Label { text: BackendInfo.driverVersion; font.pixelSize: 14 }
 
                 Label { text: "屏幕"; color: "#5a5e66"; font.pixelSize: 14 }
@@ -111,9 +124,11 @@ Pane {
                     wrapMode: Text.Wrap
                     color: "#8a8e96"
                     font.pixelSize: 12
-                    text: "说明：macOS 上 Vulkan 经 MoltenVK 转译到 Metal，属合规路径；"
-                          + "Qt Quick 后端仍必须为 Vulkan（禁止以 Metal 直接充当完成）。"
-                          + "验收项：缩放、关闭、重开无错（手动执行，见软件测试文档）。"
+                    text: (Qt.platform.os === "osx"
+                           ? "说明：macOS 上 Vulkan 经 MoltenVK 转译到 Metal，属合规路径；"
+                           : "说明：本平台 Vulkan 由显卡驱动原生提供，无转译层；")
+                          + "Qt Quick 后端仍必须为 Vulkan（禁止以 Metal/D3D11 直接充当完成）。"
+                          + "验收项：缩放、关闭、重开无错（自动测量 STELQUICK_WINDOW_TEST）。"
                 }
             }
         }

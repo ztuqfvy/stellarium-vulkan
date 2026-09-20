@@ -25,6 +25,8 @@ class BackendInfo : public QObject
     Q_PROPERTY(QString vulkanVersion READ vulkanVersion CONSTANT)
     Q_PROPERTY(QString driverVersion READ driverVersion CONSTANT)
     Q_PROPERTY(QString probeError READ probeError CONSTANT)
+    // 驱动形态：true=portability 转译层（MoltenVK），false=平台原生驱动（NVIDIA/AMD/Intel）
+    Q_PROPERTY(bool portabilityDriver READ portabilityDriver CONSTANT)
     // Qt Quick 运行时实际 API（场景图初始化后由 main 写入，如 "Vulkan"/"Metal"）
     Q_PROPERTY(QString runtimeApiName READ runtimeApiName NOTIFY runtimeApiNameChanged)
     // 后端校验判定：请求 Vulkan 且实际 Vulkan 才为 true
@@ -40,6 +42,7 @@ public:
     QString vulkanVersion() const;
     QString driverVersion() const;
     QString probeError() const;
+    bool portabilityDriver() const;
     QString runtimeApiName() const;
     bool backendOk() const;
 
@@ -59,6 +62,7 @@ private:
     QString m_vulkanVersion;
     QString m_driverVersion;
     QString m_probeError;
+    bool m_portabilityDriver = false;
     QString m_runtimeApiName;
     bool m_runtimeApiKnown = false;
     bool m_backendOk = false;
