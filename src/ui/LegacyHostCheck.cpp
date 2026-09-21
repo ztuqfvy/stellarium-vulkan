@@ -202,6 +202,24 @@ LegacyHostCheckResult LegacyHostCheck::run(const QSize &physicalSize, int frameC
     config.coreProfile = true;
     config.devicePixelRatio = kDevicePixelRatio;
 
+    // 负控入口：允许外部强塞配置，让装配**必然失败**。
+    // 动机：四审（Windows）在 runner 上发现"负控能红、被测对象不能红"的不对称——
+    // 一个永远不会红的检查器，它的 PASS 不构成证据。本自检必须自己证明能红。
+    //
+    // 用法：STELQUICK_LEGACY_HOST_SIZE=0x0 → 期望 VERDICT=FAIL、进程退出码 8。
+    //
+    // 注意：**不能**用"强塞不存在的 GL 版本"当负控——实测（macOS/Apple M3）
+    // 请求 GL 9.9 会被静默降级成 4.1 Core，装配照样成功。这意味着两件事：
+    //   ① macOS 上"GL 版本请求"不能作为失败注入点；
+    //   ② 请求的 GL 版本**不保证拿到**，所以 T6-C02 只记录实测值、不比对请求值。
+    const QByteArray forcedSize = qgetenv("STELQUICK_LEGACY_HOST_SIZE");
+    if (!forcedSize.isEmpty())
+    {
+        const QList<QByteArray> parts = forcedSize.split('x');
+        if (parts.size() == 2)
+            config.physicalSize = QSize(parts.value(0).toInt(), parts.value(1).toInt());
+    }
+
     QString error;
     if (!host.initialize(config, &error))
     {
@@ -210,6 +228,7 @@ LegacyHostCheckResult LegacyHostCheck::run(const QSize &physicalSize, int frameC
         addCheck("T6-C02", false, result.setupError);
         return result;
     }
+    Q_UNUSED(error)
 
     const LegacyGlInfo &gl = host.glInfo();
     addCheck("T6-C02",
