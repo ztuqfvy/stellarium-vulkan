@@ -29,7 +29,12 @@ set "EXE=%~dp0build-ui\deploy\stelQuickUI.exe"
 if not exist "%EXE%" (
     echo [ERROR] exe not found: %EXE%
     echo         build first:  cmake --build build-ui --config Release
-    goto :end
+    rem Exit 7, NOT 0. The previous revision jumped straight to :end, which skipped
+    rem the report and left ERRORLEVEL at 0 -- so "run the smoke test first" printed a
+    rem green light while running nothing. Same class of defect as the old hardcoded
+    rem RC=0 in matrix mode. Set the code and fall through to the report.
+    set "RC=7"
+    goto :report
 )
 
 if /i "%~1"=="matrix" goto :matrix
@@ -73,7 +78,7 @@ goto :report
 echo.
 echo ============================================================
 echo  EXIT CODE = %RC%
-echo   0=pass   2=no-window   3=backend-not-vulkan
+echo   0=pass   2=no-window   3=backend-not-vulkan   7=exe-not-found
 echo   4=window-test-fail      5=A2-probe-fail   6=grab-unavailable
 echo ============================================================
 

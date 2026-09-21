@@ -68,7 +68,7 @@ python -c "b=open('run_evidence_matrix.cmd','rb').read(); print(sum(1 for x in b
 文件格式约定：正文为未经修饰的原始捕获；仅首尾由脚本注入**出处头**（提交号、
 主机、驱动版本、被测 exe 的 sha256、采集方式）与**结论段**，便于审计追溯。
 
-### 生成器已入库（2026-09-21 补）
+### 生成器已入库（2026-09-21 补，同日修正并本地实测）
 
 首版证据的出处头与负控段是**临时命令**注入的，那些命令当时没入库——也就是说
 换个人无法复现同一份文件，这本身是一处证据链缺口。现补 `tools/evidence/collect.ps1`：
@@ -78,11 +78,53 @@ python -c "b=open('run_evidence_matrix.cmd','rb').read(); print(sum(1 for x in b
 powershell -ExecutionPolicy Bypass -File tools\evidence\collect.ps1
 ```
 
-它把整份文件一次生成：元数据头（提交号 + 工作区是否脏 + CPU/GPU/驱动 + exe 大小与
-sha256）→ 第一段真实 matrix 原始输出 → 第二段负控原始输出 → 结论段。
+它把整份文件一次生成：元数据头 → 第一段真实 matrix 原始输出 → 第二段负控原始输出 → 结论段。
 另外它会在跑之前**主动拒绝**验收禁用变量（`STELQUICK_A2_IGNORE_SGWAIT`、
 `STELQUICK_RENDER_WORKAROUND=basic-loop`），把第 9 节的纪律做成硬闸门而不是口头约定。
 
-> ⚠️ 未在本机验证：该脚本在 macOS 上编写（本机无 PowerShell），只做过语法审查，
-> **从未执行过**。Windows 上第一次跑请当调试，跑通并确认输出格式正确之后，
-> 才可以用它产出的文件当证据。脚本同样遵守 ASCII-only 规则。
+#### 自检与 VERDICT 行
+
+生成器必须能说"不"。文件头第一行是 `VERDICT`，由脚本从两段原始文本里**重新推导**，
+不靠人读：
+
+| VERDICT | 判定条件 | 脚本退出码 |
+|---|---|---|
+| `COMPLETE` | 三个后端标记齐全 + 有 `EXIT CODE` 行；负控返回 5 且打印 `RESULT: PASS` | 0 |
+| `NOT USABLE AS EVIDENCE` | 上述任一条不成立 → 文件记录了一次没跑完的运行，**不得当证据引用** | 1 |
+
+> 别混淆：脚本退出码只表示**这份记录可不可信**，不是被测程序的结论。
+> 被测程序的结论看 `dut result` 行（即 `run_autotest.cmd matrix` 的返回码）。
+> 换句话说，被测程序失败但记录完整时，退出码仍是 0——那份红色结果依然是有效结论。
+
+#### 本地实测（2026-09-21）
+
+该脚本首版在 macOS 上编写、**从未执行过**，这是当时的已知风险。已用 PowerShell 7.6.6
+在 macOS 上**实际执行**其组装路径（Windows 专有的 `Get-CimInstance` / `nvidia-smi` /
+`cmd /c` 用桩替换），四个用例全部符合预期：
+
+| 用例 | 期望 | 实测 |
+|---|---|---|
+| 完整跑分 | `COMPLETE` / exit 0 | ✓ |
+| matrix 缺一个后端段 | `NOT USABLE` / exit 1 | ✓ |
+| 负控返回 0 | `NOT USABLE` / exit 1 | ✓ |
+| `-SkipNegctl` | `NOT USABLE` / exit 1 | ✓ |
+
+组装产物：UTF-8 无 BOM、可用单一编码解码、**0 个非 ASCII 字节**（ASCII-only 规则贯彻）。
+
+过程中实测发现并修掉三处：
+
+1. **`dirty` 标志自我污染。** 脚本把自己的产物（未提交的 `docs/evidence/*.txt`）算进工作区
+   差异，于是从**第二次运行起恒为 `YES`**。一个恒亮的告警等于没有告警，而且会训练读者
+   忽略那一行。现排除 `docs/evidence/`，并把排除范围**写在那一行上**——排除必须可见，
+   不能静默。已在真实仓库验证：伪造一个未提交证据文件时判定仍为 `no`，而真实脏改动照报。
+2. **exe 路径硬依赖 `build-ui\deploy`。** `deploy` 目标只在配置时找到 `windeployqt` 才存在，
+   硬依赖会把"没装 windeployqt"变成一次白跑的往返。现按 `deploy` → `Release` → `Debug` →
+   `build-ui` 顺序回退，并把**实际选中的路径**写进文件头。
+3. **`@()` 的类型陷阱。** `$x = @([IO.File]::ReadAllLines(...))` 会把 `string[]` 重新类型化为
+   `Object[]`，`List[string].AddRange()` 随即拒绝绑定并抛错。必须不加 `@()` 直接赋值。
+   这条是本轮改动引入、又在本地执行时抓到的——**只做语法检查发现不了，跑一遍才行**。
+
+> ⚠️ 仍未验证的部分：`chcp` 与控制台的交互、以及 `cmd /c "... > file 2>&1"` 两条捕获行——
+> 离开 Windows 无法执行。**首次真机运行请当调试**，跑通并确认输出格式正确之后，才可以用它
+> 产出的文件当证据。脚本同样遵守 ASCII-only 规则（非 ASCII 字节数为 0）。
+

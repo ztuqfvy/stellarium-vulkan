@@ -189,6 +189,7 @@ Vulkan 的 PASS 是可信的。**若 D3D11 反而失败，那问题在测量工�
 | 4 | 交互自测失败（`STELQUICK_WINDOW_TEST`） |
 | 5 | A2 静态图校验失败（探针有失败项） |
 | 6 | **校验手段不可用**（`grabWindow()` 返回空图）——不得据此声称通过 |
+| 7 | **被测 exe 不存在**（2026-09-21 加）——此前这种情况静默返回 0，即"什么都没跑却报绿灯" |
 
 ---
 
@@ -316,7 +317,7 @@ WINDOWTEST: 结果 ...
 
 | 工具 | 用途 |
 |---|---|
-| `tools/evidence/collect.ps1` | **规范生成器**：一次产出完整证据文件（元数据头 + matrix 原始输出 + 负控原始输出 + 结论段），并在跑之前拒绝验收禁用变量。未在本机验证过，Windows 首次运行需当调试对待 |
+| `tools/evidence/collect.ps1` | **规范生成器**：一次产出完整证据文件（元数据头 + matrix 原始输出 + 负控原始输出 + 结论段），跑前拒绝验收禁用变量，并对两段做结构自检、在文件头第一行盖 `VERDICT`。组装路径已在 macOS 用 PowerShell 7.6.6 实测（4 个用例）；仅 `chcp` 交互与两条 `cmd /c` 捕获行无法离机验证，首次真机运行当调试 |
 | `run_evidence_matrix.cmd <输出文件>` | 清空所有 `STELQUICK_*` 后跑真实 matrix，把 stdout+stderr 原样落盘、并追加真实返回码。用 `< nul` 绕开 `run_autotest.cmd` 结尾的 `pause`，避免自动化挂住 |
 | `tools/negctl/run_negctl.cmd` | 退出码聚合的**负控实验**：注入 `d3d11 -> 5`，期望聚合报出 `EXIT CODE = 5`。用来证明绿灯不是无条件默认值 |
 | `docs/evidence/README.md` | 采集方式、编码坑、.cmd 硬规则的完整说明 |
@@ -338,3 +339,32 @@ WINDOWTEST: 结果 ...
    chcp 65001 | Out-Null
    .\run_evidence_matrix.cmd docs\evidence\YYYY-MM-DD-run_autotest-matrix-<范围>.txt
    ```
+
+### 9.3 留证只需一趟（照做即可）
+
+```powershell
+git pull                                       # 取含 2026-09-21 生成器修正的代码
+cmake --build build-ui --config Release        # deploy 目标可选：生成器会在 deploy/Release/Debug 里自动找 exe
+powershell -ExecutionPolicy Bypass -File tools\evidence\collect.ps1
+```
+
+判读顺序**不能调换**：
+
+1. **先看文件头第一行 `VERDICT`。** 必须是 `COMPLETE`。
+   若是 `NOT USABLE AS EVIDENCE`（脚本退出码 `1`），这份文件**不是证据**——
+   把完整报错贴回来，不要尝试解读 SEGMENT 1。
+2. 只在 `COMPLETE` 时才看 `dut result` 行（被测程序自己的返回码）与 SEGMENT 1 的逐探针明细。
+   记住二者的区别：**`VERDICT` 说明"这份记录可不可信"，`dut result` 才是被测程序的结论。**
+   被测程序失败但记录完整时，`VERDICT` 仍是 `COMPLETE`、退出码仍是 `0`——那份红色结果
+   同样是有效结论。
+3. `worktree: dirty` 必须是 `no`。若为 `YES`，说明被测代码与提交不一致（告警行会给出
+   差异路径数），结论无法归因——先提交或还原改动再重跑。
+   （`docs/evidence/` 已被显式排除：生成器自己的产物不该触发这个告警。）
+4. 入库：
+
+```powershell
+git add docs\evidence\<文件> ; git commit -m "验收留证：<日期> 三后端 matrix 原始输出" ; git push
+```
+
+> 首次运行请当调试。`chcp` 与控制台的交互、两条 `cmd /c "... > file 2>&1"` 捕获行，
+> 是唯一无法在 macOS 上验证的部分（其余逻辑已实测）。若报错，把**完整**输出贴回来。

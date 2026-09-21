@@ -405,3 +405,58 @@ alpha 混合的预期结果，容差内）。
 **教训（写入技能）**：`.cmd` 只许 ASCII——中文 `rem` 注释同样危险，误解码字节跨行
 拼接后残余片段会被当命令执行。本轮该缺陷是我方引入（d717056 的中文注释），
 由 Windows 侧发现并修复。
+
+---
+
+## 2026-09-21｜三审（仪器加固）：把"生成器从未执行过"这个已知风险清掉
+
+二审留下一处未验证项：`tools/evidence/collect.ps1` 在 macOS 上编写、**从未执行过**。
+本轮不靠"等 Windows 首次运行"来兜这个风险——那等于拿一趟真机往返当语法检查。
+
+**做法**：在 macOS 上装 PowerShell 7.6.6（GitHub release，`~/.local/opt/pwsh`），用桩把三个
+Windows 专有调用（`Get-CimInstance` / `nvidia-smi` / `cmd /c`）换掉，**实际执行**组装路径。
+
+| 用例 | 期望 | 实测 |
+|---|---|---|
+| 完整跑分 | `VERDICT=COMPLETE` / exit 0 | 符合 |
+| matrix 缺一个后端段 | `VERDICT=NOT USABLE` / exit 1 | 符合 |
+| 负控返回 0 | `VERDICT=NOT USABLE` / exit 1 | 符合 |
+| `-SkipNegctl` | `VERDICT=NOT USABLE` / exit 1 | 符合 |
+
+产物格式实测：UTF-8 无 BOM、单一编码可解码、**0 个非 ASCII 字节**。
+
+### 实测抓出的三处缺陷（全部已修）
+
+1. **`dirty` 标志自我污染（真缺陷，实测复现）。**
+   脚本把自己的产物（未提交的 `docs/evidence/*.txt`）算进 `git status` → 从**第二次运行起
+   恒为 `YES`**。实测连续三次运行全部 `YES`。
+   一个恒亮的告警等于没有告警，而且会训练读者忽略那一行——正是我们在 `run_autotest.cmd`
+   上刚修过的同一类错误的镜像。
+   修法：排除 `docs/evidence/`，并把排除范围**写在那一行上**（排除必须可见，不能静默）。
+   在真实仓库验证：伪造未提交证据文件时判定仍为 `no`，真实脏改动照报。
+
+2. **exe 路径硬依赖 `build-ui\deploy`。**
+   `deploy` 目标只在配置时找到 `windeployqt` 才存在。硬依赖会把"没装 windeployqt"
+   变成一次白跑的往返——而这条命令（`qtdiag` 之后的第二步）恰好是新环境最可能失败的地方。
+   修法：按 `deploy` → `Release` → `Debug` → `build-ui` 顺序回退，实际选中路径写入文件头。
+   本地实测：无 `deploy` 目录时正确回退到 `build-ui\Release`。
+
+3. **`@()` 的类型陷阱（本轮引入、本轮抓到）。**
+   `$x = @([IO.File]::ReadAllLines(...))` 会把 `string[]` 重新类型化为 `Object[]`，
+   `List[string].AddRange()` 随即拒绝绑定并抛 `Cannot convert System.Object[]`。
+   原版直接传方法结果反而是对的——这说明：**语法解析通过 ≠ 能跑**。
+   只做 Parser 校验（0 错误，1193 tokens）不会暴露它，必须实际执行。
+   修法：不加 `@()` 直接赋值。
+
+### 顺带修掉同类缺陷（`run_autotest.cmd` 退出码 7）
+
+`if not exist "%EXE%"` 分支原来 `goto :end`，**跳过 report 且 ERRORLEVEL 停在 0**——
+"先跑冒烟测试"这条文档指引会打印绿灯而实际什么都没跑。现 `set "RC=7"` 并落到 report，
+图例补 `7=exe-not-found`。与 `d717056` 修的"matrix 恒报 0"是同一类缺陷的第三例。
+
+### 元观察
+
+本轮三次修复全部属于同一族：**工具在"没干活"或"干不成"时报告成功**。
+（`matrix` 恒报 0 → `dirty` 恒报 YES → exe 缺失返回 0。）
+这类缺陷的共同特征是**不会自己暴露**，只能靠"主动让它失败一次"来发现。
+因此把负控、结构自检、`VERDICT` 行做进生成器，比再多写几页纪律文档有效。
