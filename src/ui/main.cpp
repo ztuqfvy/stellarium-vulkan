@@ -27,6 +27,9 @@
 #include <QTimer>
 #include <QUrl>
 #include <QVulkanInstance>
+// 私有头：取 Qt 全局唯一的默认 Vulkan 实例（避免应用自建实例与 Qt 内部实例并存，
+// 见下方"QVulkanInstance 的来源"注释）。Qt6::GuiPrivate 已在 CMakeLists 中链接。
+#include <QtGui/private/qvulkandefaultinstance_p.h>
 #include <QtMath>
 #include <cstdio>
 #include <memory>
@@ -307,7 +310,25 @@ int main(int argc, char **argv)
     //    SIGSEGV（实测 2026-09-18），拿不到诊断页显示机会。
     ensureVulkanLoaderPath(); // 先自动定位加载库，避免"必须手动 export 才能跑"
 
-    QVulkanInstance vulkanInstance;
+    // QVulkanInstance 的来源（2026-09-21 重定）：
+    // 必须使用 Qt 的**默认实例单例** QVulkanDefaultInstance，而不是自己再建一个。
+    // 症状（Windows + 原生驱动 + 校验层实测）：
+    //   应用自建实例 + Qt 内部默认实例并存 → swapchain surface 归属其中一个，
+    //   退出时另一个去销毁它，报
+    //     VUID-vkDestroySurfaceKHR-surface-parent（surface 属于 A、用 B 销毁）
+    //     UNASSIGNED-non-acquired-swapchain-image-used
+    //   并在进程退出阶段以 0xC0000005 访问违例收尾（RC 拿不到）。
+    // 之前 A2 的逐像素结果不受影响（渲染走的是 Qt 自己挑的实例），
+    // 所以这个冲突一直以"噪音日志"的形式潜伏。
+    // 现在改为向 Qt 索取唯一实例：实例全进程只有一个，归属与析构顺序自然一致。
+    QVulkanInstance *vulkanInstance = QVulkanDefaultInstance::instance();
+    if (!vulkanInstance) {
+        std::fprintf(stderr,
+                     "A1 失败：无法获取 Qt 默认 Vulkan 实例（QVulkanDefaultInstance::instance() 返回空）。\n"
+                     "检查 Vulkan 加载库是否可用（Windows：vulkan-1.dll；macOS：QT_VULKAN_LIB）。\n"
+                     "禁止静默回退 Metal/GL，程序退出（码 3）。\n");
+        return 3;
+    }
 
     // MoltenVK portability 坑（第三处，2026-09-20 A2 定位）：
     // 不开 VK_KHR_get_physical_device_properties2 时，MoltenVK 打印
@@ -315,13 +336,14 @@ int main(int argc, char **argv)
     // 实际后果：Image/QSGImageNode 这类 QSGTextureMaterial 纹理全部静默渲染为黑
     // （文字、纯色矩形正常）。MoltenVK 1.4.2 + Qt 6.11.2 + Apple M3 实测，
     // Qt RHI 自己不会加这个实例扩展，必须应用侧显式开。
-    // 注意必须在 create() 之前设置。
-    QByteArrayList vkInstanceExtensions = vulkanInstance.extensions();
+    // 注意：默认实例由 Qt 延迟创建，这里在它 create() 之前补扩展仍然有效。
+    QByteArrayList vkInstanceExtensions = vulkanInstance->extensions();
     if (!vkInstanceExtensions.contains("VK_KHR_get_physical_device_properties2"))
         vkInstanceExtensions << "VK_KHR_get_physical_device_properties2";
-    vulkanInstance.setExtensions(vkInstanceExtensions);
+    vulkanInstance->setExtensions(vkInstanceExtensions);
 
-    if (!vulkanInstance.create()) {
+    // 负向测试 P-CFG 前置：实例必须真的能创建出来（禁止静默回退）。
+    if (!vulkanInstance->isValid() && !vulkanInstance->create()) {
         std::fprintf(stderr,
                      "A1 失败：QVulkanInstance::create() 失败——Vulkan 不可用"
                      "（检查 QT_VULKAN_LIB 是否指向 libvulkan.1.dylib、MoltenVK ICD 是否安装）。\n"
@@ -375,7 +397,7 @@ int main(int argc, char **argv)
     window->setProperty("startPage", startPage);
 
     // 预检通过的实例挂到窗口，避免 "No QVulkanInstance set" 崩溃路径
-    window->setVulkanInstance(&vulkanInstance);
+    window->setVulkanInstance(vulkanInstance);
 
     // A2 装配点：找到 QML 实例化的天空视口，注入帧邮箱
     auto *skyViewport = window->findChild<stelapp::SkyViewport *>(QStringLiteral("skyViewport"));
@@ -385,36 +407,87 @@ int main(int argc, char **argv)
         std::fprintf(stderr, "提示：未找到 SkyViewport（skyViewport），A2 帧通路不可用\n");
     }
 
+    // 调试对照图：把 STELQUICK_PATTERN_DUMP 的路径传给 SkyTestPage 的 Image。
+    // 该 Image 用于区分"QSGImageNode 路径坏了"与"窗口渲染/抓帧坏了"。
+    // 未设环境变量时传空串 → 对照 Image 不加载（也避免 Windows 上没有 /tmp 的假报错）。
+    {
+        const QString dumpPath = qEnvironmentVariable("STELQUICK_PATTERN_DUMP");
+        if (!dumpPath.isEmpty()) {
+            const QString url = QUrl::fromLocalFile(dumpPath).toString();
+            if (!window->setProperty("debugPatternSource", url))
+                std::fprintf(stderr, "提示：SkyTestPage 的 debugPatternSource 属性未生效\n");
+            else
+                std::printf("STELQUICK: 调试对照图 = %s\n", url.toUtf8().constData());
+        }
+    }
+
     const int baseW = window->width();
     const int baseH = window->height();
 
     // 场景图初始化后校验实际 API（后端必须在创建窗口前选定，此处只能确认）
+    //
+    // 2026-09-21 Windows 定位：`sceneGraphInitialized` 在 Windows + Vulkan(RHI) 下
+    // **不一定送达**。实测（RTX 4060 / Qt 6.11.2 / VS2026 Release）：
+    //   - A2 逐像素校验 12/12 PASS → 场景图确实起来了、确实在渲染；
+    //   - 但本连接的 lambda 一次都没执行（日志里始终没有 runtimeApi= 那一行）；
+    //   - 结果 backendOk 恒为 false → 明明渲染与像素全对，进程仍以 3 退出。
+    // 根因是信号发送时机与连接/初始化顺序的竞态：设为 Vulkan 后 Qt 会在
+    //   `setVulkanInstance()` 之前/之中就把场景图建好并发出该信号，连接建立时
+    //   信号已经过去了（Qt 信号不重放）。macOS 上恰好落在信号之后，所以一直没暴露。
+    //
+    // 处置：不再只依赖信号。把判定抽成具名 lambda，两条路都调用它：
+    //   ① 信号到达（正常路径，macOS 及部分 Windows 配置）；
+    //   ② 延迟兜底轮询 rendererInterface()（signal 丢失时的兜底）。
+    // 判定本身是幂等的（只是读 graphicsApi() 并赋值），重复调用无副作用。
     bool backendOk = false;
-    QObject::connect(window, &QQuickWindow::sceneGraphInitialized, window,
-                     [&window, backendInfo, &backendOk, skyViewport, wantedApi]() {
-                         QSGRendererInterface *rif = window->rendererInterface();
-                         const auto api = rif ? rif->graphicsApi()
-                                              : QSGRendererInterface::Unknown;
-                         const QString name = QString::fromUtf8(apiName(api));
-                         backendInfo->applyRuntimeApi(name);
-                         // backendOk = 实际后端与请求后端一致（默认请求即 Vulkan）
-                         backendOk = (api == wantedApi);
-                         // 视口也要知道后端判定：非 Vulkan 时进入 error 态而不是假装 ready（Q-001）
-                         if (skyViewport)
-                             skyViewport->applyBackendResult(name, backendOk);
+    bool backendChecked = false;
+    auto checkBackendApi = [&window, backendInfo, &backendOk, &backendChecked,
+                            skyViewport, wantedApi]() {
+        if (backendChecked)
+            return;
+        QSGRendererInterface *rif = window->rendererInterface();
+        if (!rif || rif->graphicsApi() == QSGRendererInterface::Unknown)
+            return;   // 场景图还没就绪，等下一次
+        backendChecked = true;
 
-                         std::printf("STELQUICK: runtimeApi=%s backendOk=%d device=%s\n",
-                                     name.toUtf8().constData(), backendOk ? 1 : 0,
-                                     backendInfo->deviceName().toUtf8().constData());
-                         std::fflush(stdout);
-                         if (!backendOk) {
-                             std::fprintf(stderr,
-                                          "A1 失败：请求 %s，实际 %s。禁止静默回退，程序将退出。\n",
-                                          apiName(wantedApi), name.toUtf8().constData());
-                         }
-                     });
+        const auto api = rif->graphicsApi();
+        const QString name = QString::fromUtf8(apiName(api));
+        backendInfo->applyRuntimeApi(name);
+        // backendOk = 实际后端与请求后端一致（默认请求即 Vulkan）
+        backendOk = (api == wantedApi);
+        // 视口也要知道后端判定：非 Vulkan 时进入 error 态而不是假装 ready（Q-001）
+        if (skyViewport)
+            skyViewport->applyBackendResult(name, backendOk);
+
+        std::printf("STELQUICK: runtimeApi=%s backendOk=%d device=%s（判定来源=%s）\n",
+                    name.toUtf8().constData(), backendOk ? 1 : 0,
+                    backendInfo->deviceName().toUtf8().constData(),
+                    window->isSceneGraphInitialized() ? "信号/兜底" : "兜底");
+        std::fflush(stdout);
+        if (!backendOk) {
+            std::fprintf(stderr,
+                         "A1 失败：请求 %s，实际 %s。禁止静默回退，程序将退出。\n",
+                         apiName(wantedApi), name.toUtf8().constData());
+        }
+    };
+
+    QObject::connect(window, &QQuickWindow::sceneGraphInitialized, window, checkBackendApi);
 
     window->show();
+
+    // 兜底轮询：每 100ms 试一次，最多 5s。判定成功后立刻停表（幂等，不重复打印）。
+    {
+        auto *poll = new QTimer(window);
+        poll->setInterval(100);
+        QObject::connect(poll, &QTimer::timeout, window, [poll, checkBackendApi, window]() {
+            checkBackendApi();
+            if (window->isSceneGraphInitialized() || (poll->property("tries").toInt() > 50))
+                poll->stop();
+            poll->setProperty("tries", poll->property("tries").toInt() + 1);
+        });
+        poll->setProperty("tries", 0);
+        poll->start();
+    }
 
     // A2 静态图自动校验（用例 I-STC-01/02）：投递测试图案 → 等上传确认 → 抓帧逐像素比对
     if (a2Check) {
@@ -445,18 +518,40 @@ int main(int argc, char **argv)
     // 手动查看模式：投递一次静态测试图案，便于人眼确认通路已通。
     // 说明：静态帧源只投一次，窗口后续缩放不会重新生成图案（图案会被缩放显示）；
     // A2 主体接入真实产帧后，此段整体删除。
+    //
+    // 2026-09-21 Windows 定位：原先固定 300ms 就投递，但此时 QML 布局尚未跑完
+    // （StackLayout 还没给视口分配尺寸）→ 逻辑 0x0 → 报"视口物理尺寸过小…1x1"。
+    // 这个抖动一直以"假失败日志"形式存在（不影响 A2 模式，那边自己带等待）。
+    // 处置：改成轮询等视口拿到有效尺寸再投递，最多等 5s；超时才报真失败。
     if (skyViewport) {
-        QTimer::singleShot(300, &app, [&frameMailbox, skyViewport, window]() {
+        auto *pending = new QTimer(&app);
+        pending->setInterval(50);
+        QObject::connect(pending, &QTimer::timeout, &app,
+                         [pending, &frameMailbox, skyViewport, window]() {
             const QSize logical(qRound(skyViewport->width()), qRound(skyViewport->height()));
+            const int waited = pending->property("waitedMs").toInt() + 50;
+            pending->setProperty("waitedMs", waited);
+            if (logical.width() < 16 || logical.height() < 16) {
+                if (waited < 5000)
+                    return;   // 布局还没好，继续等
+                pending->stop();
+                std::printf("A2: 静态测试图案投递失败：等待 %dms 后视口仍无效（%dx%d）\n",
+                            waited, logical.width(), logical.height());
+                std::fflush(stdout);
+                return;
+            }
+            pending->stop();
             QString error;
             const bool ok = stelapp::StaticFrameSource::publishTestPattern(
                 frameMailbox, logical, window->effectiveDevicePixelRatio(), 1, 1, &error);
-            std::printf("A2: 静态测试图案%s（逻辑 %dx%d）%s%s\n",
+            std::printf("A2: 静态测试图案%s（逻辑 %dx%d，等待 %dms）%s%s\n",
                         ok ? "已投递" : "投递失败",
-                        logical.width(), logical.height(),
+                        logical.width(), logical.height(), waited,
                         error.isEmpty() ? "" : "原因：", error.toUtf8().constData());
             std::fflush(stdout);
         });
+        pending->setProperty("waitedMs", 0);
+        pending->start();
     }
 
     // 交互回归自测模式（自动化 A1 手动项）

@@ -273,3 +273,75 @@ Windows + RTX 4060 提供平台原生 Vulkan 驱动，是最经济的一次反�
 Windows 侧只编 `src/ui` 独立工程（15 个文件）。**不**在 Windows 上碰 Stellarium 根构建——
 根构建的依赖面（Qt6 WebEngine/Charts/MultiMedia、libnova、gettext…）与本次要回答的问题无关，
 强行一起做会把变量搅浑。
+
+---
+
+## 2026-09-21｜Windows 移植完成 + A2 反证成立（RTX 4060 / 原生 Vulkan）
+
+### 环境
+
+| 项 | 值 |
+|---|---|
+| 系统 | Windows（win32，x64） |
+| 编译器 | MSVC VS 2026（`E:\VisualStudio\CanPin`，工具集 v180） |
+| CMake | **VS 自带 4.3.1-msvc1**（`E:\VisualStudio\CanPin\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe`） |
+| Qt | 6.11.2 msvc2022_64（`E:\Qt\6.11.2\msvc2022_64`） |
+| Vulkan SDK | 1.4.357（`E:\Vulkan\SDK`） |
+| GPU / 驱动 | NVIDIA GeForce RTX 4060，driver 79.296.0，api 1.4.325 |
+| 产物 | `build-ui\Release\stelQuickUI.exe`（约 152 KB）＋ `build-ui\deploy\`（1880 文件，自包含） |
+
+### 结果矩阵（本轮实测，全部 rc=0）
+
+| 用例 | 结果 |
+|---|---|
+| `STELQUICK_A2_CHECK=1`（默认 Vulkan） | **12 探针 0 失败 / VERDICT=PASS / rc=0** |
+| `STELQUICK_A2_CHECK=1 STELQUICK_GRAPHICS_API=d3d11` | 12/12 PASS / rc=0（对照组） |
+| `STELQUICK_A2_CHECK=1 STELQUICK_GRAPHICS_API=opengl` | 12/12 PASS / rc=0（对照组） |
+| `STELQUICK_AUTOTEST_SECONDS=6`（默认 Vulkan） | rc=0，runtimeApi=Vulkan |
+| `STELQUICK_WINDOW_TEST=1` | rc=0，steps=54 maxStall=22ms maxResize=3ms maxFrameGap=65ms（阈值 250ms）/ PASS |
+
+抓帧诊断：视口逻辑尺寸 960x605、物理尺寸 960x605、DPR=1、场景原点 (0,35)，
+12 个探针（四角标 + 四色条 + 棋盘格 + 中心十字 + 半透明块）逐点偏差 0（半透明块 22，为
+alpha 混合的预期结果，容差内）。
+
+### 结论（本次反证的落点）
+
+**同一份应用代码、同一版 Qt 6.11.2，在 Windows 原生 Vulkan 驱动上逐像素全对（12/12 PASS）**，
+而在 macOS + MoltenVK 1.4.2 上 12/12 全黑。自变量只有"驱动形态"一个，因此：
+
+> 缺陷位于 **Qt 6.11.2 Vulkan RHI × MoltenVK 1.4.2 的静态图像纹理路径**（`QSGImageNode` /
+> `QSGTextureMaterial`），应用侧管线正确。macOS 侧结论由单点观察升级为跨驱动反证。
+
+### 本轮定位并修复的真 bug（Windows 侧暴露，macOS 潜伏）
+
+| # | 症状 | 根因 | 处置 |
+|---|---|---|---|
+| 1 | 同模块 QML 组件（`SkyTestPage`/`DiagnosticPage`）实例化为空 Item → A2 视口恒 0x0，报"1x1 放不下角标" | `NO_PLUGIN` + `OUTPUT_DIRECTORY` 组合下，`qt_add_qml_module` 只把 `QML_FILES` 塞进 qrc，**生成的 qmldir 仅留在磁盘**；运行时找不到同模块类型声明 | `CMakeLists` 里 `qt_add_resources(... qmldir)` 显式编入资源 |
+| 2 | `QVulkanInstance` 自建实例与 Qt 内部默认实例并存 → 退出时 `VUID-vkDestroySurfaceKHR-surface-parent`，进程 0xC0000005，RC 拿不到 | 全进程存在两个 Vulkan 实例，surface 归属与析构顺序不一致 | 改用 `QVulkanDefaultInstance::instance()`（Qt 私有头，需 `Qt6::GuiPrivate`）；surface-parent 错误消失、退出恢复正常 |
+| 3 | **`sceneGraphInitialized` 信号在 Windows 上根本不到达** → `backendOk` 恒 false → 渲染与像素全对却以 rc=3 退出 | 信号发送时机与连接建立存在竞态：Qt 建好场景图并发出该信号时，连接尚未建立（Qt 信号不重放）。macOS 恰好落在信号之后，故一直潜伏 | 判定抽成具名 lambda，**信号 + 100ms 兜底轮询 `rendererInterface()`** 双路调用，幂等 |
+| 4 | 手动查看模式固定 300ms 投递，此时布局未跑完 → "视口物理尺寸过小…1x1" 假失败日志 | 硬编码延时不可靠 | 改为轮询等视口 ≥16px 再投递（上限 5s），超时才报真失败 |
+| 5 | MSVC C4172：`FrameLease::frame()` 返回悬垂引用 | `invalidFrame()` 按值返回临时对象，绑定到 `const&` 即悬垂；clang 不报所以 macOS 没暴露 | 改静态存储期 `static const LegacyFrame kInvalid{}` |
+| 6 | QML `Image` 硬编码 `file:///tmp/stel_pattern.png`，Windows 上无此路径 → 刷屏报错 | macOS 遗留硬编码 | 改为 `debugPatternSource` 属性，由 `STELQUICK_PATTERN_DUMP` 注入；未设则不加载 |
+
+### 构建环境坑（可复现，写入 `build-ui\build.ps1`）
+
+1. **进程环境同时存在 `Path` 与 `PATH` 两个键** → .NET `ProcessStartInfo.EnvironmentVariables`
+   是大小写不敏感字典 → 抛 `ArgumentException: 已添加项。字典中的关键字:Path 所添加的关键字:PATH`
+   → 被 MSBuild 包成 **MSB6001「CL.exe 的命令行开关无效」**（假错误，与命令行无关）。
+   处置：子进程只保留单一规范 `PATH`，先 `Clear()` 再灌入。
+2. **VS 2026 生成器需 CMake ≥ 4.0**。`E:\Qt\Tools\CMake_64` 是 3.x，报
+   `could not create CMAKE_GENERATOR "Visual Studio 18 2026"`。必须用 VS 自带 CMake 4.3.1。
+3. 代理变量（`HTTPS_PROXY`/`https_proxy` 等）一并清除（构建全程不需联网）。
+
+### 已知残留（不影响结论）
+
+- `QVulkanInstance already created; setExtensions() has no effect`：默认实例在 `setExtensions()`
+  前已由 Qt 创建（Windows 上更早），MoltenVK portability 扩展那条路径不再需要该调用。
+  渲染与探针均正常，属提示性输出。
+- 退出阶段校验层噪音：`UNASSIGNED-non-acquired-swapchain-image-used`（Qt RHI 的
+  semaphore 使用方式）与 `VUID-vkDestroyDevice-device-05137`（4 个 VkImage/VkImageView
+  未在销毁设备前释放）。均为 Qt RHI 侧清理顺序问题，出现在进程收尾、不影响渲染结果与 RC。
+- `portability=1` 误判：Vulkan 1.4.357 loader 恒定暴露 `VK_KHR_portability_enumeration`
+  实例扩展，`VkDeviceProbe` 据此判定为 portability 转译层 → Windows 原生驱动被误标。
+  正确判据是**设备级** `VK_KHR_portability_subset`。未修，已记录。
+- `docs/BUILD_RECORD` 遗留：`STELQUICK_RENDER_WORKAROUND=basic-loop` + A2 不退出（诊断模式兼容性）。

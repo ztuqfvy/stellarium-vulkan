@@ -80,6 +80,21 @@ qt_add_qml_module(stelQuickUI
     NO_PLUGIN
 )
 
+# ── qmldir 必须编进资源（2026-09-21 定位的真 bug）────────────────────────────
+# 症状：窗口正常出现，但同模块内的 QML 组件（SkyTestPage / DiagnosticPage）
+#   实例化为空 Item —— A2 视口恒 0x0，报"视口物理尺寸过小，无法放置角标：1x1"。
+# 根因：NO_PLUGIN 模式下 qt_add_qml_module 只把 QML_FILES 塞进 qrc，
+#   生成的 qmldir（含 "SkyTestPage 1.0 qml/SkyTestPage.qml" 等类型声明）
+#   仅以磁盘文件形式留在 OUTPUT_DIRECTORY。运行时资源树 qrc:/StelQuickUI/
+#   里没有 qmldir → 模块类型表缺失 → MainWindow 能按 URL 直载，
+#   其内部对 SkyTestPage 的引用却解析不到（静默变空 Item，无报错）。
+# 处置：显式把 qmldir 作为资源加入模块。
+qt_add_resources(stelQuickUI "stelquickui_qmldir"
+    PREFIX "/StelQuickUI"
+    BASE "${CMAKE_BINARY_DIR}/qmlmodule"
+    FILES "${CMAKE_BINARY_DIR}/qmlmodule/qmldir"
+)
+
 # 包含路径以 src/ 为根："ui/quick/..."、"render/vulkan/..."
 target_include_directories(stelQuickUI PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
@@ -89,6 +104,19 @@ target_link_libraries(stelQuickUI PRIVATE
     Qt6::Gui
     Qt6::Core
 )
+
+# Qt6::GuiPrivate：main.cpp 需要 <QtGui/private/qvulkandefaultinstance_p.h>
+# 取 Qt 全局唯一的默认 Vulkan 实例（避免自建实例与 Qt 内部实例并存导致
+# surface 归属冲突 + 退出期崩溃，见 main.cpp 注释）。2026-09-21。
+# 注意：Qt6::GuiPrivate 不在 Qt6 COMPONENTS 里，必须显式 find_package 才会出现。
+find_package(Qt6 QUIET COMPONENTS GuiPrivate)
+if(TARGET Qt6::GuiPrivate)
+    target_link_libraries(stelQuickUI PRIVATE Qt6::GuiPrivate)
+else()
+    message(WARNING
+        "未找到 Qt6::GuiPrivate → main.cpp 无法包含 qvulkandefaultinstance_p.h。\n"
+        "  需要 Qt 的 private 开发头（Qt 官方安装器默认自带；包管理器可能要装 qt6-base-private-dev）。")
+endif()
 
 if(STELQUICK_VULKAN_PROBE)
     target_link_libraries(stelQuickUI PRIVATE Vulkan::Vulkan)

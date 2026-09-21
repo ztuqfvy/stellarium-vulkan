@@ -9,9 +9,14 @@
 namespace stelapp {
 
 namespace {
-LegacyFrame makeInvalidFrame()
+// 无效帧的返回值必须是**静态存储期**对象：frame() 返回 const 引用，
+// 若绑定到按值返回的临时对象，调用方拿到的是函数返回后即销毁的悬垂引用
+// （MSVC C4172 实测警告；clang 不警告，所以 macOS 上一直没暴露）。
+// 2026-09-21 修。
+const LegacyFrame &invalidFrame()
 {
-    return LegacyFrame{};
+    static const LegacyFrame kInvalid{};
+    return kInvalid;
 }
 } // namespace
 
@@ -39,7 +44,7 @@ FrameLease &FrameLease::operator=(FrameLease &&other) noexcept
 const LegacyFrame &FrameLease::frame() const
 {
     if (!valid())
-        return makeInvalidFrame();
+        return invalidFrame();
     // 租约持有期间槽位不会被生产者复用，元数据读取无需加锁
     // （生产者改动槽位前必先确认 readers == 0）。
     return m_mailbox->m_slots[m_slot].frame;

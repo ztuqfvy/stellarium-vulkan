@@ -144,18 +144,74 @@ void A2FrameCheck::runStartupSequence(QGuiApplication *app,
     };
     auto state = std::make_shared<State>();
 
-    // 第一步：等布局稳定（首帧渲染 + StackLayout 定尺寸），再投递
-    QTimer::singleShot(400, app, [=]() {
-        const QSize logical(qRound(viewport->width()), qRound(viewport->height()));
-        const qreal dpr = window->effectiveDevicePixelRatio();
-        state->physical = StaticFrameSource::physicalSizeFor(logical, dpr);
+    auto *windowRaw = window;
+    auto *viewportRaw = viewport;
+    auto *mailboxRaw = mailbox;
+
+    // 投递 → 轮询 → 校验：场景图就绪且布局稳定后调用。
+    // 单独抽成 std::function 以便被"等场景图"的定时器回调捕获调用，
+    // 同时保持本函数只有一条控制流（不拆成两个成员函数，避免状态跨函数传递）。
+    auto publishAndVerify = std::make_shared<std::function<void()>>();
+
+    // 第零步：先等场景图初始化完成，再做任何投递/校验。
+    // 为什么必须等：main.cpp 的 backendOk 判定挂在 sceneGraphInitialized 信号上，
+    // 而本校验序列会在数百毫秒后就 app.exit()。若场景图尚未初始化就退出，
+    // 回调永不触发 → backendOk 保持 false → main 返回码 3（"后端校验失败"），
+    // 明明逐像素全对却报失败（2026-09-21 实测）。
+    // 就绪后窗口与视口尺寸也已确定，顺带让下面的尺寸自检更有意义。
+    auto waitSg = std::make_shared<QTimer>();
+    waitSg->setInterval(50);
+    QObject::connect(waitSg.get(), &QTimer::timeout, app, [=]() {
+        state->waitedMs += 50;
+        const bool ready = qEnvironmentVariableIsSet("STELQUICK_A2_IGNORE_SGWAIT")
+                           || windowRaw->isSceneGraphInitialized();
+        if (!ready && state->waitedMs < 5000)
+            return;
+        waitSg->stop();
+        if (!ready) {
+            A2CheckResult r;
+            r.summary = QStringLiteral("超时：场景图未初始化（等待 %1ms），无法进行逐像素校验")
+                            .arg(state->waitedMs);
+            (*finish)(r);
+            return;
+        }
+        if (qEnvironmentVariableIsSet("STELQUICK_A2_TRACE"))
+            std::fprintf(stderr, "SGWAIT: 场景图就绪（等待 %dms）\n", state->waitedMs);
+        state->waitedMs = 0;   // 后续计时独立
+
+        // 场景图就绪 ≠ 布局稳定：首帧渲染 + StackLayout 定尺寸还要一会儿，
+        // 等 400ms 再投递，否则视口尺寸可能还是初始值。
+        QTimer::singleShot(400, app, [=]() { (*publishAndVerify)(); });
+    });
+
+    *publishAndVerify = [=]() {
+        const QSizeF logical = QSizeF(viewportRaw->width(), viewportRaw->height());
+
+        // 前置自检：视口尺寸为 0 说明布局没跑起来或 QML 组件没实例化成功。
+        // 不拦这一条的话，下面 physicalSizeFor 的 qMax(1,...) 兜底会把它变成
+        // "1x1 放不下角标"的费解报错（2026-09-21 实测踩过：qmldir 缺资源导致
+        // SkyTestPage 实例化为空 Item）。这里给出可归因的明确结论。
+        if (logical.width() < 16 || logical.height() < 16) {
+            A2CheckResult r;
+            r.summary = QStringLiteral("视口尺寸无效 %1x%2：QML 布局未生效或组件未实例化"
+                                       "（检查 qmldir 是否编入资源、StackLayout 尺寸传递）")
+                            .arg(qRound(logical.width())).arg(qRound(logical.height()));
+            r.details.append(QStringLiteral("  视口对象=%1 objectName=%2")
+                                 .arg(QString::fromLatin1(viewportRaw->metaObject()->className()),
+                                      viewportRaw->objectName()));
+            (*finish)(r);
+            return;
+        }
+
+        const qreal dpr = windowRaw->effectiveDevicePixelRatio();
+        state->physical = StaticFrameSource::physicalSizeFor(logical.toSize(), dpr);
         state->frameNumber = 1;
 
         QString error;
         const bool published = StaticFrameSource::publishTestPattern(
-            *mailbox, logical, dpr, state->frameNumber, 1, &error);
+            *mailboxRaw, logical.toSize(), dpr, state->frameNumber, 1, &error);
         std::printf("A2CHECK: 投递测试图案 逻辑=%dx%d DPR=%.2f 物理=%dx%d → %s%s%s\n",
-                    logical.width(), logical.height(), dpr,
+                    logical.toSize().width(), logical.toSize().height(), dpr,
                     state->physical.width(), state->physical.height(),
                     published ? "成功" : "失败",
                     error.isEmpty() ? "" : " 原因：", error.toUtf8().constData());
@@ -171,7 +227,6 @@ void A2FrameCheck::runStartupSequence(QGuiApplication *app,
         // 第二步：轮询等场景图确认已上传（不阻塞事件循环）
         auto poll = std::make_shared<QTimer>();
         poll->setInterval(50);
-        auto *viewportRaw = viewport;
         QObject::connect(poll.get(), &QTimer::timeout, app, [=]() {
             state->waitedMs += 50;
             auto *sky = qobject_cast<SkyViewport *>(viewportRaw);
@@ -187,7 +242,7 @@ void A2FrameCheck::runStartupSequence(QGuiApplication *app,
                 // 已上传不等于已上屏：多等一会儿，确保抓帧抓到新内容，
                 // 且（调试模式下）QML Image 有时间完成 file:// 异步加载
                 QTimer::singleShot(400, app, [=]() {
-                    const A2CheckResult r = A2FrameCheck::run(window, viewportRaw, state->physical);
+                    const A2CheckResult r = A2FrameCheck::run(windowRaw, viewportRaw, state->physical);
                     (*finish)(r);
                 });
                 return;
@@ -201,7 +256,9 @@ void A2FrameCheck::runStartupSequence(QGuiApplication *app,
         });
         state->poll = poll;
         poll->start();
-    });
+    };
+
+    waitSg->start();
 }
 
 } // namespace stelapp

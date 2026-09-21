@@ -10,6 +10,10 @@ import StelQuickUI 1.0
 Item {
     id: page
 
+    // 由 C++ 侧（main.cpp）按 STELQUICK_PATTERN_DUMP 注入的调试对照图路径。
+    // 为空字符串时对照 Image 不显示也不加载（正式验收/日常运行路径）。
+    property string debugPatternSource: ""
+
     Rectangle {
         anchors.fill: parent
         color: "#000000"   // 与 A2FrameCheck 的半透明探针期望一致
@@ -25,11 +29,17 @@ Item {
     // Image 显示而 SkyViewport 不显示 → 问题在 QSGImageNode/纹理路径；
     // Image 也不显示 → 问题在窗口渲染/抓帧路径。
     // 位置特意避开全部探针点（色条从 y≈202 逻辑像素开始）。
+    //
+    // 路径来源：StaticFrameSource 在 STELQUICK_PATTERN_DUMP 指定时存盘的 PNG。
+    // 未设置该环境变量时 source 为空 → Image 不加载、不报错（正常路径）。
+    // 注意：不要硬编码 /tmp/...，Windows 上不存在（2026-09-21 修）。
     Image {
-        source: "file:///tmp/stel_pattern.png"
+        id: debugImage
+        source: debugPatternSource
         x: 200; y: 50; width: 240; height: 140
         fillMode: Image.Stretch
         cache: false
+        visible: source !== ""
         onStatusChanged: if (status === Image.Error) console.warn("调试 Image 加载失败:", source)
     }
 }

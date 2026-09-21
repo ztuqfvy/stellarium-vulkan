@@ -13,6 +13,11 @@ CMakeLists.txt.user
 .vscode/
 .qtc_clangd/
 compile_commands.json
+# Visual Studio 工作区缓存（CMake 生成的 .vs/，含二进制索引与 sqlite）
+.vs/
+
+# 助手/工具工作目录（本地记忆与临时数据，不属于项目产物）
+.workbuddy/
 
 # 独立化工具的临时副本（materialize-resources.mjs）
 .tmp-resource-*/
