@@ -643,3 +643,49 @@ Core 3.3 + VAO/VBO/着色器，与 StelOpenGL/StelPainter 同一套 GL 机制。
 macOS 上请求不存在的 GL 版本（如 9.9）会被**静默降级**到实际可用的 4.1 Core，
 装配照样成功 → 不能当失败注入点。推论：请求的 GL 版本**不保证拿到**，
 所以 T6-C02 只记录实测值（version/renderer/profile），不比对"请求 vs 实得"。
+
+## A3 主体：旧宿主引擎进程内无头集成（2026-09-21）
+
+**新文件**：`src/render/legacy/LegacyAppCheck.{hpp,cpp}`（根构建）；`src/main.cpp` 增加
+`STELA3_CHECK=1` 分流分支（在创建正常主窗口之前）；根 `src/CMakeLists.txt` 把
+FrameMailbox/LegacySkyHost/LegacyAppCheck 编入 `stelMain`，并给 `stelMain` 加 `src/`
+include 根。退出码：**0 = 通过，8 = 失败**（本二进制的码表，与 stelQuickUI 无冲突）。
+
+### 1. 引导方式（A3 第一未知数，已证成立）
+
+`StelMainView` + `WA_DontShowOnScreen` + `show()` + 有界 `processEvents` →
+`initializeGL` 照常触发 → `StelMainView::init()` → `StelApp::init()` 全链路无头完成
+（GL 4.1 Core / Apple M3 / highGraphicsMode=1）。窗口不上屏、不进入 `exec()`。
+
+### 2. 显式驱动与判据
+
+回调体 = `core->setJD(纪元+sim)` → `StelApp::update(dt)` → `StelApp::draw()`，
+直接画进 LegacySkyHost（借用引擎上下文）的离屏 FBO → RGBA8 读回 → 邮箱。
+判据 A3-C01~C08：无头初始化 / GL 形态 / N 帧全投递 / 内容随 JD 变化 /
+同 JD 紧邻重绘指纹一致 / 内容非平凡 / 耗时统计 + glGetError==0。
+
+实测（macOS，1280×720，8 帧）：**8/8 PASS，退出码 0**；负控 `STELA3_SIZE=0x0`
+→ A3-C03 FAIL、VERDICT=UNAVAILABLE、退出码 8（检查器能红）。
+
+### 3. 排障记录：同 JD 重渲染指纹不一致（三步定位，值得复用）
+
+1. **现象**：紧邻重渲染 R1==R2，但都 ≠ 首画 A；diff 遍布 99.6% 像素、
+   R 通道几乎不变、**B 通道均值 -13.4** —— 全局色温漂移，非几何位移。
+2. **排除**：墙钟/时间流速（插桩 jdAtDraw 三帧完全相同）、星闪（已关）、
+   人眼自适应开关（`setFlagLuminanceAdaptation(false)` 无效——它不门控主路径）。
+3. **根因**：`LandscapeMgr` 每帧上报天空亮度 → `StelSkyDrawer::preDraw()`
+   **无条件** `eye->setWorldAdaptationLuminance(maxLum)`，且 `preDraw` 先于模块
+   draw → **第 N 帧的适配亮度是第 N-1 帧天空的函数（单帧滞后）**。
+   这是引擎固有时序，不是缺陷。
+4. **修法（双绘法）**：每个测量帧画两次取第二次——首画吸收滞后，
+   第二画才是纯 f(JD) 的稳态帧。修后 diff=0，A=R1=R2。
+
+**对 A2 生产路径的推论**：真实天空帧内容 = f(当前 JD, 上一帧天空亮度)，
+单帧色温滞后是引擎固有行为；消费侧如需逐像素稳定（如取证比对），
+必须用双绘协议。T9 长跑不受影响（只计吞吐/帧年龄，不做跨帧比对）。
+
+### 4. 确定性保障清单（跑 A3 自检前必看）
+
+`core->setTimeRate(0)`（墙钟外推停掉，JD 只由自检注入）；
+`setFlagTwinkle(false)`（逐帧随机）；预热 30 帧（等异步资源加载）；
+测量段双绘取稳态。以上全部只动运行时对象，不写用户 config.ini。

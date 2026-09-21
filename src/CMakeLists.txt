@@ -276,6 +276,13 @@ SET(stellarium_lib_SRCS
      CLIProcessor.cpp
      translations.h
      translations_regions.h
+     # A2/A3 主体：帧桥（邮箱+显式帧驱动）与旧宿主进程内集成自检（STELA3_CHECK）
+     render/legacy/FrameMailbox.hpp
+     render/legacy/FrameMailbox.cpp
+     render/legacy/LegacySkyHost.hpp
+     render/legacy/LegacySkyHost.cpp
+     render/legacy/LegacyAppCheck.hpp
+     render/legacy/LegacyAppCheck.cpp
 )
 
 IF(ENABLE_PCH)
@@ -627,6 +634,9 @@ IF(ENABLE_SHOWMYSKY)
      TARGET_INCLUDE_DIRECTORIES(stelMain PRIVATE "${ShowMySky_INCLUDE_DIRECTORIES}")
 ENDIF()
 TARGET_INCLUDE_DIRECTORIES(stelMain PRIVATE "${md4c_SOURCE_DIR}/src")
+# src/ 作为 include 根：render/legacy/LegacyAppCheck.cpp 需要引用 "StelMainView.hpp"、
+# "core/StelApp.hpp" 等（A3 进程内集成，2026-09-21）。
+TARGET_INCLUDE_DIRECTORIES(stelMain PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 SET_TARGET_PROPERTIES(stellarium PROPERTIES ENABLE_EXPORTS TRUE)
 

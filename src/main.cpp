@@ -27,6 +27,7 @@
 #include "CLIProcessor.hpp"
 #include "StelIniParser.hpp"
 #include "StelUtils.hpp"
+#include "render/legacy/LegacyAppCheck.hpp"
 #ifdef ENABLE_SCRIPTING
 #include "StelScriptOutput.hpp"
 #endif
@@ -51,6 +52,8 @@
 #include <QNetworkDiskCache>
 #include <QThread>
 #include <QThreadPool>
+
+#include <cstdio>
 
 
 #ifdef Q_OS_MACOS
@@ -463,6 +466,26 @@ int main(int argc, char **argv)
 	// Use our custom translator for Qt translations as well
 	CustomQTranslator trans;
 	app.installTranslator(&trans);
+
+	// ── A3 自检分支（旧宿主进程内集成；STELA3_CHECK=1）────────────────────────
+	// 在创建正常主窗口**之前**分流：本分支自建 StelMainView（WA_DontShowOnScreen，
+	// 不上屏）、显式帧驱动 StelApp::update/draw 出帧、读回指纹判据。
+	// 判据明细与引导方式见 render/legacy/LegacyAppCheck.hpp 头注释。
+	// 退出码：0 = 全部判据通过；8 = 存在失败项（含负控 STELA3_SIZE=0x0）。
+	if (qEnvironmentVariableIsSet("STELA3_CHECK"))
+	{
+		const stelapp::LegacyAppCheckResult r = stelapp::LegacyAppCheck::run(confSettings);
+		for (const QString &line : r.frames)
+			std::printf("STELA3: %s\n", qPrintable(line));
+		for (const QString &line : r.details)
+			std::printf("STELA3: %s\n", qPrintable(line));
+		std::printf("STELA3: VERDICT=%s %s\n",
+			r.pass ? "PASS" : (r.ran ? "FAIL" : "UNAVAILABLE"), qPrintable(r.summary));
+		std::fflush(stdout);
+		delete confSettings;
+		StelLogger::deinit();
+		return r.pass ? 0 : 8;
+	}
 
 	StelMainView mainWin(confSettings);
 
