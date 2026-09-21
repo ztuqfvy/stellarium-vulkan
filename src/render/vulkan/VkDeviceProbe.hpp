@@ -29,7 +29,15 @@ struct VulkanProbeResult
     QString error;           // 失败原因（ok=false 时有值）
     // 是否走 portability 转译层（MoltenVK=true，Windows 原生 NVIDIA 驱动=false）。
     // 用途：跨平台对照时必须先确认"驱动形态"这个自变量，否则结论无法归因。
+    // 判据（2026-09-21 修正）：**设备级**扩展 VK_KHR_portability_subset 是否存在。
+    // 不能用实例级 VK_KHR_portability_enumeration 判——Windows 的 Vulkan 1.4.357
+    // loader 恒定暴露该实例扩展（它是 loader 的能力，不代表驱动形态），会把原生
+    // NVIDIA 驱动误标成转译层。误判实测见 docs/BUILD_RECORD.zh_CN.md。
     bool portabilityDriver = false;
+    // 实例级 VK_KHR_portability_enumeration 是否可用（loader 能力）。
+    // 仅用于决定 vkCreateInstance 要不要声明枚举 portability 位；
+    // 严禁拿它当"驱动形态"判据（见上）。
+    bool portabilityEnumerationExt = false;
 };
 
 class VkDeviceProbe

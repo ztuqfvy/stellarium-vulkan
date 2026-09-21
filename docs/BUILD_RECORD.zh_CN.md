@@ -343,5 +343,38 @@ alpha 混合的预期结果，容差内）。
   未在销毁设备前释放）。均为 Qt RHI 侧清理顺序问题，出现在进程收尾、不影响渲染结果与 RC。
 - `portability=1` 误判：Vulkan 1.4.357 loader 恒定暴露 `VK_KHR_portability_enumeration`
   实例扩展，`VkDeviceProbe` 据此判定为 portability 转译层 → Windows 原生驱动被误标。
-  正确判据是**设备级** `VK_KHR_portability_subset`。未修，已记录。
+  **已于 2026-09-21 修复**：判据改为设备级 `VK_KHR_portability_subset`，并拆成两个字段
+  `portability_driver`（驱动形态判据）/ `portability_enum_ext`（loader 能力，仅供
+  决定是否声明枚举 portability 位）。macOS 回归：`driver=1 enum_ext=1`（MoltenVK 正确）；
+  Windows 应得 `driver=0 enum_ext=1`。
 - `docs/BUILD_RECORD` 遗留：`STELQUICK_RENDER_WORKAROUND=basic-loop` + A2 不退出（诊断模式兼容性）。
+
+---
+
+## 2026-09-21｜macOS 侧独立验收（Windows 提交 06ab880 的回归与复核）
+
+对 Windows 侧提交做**独立**复核：不采信文字结论，重编重跑 macOS 基线。
+环境：Apple M3 / macOS / Homebrew Qt 6.11.2 / MoltenVK 1.4.2（与 A2 定性时同一环境）。
+
+| 用例 | 结果 | 与移植前对比 |
+|---|---|---|
+| `A2CHECK` metal | 12 探针 0 失败，rc=0 | 一致 |
+| `A2CHECK` opengl | 12 探针 0 失败，rc=0 | 一致 |
+| `A2CHECK` vulkan（默认） | 12/12 全黑 FAIL，rc=5 | **一致（黑屏依然复现，符合预期）** |
+| `STELQUICK_WINDOW_TEST=1` | PASS，maxStall 49ms / maxFrameGap 63ms（阈值 250ms） | 一致 |
+| `STELQUICK_AUTOTEST_SECONDS=4` | rc=0，runtimeApi=Vulkan backendOk=1 | 一致 |
+
+结论：Windows 侧的改动（`QVulkanDefaultInstance` 单例、qmldir 入资源、
+`sceneGraphInitialized` 兜底轮询、`invalidFrame` 静态存储期）**未破坏 macOS 基线**，
+且 Vulkan 黑屏在 macOS 上依旧 12/12 复现——反向印证"黑屏与驱动形态绑定"这一结论的前提成立。
+
+复核中发现并修复的两处（本轮新增）：
+
+1. **`run_autotest.cmd` matrix 模式退出码失效**（证据工具本身的缺陷）
+   `setlocal` 未开 `EnableDelayedExpansion`，却在 for 块内用 `!ERRORLEVEL!` → 不展开，
+   打印成字面量；且块尾 `set RC=0` 无条件覆盖 → **无论成败恒报 `EXIT CODE = 0`**。
+   即"三后端全 PASS"这条结论的出厂工具存在永远绿灯的缺陷。
+   已修：开 `EnableDelayedExpansion`；逐后端读码并聚合（保留首个非零码）。
+   > 该缺陷不影响已上报的结论本身——三组 rc=0 另有逐像素明细支撑——但工具必须可信。
+
+2. 见上条"portability 判据修正"。

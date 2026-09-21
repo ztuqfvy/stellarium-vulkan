@@ -119,18 +119,24 @@ $env:STELQUICK_AUTOTEST_SECONDS = "5"
 .\build-ui\Release\stelQuickUI.exe
 ```
 
-期望输出（注意 `portability=0` —— 原生驱动。macOS 上这行是 `portability=1`）：
+期望输出（注意 `portability_driver=0` —— 原生驱动。macOS 上这行是 `portability_driver=1`）：
 
 ```
-STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.3.x driver=<驱动号> portability=0 err=
-STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.x driver=79.x.x portability_driver=0 portability_enum_ext=1 err=
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
 ```
 
-判定：`runtimeApi=Vulkan` 且 `backendOk=1` 且 `portability=0`。
-- `portability=1` 说明还是走了转译层（不该出现在 Windows 上），先查是不是装错了
-  ICD（比如 Vulkan SDK 自带的 SwiftShader/lavapipe 软件光栅器抢了枚举顺序）。
+判定：`runtimeApi=Vulkan` 且 `backendOk=1` 且 `portability_driver=0`。
+
+字段含义（2026-09-21 拆分，避免误判）：
+- `portability_driver` = **设备级** `VK_KHR_portability_subset` → 真正的驱动形态判据。
+  1 说明走了转译层（不该出现在 Windows 原生驱动上），先查是不是装错了驱动。
+- `portability_enum_ext` = 实例级 `VK_KHR_portability_enumeration` → 只是 loader 能力，
+  **Windows 上 1 是正常的**（Vulkan 1.4.357 loader 恒定提供），不代表转译层。
 - 退出码 `3` → 请求 Vulkan 但拿不到（`QVulkanInstance::create()` 失败）。
   查显卡驱动是否为 NVIDIA 官方驱动（不要用 Windows 自带的"基本显示适配器"）。
+  另注：若 ICD 枚举被软件光栅器（Vulkan SDK 自带的 SwiftShader/lavapipe）抢到，
+  设备名会不对，此时用 `VK_ICD_FILENAMES` 指定 NVIDIA ICD 再跑。
 - `runtimeApi` 不是 Vulkan → 后端回退判定生效，禁止继续，先解决这个。
 
 顺便：诊断页（默认起始页）会显示"驱动类型"一行，Windows 上应当显示
@@ -283,3 +289,25 @@ WINDOWTEST: 结果 ...
 
 跑完之后，无论结果如何，都把第 6 节的原始输出贴回来，本机对照写进
 `docs/BUILD_RECORD.zh_CN.md`。
+
+---
+
+## 9. 验收纪律：环境变量白名单（2026-09-21 补）
+
+**验收只允许在干净环境（无任何 STELQUICK_* 变量）下跑。** 例外仅限下表左侧三个。
+
+| 变量 | 验收可用 | 作用 / 为什么限制 |
+|---|---|---|
+| `STELQUICK_A2_CHECK` | ✅ 必需 | 开启 12 探针逐像素校验 |
+| `STELQUICK_GRAPHICS_API` | ✅ 必需 | 选后端（vulkan/d3d11/opengl） |
+| `STELQUICK_A2_DUMP` | ✅ 可选 | 存盘抓帧 PNG 供人工复核 |
+| `STELQUICK_A2_IGNORE_SGWAIT` | ❌ **禁用** | 跳过"等场景图初始化"。调试用逃生门；设置它等于让校验在场景图未就绪时硬跑，结论不可信 |
+| `STELQUICK_A2_TRACE` | ⚪ 允许（不影响判定） | 追加 SGWAIT/上传时序跟踪到 stderr，仅诊断 |
+| `STELQUICK_RENDER_WORKAROUND=basic-loop` | ❌ **禁用** | 已知与 A2 校验不兼容（校验序列不退出） |
+| `STELQUICK_PATTERN_DUMP` | ⚪ 允许（不影响判定） | 给 QML 对照 Image 注入路径 |
+
+配套：用仓库根的 `run_autotest.cmd matrix` 一次性跑三后端（已修退出码聚合；
+旧版无论成败都报 `EXIT CODE = 0`，若你手上有旧版输出，那个 0 不可作证据）。
+证据留存要求：把 `run_autotest.cmd matrix` 的**完整 stdout 原始文本**存盘并随提交入库
+（例如 `docs/evidence/` 下带日期文件名），不要只写结论矩阵——本次复核已发现
+工具本身的缺陷，"结论有据"必须落到原始输出上。

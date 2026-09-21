@@ -44,7 +44,7 @@ VulkanProbeResult VkDeviceProbe::probe()
     // 而 Qt 自己的 Vulkan 路径却正常——产生"探针坏、渲染好"的假故障。
     // 因此先枚举实例扩展，存在才开。
     const char *portabilityExtension = "VK_KHR_portability_enumeration";
-    bool hasPortability = false;
+    bool hasPortabilityEnumExt = false;
     {
         quint32 extCount = 0;
         if (vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr) == VK_SUCCESS
@@ -53,15 +53,16 @@ VulkanProbeResult VkDeviceProbe::probe()
             if (vkEnumerateInstanceExtensionProperties(nullptr, &extCount, exts.data()) == VK_SUCCESS) {
                 for (const VkExtensionProperties &ext : exts) {
                     if (qstrcmp(ext.extensionName, portabilityExtension) == 0) {
-                        hasPortability = true;
+                        hasPortabilityEnumExt = true;
                         break;
                     }
                 }
             }
         }
     }
-    result.portabilityDriver = hasPortability;
-    if (hasPortability) {
+    // 只记录"loader 提供该实例扩展"这一事实；驱动形态判据在下面按设备级扩展给出。
+    result.portabilityEnumerationExt = hasPortabilityEnumExt;
+    if (hasPortabilityEnumExt) {
         createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         createInfo.enabledExtensionCount = 1;
         createInfo.ppEnabledExtensionNames = &portabilityExtension;
@@ -101,6 +102,29 @@ VulkanProbeResult VkDeviceProbe::probe()
     result.deviceName = QString::fromUtf8(props.deviceName);
     result.apiVersion = versionToString(props.apiVersion);
     result.driverVersion = versionToString(props.driverVersion);
+
+    // 驱动形态判据（2026-09-21 修正为设备级）：
+    //   portability 驱动必须在其物理设备上暴露 VK_KHR_portability_subset
+    //   （MoltenVK 有，Windows 原生 NVIDIA 驱动没有）。
+    //   实例级 VK_KHR_portability_enumeration 不能作判据：新版 loader 恒定提供它。
+    {
+        quint32 devExtCount = 0;
+        if (vkEnumerateDeviceExtensionProperties(devices.first(), nullptr, &devExtCount, nullptr)
+                == VK_SUCCESS
+            && devExtCount > 0) {
+            QList<VkExtensionProperties> devExts(static_cast<int>(devExtCount));
+            if (vkEnumerateDeviceExtensionProperties(devices.first(), nullptr, &devExtCount,
+                                                     devExts.data())
+                == VK_SUCCESS) {
+                for (const VkExtensionProperties &ext : devExts) {
+                    if (qstrcmp(ext.extensionName, "VK_KHR_portability_subset") == 0) {
+                        result.portabilityDriver = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
     result.ok = true;
 
     vkDestroyInstance(instance, nullptr);

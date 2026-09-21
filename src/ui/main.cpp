@@ -356,12 +356,17 @@ int main(int argc, char **argv)
 #ifdef STELQUICK_VULKAN_PROBE
     const stelapp::VulkanProbeResult probeResult = stelapp::VkDeviceProbe::probe();
     backendInfo->applyProbe(probeResult);
-    std::printf("STELQUICK: probe ok=%d device=%s api=%s driver=%s portability=%d err=%s\n",
+    // portability_driver = 设备级 VK_KHR_portability_subset（**驱动形态**判据）
+    // portability_enum_ext = 实例级 VK_KHR_portability_enumeration（loader 能力，
+    //   新版 loader 恒定提供，不能当驱动形态用；2026-09-21 Windows 实测误判后拆分）
+    std::printf("STELQUICK: probe ok=%d device=%s api=%s driver=%s"
+                " portability_driver=%d portability_enum_ext=%d err=%s\n",
                 probeResult.ok ? 1 : 0,
                 probeResult.deviceName.toUtf8().constData(),
                 probeResult.apiVersion.toUtf8().constData(),
                 probeResult.driverVersion.toUtf8().constData(),
                 probeResult.portabilityDriver ? 1 : 0,
+                probeResult.portabilityEnumerationExt ? 1 : 0,
                 probeResult.error.toUtf8().constData());
     std::fflush(stdout);
 #else

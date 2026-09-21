@@ -10,7 +10,10 @@ rem    run_autotest.cmd matrix       run A2 on all three backends
 rem    run_autotest.cmd window       window interaction test (resize/hide)
 rem ============================================================================
 chcp 65001 >nul
-setlocal
+rem EnableDelayedExpansion 是必需的：matrix 模式要在同一个 for 块内读 !ERRORLEVEL!，
+rem 且赋值后立刻使用。旧版漏了这个开关 → !ERRORLEVEL! 不展开，逐后端退出码打印成
+rem 字面量，而 RC 又被硬编码为 0 → 无论成败都报 "EXIT CODE = 0"（2026-09-21 修）。
+setlocal EnableDelayedExpansion
 set "EXE=%~dp0build-ui\deploy\stelQuickUI.exe"
 
 if not exist "%EXE%" (
@@ -40,15 +43,20 @@ set RC=%ERRORLEVEL%
 goto :report
 
 :matrix
+rem 逐后端跑 A2，聚合退出码：任一非 0 就把 RC 记为该码（保留首个失败码），
+rem 只有三组全 0 才报 EXIT CODE = 0。旧版无条件 set RC=0，等于永远绿灯。
+set "RC=0"
 for %%A in (vulkan d3d11 opengl) do (
     echo.
     echo ########## A2 / %%A ##########
     set "STELQUICK_A2_CHECK=1"
     set "STELQUICK_GRAPHICS_API=%%A"
     call "%EXE%"
-    echo [%%A] exit code = !ERRORLEVEL!
+    set "CODE=!ERRORLEVEL!"
+    echo [%%A] exit code = !CODE!
+    if not "!CODE!"=="0" if "!RC!"=="0" set "RC=!CODE!"
 )
-set RC=0
+goto :report
 
 :report
 echo.
