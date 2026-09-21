@@ -11,11 +11,16 @@
  *   STELQUICK_AUTOTEST_SECONDS=N → N 秒后自动退出（返回码见下）。
  *   STELQUICK_WINDOW_TEST=1      → 交互回归自测（缩放 + 隐藏/显示），见文件末尾。
  *   STELQUICK_A2_CHECK=1         → A2 静态图逐像素校验（用例 I-STC-01/02）。
+ *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
+ *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
- *         5 A2 静态图校验失败；6 A2 校验手段不可用（不得据此声称通过）。
+ *         5 A2 静态图校验失败；6 A2 校验手段不可用（不得据此声称通过）；
+ *         7 被测可执行文件不存在（Windows run_autotest.cmd）；8 T6 显式帧驱动自检失败。
  *
  * 运行：直接双击 stelQuickUI.app 即可（main.cpp 自动定位 Vulkan 加载库）。
  */
+#include "ui/LegacyHostCheck.hpp"
+
 #include <QGuiApplication>
 #include <QElapsedTimer>
 #include <QFileInfo>
@@ -304,6 +309,34 @@ int main(int argc, char **argv)
     QGuiApplication app(argc, argv);
     app.setApplicationName("stelQuickUI");
     app.setOrganizationName("stellarium-vulkan");
+
+    // ── A2 主体 T6 自检：旧宿主显式帧驱动（计划一 A2 硬约束）──────────────────
+    //
+    // 刻意放在**创建任何窗口之前**、且**不进入事件循环**：
+    //   若放在窗口之后或靠事件循环推进，"到底是显式驱动在产帧，还是 Qt 顺手
+    //   发了 paint 事件帮我们画了一帧"就无法区分——那正是本任务要证伪的假设。
+    // 整条路径不经过 QML / Vulkan 纹理，因此不被 §6.2 的外部缺陷阻塞。
+    if (qEnvironmentVariableIsSet("STELQUICK_LEGACY_HOST_TEST")) {
+        const int frames = qEnvironmentVariableIntValue("STELQUICK_LEGACY_HOST_FRAMES");
+        const stelapp::LegacyHostCheckResult r = stelapp::LegacyHostCheck::run(
+            QSize(960, 540),
+            frames > 0 ? frames : stelapp::LegacyHostCheck::kDefaultFrameCount,
+            stelapp::LegacyHostCheck::kDefaultSimStartSeconds,
+            stelapp::LegacyHostCheck::kDefaultSimStepSeconds);
+
+        std::printf("LEGACYHOST: ==== A2 主体 T6｜旧宿主显式帧驱动自检 ====\n");
+        std::printf("LEGACYHOST: %s\n", r.summary.toUtf8().constData());
+        if (!r.setupError.isEmpty())
+            std::printf("LEGACYHOST: 装配失败：%s\n", r.setupError.toUtf8().constData());
+        for (const QString &line : r.details)
+            std::printf("LEGACYHOST: %s\n", line.toUtf8().constData());
+        for (const QString &line : r.frames)
+            std::printf("LEGACYHOST: %s\n", line.toUtf8().constData());
+        std::printf("LEGACYHOST: VERDICT=%s\n",
+                    (r.ran && r.pass) ? "PASS" : "FAIL");
+        std::fflush(stdout);
+        return (r.ran && r.pass) ? 0 : 8;
+    }
 
     // 2. Vulkan 实例预检（负向测试 P-CFG 前置）：QVulkanInstance::create() 失败时
     //    必须明确报错并以退出码 3 结束。跳过此步时 Qt 6.11 会在场景图初始化阶段

@@ -22,7 +22,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Qml Gui Core)
+# Qt6::OpenGL（QtOpenGL 模块）为 A2 主体产帧侧所需：
+# LegacySkyHost / LegacyTestScene 用 QOpenGLShaderProgram / QOpenGLBuffer /
+# QOpenGLVertexArrayObject —— 这三者不在 QtGui 里，必须显式链接 QtOpenGL。
+# 它是 qtbase 的一部分（libQt6OpenGL），所有官方 Qt6 安装都自带，不额外引入第三方依赖。
+find_package(Qt6 REQUIRED COMPONENTS Quick Qml Gui Core OpenGL)
 
 # Vulkan 设备探针：桌面默认开；鸿蒙交叉编译时由命令行关闭（OHOS NDK 不保证提供 libvulkan）。
 # Windows/Linux 上若未安装 Vulkan SDK（没有 find_package 所需的 headers/loader），
@@ -34,6 +38,8 @@ set(stelQuickUI_SOURCES
     main.cpp
     A2FrameCheck.hpp
     A2FrameCheck.cpp
+    LegacyHostCheck.hpp
+    LegacyHostCheck.cpp
     quick/BackendInfo.hpp
     quick/BackendInfo.cpp
     quick/SkyViewport.hpp
@@ -45,6 +51,12 @@ set(stelQuickUI_SOURCES
     ../render/legacy/TestPattern.cpp
     ../render/legacy/StaticFrameSource.hpp
     ../render/legacy/StaticFrameSource.cpp
+    # A2 主体产帧侧（T6/T7）：旧宿主显式帧驱动 + 读回。
+    # LegacyTestScene 与 StaticFrameSource 同性质，都是开发期替代物，A3 换成真实天空。
+    ../render/legacy/LegacySkyHost.hpp
+    ../render/legacy/LegacySkyHost.cpp
+    ../render/legacy/LegacyTestScene.hpp
+    ../render/legacy/LegacyTestScene.cpp
 )
 
 if(STELQUICK_VULKAN_PROBE)
@@ -103,6 +115,7 @@ target_link_libraries(stelQuickUI PRIVATE
     Qt6::Qml
     Qt6::Gui
     Qt6::Core
+    Qt6::OpenGL
 )
 
 # Qt6::GuiPrivate：main.cpp 需要 <QtGui/private/qvulkandefaultinstance_p.h>

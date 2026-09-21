@@ -524,3 +524,102 @@ runner 进程返回码恒 0。共同特征是**工具在"没干活/干不成"时
 `838b1b7` 已经意识到"ERRORLEVEL 停在 0"这件事，但修的是 report 里那一行字；
 机器读的是进程返回码，于是缺陷平移了一层而非消失。
 教训：**凡是"结论"要跨进程传递的，都得在边界上实测一次那个数字，而不是看它印出来的样子。**
+## 2026-09-21｜T6 完成：旧宿主显式帧驱动（A2 主体产帧侧）+ 一处我方回归修复
+
+### 0. 先认一个错：9-20 的"瘦身"破坏了根构建
+
+当时我把 `guide/ plugins/ data/ scripts/ util/` 从全部历史移除，并在 README 写
+"根构建不可用（上游遗留）"。**这个表述是错的**：`build-release/` 证明根构建当时是通的，
+是我删掉了**构建必需**的目录才把它弄坏的——
+
+- `data/`：`default_cfg.ini`、`base_locations.*`、字体（含 8.4MB 的 NotoSansSC 中文字体）、
+  `data/gui/`（工具栏图标）、`mainRes.qrc`、`shaders/`——**全是运行/构建必需**；
+  且根 CMakeLists:990/:1052 会在配置期**写入** `data/default_cfg.ini`、`data/Info.plist`
+- `plugins/`：`ADD_SUBDIRECTORY(plugins)`（AllStaticPlugins 静态插件集）
+- `scripts/`：`ADD_SUBDIRECTORY(scripts)`
+- `guide/`：根 CMakeLists:203 要往里写 `version.tex`，目录必须存在
+
+**修复**（commit 见下）：
+- `data/` → 上游 checkout 的**实体副本**（28M，已 gitignore）。不能用软链：配置期写入
+  会穿透软链改掉上游 checkout，而它**没有版本保护**（无 .git）——正是 04 号文档
+  风险表里"通过符号链接误改原项目资源"那条
+- `guide/` → 空目录 + `.gitkeep`（只需存在；50MB 的 Images/ 只用于生成 PDF，与构建无关）
+- `plugins/`、`scripts/`、`util/` → 软链（已核验配置期无写入；与既有 9 个资产软链同约定）
+- 新增 `tools/setup-upstream-assets.sh`（幂等，全新 clone 重建资产用）
+- 根 CMakeLists 守卫由"无条件 FATAL_ERROR"改为"缺资产时报人话并给重建命令"
+
+**验证**：`cmake -B build-release -S . -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/qt`
+→ `CONFIGURE_EXIT=0`（27.2s 配置 + 14.2s 生成，复用既有缓存）。
+
+### 1. T6 实现：LegacySkyHost（A2 主体产帧侧）
+
+新增 `src/render/legacy/LegacySkyHost.{hpp,cpp}`：把"旧宿主在 paint 事件里被动绘制"
+改成"外部时钟显式驱动 → 离屏 FBO → RGBA8 读回 → FrameMailbox"。
+
+设计要点（每条都对应一类"看起来没问题"的静默错误）：
+
+| 决策 | 理由 |
+|---|---|
+| 回调签名 `(deltaSeconds, simSeconds, size)` | `deltaSeconds` 直接对应 `StelApp::update(double)`，A3 接入时原样转发；**仿真时间而非墙钟**——"内容随仿真时间变化"这条判据才成立 |
+| `GlContextMode::kOwn`（QOffscreenSurface） | **完全没有窗口**。这是"不依赖 hide()/paint 事件"的可验证前提，而非声明 |
+| `GL_RGBA8` 而非 `GL_SRGB8_ALPHA8` | 帧契约是 sRGB 编码直通；SRGB 格式会在读写时做线性化往返，给逐像素比对引入 ±1~2 抖动 |
+| `glPixelStorei(GL_PACK_ALIGNMENT,1)` + 实测步长写进元数据 | RGBA8 下 width×4 天然对齐，但换 RGB8 时默认对齐会静默错位；步长必须作为**事实**交出去 |
+| `glCheckFramebufferStatus` 显式校验 | 不完整 FBO 的表现是全黑，与"渲染逻辑写错"无法区分——最常见的归因陷阱 |
+| 读回后**真的翻转行序**，不是只改元数据 | 只标不翻 → 上下颠倒；方向必须对最终交付数据取证 |
+| 尺寸超上限**显式失败** | clamp 会让"以为 720p 实际被裁"变成静默数据错误 |
+| 保存/恢复宿主原 FBO 绑定 | 借用模式（A3 与旧宿主同进程）下不恢复会顶掉 QOpenGLWidget 的默认 FBO |
+| `withContextCurrent()` | 客户端 GL 资源（着色器/VAO）必须在正确的上下文里创建/销毁 |
+
+配套 `LegacyTestScene.{hpp,cpp}`（开发期替代物，与 StaticFrameSource 同性质）：
+Core 3.3 + VAO/VBO/着色器，与 StelOpenGL/StelPainter 同一套 GL 机制。内容三件套：
+昼夜渐变（随 simSeconds 变）、太阳圆盘（水平位置单调推进）、固定方向标记带
+（顶绿/左红，专供独立验证翻转与水平方向）。着色器源码强制纯 ASCII（Apple GLSL
+编译器不保证接受非 ASCII 字节；同类教训来自 .cmd 的中文注释事故）。
+
+### 2. T6 自动自检（STELQUICK_LEGACY_HOST_TEST=1）
+
+新增 `src/ui/LegacyHostCheck.{hpp,cpp}`，14 项程序化判据，**在创建任何窗口之前**同步执行、
+不进入事件循环——"没有主循环顺手帮我们画一帧"因此是事实而非声明。
+
+环境：Apple M3 / macOS / Homebrew Qt 6.11.2，`STELQUICK_LEGACY_HOST_TEST=1`，退出码 0。
+
+| 判据 | 结果 |
+|---|---|
+| T6-C01/C14 无窗口 | topLevelWindows=0 allWindows=0（前后两次取证） |
+| T6-C02 上下文形态 | own=1 offscreen=1 **GL 4.1 Core**，renderer="Apple M3"（请求 3.3，拿到 4.1，只记事实） |
+| T6-C03 超上限显式拒绝 | 4097x64 被拒，未静默截断 |
+| T6-C04 场景装配 | 着色器编译+链接、VAO/VBO 创建成功 |
+| T6-C05 请求=交付 | **请求 12 帧 → 投递 12 帧**（丢失 0，失败 0） |
+| T6-C06 队列有界 | completeSlots=3 ≤ 3 |
+| T6-C07 帧元数据 | 帧序号严格递增、rowStride=3840、physical=960×540、logical=480×270（=physical/dpr，dpr=2）、世代恒 2、stateNumber=仿真时间×1000 |
+| T6-C08 方向 | 顶部绿带优势最小 69.5（阈值 30）、左侧红带优势最小 173.4（阈值 20）——**翻转正确** |
+| T6-C09 内容非平凡 | 最少 166 种颜色、最小平均亮度 0.0201 |
+| **T6-C10 内容随仿真时间变化** | **12 帧得到 12 个互不相同的像素指纹**——不是静态残留/缓存复读 |
+| T6-C11 可复现性 | 同一 sim 重渲染 → 指纹 8f01b2423ea62457 与首帧完全一致 |
+| T6-C12 有向运动 | 太阳质心 x：95.5→143.5→…→623.5（严格单调，非噪声抖动） |
+| T6-C13 耗时统计 | 稳态 render 0-2ms + readback 0-1ms（首帧 55ms 为惰性着色器编译；T9 长跑须先热身再计吞吐） |
+
+人工留档：`STELQUICK_LEGACY_HOST_DUMP=<png>` 可把首帧存盘（960×540，已目检：
+顶绿带/左红带/白昼天空/太阳在东边低空，与场景定义一致）。
+
+**结论：A2 最大未知数（旧宿主能否可靠离屏驱动）在"机制层"已证伪为非问题。
+真实天空内容（StelApp::update/draw）的接入是 A3 进程内集成，根构建已修复可配置。**
+
+### 3. macOS 基线回归（T6 改动后）
+
+| 用例 | 结果 |
+|---|---|
+| A2CHECK metal / opengl / vulkan | PASS / PASS / FAIL（黑屏仍复现，符合预期） |
+| WINDOWTEST | PASS，maxStall 57ms（阈值 250ms） |
+| AUTOTEST | runtimeApi=Vulkan backendOk=1 |
+
+注：opengl 首跑出现过一次 `VERDICT=UNAVAILABLE`（grabWindow 返回空图），
+复测 3 次全 PASS → 偶发。校验器按设计报"校验手段不可用"而不是谎报通过，行为正确；
+但"偶发抓帧失败"本身记在这里，供 T9 长跑时观察是否复现。
+
+### 4. 其他
+
+- `src/ui/CMakeLists.txt` 链接 `Qt6::OpenGL`（QOpenGLShaderProgram/QOpenGLBuffer/
+  QOpenGLVertexArrayObject 在 QtOpenGL 模块，不在 QtGui；qtbase 自带，无新第三方依赖）
+- 退出码新增 8 = T6 自检失败（7 已被 exe-not-found 占用）
+- 退出码表与运行说明同步进 docs/WINDOWS_BUILD.zh_CN.md

@@ -2,17 +2,25 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.18)
 # CMake 3.20+ is required if x-compiling for Windows on ARM
 MESSAGE(STATUS "Found CMake ${CMAKE_VERSION}")
 
-########### 本仓库根构建守卫（本实验添加，见 README.md） ###########
-# 上游资产目录（guide/plugins/data/scripts/util）已从本仓库历史移除，
-# 根构建必然缺输入而失败。有效工程只有 src/ui（独立 CMake 工程）。
-# 若你是在 CLion/IDE 里打开了仓库根导致看到此错误：
-#   请改为打开 src/ui/CMakeLists.txt 作为工程，并在 CMake 选项里加
-#   -DCMAKE_PREFIX_PATH=<你的Qt安装目录，如 C:/Qt/6.11.2/msvc2022_64>
-MESSAGE(FATAL_ERROR
-    "此仓库的根构建已不可用（上游资产已移除，见 README.md）。"
-    "请构建 src/ui 独立工程：cmake -B build-ui -S src/ui -DCMAKE_PREFIX_PATH=<Qt目录>。"
-    "CLion 用户：打开 src/ui/CMakeLists.txt 作为工程，不要打开仓库根。")
-###############################################################
+########### 本仓库根构建前置检查（本实验添加，见 README.md） ###########
+# 本仓库是 Stellarium 的改写研究副本，**不跟踪上游资产目录**（见 .gitignore）。
+# 全新 clone 直接配置根构建会因缺输入失败，这里给出可操作的指引而不是晦涩报错。
+# 重建命令：tools/setup-upstream-assets.sh
+#
+# 说明：本检查只做"存在性 + 指引"。src/ui 独立工程是当前开发主线，不经过这里。
+FOREACH(_asset data guide plugins scripts)
+    IF(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_asset}")
+        MESSAGE(FATAL_ERROR
+            "缺少上游资产目录：${_asset}\n"
+            "  本仓库不跟踪上游资产（见 .gitignore）。请先在本机重建：\n"
+            "      ./tools/setup-upstream-assets.sh\n"
+            "  设置 STELLARIUM_UPSTREAM 可指定上游 checkout 路径。\n"
+            "  若你只是想开发新的 QML/Vulkan UI：不要配置仓库根，\n"
+            "  改为打开 src/ui/CMakeLists.txt 作为工程（见 README.md）。")
+    ENDIF()
+ENDFOREACH()
+UNSET(_asset)
+##################################################################
 
 CMAKE_POLICY(VERSION 3.16)
 # CMake Policies introduced after version CMAKE_MINIMUM_REQUIRED

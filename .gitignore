@@ -24,3 +24,18 @@ compile_commands.json
 
 # 测试输出
 tests/ui/**/test_*.qml.user
+
+# ── 上游资产目录：本地重建，不入库 ──────────────────────────────────────────
+# 本仓库是"改别人的"研究副本，不复制上游资产入镜像。重建见
+# tools/setup-upstream-assets.sh。
+#
+# 注意：并非所有资产都能用软链接。构建期会被**写入**的目录必须是实体副本，
+# 否则会顺着软链改掉上游原始 checkout（该 checkout 无版本保护，改了就没了）：
+#   data/   ← 根 CMakeLists:990  生成 data/default_cfg.ini
+#                            :1052 生成 data/Info.plist
+#   guide/  ← 根 CMakeLists:203  生成 guide/version.tex（故保留 .gitkeep 占位）
+# 其余目录（atmosphere/landscapes/models/nebulae/po/scenery3d/skycultures/
+#          stars/textures/plugins/scripts/util）配置期只读，用软链接即可。
+/data/
+# 根配置期生成（CMakeLists:203 CONFIGURE_FILE 的输出），机器相关，不入库
+/guide/version.tex
