@@ -2,6 +2,18 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.18)
 # CMake 3.20+ is required if x-compiling for Windows on ARM
 MESSAGE(STATUS "Found CMake ${CMAKE_VERSION}")
 
+########### 本仓库根构建守卫（本实验添加，见 README.md） ###########
+# 上游资产目录（guide/plugins/data/scripts/util）已从本仓库历史移除，
+# 根构建必然缺输入而失败。有效工程只有 src/ui（独立 CMake 工程）。
+# 若你是在 CLion/IDE 里打开了仓库根导致看到此错误：
+#   请改为打开 src/ui/CMakeLists.txt 作为工程，并在 CMake 选项里加
+#   -DCMAKE_PREFIX_PATH=<你的Qt安装目录，如 C:/Qt/6.11.2/msvc2022_64>
+MESSAGE(FATAL_ERROR
+    "此仓库的根构建已不可用（上游资产已移除，见 README.md）。"
+    "请构建 src/ui 独立工程：cmake -B build-ui -S src/ui -DCMAKE_PREFIX_PATH=<Qt目录>。"
+    "CLion 用户：打开 src/ui/CMakeLists.txt 作为工程，不要打开仓库根。")
+###############################################################
+
 CMAKE_POLICY(VERSION 3.16)
 # CMake Policies introduced after version CMAKE_MINIMUM_REQUIRED
 IF(POLICY CMP0175)
