@@ -85,4 +85,12 @@ echo ============================================================
 :end
 echo.
 pause
-endlocal
+rem Propagate RC as the PROCESS exit code. Without this line the batch ran off the end
+rem of the file, and the trailing "echo." above had already reset ERRORLEVEL to 0 -- so
+rem the report could print "EXIT CODE = 7" while the process still returned 0. Measured
+rem on Windows 2026-09-21: text said 7, process return code said 0. That matters because
+rem tools/evidence/collect.ps1 fills its "dut result" header line from this process code:
+rem the field could never go red. Same defect class as d717056 (matrix hardcoded RC=0)
+rem and 838b1b7 (exe-not-found branch left ERRORLEVEL at 0), one level further down.
+rem %RC% is expanded before endlocal runs, so the value survives the env restore.
+endlocal & exit /b %RC%

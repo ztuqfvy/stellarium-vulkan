@@ -62,7 +62,7 @@ python -c "b=open('run_evidence_matrix.cmd','rb').read(); print(sum(1 for x in b
 
 | 文件 | 说明 |
 |---|---|
-| `2026-09-21-run_autotest-matrix-windows-vulkan-d3d11-opengl.txt` | `d717056` 修复版 `run_autotest.cmd matrix` 的三后端原始 stdout，附负控实验与结论 |
+| `2026-09-21-run_autotest-matrix-windows-vulkan-d3d11-opengl.txt` | `run_autotest.cmd matrix` 三后端原始 stdout + 负控原始输出；整份由 `tools/evidence/collect.ps1` 生成（不再有一次性注入命令） |
 | `../../tools/evidence/collect.ps1` | **本目录证据的唯一规范生成器**（见下） |
 
 文件格式约定：正文为未经修饰的原始捕获；仅首尾由脚本注入**出处头**（提交号、
@@ -124,7 +124,34 @@ powershell -ExecutionPolicy Bypass -File tools\evidence\collect.ps1
    `Object[]`，`List[string].AddRange()` 随即拒绝绑定并抛错。必须不加 `@()` 直接赋值。
    这条是本轮改动引入、又在本地执行时抓到的——**只做语法检查发现不了，跑一遍才行**。
 
-> ⚠️ 仍未验证的部分：`chcp` 与控制台的交互、以及 `cmd /c "... > file 2>&1"` 两条捕获行——
-> 离开 Windows 无法执行。**首次真机运行请当调试**，跑通并确认输出格式正确之后，才可以用它
-> 产出的文件当证据。脚本同样遵守 ASCII-only 规则（非 ASCII 字节数为 0）。
+> ✅ **已真机验证（2026-09-21，Windows 10 19045）**：原先无法离机验证的两处——`chcp`
+> 与控制台的交互、两条 `cmd /c "... > file 2>&1"` 捕获行——实跑均正常。产物
+> UTF-8 无 BOM、可用单一编码解码、**0 行污染**（无缩写版权横幅、无 `is not recognized`）。
+> 脚本同样遵守 ASCII-only 规则（非 ASCII 字节数为 0）。
+>
+> 唯一残留：`run_autotest.cmd` 结尾 `pause` 的提示语 `Press any key to continue . . .`
+> 被原样捕获进 SEGMENT 1。`< nul` 只让它不再阻塞，并不抑制这行提示。它是**真实原始输出**，
+> 不影响任何判据，因此保留不做修饰。
+
+#### 真机首跑抓到的缺陷：`dut result` 永远变不了红（同日修复）
+
+留证链上有三个数字，别混：生成器退出码（记录可不可信）、`dut result` 行（被测程序结论，
+取自 runner 的**进程返回码**）、SEGMENT 1 正文里的 `EXIT CODE = N`（被测程序自己打印的聚合码）。
+
+真机实测发现第三个早修好了，**第二个恒为 `0`**：`run_autotest.cmd` 走到 `:end` 后是
+`echo.` → `pause` → `endlocal` → 文件结束，**RC 没有作为进程返回码带出去**，而那个 `echo.`
+已把 `ERRORLEVEL` 重置为 0。用桩 DUT（固定返回 2）实测对照：
+
+| | 脚本打印 | 进程返回码 |
+|---|---|---|
+| 修复前（`838b1b7`） | `EXIT CODE = 2` | `0` ← 红被吞成绿 |
+| 修复后（`:end` 改为 `endlocal & exit /b %RC%`） | `EXIT CODE = 2` | `2` ✓ |
+
+所以修复前 `dut result` 行**不具备变红的能力**，是比 `d717056` 所修"matrix 恒报 0"
+高一层的同类缺陷。它一直没暴露，是因为 `run_negctl.cmd` 复刻逻辑时**自带 `exit /b`**——
+负控能红、被测程序不能红，这种不对称恰好把缺陷盖住了。
+
+回归检查：`tools\negctl\check_rc_propagation.cmd` —— 跑**真的** `run_autotest.cmd`
+（不是副本），桩 DUT 返回 2，断言"打印码 == 进程返回码"。
+实测：修复前副本 `RESULT: FAIL - printed=2 process=0 / exit 1`；修复后 `PASS / exit 0`。
 

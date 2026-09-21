@@ -366,5 +366,32 @@ powershell -ExecutionPolicy Bypass -File tools\evidence\collect.ps1
 git add docs\evidence\<文件> ; git commit -m "验收留证：<日期> 三后端 matrix 原始输出" ; git push
 ```
 
-> 首次运行请当调试。`chcp` 与控制台的交互、两条 `cmd /c "... > file 2>&1"` 捕获行，
-> 是唯一无法在 macOS 上验证的部分（其余逻辑已实测）。若报错，把**完整**输出贴回来。
+> ~~首次运行请当调试~~ **已于 2026-09-21 在真机（Windows 10 19045）跑通**：生成器里
+> 两条捕获行与 `chcp` 的交互均正常，产物 UTF-8 无 BOM、可用单一编码解码、0 行污染。
+> 唯一残留：`run_autotest.cmd` 结尾 `pause` 的提示语 `Press any key to continue . . .`
+> 被原样一并捕获。那属**真实原始输出**，不影响任何判据，故保留不做修饰。
+
+### 9.4 别混淆返回码：链上一共有三个数字（2026-09-21 真机首跑后补）
+
+| 数字 | 出现在哪 | 含义 |
+|---|---|---|
+| `collect.ps1` 的退出码 | 终端（`0` / `1`） | 这份**记录**可不可信。`1` = 没跑完，不得引用 |
+| `dut result` 行 | 证据文件头 | 被测程序的结论。取自 `run_autotest.cmd` 的**进程返回码** |
+| `EXIT CODE = N` | SEGMENT 1 正文 | 同一个结论，被测程序自己**打印**出来的聚合码 |
+
+真机首跑实测发现：第三个数早已修好，**第二个仍是恒 `0`**。`run_autotest.cmd` 走到
+`:end` 之后是 `echo.` → `pause` → `endlocal` → 文件结束，**没有把 RC 作为进程返回码
+带出去**，而那个 `echo.` 已经把 `ERRORLEVEL` 重置为 0。实测对照（桩 DUT 固定返回 2）：
+
+| | 脚本打印 | 进程返回码 |
+|---|---|---|
+| 修复前（`838b1b7`） | `EXIT CODE = 2` | `0` ← 红被吞成绿 |
+| 修复后（`:end` 收尾改为 `endlocal & exit /b %RC%`） | `EXIT CODE = 2` | `2` ✓ |
+
+后果：`collect.ps1` 的 `dut result` 行**永远不会变红**——比 `d717056` 修的"matrix 恒报 0"
+高一层。它之所以一直没被发现，是因为 `tools/negctl/run_negctl.cmd` 复刻逻辑时**自己带了
+`exit /b`**：负控能红、被测程序不能红，两者不对称，于是掩盖了缺陷。
+
+回归检查：`tools\negctl\check_rc_propagation.cmd`。它跑的是**真的** `run_autotest.cmd`
+（不是副本），桩 DUT 返回 2，断言"打印码 == 进程返回码"。对修复前的副本实测
+`RESULT: FAIL - printed=2 process=0 / exit 1`，对修复后实测 `PASS / exit 0`。

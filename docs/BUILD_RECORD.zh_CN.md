@@ -460,3 +460,67 @@ Windows 专有调用（`Get-CimInstance` / `nvidia-smi` / `cmd /c`）换掉，**
 （`matrix` 恒报 0 → `dirty` 恒报 YES → exe 缺失返回 0。）
 这类缺陷的共同特征是**不会自己暴露**，只能靠"主动让它失败一次"来发现。
 因此把负控、结构自检、`VERDICT` 行做进生成器，比再多写几页纪律文档有效。
+
+---
+
+## 2026-09-21｜四审（Windows 真机首跑）：生成器跑通，但 `dut result` 变不了红
+
+按 §9.3 照做：`git pull`（→ `838b1b7`）→ `cmake --build build-ui --config Release`（rc=0）
+→ `collect.ps1`。按判读顺序读文件头：
+
+| 项 | 实测 |
+|---|---|
+| `VERDICT` | `COMPLETE - trustworthy record` |
+| `dut result` | `run_autotest.cmd matrix returncode = 0` |
+| `worktree: dirty` | `no`（`docs/evidence/` 已按设计排除） |
+
+三审遗留的"无法离机验证"两处**已真机确认正常**：`chcp` 与控制台交互没问题，
+两条捕获行也没问题。产物：UTF-8 无 BOM、单一编码可解码、**0 行污染**
+（无缩写版权横幅、无 `is not recognized`）。SEGMENT 1 三后端各 12/12 探针 PASS。
+
+### 但抓出同族缺陷第四例：runner 的**进程返回码**恒为 0
+
+留证链上有三个数字（生成器退出码 / `dut result` / SEGMENT 1 的 `EXIT CODE = N`）。
+真机实测发现第三个早修好了，**第二个恒为 0**：
+
+`run_autotest.cmd` 走到 `:end` 之后是 `echo.` → `pause` → `endlocal` → 文件结束，
+**RC 没有作为进程返回码带出去**，而那个 `echo.` 已经把 `ERRORLEVEL` 重置为 0。
+用桩 DUT（固定返回 2）实测对照：
+
+| | 脚本打印 | 进程返回码 |
+|---|---|---|
+| 修复前（`838b1b7`） | `EXIT CODE = 2` | **`0`** ← 红被吞成绿 |
+| 修复后 | `EXIT CODE = 2` | **`2`** ✓ |
+
+`collect.ps1` 的 `dut result` 行正是读这个进程码，所以修复前该字段**不具备变红的能力**——
+是比 `d717056`（matrix 恒报 0）、`838b1b7`（exe 缺失返回 0）更高一层的同一族缺陷。
+
+修法：`:end` 收尾改为 `endlocal & exit /b %RC%`（`%RC%` 在 `endlocal` 之前展开，
+值能穿过环境还原）。
+
+### 这条为什么一直没被发现：负控与被测路径**不对称**
+
+`tools/negctl/run_negctl.cmd` 复刻聚合逻辑时**自己带了 `exit /b`**，所以负控能红、能返回 5，
+生成器的负控检查（`negctlRc -ne 5`）顺利通过；而真正被测的 `run_autotest.cmd` 不能红。
+**一个"能红的负控"配一个"不能红的被测对象"，会把缺陷盖住而不是暴露它。**
+
+### 回归检查（新增，跑真脚本而非副本）
+
+`tools\negctl\check_rc_propagation.cmd`：把 `run_autotest.cmd` **复制**到桩目录旁
+（让 `%~dp0` 解析到桩），桩 DUT 用 `findstr.exe`（无参退出 2），断言
+"打印码 == 进程返回码"。实测双向：
+
+| 被测 runner | 结果 |
+|---|---|
+| 修复后（仓库根的真脚本） | `RESULT: PASS` / exit 0 |
+| 修复前（`838b1b7` 逐字节副本，归一化行尾后与 blob 一致） | `RESULT: FAIL - printed=2 process=0` / exit 1 |
+
+### 元观察
+
+同族缺陷现在有**四例**：matrix 恒报 0 → dirty 恒报 YES → exe 缺失返回 0 →
+runner 进程返回码恒 0。共同特征是**工具在"没干活/干不成"时报告成功且不会自曝**。
+
+本轮补充一条新的子模式：**修复只落到"给人看的文本"，没落到"给机器读的返回值"**。
+`838b1b7` 已经意识到"ERRORLEVEL 停在 0"这件事，但修的是 report 里那一行字；
+机器读的是进程返回码，于是缺陷平移了一层而非消失。
+教训：**凡是"结论"要跨进程传递的，都得在边界上实测一次那个数字，而不是看它印出来的样子。**
