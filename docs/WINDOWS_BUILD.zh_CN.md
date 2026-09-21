@@ -311,3 +311,29 @@ WINDOWTEST: 结果 ...
 证据留存要求：把 `run_autotest.cmd matrix` 的**完整 stdout 原始文本**存盘并随提交入库
 （例如 `docs/evidence/` 下带日期文件名），不要只写结论矩阵——本次复核已发现
 工具本身的缺陷，"结论有据"必须落到原始输出上。
+
+### 9.1 采集与留证的配套工具
+
+| 工具 | 用途 |
+|---|---|
+| `run_evidence_matrix.cmd <输出文件>` | 清空所有 `STELQUICK_*` 后跑真实 matrix，把 stdout+stderr 原样落盘、并追加真实返回码。用 `< nul` 绕开 `run_autotest.cmd` 结尾的 `pause`，避免自动化挂住 |
+| `tools/negctl/run_negctl.cmd` | 退出码聚合的**负控实验**：注入 `d3d11 -> 5`，期望聚合报出 `EXIT CODE = 5`。用来证明绿灯不是无条件默认值 |
+| `docs/evidence/README.md` | 采集方式、编码坑、.cmd 硬规则的完整说明 |
+
+### 9.2 两条硬规则（都踩过坑）
+
+1. **`.cmd` 文件一律只用 ASCII 注释。**
+   `cmd.exe` 按 OEM 代码页（简中系统 936/GBK）逐行解析 `.cmd`，**中文写在 `rem`
+   注释里同样不安全**：误解码字节可能跨行拼接，残余片段会被当作命令执行，
+   往 stdout 灌 `'xxx' is not recognized as an internal or external command`。
+   校验：`python -c "b=open('<file>.cmd','rb').read(); print(sum(1 for x in b if x>=0x80))"`
+   必须为 `0`。
+2. **不要在捕获作用域内调用 `chcp`。**
+   `chcp` 会让 `cmd.exe` 打印本地化版权横幅（CP936 字节），把两种编码混进本应
+   纯 UTF-8 的流，使证据文件无法用单一编码解码。代码页由**父进程**预先设好：
+
+   ```powershell
+   [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+   chcp 65001 | Out-Null
+   .\run_evidence_matrix.cmd docs\evidence\YYYY-MM-DD-run_autotest-matrix-<范围>.txt
+   ```

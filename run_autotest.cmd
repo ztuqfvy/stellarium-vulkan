@@ -8,11 +8,21 @@ rem    run_autotest.cmd a2 d3d11     A2 control group, D3D11
 rem    run_autotest.cmd a2 opengl    A2 control group, OpenGL
 rem    run_autotest.cmd matrix       run A2 on all three backends
 rem    run_autotest.cmd window       window interaction test (resize/hide)
+rem
+rem  ASCII ONLY. cmd.exe parses .cmd files using the OEM code page (936/GBK on
+rem  zh-CN). Non-ASCII bytes in this file (even inside rem comments) get
+rem  mis-decoded, can splice across lines, and the leftover fragments are then
+rem  EXECUTED as commands -- injecting "'xxx' is not recognized as an internal
+rem  or external command" noise into captured stdout. Keep comments in English.
+rem  See docs/evidence/README.md for the full write-up.
 rem ============================================================================
 chcp 65001 >nul
-rem EnableDelayedExpansion 是必需的：matrix 模式要在同一个 for 块内读 !ERRORLEVEL!，
-rem 且赋值后立刻使用。旧版漏了这个开关 → !ERRORLEVEL! 不展开，逐后端退出码打印成
-rem 字面量，而 RC 又被硬编码为 0 → 无论成败都报 "EXIT CODE = 0"（2026-09-21 修）。
+rem EnableDelayedExpansion is REQUIRED: matrix mode reads !ERRORLEVEL! inside a
+rem for block and uses the value immediately after assignment. The previous
+rem revision omitted this switch, so !ERRORLEVEL! was not expanded and each
+rem backend's exit code printed as a literal, while RC was hardcoded to 0 --
+rem meaning it always reported "EXIT CODE = 0" regardless of outcome.
+rem Fixed 2026-09-21. See docs/evidence/README.md.
 setlocal EnableDelayedExpansion
 set "EXE=%~dp0build-ui\deploy\stelQuickUI.exe"
 
@@ -43,8 +53,9 @@ set RC=%ERRORLEVEL%
 goto :report
 
 :matrix
-rem 逐后端跑 A2，聚合退出码：任一非 0 就把 RC 记为该码（保留首个失败码），
-rem 只有三组全 0 才报 EXIT CODE = 0。旧版无条件 set RC=0，等于永远绿灯。
+rem Run A2 on each backend, aggregating exit codes. Any non-zero code becomes RC
+rem (first failure wins); only three zeros report EXIT CODE = 0. The previous
+rem revision unconditionally did set RC=0, which was a permanent green light.
 set "RC=0"
 for %%A in (vulkan d3d11 opengl) do (
     echo.
