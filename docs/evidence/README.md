@@ -63,6 +63,26 @@ python -c "b=open('run_evidence_matrix.cmd','rb').read(); print(sum(1 for x in b
 | 文件 | 说明 |
 |---|---|
 | `2026-09-21-run_autotest-matrix-windows-vulkan-d3d11-opengl.txt` | `d717056` 修复版 `run_autotest.cmd matrix` 的三后端原始 stdout，附负控实验与结论 |
+| `../../tools/evidence/collect.ps1` | **本目录证据的唯一规范生成器**（见下） |
 
 文件格式约定：正文为未经修饰的原始捕获；仅首尾由脚本注入**出处头**（提交号、
 主机、驱动版本、被测 exe 的 sha256、采集方式）与**结论段**，便于审计追溯。
+
+### 生成器已入库（2026-09-21 补）
+
+首版证据的出处头与负控段是**临时命令**注入的，那些命令当时没入库——也就是说
+换个人无法复现同一份文件，这本身是一处证据链缺口。现补 `tools/evidence/collect.ps1`：
+
+```powershell
+# 从仓库根目录执行；默认输出 docs\evidence\<日期>-run_autotest-matrix-windows-vulkan-d3d11-opengl.txt
+powershell -ExecutionPolicy Bypass -File tools\evidence\collect.ps1
+```
+
+它把整份文件一次生成：元数据头（提交号 + 工作区是否脏 + CPU/GPU/驱动 + exe 大小与
+sha256）→ 第一段真实 matrix 原始输出 → 第二段负控原始输出 → 结论段。
+另外它会在跑之前**主动拒绝**验收禁用变量（`STELQUICK_A2_IGNORE_SGWAIT`、
+`STELQUICK_RENDER_WORKAROUND=basic-loop`），把第 9 节的纪律做成硬闸门而不是口头约定。
+
+> ⚠️ 未在本机验证：该脚本在 macOS 上编写（本机无 PowerShell），只做过语法审查，
+> **从未执行过**。Windows 上第一次跑请当调试，跑通并确认输出格式正确之后，
+> 才可以用它产出的文件当证据。脚本同样遵守 ASCII-only 规则。

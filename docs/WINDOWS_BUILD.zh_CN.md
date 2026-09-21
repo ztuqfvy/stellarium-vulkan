@@ -316,6 +316,7 @@ WINDOWTEST: 结果 ...
 
 | 工具 | 用途 |
 |---|---|
+| `tools/evidence/collect.ps1` | **规范生成器**：一次产出完整证据文件（元数据头 + matrix 原始输出 + 负控原始输出 + 结论段），并在跑之前拒绝验收禁用变量。未在本机验证过，Windows 首次运行需当调试对待 |
 | `run_evidence_matrix.cmd <输出文件>` | 清空所有 `STELQUICK_*` 后跑真实 matrix，把 stdout+stderr 原样落盘、并追加真实返回码。用 `< nul` 绕开 `run_autotest.cmd` 结尾的 `pause`，避免自动化挂住 |
 | `tools/negctl/run_negctl.cmd` | 退出码聚合的**负控实验**：注入 `d3d11 -> 5`，期望聚合报出 `EXIT CODE = 5`。用来证明绿灯不是无条件默认值 |
 | `docs/evidence/README.md` | 采集方式、编码坑、.cmd 硬规则的完整说明 |
