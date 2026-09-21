@@ -1,67 +1,33 @@
 ================================================================================
- stelQuickUI 验收证据 —— 原始 stdout
- （正文两段为机器捕获的原始文本，未经修饰；首尾出处头/结论段由脚本注入）
+ stelQuickUI acceptance evidence -- raw stdout
+ (both body segments are machine-captured verbatim; this header/footer is script-injected)
 ================================================================================
- 提交       : d7170563ba5714db16a75fc73c36b17ca41b71cd
- 日期       : 2026-09-21
- 主机       : DESKTOP-0PJI1SO  /  Windows 10 专业工作站版 10.0.19045
- CPU        : AMD Ryzen 7 3700X 8-Core Processor
- GPU        : NVIDIA GeForce RTX 4060, driver 32.0.15.9174
- 被测 exe   : build-ui/deploy/stelQuickUI.exe  (159232 bytes)
- sha256     : 920388F5AC0D801424603051842A9DBC0EA04EAA85B52ED73A696A801FF6DB18
- 采集方式   : 父进程预设控制台代码页 65001，OS 级重定向，UTF-8 无 BOM
- 环境变量   : 仅白名单 STELQUICK_A2_CHECK / STELQUICK_GRAPHICS_API
-              （未使用 STELQUICK_A2_IGNORE_SGWAIT 与
-                STELQUICK_RENDER_WORKAROUND=basic-loop —— 依第 9 节属禁用项）
- 生成命令   : [Console]::OutputEncoding = UTF8; chcp 65001; .\run_autotest.cmd matrix *> <out>
- 采集内容   : 第一段 = run_autotest.cmd matrix 三后端原始 stdout
-              第二段 = 退出码聚合逻辑的负控实验（注入故障，证明聚合真的会报警）
+ VERDICT     : COMPLETE - trustworthy record; the DUT verdict is SEGMENT 1's own returncode
+================================================================================
+ commit      : 18645f62be027c08f72b9cecb7ea8a36c21d1add
+ worktree    : dirty = no  (docs/evidence/ excluded: that is this script's own output dir)
+ date        : 2026-09-21 17:48:59 +08:00
+ host        : DESKTOP-0PJI1SO  /  Microsoft Windows 10 专业工作站版 10.0.19045
+ CPU         : AMD Ryzen 7 3700X 8-Core Processor             
+ GPU         : NVIDIA GeForce RTX 4060, 591.74, 8188 MiB
+ dut exe     : build-ui\deploy\stelQuickUI.exe  (159232 bytes)
+ sha256      : 920388F5AC0D801424603051842A9DBC0EA04EAA85B52ED73A696A801FF6DB18
+ dut result  : run_autotest.cmd matrix returncode = 0
+ negctl      : returncode = 5  (5 expected)
+ code page   : 65001 set by parent before capture (no chcp inside the capture scope)
+ generator   : tools/evidence/collect.ps1
+ env policy  : whitelist only (STELQUICK_A2_CHECK / STELQUICK_GRAPHICS_API);
+               forbidden escape hatches checked and refused before the run
 ================================================================================
 
-【背景：为什么需要这份原始输出】
+SEGMENT 1 -- run_autotest.cmd matrix (real backends), returncode = 0
 
- 开发组复核指出，旧版 run_autotest.cmd 的 matrix 模式——即产出"三后端全 PASS"
- 这条结论的入口——自身有两处缺陷，导致该结论在修复前不可信：
-
-   (1) setlocal 未开启 EnableDelayedExpansion，却在 for 块内读 !ERRORLEVEL!，
-       逐后端退出码被打印成字面量而非实际值；
-   (2) 块尾无条件 set RC=0，于是无论成败都报 "EXIT CODE = 0"。
-
- 两者叠加 = 永久绿灯。已在 d717056 修复。本文件用修复版重跑并原样留档，
- 使"三后端全 PASS"这一结论落到可复核的原始输出上，而非仅有一份结论矩阵。
-
-【采集过程中另行发现并规避的"证据污染"问题（同属工具缺陷）】
-
- .cmd 文件被 cmd.exe 按 OEM 代码页(936/GBK)逐行解析，即使中文只写在 rem 注释里
- 也不安全：误解码后的字节可能跨行拼接，残余片段会被当作命令执行，往 stdout
- 灌入 "'xxx' is not recognized as an internal or external command" 之类噪声。
- 旧版 run_evidence_matrix.cmd 即因此会在写出文件前直接中止。
- 另有 chcp 自身会打印本地化版权横幅（CP936 字节），把两种编码混进本应纯 UTF-8
- 的流，使文件无法用单一编码解码。
-
- 规避方式（已落入仓库）：
-   - 仓库内所有 .cmd 一律只用 ASCII 注释（含 run_autotest.cmd 本轮已清理）；
-   - 代码页由父进程预先设好，不在捕获作用域内调用 chcp。
- 下方第一段输出已确认 0 行污染。
-
-================================================================================
- 第一段：run_autotest.cmd matrix —— 原始 stdout（d717056 修复版）
-================================================================================
 
 ########## A2 / vulkan ##########
 QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
 STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
 A2CHECK: 投递测试图案 逻辑=960x605 DPR=1.00 物理=960x605 → 成功
-Validation Error: [ UNASSIGNED-non-acquired-swapchain-image-used ] | MessageID = 0x1cecb534
-vkQueueSubmit(): pSubmits[0] performs a layout transition on presentable VkImage 0xc000000000c, but VkSemaphore 0x150000000015 signaled by image acquire operation was not waited on.
-The Vulkan spec states: After acquiring a presentable image and before modifying it, the application must use a synchronization primitive to ensure that the presentation engine has finished reading from the image (https://docs.vulkan.org/refpages/latest/refpages/source/VkSwapchainKHR.html#_description)
-Objects: 2
-    [0] VkCommandBuffer 0x231eb56d9a0
-    [1] VkImage 0xc000000000c
-
-vkDebug: vkQueueSubmit(): pSubmits[0] performs a layout transition on presentable VkImage 0xc000000000c, but VkSemaphore 0x150000000015 signaled by image acquire operation was not waited on.
-The Vulkan spec states: After acquiring a presentable image and before modifying it, the application must use a synchronization primitive to ensure that the presentation engine has finished reading from the image (https://docs.vulkan.org/refpages/latest/refpages/source/VkSwapchainKHR.html#_description)
 A2CHECK: 探针 12 项，失败 0 项
 A2CHECK:诊断：页头像素(245,246,248)（期望约(245,246,248)） 窗口中心像素(255,255,255)
 A2CHECK:抓帧尺寸=960x640 DPR=1 视口场景原点=(0,35) 视口逻辑尺寸=960x605 纹理物理尺寸=960x605
@@ -78,14 +44,6 @@ A2CHECK:  [PASS] 棋盘格 偶 纹理点(175,395) 抓帧点(175,430) 期望(224,
 A2CHECK:  [PASS] 中心十字 纹理点(480,302) 抓帧点(480,337) 期望(255,255,255) 实际(255,255,255) 偏差0
 A2CHECK:  [PASS] 半透明块(α=128) 纹理点(726,434) 抓帧点(726,469) 期望(150,150,150) 实际(128,128,128) 偏差22
 A2CHECK: VERDICT=PASS
-Validation Error: [ VUID-vkDestroyDevice-device-05137 ] | MessageID = 0x4872eaa0
-vkDestroyDevice(): VkDevice 0x231e23fa620 has 4 leaked objects that have not been destroyed.
-VkImage 0xd600000000d6, VkImage 0xaa00000000aa, VkImageView 0xd700000000d7, VkImageView 0xab00000000ab.
-The Vulkan spec states: All child objects created on device that can be destroyed or freed must have been destroyed or freed prior to destroying device (https://docs.vulkan.org/spec/latest/chapters/devsandqueues.html#VUID-vkDestroyDevice-device-05137)
-
-vkDebug: vkDestroyDevice(): VkDevice 0x231e23fa620 has 4 leaked objects that have not been destroyed.
-VkImage 0xd600000000d6, VkImage 0xaa00000000aa, VkImageView 0xd700000000d7, VkImageView 0xab00000000ab.
-The Vulkan spec states: All child objects created on device that can be destroyed or freed must have been destroyed or freed prior to destroying device (https://docs.vulkan.org/spec/latest/chapters/devsandqueues.html#VUID-vkDestroyDevice-device-05137)
 [vulkan] exit code = 0
 
 ########## A2 / d3d11 ##########
@@ -138,21 +96,17 @@ A2CHECK: VERDICT=PASS
 
 ============================================================
  EXIT CODE = 0
-  0=pass   2=no-window   3=backend-not-vulkan
+  0=pass   2=no-window   3=backend-not-vulkan   7=exe-not-found
   4=window-test-fail      5=A2-probe-fail   6=grab-unavailable
 ============================================================
 
 Press any key to continue . . . 
 
-
 ================================================================================
- 第二段：退出码聚合逻辑 —— 负控实验（证明"会报警"，而非无条件绿灯）
+SEGMENT 2 -- exit-code aggregation negative control, returncode = 5
+ expected: aggregation reports EXIT CODE = 5 (d3d11 fault injected).
+ a green matrix is only meaningful if this control can go red.
 ================================================================================
- 说明：仅复刻 run_autotest.cmd 的聚合逻辑，把三个后端替换为桩程序：
-        vulkan -> 0（通过）  d3d11 -> 5（注入故障 A2-probe-fail）  opengl -> 0（通过）
-       期望 EXIT CODE = 5。若聚合失效则仍会打印 0，此时矩阵绿灯不可信。
- 这是"修复确实生效"的正向证明：不是读代码推断，而是让它真失败一次。
- 生成命令：tools\negctl\run_negctl.cmd
 
 
 ########## A2 / vulkan ##########
@@ -177,31 +131,11 @@ A2CHECK: VERDICT=SIMULATED
 ============================================================
 [negctl] EXPECTED: EXIT CODE = 5   (d3d11 injected fault)
 [negctl] RESULT: PASS - aggregation caught the fault
-================================================================================
- 结论
-================================================================================
- 1) 第一段：vulkan / d3d11 / opengl 三后端各 12/12 探针 PASS，
-    逐后端退出码均为 0，聚合 EXIT CODE = 0。
-    —— "三后端全 PASS"成立，且有完整原始输出为据。
- 2) 第二段：注入 d3d11 = 5 后，聚合正确报出 EXIT CODE = 5，
-    且负控脚本自判 [negctl] RESULT: PASS - aggregation caught the fault。
-    —— 绿灯不再是无条件默认值，而是真实聚合结果；修复有效。
- 3) 探针行采用 d717056 之后的字段拆分格式：
-      portability_driver=0     设备级 VK_KHR_portability_subset
-                               —— 这才是"是否为 portability 驱动"的判据
-      portability_enum_ext=1   实例级 VK_KHR_portability_enumeration
-                               —— 仅是 loader 能力，Vulkan 1.4.357 恒为 1
-    三后端均 portability_driver=0，即均为原生驱动形态，符合验收预期。
-    同时三后端 runtimeApi 与请求一致、backendOk=1，未见静默后端回退。
- 4) 附带观察：d3d11 / opengl 两段均打印
-    "诊断对照模式——请求后端 X（非验收配置）"，
-    即这两个后端是**对照组**，用于横向比较驱动形态差异；验收基准仍是 vulkan。
- 5) 已知残余（如实记录，不影响上述结论）：Vulkan 验证层在退出阶段报告
-    vkDestroyDevice 有 4 个泄漏对象（VkImage x2 + VkImageView x2），
-    出现于 vulkan 后端用例末尾。该噪声不改变 A2 像素校验结论。
- 6) 另有两项与结论无关的验证层提示，一并如实附上，以免被误读为已修复：
-    - non-acquired-swapchain-image-used（vkQueueSubmit 布局转换未等待 acquire 信号量）
-    - QVulkanInstance already created; setExtensions() has no effect
-================================================================================
- 生成时间 : 2026-09-21 16:22:42
-================================================================================
+
+INTERPRETATION
+  matrix returncode 0  => all three backends passed the 12-probe pixel check.
+  negctl returncode 5  => the aggregation really does report failure when a
+                          backend fails; the green light above is not a default.
+  The VERDICT line at the top re-derives both properties from the raw text, so
+  trust it over a human reading of the segments. If it is not COMPLETE, do NOT
+  report this file as evidence -- it records a run that did not finish.
