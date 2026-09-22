@@ -283,6 +283,8 @@ SET(stellarium_lib_SRCS
      render/legacy/LegacySkyHost.cpp
      render/legacy/LegacyAppCheck.hpp
      render/legacy/LegacyAppCheck.cpp
+     render/legacy/LegacyLongRun.hpp
+     render/legacy/LegacyLongRun.cpp
 )
 
 IF(ENABLE_PCH)
