@@ -748,3 +748,50 @@ render p95 20 ms；readback p95 1 ms；>50ms 帧 60 个（0.095%），>100ms 帧
 - `docs/evidence/2026-09-22-stelt9-longrun-30min.txt`（原始 stdout/stderr 全文）
 - `docs/evidence/2026-09-22-stelt9-baseline-frames.csv.gz`（91476 行逐帧 CSV）
 - `docs/evidence/2026-09-22-stelt9-smoke-20s.txt`（20 秒冒烟，393 帧）
+
+## T9 环境前置守卫：一次无效运行与硬前置（2026-09-22）
+
+### 1. 事件：一致性运行被系统降频污染，判据全绿而数字全崩
+
+按冻结协议（warmup 900s + measure 1800s）跑第二次长跑，结果 **T9-C01~C07 全部 PASS**，
+但数字相对基线全面崩盘：
+
+| 指标 | 基线（09:40） | 一致性运行（13:30） | 探针（14:17） |
+|---|---|---|---|
+| 稳态吞吐 | 52.66 fps | **7.32 fps**（全域） | **3.75 fps** |
+| p95 总延迟 | 21 ms | 447 ms | 711 ms |
+| render 均值 | 18.65 ms | 125.5 ms | 222.2 ms |
+| 内存 phys_footprint | 2552→2557 MiB | 2431→2433 MiB（平） | — |
+
+**排查路径（值得复用）**：
+1. CSV 逐分钟看形态 → 不是"运行久了变慢"（基线 t=840~1920s 与本次 t=900~2700s 时段重叠，
+   基线在重叠段是 52 fps）；是全程 2~14 fps 抖动。
+2. 内存完全平（footprint 增 1.9 MiB）→ 排除泄漏/资源累积。
+3. `pmset -g` → **`lowpowermode 1`**，`pmset -g batt` → **Battery Power（69% 放电中）**；
+   `pmset -g log` 显示 13:32:07 还发生过一次 Idle Sleep（4 秒，对应 CSV 里 max=3883ms 那帧）。
+4. 结论：**被测环境被系统降频**（电池 + 低电量模式），非管道退化。
+   同二进制、同分辨率、同驱动方式，唯一变量是电源状态。
+
+**关键教训**：T9-C01~C07 判"管道是否完整"，**不含吞吐门槛判定**——所以环境被降频能让
+一次运行"判定全绿"却毫无验收价值。**判据不覆盖的失真源，必须用前置条件挡住。**
+
+### 2. 修复：T9-C00 硬前置 + T9-C08 漂移监测
+
+- `T9-C00`（测前）：调用 `/usr/bin/pmset -g`（解析 `lowpowermode`）与 `pmset -g batt`
+  （解析 AC/Battery）。不合规 → **不创建窗口、不初始化引擎，直接拒绝测量**，
+  `VERDICT=ENV_FAIL`、**退出码 9**（区别于管道失败 8）。
+- `T9-C08`（测中）：每 60 秒复核一次，中途拔电或系统自动切低电量模式 → FAIL。
+- 逃生阀：`STELT9_ALLOW_THROTTLED=1` 把前置降级为警告（仅调试；正式验收禁止）。
+- 实测守卫生效（当前环境正不合规，属免费负控）：`GUARD_EXIT=9`，
+  `T9-C00 FAIL 运行环境：电源=Now drawing from 'Battery Power'；低电量模式=开`。
+
+### 3. 冻结协议增补（测试文档 §6.1.1 协议第 4 条）
+
+验收运行必须：**接通电源 + 关闭低电量模式 + `caffeinate -dimsu` 阻止系统休眠**。
+休眠会直接在生产循环里制造秒级停顿（本次实测 3.9 秒单帧）。
+
+### 4. 留证
+
+- `docs/evidence/2026-09-22-stelt9-consistency-INVALID-throttled.txt` + `-frames.csv.gz`（作废运行，标注 INVALID）
+- `docs/evidence/2026-09-22-stelt9-probe-lpm-INVALID-throttled.txt`（3.75 fps 探针）
+- `docs/evidence/2026-09-22-stelt9-envguard-env_fail.txt`（守卫拒绝测量，退出码 9）

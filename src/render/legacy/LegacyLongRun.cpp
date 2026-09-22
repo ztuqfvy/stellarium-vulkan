@@ -15,6 +15,7 @@
 #include <QCoreApplication>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QProcess>
 #include <QThread>
 
 #include <algorithm>
@@ -48,6 +49,57 @@ qint64 footprintBytes()
                   reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS)
         return qint64(info.phys_footprint);
     return -1;
+}
+
+// T9-C00 环境前置：门槛冻结协议要求"接通电源 + 关闭低电量模式"。
+// 2026-09-22 教训：电池供电 + 低电量模式下，同一二进制的稳态吞吐从 52.66 fps 掉到
+// 7.32 fps（探针 3.75 fps），而 T9-C01~C07 全部 PASS（它们不含吞吐门槛判定）——
+// 环境污染静默通过。本前置把它变成硬失败，杜绝同类误读。
+struct PowerState
+{
+    bool valid = false;
+    bool lowPowerMode = false;
+    bool onBattery = false;
+    QString source; //!< pmset -g batt 首行（人可读，直接进证据流）
+};
+
+PowerState queryPowerState()
+{
+    PowerState s;
+    QProcess pl;
+    pl.start(QStringLiteral("/usr/bin/pmset"), {QStringLiteral("-g")});
+    if (pl.waitForFinished(5000))
+    {
+        const QString out = QString::fromLatin1(pl.readAllStandardOutput());
+        for (const QString &line : out.split(QLatin1Char('\n')))
+        {
+            const QString t = line.trimmed();
+            if (t.startsWith(QLatin1String("lowpowermode")))
+            {
+                s.valid = true;
+                s.lowPowerMode =
+                    (t.section(QLatin1Char(' '), -1).trimmed() == QLatin1String("1"));
+            }
+        }
+    }
+    QProcess bt;
+    bt.start(QStringLiteral("/usr/bin/pmset"), {QStringLiteral("-g"), QStringLiteral("batt")});
+    if (bt.waitForFinished(5000))
+    {
+        const QString out = QString::fromLatin1(bt.readAllStandardOutput());
+        s.source = out.section(QLatin1Char('\n'), 0, 0).trimmed();
+        if (s.source.contains(QLatin1String("Battery Power")))
+        {
+            s.valid = true;
+            s.onBattery = true;
+        }
+        else if (s.source.contains(QLatin1String("AC Power")))
+        {
+            s.valid = true;
+            s.onBattery = false;
+        }
+    }
+    return s;
 }
 
 struct Percentiles
@@ -125,6 +177,38 @@ LegacyAppCheckResult LegacyLongRun::run(QSettings *confSettings)
         if (parts.size() == 2)
             fboSize = QSize(parts.value(0).toInt(), parts.value(1).toInt());
         // 0x0 负控：装配必败 → VERDICT=UNAVAILABLE、退出码 8。
+    }
+
+    // ── T9-C00 环境前置：被测环境必须与门槛冻结协议一致 ──────────────────────
+    // 不合规 → 直接拒绝测量并退出码 9（不创建窗口、不初始化引擎）。
+    // 理由见头文件"环境前置"段与 2026-09-22 教训。
+    const bool allowThrottled = qEnvironmentVariableIsSet("STELT9_ALLOW_THROTTLED");
+    {
+        const PowerState ps = queryPowerState();
+        const bool envOk = ps.valid && !ps.lowPowerMode && !ps.onBattery;
+        addCheck("T9-C00", envOk || allowThrottled,
+                 QStringLiteral("运行环境：电源=%1；低电量模式=%2；判定=%3。"
+                                "冻结协议要求接通电源且关闭低电量模式"
+                                "（被系统降频时的吞吐/延迟数据无意义）%4")
+                     .arg(ps.source.isEmpty() ? QStringLiteral("未知") : ps.source,
+                          ps.lowPowerMode ? QStringLiteral("开") : QStringLiteral("关"),
+                          envOk ? QStringLiteral("合规") : QStringLiteral("不合规"),
+                          allowThrottled ? QStringLiteral("；STELT9_ALLOW_THROTTLED 已设，降级为警告")
+                                         : QString()));
+        if (!envOk && !allowThrottled)
+        {
+            result.envBlocked = true;
+            result.summary =
+                QStringLiteral("环境不合规：%1；低电量模式=%2——按冻结协议拒绝测量"
+                               "（先接入电源并关闭低电量模式；仅调试可设 STELT9_ALLOW_THROTTLED=1）")
+                    .arg(ps.source.isEmpty() ? QStringLiteral("电源状态未知") : ps.source,
+                         ps.lowPowerMode ? QStringLiteral("开") : QStringLiteral("关"));
+            result.setupError = result.summary;
+            result.pass = false;
+            std::fprintf(stderr, "STELT9: %s\n", qPrintable(result.summary));
+            std::fflush(stderr);
+            return result; // ran=false + envBlocked=true → 退出码 9
+        }
     }
 
     // ── 引导（与 A3 相同的 WA_DontShowOnScreen 方式）──────────────────────────
@@ -216,6 +300,8 @@ LegacyAppCheckResult LegacyLongRun::run(QSettings *confSettings)
     qint64 nextMemSampleAt = 10;  // 秒
     qint64 nextProgressAt = 60;   // 秒
     qint64 nextEventPumpAt = 0;   // 秒（每秒泵一次事件）
+    qint64 nextPowerSampleAt = 60; // 秒（测量期间每 60 秒复核电源状态）
+    qint64 envViolations = 0;      // 测量期间环境违规次数（T9-C08）
 
     auto runPhase = [&](const char *phase, qint64 durationSeconds) {
         QElapsedTimer phaseClock;
@@ -231,6 +317,20 @@ LegacyAppCheckResult LegacyLongRun::run(QSettings *confSettings)
                 // 泵事件：保持异步加载/定时器活着（生产路径由主循环做这件事）
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 0);
                 ++nextEventPumpAt;
+            }
+
+            if (wallClock.elapsed() >= nextPowerSampleAt * 1000)
+            {
+                // 环境漂移监测：中途拔电 / 系统自动切低电量模式会让本次数据失效
+                const PowerState psNow = queryPowerState();
+                if (psNow.valid && (psNow.lowPowerMode || psNow.onBattery))
+                {
+                    ++envViolations;
+                    if (envViolations <= 5)
+                        qWarning() << "STELT9: 测量期间环境违规" << psNow.source
+                                   << "lowPowerMode=" << psNow.lowPowerMode;
+                }
+                nextPowerSampleAt += 60;
             }
 
             QString frameError;
@@ -370,6 +470,14 @@ LegacyAppCheckResult LegacyLongRun::run(QSettings *confSettings)
         addCheck("T9-C07", glErr == GL_NO_ERROR,
                  QStringLiteral("30 分钟后 GL 错误栈=0x%1（NO_ERROR 才合格）").arg(glErr, 0, 16));
     }
+
+    // ── T9-C08 环境未漂移（测量期间始终接电且低电量模式关闭）──────────────────
+    addCheck("T9-C08", envViolations == 0 || allowThrottled,
+             QStringLiteral("测量期间环境漂移检查：%1 次违规（每 60 秒复核一次；"
+                            "0 次才说明数据在合规环境下取得）%2")
+                 .arg(envViolations)
+                 .arg(allowThrottled ? QStringLiteral("；已设 STELT9_ALLOW_THROTTLED，降级为警告")
+                                     : QString()));
 
     if (csvOpen)
     {

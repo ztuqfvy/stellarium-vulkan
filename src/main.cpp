@@ -491,18 +491,21 @@ int main(int argc, char **argv)
 	// ── T9 长跑分支（真实天空产帧管道 30 分钟基线；STELT9_RUN=1）───────────────
 	// 同样在正常主窗口创建前分流，引导方式与 A3 相同。
 	// 参数与判据见 render/legacy/LegacyLongRun.hpp 头注释。
-	// 退出码：0 = 管道完整（零失败零丢弃）；8 = 失败。门槛在基线之后冻结。
+	// 退出码：0 = 管道完整（零失败零丢弃）；8 = 管道失败；
+	//         9 = 环境不合规（未接电源 / 低电量模式开，拒绝测量）。
 	if (qEnvironmentVariableIsSet("STELT9_RUN"))
 	{
 		const stelapp::LegacyAppCheckResult r = stelapp::LegacyLongRun::run(confSettings);
 		for (const QString &line : r.details)
 			std::printf("STELT9: %s\n", qPrintable(line));
 		std::printf("STELT9: VERDICT=%s %s\n",
-			r.pass ? "PASS" : (r.ran ? "FAIL" : "UNAVAILABLE"), qPrintable(r.summary));
+			r.pass ? "PASS"
+		           : (r.envBlocked ? "ENV_FAIL" : (r.ran ? "FAIL" : "UNAVAILABLE")),
+			qPrintable(r.summary));
 		std::fflush(stdout);
 		delete confSettings;
 		StelLogger::deinit();
-		return r.pass ? 0 : 8;
+		return r.pass ? 0 : (r.envBlocked ? 9 : 8);
 	}
 
 	StelMainView mainWin(confSettings);

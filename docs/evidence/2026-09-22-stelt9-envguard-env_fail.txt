@@ -1,0 +1,30 @@
+[     0.251][INFO] StelFileMgr found install location "/Users/ztuqfvy/qt_demo/stellarium_vulkan"
+[     0.251][INFO]  -------------------------------------------------------------------------------
+[     0.251][INFO] [ This is Stellarium 26.1+ (v26.1.265-e0966d2 [main]) - https://stellarium.org/ ]
+[     0.251][INFO] [ Copyright (C) 2000-2026 Stellarium Developers                                 ]
+[     0.251][INFO]  -------------------------------------------------------------------------------
+[     0.252][INFO] 2026-09-22T14:23:16
+[     0.252][INFO] Operating System: macOS Golden Gate (27.0)
+[     0.252][INFO] Platform: cocoa
+[     0.252][INFO] Compiled using AppleClang 21.0.0.21000334
+[     0.252][INFO] Qt runtime version: 6.11.2
+[     0.252][INFO] Qt compilation version: 6.11.2
+[     0.252][INFO] Build ABI: arm64-little_endian-lp64
+[     0.252][INFO] Addressing mode: 64-bit
+[     0.252][INFO] CPU architecture: arm64
+[     0.252][INFO] CPU name: Apple M3
+[     0.252][INFO] CPU maximum speed: 2400 MHz
+[     0.252][INFO] CPU logical cores: 8
+[     0.252][INFO] Total physical memory: 16384 MB
+[     0.252][INFO] Model identifier: Mac15,12
+[     0.252][INFO] Writing log file to: /Users/ztuqfvy/Library/Application Support/Stellarium/log.txt
+[     0.252][INFO] File search paths:
+[     0.252][INFO]  [0]: /Users/ztuqfvy/Library/Application Support/Stellarium
+[     0.252][INFO]  [1]: /Users/ztuqfvy/qt_demo/stellarium_vulkan
+[     0.257][INFO] Config file: /Users/ztuqfvy/Library/Application Support/Stellarium/config.ini
+[     0.257][DBG ] Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+[     0.257][INFO] OpenGL module type: desktop OpenGL
+[     0.291][INFO] System language (ISO 639 / ISO 3166): zh_CN
+STELT9: 环境不合规：Now drawing from 'Battery Power'；低电量模式=开——按冻结协议拒绝测量（先接入电源并关闭低电量模式；仅调试可设 STELT9_ALLOW_THROTTLED=1）
+STELT9: T9-C00 FAIL 运行环境：电源=Now drawing from 'Battery Power'；低电量模式=开；判定=不合规。冻结协议要求接通电源且关闭低电量模式（被系统降频时的吞吐/延迟数据无意义）
+STELT9: VERDICT=ENV_FAIL 环境不合规：Now drawing from 'Battery Power'；低电量模式=开——按冻结协议拒绝测量（先接入电源并关闭低电量模式；仅调试可设 STELT9_ALLOW_THROTTLED=1）

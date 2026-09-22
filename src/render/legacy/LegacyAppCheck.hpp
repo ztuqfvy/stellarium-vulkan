@@ -36,7 +36,7 @@
  *   STELA3_SIZE=WxH      注入离屏读回尺寸；0x0 为**负控**——装配必败，
  *                        期望 VERDICT=FAIL、退出码 8（回应"负控能红"教训）
  *
- * 退出码：0 = 全部判据通过；8 = 存在失败项。
+ * 退出码：0 = 全部判据通过；8 = 存在失败项；9 = 运行环境不合规（T9 专用）。
  */
 #pragma once
 
@@ -57,6 +57,8 @@ struct LegacyAppCheckResult
     QStringList frames;        //!< 逐帧指纹行 + 可选 dump 行
     QString summary;
     QString setupError;        //!< 装配失败的原因（可操作、不静默降级）
+    bool envBlocked = false;   //!< T9：运行环境不合规（未接电源 / 低电量模式开）
+                               //!< 此时拒绝测量，退出码 9（区别于管道失败 8）
 };
 
 class LegacyAppCheck
