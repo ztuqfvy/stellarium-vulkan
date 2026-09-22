@@ -795,3 +795,44 @@ render p95 20 ms；readback p95 1 ms；>50ms 帧 60 个（0.095%），>100ms 帧
 - `docs/evidence/2026-09-22-stelt9-consistency-INVALID-throttled.txt` + `-frames.csv.gz`（作废运行，标注 INVALID）
 - `docs/evidence/2026-09-22-stelt9-probe-lpm-INVALID-throttled.txt`（3.75 fps 探针）
 - `docs/evidence/2026-09-22-stelt9-envguard-env_fail.txt`（守卫拒绝测量，退出码 9）
+
+## T9 一致性运行重跑：PASS，吞吐门槛验收通过（2026-09-22 晚）
+
+### 1. 前置与环境恢复
+
+用户接电 + 关闭低电量模式后：`pmset -g batt` → AC Power（80%），`lowpowermode 0`。
+20s 探针（warmup 5s）：**63.75 fps** / p95 19ms / 失败 0 / T9-C00 PASS —— 吞吐已恢复
+（探针略高于稳态基线属预期：短窗无长尾，且无降频）。
+
+### 2. 正式一致性运行（22:42 起，~46 分钟）
+
+参数：`STELT9_WARMUP_SECONDS=900 STELT9_SECONDS=1800`，`caffeinate -dimsu` 包裹。
+
+**VERDICT=PASS，T9-C00~C08 全部 8/8 PASS，退出码 0。**
+
+| 指标 | 本次一致性（稳态最后 1200s） | 基线（09:40） | 冻结门槛 | 判定 |
+|---|---|---|---|---|
+| 稳态吞吐 | **53.60 fps** | 52.66 fps | ≥40 fps | PASS（+1.8%） |
+| p50 总延迟 | 18 ms | — | — | — |
+| p95 总延迟 | 21 ms | 21 ms | ≤30 ms | PASS |
+| p99 总延迟 | 29 ms | 26 ms | ≤45 ms | PASS |
+| max 总延迟 | 197 ms（单帧毛刺） | 155 ms | — | — |
+| p95 读回 | 1 ms（max 7 ms） | 1 ms | ≤5 ms | PASS |
+| >50ms 帧占比 | 0.120%（86 帧） | — | ≤0.5% | PASS |
+| 失败 / 丢弃 | 0 / 0（97977 帧） | 0 / 0 | =0 | PASS |
+| footprint 斜率 | **0.004 MiB/min** | 0.279 MiB/min | ≤1.0 MiB/min | PASS |
+| 测中环境漂移 | 0 次违规（C08） | — | — | — |
+
+结论：与基线同源一致（吞吐差 1.8%、p95 持平、p99 差 3ms），**未复现 13:30 的降频崩盘**，
+坐实当时根因就是电源状态而非管道退化。内存斜率比基线更平（0.004 vs 0.279 MiB/min），
+进一步支持"基线斜率主要是资产惰性加载的残余长尾"的判断。
+max=197ms 为单帧毛刺（t≈1709s，仅 1 帧），不影响门槛（>50ms 占比 0.120% 远低于 0.5%）。
+
+**T9 吞吐基线与一致性验收到此闭环：A2 产帧侧正式形态定版，可以进入消费侧接线
+（P-BRG-01 帧上传/队列、P-BRG-04 15fps 降级 UI）。**
+
+### 3. 留证
+
+- `docs/evidence/2026-09-22-stelt9-consistency-reac/run.log`（8/8 PASS 全文）
+- `docs/evidence/2026-09-22-stelt9-consistency-reac/build.csv.gz`（97977 行逐帧 CSV）
+- 探针（20s / 63.75 fps / T9-C00 PASS）当时为前台直跑未存档，数字以本节记录为准
