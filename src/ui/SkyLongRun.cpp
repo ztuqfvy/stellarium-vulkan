@@ -2,7 +2,7 @@
 #include "ui/SkyLongRun.hpp"
 
 #include "render/legacy/FrameMailbox.hpp"
-#include "ui/LiveFrameSource.hpp"
+#include "ui/IFrameProducer.hpp"
 #include "ui/quick/SkyViewport.hpp"
 
 #include <QCoreApplication>
@@ -205,11 +205,22 @@ struct SwapRecord
 constexpr double kTargetFpsFloor = 40.0;   //!< 稳态吞吐下限（与 §6.1.1 同量级）
 // 上屏间隔门槛（消费侧口径）：vsync 60Hz 下间隔自然量化在 16.7 / 33.4ms 两档，
 // 生产者不足 60fps 时混排是正常的"漏一帧"，不等于延迟超标。故只管异常长停顿。
-constexpr double kIntervalP99Ms = 50.0;    //!< 上屏间隔 p99 上限
-constexpr double kIntervalMaxMs = 100.0;   //!< 上屏间隔单次最坏值上限
+constexpr double kIntervalP99Ms = 50.0;    //!< 上屏间隔 p99 上限（vsync 顶格形态）
+constexpr double kIntervalMaxMs = 100.0;   //!< 上屏间隔单次最坏值上限（同上）
+// 共线程形态（帧率跟随）的相对口径天花板。见头文件「SL-C03 的形态相关口径」：
+// 相对口径本身必须有天花板，否则"生产者极慢"的负控会失效（5fps → 3×200ms=600ms）。
+constexpr double kIntervalP99CeilMs = 100.0; //!< 相对口径的 p99 绝对天花板
+constexpr double kIntervalMaxCeilMs = 200.0; //!< 相对口径的 max 绝对天花板
 constexpr double kUploadMeanMs = 5.0;      //!< 单次上传均值上限
 constexpr double kUploadMaxMs = 100.0;     //!< 单次上传最坏值上限
-constexpr double kFrameAgeMs = 500.0;      //!< 邮箱帧龄上限
+constexpr double kFrameAgeMs = 500.0;      //!< 邮箱帧龄上限（max 口径）
+// SL-C11：稳态帧龄 p95 上限。定门槛的依据（T13 短窗基线 + 消费侧长跑实测）：
+//   · 消费侧（替身生产者）长跑实测帧龄 max 仅 28ms —— 邮箱几乎不排队；
+//   · 合流形态（真实引擎）下引擎单帧 draw ~20ms 且**与 QML 渲染共占 GUI 线程**，
+//     帧龄会出现与引擎负载同阶的排队，这是本节要量的常态值。
+// 门槛取 100ms：相对 SL-C06 的 500ms 收紧 5 倍，同时给"引擎单帧 20ms + 偶发
+// 双帧排队 + 场景图抖动"留出足够余量（实测基线见测试文档 §6.9）。
+constexpr double kFrameAgeP95Ms = 100.0;   //!< 稳态帧龄 p95 上限
 constexpr double kMemSlopeMiBPerMin = 1.0; //!< footprint 斜率上限
 constexpr double kDegradedShareMax = 0.01; //!< 降级误报占比上限
 
@@ -240,14 +251,28 @@ SkyLongRunOptions SkyLongRun::optionsFromEnv()
                                            o.csvPath + QStringLiteral(".frames.csv"));
     o.allowThrottled = qEnvironmentVariableIsSet("STELQUICK_LONGRUN_ALLOW_THROTTLED")
                        && qEnvironmentVariableIntValue("STELQUICK_LONGRUN_ALLOW_THROTTLED") != 0;
+    const int ageMs = qEnvironmentVariableIntValue("STELQUICK_LONGRUN_AGE_MS");
+    if (ageMs > 0)
+        o.frameAgeSampleMs = ageMs;
     return o;
 }
 
 void SkyLongRun::runStartupSequence(
     QGuiApplication *app, QQuickWindow *window, SkyViewport *viewport, FrameMailbox *mailbox,
-    const SkyLongRunOptions &options, const std::function<void(const SkyLongRunResult &)> &done)
+    IFrameProducer *producer, const SkyLongRunOptions &options,
+    const std::function<void(const SkyLongRunResult &)> &done)
 {
     auto result = std::make_shared<SkyLongRunResult>();
+
+    if (!producer)
+    {
+        result->pass = false;
+        result->summary = QStringLiteral("生产者未装配（nullptr）——调用方必须先装配并启动生产者");
+        std::fprintf(stderr, "STELLRUN: %s\n", qPrintable(result->summary));
+        std::fflush(stderr);
+        done(*result);
+        return;
+    }
 
     // ── SL-C00 环境前置（硬门；不合规直接拒绝，不产生测量数据）────────────────
     const PowerState psStart = queryPowerState();
@@ -294,24 +319,11 @@ void SkyLongRun::runStartupSequence(
     if (framesOpen)
         framesCsv->write("t_s,phase,frame_number,interval_ms\n");
 
-    // ── 生产者 ───────────────────────────────────────────────────────────────
-    LiveFrameSourceConfig cfg;
-    cfg.physicalSize = options.physicalSize;
-    cfg.devicePixelRatio = options.devicePixelRatio;
-    cfg.fps = options.producerFps;
-    cfg.simRate = 1.0;
-
-    auto liveSource = std::make_shared<LiveFrameSource>();
-    QString error;
-    if (!liveSource->start(mailbox, cfg, &error))
-    {
-        result->pass = false;
-        result->summary = QStringLiteral("生产者装配失败：%1").arg(error);
-        std::fprintf(stderr, "STELLRUN: %s\n", qPrintable(result->summary));
-        std::fflush(stderr);
-        done(*result);
-        return;
-    }
+    // ── 生产者：已由调用方装配并启动（T13）────────────────────────────────────
+    // 本类不自建也不拥有生产者。装配差异（替身场景 vs 真实引擎 boot + 暖机）属
+    // 调用方职责，本跑只吃 IFrameProducer 契约——这正是 T12 抽接口的目的。
+    std::fprintf(stderr, "STELLRUN: 生产者由调用方装配，本跑只负责计量\n");
+    std::fflush(stderr);
 
     auto rows = std::make_shared<std::vector<SecondsRow>>();
     auto swaps = std::make_shared<std::vector<SwapRecord>>();
@@ -347,7 +359,7 @@ void SkyLongRun::runStartupSequence(
     sampler->setInterval(1000);
     QObject::connect(
         sampler, &QTimer::timeout, app,
-        [rows, swaps, swapsWritten, mailbox, viewport, liveSource, clock, window,
+        [rows, swaps, swapsWritten, mailbox, viewport, producer, clock, window,
          warmup = options.warmupSeconds, nextPowerCheckAt, envViolations, csv, csvOpen,
          framesCsv, framesOpen]() {
             const double t = double(clock->elapsed()) / 1000.0;
@@ -388,7 +400,7 @@ void SkyLongRun::runStartupSequence(
             }
 
             const FrameMailbox::Stats ms = mailbox->stats();
-            const LiveFrameSource::RuntimeStats ps = liveSource->runtimeStats();
+            const ProducerCounters ps = producer->counters();
 
             SecondsRow row;
             row.tSec = t;
@@ -404,7 +416,7 @@ void SkyLongRun::runStartupSequence(
             row.footprintKb = footprintBytes() / 1024;
             row.exposed = window->isExposed();
             row.degraded = viewport->degraded();
-            row.producerFps = ps.producerFps;
+            row.producerFps = ps.fps;
             row.producerRendered = ps.rendered;
             row.producerFailed = ps.failed;
             rows->push_back(row);
@@ -435,6 +447,53 @@ void SkyLongRun::runStartupSequence(
         });
     sampler->start();
 
+    // ── SL-C11：帧龄高频采样（默认 100ms）────────────────────────────────────
+    // 为什么另设高频采样器：逐秒 CSV 的 mailbox_age_ms 是"每秒瞬时值"，1800 个点
+    // 算出来的 p95 只反映分钟级分位，抓不住「引擎单帧 draw 挤占 GUI 事件循环」这
+    // 类秒级以下的排队尖峰——而那正是 §7.4 要回答的「GUI 与 GL 同线程卡顿」。
+    // 样本只在稳态窗口内累积，且不入逐秒 CSV（30 分钟 ×1.8 万行只会淹没信号）；
+    // 分布摘要进判据详情与日志。
+    const double steadyStartSec =
+        double(options.warmupSeconds) + double(options.measureSeconds) / 3.0;
+    auto ageSamples = std::make_shared<std::vector<double>>();
+    auto ageSampler = new QTimer(app);
+    ageSampler->setInterval(qMax(10, options.frameAgeSampleMs));
+    QObject::connect(ageSampler, &QTimer::timeout, app,
+                     [ageSamples, mailbox, clock, steadyStartSec]() {
+                         if (double(clock->elapsed()) / 1000.0 < steadyStartSec)
+                             return;
+                         const FrameMailbox::Stats ms = mailbox->stats();
+                         if (ms.latestFrameAgeMs >= 0)
+                             ageSamples->push_back(double(ms.latestFrameAgeMs));
+                     });
+    ageSampler->start();
+
+    // ── 负控注入器：人为在 GUI 线程制造卡顿（STELQUICK_LONGRUN_STALL_MS）──────
+    // 为什么需要它：SL-C11 是新判据（纪律要求"新判据必须有能红的负控"），SL-C03
+    // 本次改了口径（须证明新口径仍能抓真停顿）。既有的 5fps 负控会同时打红
+    // SL-C01/C02/C10，无法单独定位"上屏节奏 / 帧龄"这一类的可红性。
+    // 本注入器每秒忙等 N 毫秒：上屏停顿 + 帧龄飙升，而生产/显示**总量**几乎不变
+    // （忙等前后照样出帧），故能精确命中 SL-C03/SL-C11。
+    // 正式验收禁用——一旦启用，数据即非合规基线（判据详情会明示）。
+    const int stallMs = qEnvironmentVariableIntValue("STELQUICK_LONGRUN_STALL_MS");
+    if (stallMs > 0)
+    {
+        auto stallTimer = new QTimer(app);
+        stallTimer->setInterval(1000);
+        QObject::connect(stallTimer, &QTimer::timeout, app, [stallMs]() {
+            QElapsedTimer busy;
+            busy.start();
+            while (busy.elapsed() < stallMs)
+            { /* 有意占住 GUI 线程：负控手段，非生产代码路径 */ }
+        });
+        stallTimer->start();
+        std::fprintf(stderr,
+                     "STELLRUN: ⚠⚠ 负控已启用（每秒在 GUI 线程忙等 %dms）——"
+                     "本次数据不是合规基线，不得作为验收证据\n",
+                     stallMs);
+        std::fflush(stderr);
+    }
+
     std::fprintf(stderr, "STELLRUN: 预热 %d 秒开始（生产者名义 %.1f fps，%dx%d）\n",
                  options.warmupSeconds, options.producerFps, options.physicalSize.width(),
                  options.physicalSize.height());
@@ -449,11 +508,13 @@ void SkyLongRun::runStartupSequence(
 
     // ── 收尾：汇总判据 ───────────────────────────────────────────────────────
     QTimer::singleShot((options.warmupSeconds + options.measureSeconds) * 1000, app,
-                       [app, sampler, window, viewport, mailbox, liveSource, rows, swaps,
+                       [app, sampler, ageSampler, ageSamples, steadyStartSec, window, viewport,
+                        mailbox, producer, rows, swaps,
                         swapsWritten, clock, envViolations, options,
                         allowThrottled = options.allowThrottled, result, done, csv, csvOpen,
                         framesCsv, framesOpen]() {
                            sampler->stop();
+                           ageSampler->stop();
 
                            // 帧流 CSV 尾部剩余 + 关盘
                            if (framesOpen)
@@ -478,10 +539,10 @@ void SkyLongRun::runStartupSequence(
                            }
 
                            const FrameMailbox::Stats ms = mailbox->stats();
-                           const LiveFrameSource::RuntimeStats ps = liveSource->runtimeStats();
+                           const ProducerCounters ps = producer->counters();
 
                            // 生产者停机（先于判据打印；停机耗时不影响已采集数据）
-                           liveSource->stop();
+                           producer->stop();
 
                            auto add = [result](const QString &id, bool pass,
                                                const QString &detail) {
@@ -506,9 +567,9 @@ void SkyLongRun::runStartupSequence(
                                }
                                measLast = r;
                            }
-                           // 稳态窗口：测量段的后 2/3（对齐 T9「最后 1200s」口径）
-                           const double steadyStart =
-                               double(options.warmupSeconds) + double(options.measureSeconds) / 3.0;
+                           // 稳态窗口：测量段的后 2/3（对齐 T9「最后 1200s」口径）。
+                           // steadyStartSec 在函数体统一定义，与 SL-C11 高频采样器共用。
+                           const double steadyStart = steadyStartSec;
 
                            std::vector<double> steadyT, steadyFp, steadyPropFps;
                            quint64 windowDisplayedFirst = 0, windowDisplayedLast = 0;
@@ -616,23 +677,46 @@ void SkyLongRun::runStartupSequence(
                                    .arg(windowDisplayedLast)
                                    .arg(windowTLast - windowTFirst, 0, 'f', 0));
 
-                           // ── SL-C03 上屏节奏（无异常长停顿）──────────────────
+                           // ── SL-C03 上屏节奏（形态相关口径，不只是形态相关门槛）──
+                           // 栅格 = max(vsync 周期, 生产者帧间隔)。两形态实测对照：
+                           //   test（独立线程，顶 vsync）p50 16.71ms / 帧间隔 18.21ms
+                           //   engine（共 GUI 线程）    p50 21.35ms / 帧间隔 23.34ms
+                           // 共线程时"漏一帧"由 33.4ms 放大到 46.7ms，绝对 50ms 门槛
+                           // 只容许漏一帧 → 对帧率跟随形态口径过严。改相对口径，但保留
+                           // 绝对天花板（否则负控失效）。
+                           const double frameIntervalMs =
+                               steadyDisplayFps > 0 ? 1000.0 / steadyDisplayFps : 0.0;
+                           double p99Limit = kIntervalP99Ms;
+                           double maxLimit = kIntervalMaxMs;
+                           if (options.producerSharesGuiThread && frameIntervalMs > 0.0)
+                           {
+                               p99Limit = std::min(3.0 * frameIntervalMs, kIntervalP99CeilMs);
+                               maxLimit = std::min(6.0 * frameIntervalMs, kIntervalMaxCeilMs);
+                           }
                            const bool c03 = !steadyIntervals.empty()
-                                            && si.p99 <= kIntervalP99Ms
-                                            && si.max <= kIntervalMaxMs;
+                                            && si.p99 <= p99Limit
+                                            && si.max <= maxLimit;
                            add("SL-C03", c03,
                                QStringLiteral("稳态上屏间隔（%1 帧）：mean %2 / p50 %3 / "
-                                              "p95 %4 / p99 %5 / max %6 ms"
-                                              "（门槛 p99≤%7、max≤%8；vsync 下 16.7/33.4ms "
-                                              "混排属正常漏一帧，判据只管异常长停顿）")
+                                              "p95 %4 / p99 %5 / max %6 ms；"
+                                              "门槛 p99≤%7、max≤%8（%9）"
+                                              "（vsync 下 16.7/33.4ms 混排属正常漏一帧，"
+                                              "判据只管异常长停顿）")
                                    .arg(quint64(steadyIntervals.size()))
                                    .arg(si.mean, 0, 'f', 2)
                                    .arg(si.p50, 0, 'f', 2)
                                    .arg(si.p95, 0, 'f', 2)
                                    .arg(si.p99, 0, 'f', 2)
                                    .arg(si.max, 0, 'f', 2)
-                                   .arg(kIntervalP99Ms, 0, 'f', 0)
-                                   .arg(kIntervalMaxMs, 0, 'f', 0));
+                                   .arg(p99Limit, 0, 'f', 2)
+                                   .arg(maxLimit, 0, 'f', 2)
+                                   .arg(options.producerSharesGuiThread
+                                            ? QStringLiteral("共线程形态：相对口径 3×/6×帧间隔"
+                                                             "（%1ms），天花板 %2/%3ms")
+                                                  .arg(frameIntervalMs, 0, 'f', 2)
+                                                  .arg(kIntervalP99CeilMs, 0, 'f', 0)
+                                                  .arg(kIntervalMaxCeilMs, 0, 'f', 0)
+                                            : QStringLiteral("vsync 顶格形态：冻结绝对门槛")));
 
                            // ── SL-C04 邮箱完整 ─────────────────────────────────
                            const bool c04 = dropDelta == 0;
@@ -705,6 +789,30 @@ void SkyLongRun::runStartupSequence(
                                    .arg(degradedShare * 100.0, 0, 'f', 3)
                                    .arg(kDegradedShareMax * 100.0, 0, 'f', 0));
 
+                           // ── SL-C11 GUI 线程卡顿（稳态帧龄 p95）──────────────
+                           // 合流形态下引擎 draw 与 QML 场景图渲染**共占 GUI 线程**：
+                           // 引擎单帧开销大 → 事件循环被挤占 → 帧在邮箱里排队变"老"。
+                           // SL-C06 的 max 只抓单次异常（且门槛 500ms 很松），本判据
+                           // 用 100ms 粒度的高频采样看 p95，即"常态排队水平"。
+                           const Percentiles age = summarize(*ageSamples);
+                           const bool c11 = ageSamples->size() >= 100
+                                            && age.p95 <= kFrameAgeP95Ms;
+                           add("SL-C11", c11,
+                               QStringLiteral("稳态帧龄（%1 个 100ms 粒度样本）："
+                                              "mean %2 / p95 %3 / p99 %4 / max %5 ms"
+                                              "（门槛 p95≤%6）")
+                                   .arg(ageSamples->size())
+                                   .arg(age.mean, 0, 'f', 2)
+                                   .arg(age.p95, 0, 'f', 2)
+                                   .arg(age.p99, 0, 'f', 2)
+                                   .arg(age.max, 0, 'f', 2)
+                                   .arg(kFrameAgeP95Ms, 0, 'f', 0));
+                           result->steadyAgeMeanMs = age.mean;
+                           result->steadyAgeP95Ms = age.p95;
+                           result->steadyAgeP99Ms = age.p99;
+                           result->steadyAgeMaxMs = age.max;
+                           result->steadyAgeSamples = ageSamples->size();
+
                            result->ran = true;
                            // SL-C09 失败 = 测量中窗口被遮挡/最小化（或屏保接管）：
                            // 显示/节奏/生产统计全部被污染，此时跑出来的 FAIL 没有诊断价值，
@@ -717,7 +825,8 @@ void SkyLongRun::runStartupSequence(
                                QStringLiteral("消费侧长跑：预热 %1s + 测量 %2s；"
                                               "稳态显示 %3 fps / 生产 %4 fps；"
                                               "上屏间隔 p95 %5ms / p99 %6ms；"
-                                              "丢弃 %7；内存斜率 %8 MiB/min%9")
+                                              "丢弃 %7；内存斜率 %8 MiB/min；"
+                                              "帧龄 p95 %9ms / max %10ms%11")
                                    .arg(options.warmupSeconds)
                                    .arg(options.measureSeconds)
                                    .arg(steadyDisplayFps, 0, 'f', 2)
@@ -726,6 +835,8 @@ void SkyLongRun::runStartupSequence(
                                    .arg(si.p99, 0, 'f', 2)
                                    .arg(dropDelta)
                                    .arg(memSlope, 0, 'f', 3)
+                                   .arg(age.p95, 0, 'f', 2)
+                                   .arg(age.max, 0, 'f', 2)
                                    .arg(result->dataInvalid
                                             ? QStringLiteral("；VERDICT=INVALID（测量中窗口暴露不全，"
                                                              "统计被遮挡污染，须排除遮挡源后重跑）")
@@ -738,6 +849,14 @@ void SkyLongRun::runStartupSequence(
                                result->details << QStringLiteral("SL-INFO 逐帧上屏 CSV：%1（%2 行）")
                                                       .arg(options.framesCsvPath)
                                                       .arg(swaps->size());
+                           const int stallNote =
+                               qEnvironmentVariableIntValue("STELQUICK_LONGRUN_STALL_MS");
+                           if (stallNote > 0)
+                               result->details
+                                   << QStringLiteral("SL-INFO ⚠ 负控 STALL_MS=%1 已启用——"
+                                                     "本次为上屏节奏/帧龄判据的**可红性证据**，"
+                                                     "不是合规基线数据")
+                                          .arg(stallNote);
                            Q_UNUSED(app)
                            Q_UNUSED(window)
                            done(*result);

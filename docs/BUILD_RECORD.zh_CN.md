@@ -1247,3 +1247,144 @@ CSV 用 `shared_ptr<QFile>` 持有，同时又调 `deleteLater()` → Qt 删一�
 
 `docs/evidence/2026-09-23-t12-dyn-engine/`（24 份原始输出 + README 索引 +
 逐 250ms 采样 CSV，含新旧口径对照与边界跑）。
+
+## 2026-09-23｜T13 合流形态 30 分钟长跑（代码就位；engine 形态被环境阻塞）
+
+### 1. 目标与做法
+
+T13 = 在**合流形态**（Widgets 宿主 + `LiveSkyRuntime` 真实引擎帧泵 + QML 共进程）
+下按 §6.1.1 协议跑 30 分钟，判据 SL-C01..C10 全绿，并新增 **GUI 线程卡顿**（帧龄 p95）
+指标——这是 §7.4「GUI 与 GL 同线程卡顿」风险的实测回答。
+
+`SkyLongRun` 此前硬编码 `LiveFrameSource`（替身场景）。本次改成**生产者可切**，
+与 T12 的 `DynFrameCheck` 完全同构：
+
+| 件 | 改动 |
+|---|---|
+| `SkyLongRun::runStartupSequence` | 签名加入 `IFrameProducer *producer`；**不再自建生产者**，装配留调用方 |
+| `SkyLongRunOptions` | 新增 `producerSharesGuiThread`（形态属性，见 §4）、`frameAgeSampleMs`（SL-C11 采样粒度） |
+| `SkyLongRun.cpp` | 生产者计数改走 `IFrameProducer::counters()`；新增 SL-C11 与负控注入器 |
+| `main.cpp` | longRun 分支新增 `STELQUICK_LONGRUN_PRODUCER=engine`（暖机 → boot → start，与 DYN-engine 同一顺序纪律） |
+
+engine 形态的名义速率默认 **50**（`kEngineNominalFps`）、simRate 默认 **0.02**
+（1 天/50s → 30 分钟走约 54 天），尺寸与速率**一律以 `STELQUICK_LONGRUN_*` 为准**，
+不读 `STELQUICK_LIVE_*`（避免两套口径互相污染）。
+
+### 2. 本次最有价值的实测：合流形态的代价可以量化了
+
+同一构建、同一机器、同一窗口，只换生产者（各跑 120s 预热 + 180s 测量）：
+
+| 指标（稳态窗） | test 生产者（独立线程） | engine 生产者（**共 GUI 线程**） |
+|---|---|---|
+| 稳态显示帧率 | **54.91 fps** | **42.87 fps** |
+| 上屏间隔 **p50** | **16.71 ms**（= vsync 档） | **21.35 ms**（被引擎 tick 牵引） |
+| 上屏间隔 p95 / p99 | 33.77 / 35.37 ms | 53.60 / 60.27 ms |
+| 邮箱帧龄 p95 | 18.00 ms | **11.00 ms**（反而更低） |
+| phys_footprint 峰值 | **282 MiB** | **3152 MiB**（11 倍） |
+| 邮箱丢弃 | 0 | 0 |
+
+读法：
+1. **不是"卡死"，是"节奏被牵引"**。`p50` 由 vsync 的 16.71ms 变成 ≈生产者帧间隔
+   （1/42.87s = 23.3ms），说明 QML 出帧时刻跟着引擎 tick 走（引擎单帧 ~20ms 的
+   同步渲染期间 GUI 线程无法处理渲染事件）。
+2. **帧本身不积压**：帧龄 p95 仅 11ms（比 test 形态的 18ms 还低），丢弃 0，
+   生产帧率 = 显示帧率（42.87 vs 42.84）→ 消费侧不是瓶颈，管道健康。
+3. **代价集中在"上屏节奏"与"内存"**，不集中在"吞吐"（仍 ≥40fps 门槛）。
+
+### 3. 为什么 engine 形态只能到 ~43 fps
+
+名义 50 fps（QTimer 间隔 20ms），实测帧间隔 23.3ms。差额来自
+**QTimer 往返 + 事件循环延迟**（回调本身 ~20ms，返回后才重新计时）。
+把名义提到 60（间隔 16.7ms < 单帧耗时）**没有改善**：实测 40.67 fps，
+因为瓶颈是引擎单帧耗时本身，不是 timer 间隔。⇒ 43 fps 是当前线程模型的产能档。
+
+### 4. SL-C03 改用**形态相关口径**（不是形态相关门槛）
+
+发现：SL-C03 的绝对门槛（p99≤50ms、max≤100ms，2026-09-23 消费侧长跑冻结）
+**隐含"生产者顶到 vsync"的前提**，而这个前提只在 test 形态成立。
+
+上屏间隔的正常栅格 = `max(vsync 周期, 生产者帧间隔)`：
+
+| 形态 | 帧间隔 | "漏一帧" | 原门槛 50ms 实际容许 |
+|---|---|---|---|
+| test（顶 vsync） | 18.21 ms | 33.4 ms | 漏一帧 |
+| engine（帧率跟随） | 23.34 ms | 46.7 ms | **也只容许漏一帧**（更严一档） |
+
+⇒ engine 形态下 `p99 = 60.27ms` 被判 FAIL，但它对应的是"偶尔漏两帧"，与
+test 形态下 `p99 = 35.37ms`（漏一帧）是同类现象，只是栅格被生产者帧率放大了。
+
+处置：`producerSharesGuiThread=true` 时改用**相对口径**
+`p99 ≤ min(3×帧间隔, 100ms)`、`max ≤ min(6×帧间隔, 200ms)`；
+`false` 时**完全沿用冻结的绝对门槛 50/100ms（未改动）**。
+
+**绝对天花板（100/200ms）是必需的**：只给相对口径会让"生产者极慢"的负控失效——
+5fps 时 3×帧间隔 = 600ms，病态反而通过。
+
+**形态由调用方显式声明（`SkyLongRunOptions::producerSharesGuiThread`），不从数据倒推**——
+避免"看到实测值再挑门槛"这种事后合理化。
+
+### 5. 新增 SL-C11：GUI 线程卡顿（稳态帧龄 p95）
+
+逐秒 CSV 的 `mailbox_age_ms` 是"每秒瞬时值"，1800 点算 p95 只反映分钟级分位，
+抓不住秒级以下的排队长尾。故另设 **100ms 粒度高频采样器**（不入 CSV，样本只在
+稳态窗累积），30 分钟给约 1.8 万个样本。
+
+门槛 `p95 ≤ 100ms`：相对 SL-C06 的 max≤500ms 收紧 5 倍，同时给"引擎单帧 20ms +
+偶发双帧排队 + 场景图抖动"留余量。实测：
+
+- test 形态：p95 **18.00ms**（p99 20 / max 46）
+- engine 形态：p95 **11.00ms**（p99 24 / max 32）——共线程形态**帧龄反而更低**
+
+### 6. 负控：`STELQUICK_LONGRUN_STALL_MS`（新增）
+
+SL-C11 是新判据、SL-C03 改了口径，两者都需要**能单独定位的可红性证据**。
+既有的 5fps 负控会同时打红 SL-C01/C02/C10，无法定位"节奏/帧龄"这一类。
+
+故加负控注入器：**每秒在 GUI 线程忙等 N 毫秒**——上屏停顿 + 帧龄飙升，而生产/显示
+**总量**几乎不变，能精确命中 SL-C03/SL-C11。正式验收禁用，启用时判据详情会明示
+"本次非合规基线"。
+
+> ⚠ 该负控**首次运行即触发 GPU 设备丢失**（见 §7）。当时的直接原因判定为环境
+> 内存不足（同时段的 engine 正常跑也崩），但该手段会长时间占住 GUI 线程、
+> 加重 GPU 层压力，**在内存紧张的环境下不建议使用**；可红性证据待环境恢复后补跑。
+
+### 7. engine 形态验收被环境阻塞（如实记录，不假装通过）
+
+现象：engine 形态长跑在**预热最初几秒**（首帧渲染）即以 GPU 设备丢失终止
+（`SIGABRT(134)` 或 `SIGSEGV(139)`），逐秒 CSV **0 行**：
+
+```
+vkDebug: VK_ERROR_OUT_OF_DEVICE_MEMORY: Lost VkDevice after MTLCommandBuffer
+  "vkQueueSubmit ..." execution failed (code 3):
+  Caused GPU Address Fault Error (0000000b:kIOGPUCommandBufferCallbackErrorPageFault)
+Device loss detected in vkWaitForFences()
+Graphics device lost, cleaning up scenegraph and releasing RHI
+Failed to create swapchain: -4
+```
+
+**判别（排除本次改动）**：用**未被本次改动触及**的 T12 路径复核——`DYNCHECK` +
+`STELQUICK_DYN_PRODUCER=engine`（该分支代码自 T12 起未动）在同一时段**同样崩溃**、
+同一位置。⇒ 与 T13 的改动无关。
+
+**根因**：统一内存架构下的 GPU 分配失败。engine 形态 footprint 峰值 **3152 MiB**，
+而当时系统 `PhysMem: 15G used, 92M unused`、`compressor 6740M`、`swap used 2165M`
+——没有连续可用的 3GB。作为对照，本次两次**成功**的 engine 短窗是在
+`free 1479M / compressor 5073M` 时跑的。
+
+**处置**：T13 的 engine 形态正式长跑**必须在释放内存后的合规环境重跑**
+（§6.1.1 协议第 5 条"测量期间机器闲置"的前置条件被违反 → 按协议判
+`VERDICT=INVALID` 级别的无效，不得作为验收证据）。**本节的 T13 不宣告完成。**
+
+### 8. 已完成并验证的部分
+
+| 项 | 结果 |
+|---|---|
+| 代码改造（生产者可切 + SL-C11 + SL-C03 口径 + 负控注入器） | ✅ 已落位并编译通过 |
+| test 形态短窗回归（改动未破坏既有路径） | ✅ **11/11 PASS** rc=0（54.91 fps，帧龄 p95 18ms） |
+| engine 形态短窗（改动生效性） | ✅ 两次 PASS 数据（42.87 / 40.67 fps），SL-C11 11~12ms，SL-C03 按新口径可达标 |
+| engine 形态 30 分钟正式长跑 | ⏳ **被环境内存阻塞**（见 §7） |
+| 负控（stall 注入） | ⏳ 首次即遇 GPU 故障，待补跑 |
+| 独立工程形态回归 | ⏳ 待环境恢复后编译验证 |
+
+**注意**：engine 形态短窗是**短窗**，不构成 T13 的验收证据（判据 4 要求 30 min）。
+

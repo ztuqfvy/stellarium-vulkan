@@ -14,6 +14,8 @@
  *   STELQUICK_DYN_CHECK=1        → 动态帧通路自检（I-DYN / P-BRG-01 前置 / P-BRG-04）。
  *   STELQUICK_LONGRUN=1          → 消费侧全量计量长跑（P-BRG-01 验收：warmup + measure
  *                                  两段，逐秒 + 逐帧上屏 CSV，环境前置不合规拒绝测量）。
+ *                                  T13 起生产者可切：STELQUICK_LONGRUN_PRODUCER=engine
+ *                                  走**真实引擎**（合流形态长跑），默认替身场景。
  *   STELQUICK_LIVE=1             → 手动查看动态帧流（人眼观察，不自动退出）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
@@ -1141,14 +1143,84 @@ int main(int argc, char **argv)
 
     // 消费侧全量计量长跑（P-BRG-01 验收）：warmup + measure 两段，逐秒/逐帧 CSV。
     // 环境前置不合规时以退出码 9 拒绝测量（不产生任何测量数据）。
+    //
+    // T13：生产者可切（STELQUICK_LONGRUN_PRODUCER）。
+    //   · 默认/"test" —— LiveFrameSource（替身场景）
+    //   · "engine"    —— LiveSkyRuntime（**真实引擎**）→ 这才是"合流形态长跑"
+    // 与 DYN 分支同构：装配在此完成（engine 须先暖机再 boot），SkyLongRun 只吃
+    // IFrameProducer*。尺寸与名义速率**一律以 STELQUICK_LONGRUN_* 为准**，
+    // 不读 STELQUICK_LIVE_*（避免两套口径互相污染）。
     if (longRun) {
         if (!skyViewport) {
             std::fprintf(stderr, "长跑失败：未找到 SkyViewport\n");
             return 6;
         }
+        stelapp::SkyLongRunOptions longOptions = stelapp::SkyLongRun::optionsFromEnv();
+        const QByteArray longProducerKind = qgetenv("STELQUICK_LONGRUN_PRODUCER");
+        const bool engineLongProducer = (longProducerKind == "engine");
+        stelapp::IFrameProducer *producer = nullptr;
+        QString producerError;
+
+        if (!engineLongProducer) {
+            stelapp::LiveFrameSourceConfig cfg;
+            cfg.physicalSize = longOptions.physicalSize;
+            cfg.devicePixelRatio = longOptions.devicePixelRatio;
+            cfg.fps = longOptions.producerFps;
+            cfg.simRate = 1.0;
+            if (liveSource.start(&frameMailbox, cfg, &producerError))
+                producer = &liveSource;
+        }
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+        else {
+            // engine 形态：与 DYN-engine 完全同一顺序纪律（暖机 → boot → start）。
+            // 名义速率默认 50——引擎产能档（不是 UI 上限 60，见 kEngineNominalFps）；
+            // simRate 默认 0.02（1 天/50s）→ 30 分钟走约 54 天，内容持续变化但
+            // 不引入负载阶跃（比 0.1 更贴近长期运行的真实观感）。
+            if (!qEnvironmentVariableIsSet("STELQUICK_LONGRUN_FPS"))
+                longOptions.producerFps = kEngineNominalFps;
+            // SL-C03 口径：engine 形态的生产者与消费侧**共占 GUI 线程**（形态属性，
+            // 不是从数据倒推）——引擎 tick 会牵引 QML 上屏栅格，绝对毫秒门槛不适用。
+            longOptions.producerSharesGuiThread = true;
+            warmUpSceneGraph(window);
+            liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+            stelapp::LiveSkyRuntime::Config engineCfg;
+            engineCfg.renderSize = longOptions.physicalSize;
+            engineCfg.fps = longOptions.producerFps;
+            const QByteArray longSimRate = qgetenv("STELQUICK_LIVE_SIMRATE");
+            engineCfg.simRate = longSimRate.isEmpty() ? 0.02 : longSimRate.toDouble();
+            if (!liveSkyRuntime->boot(&producerError)) {
+                std::fprintf(stderr, "长跑：引擎引导失败：%s\n",
+                             producerError.toUtf8().constData());
+                liveSkyRuntime.reset();
+            } else if (!liveSkyRuntime->start(&frameMailbox, engineCfg, &producerError)) {
+                std::fprintf(stderr, "长跑：引擎帧泵启动失败：%s\n",
+                             producerError.toUtf8().constData());
+                liveSkyRuntime.reset();
+            } else {
+                producer = liveSkyRuntime.get();
+            }
+        }
+#else
+        else {
+            producerError = QStringLiteral(
+                "engine 生产者需要 Widgets 宿主形态构建（-DSTELQUICKUI_WIDGETS_HOST=ON 且 "
+                "-DENABLE_STELQUICKUI=ON）");
+        }
+#endif
+
+        if (!producer) {
+            std::fprintf(stderr, "长跑失败：生产者装配失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("STELLRUN: VERDICT=UNAVAILABLE（生产者未装配，不得据此声称通过）\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        std::printf("STELLRUN: 生产者=%s\n",
+                    engineLongProducer ? "engine(真实引擎)" : "test(替身场景)");
+        std::fflush(stdout);
+
         stelapp::SkyLongRun::runStartupSequence(
-            &app, window, skyViewport, &frameMailbox,
-            stelapp::SkyLongRun::optionsFromEnv(),
+            &app, window, skyViewport, &frameMailbox, producer, longOptions,
             [&app](const stelapp::SkyLongRunResult &result) {
                 std::printf("STELLRUN: %s\n", result.summary.toUtf8().constData());
                 for (const QString &line : result.details)
@@ -1167,6 +1239,20 @@ int main(int argc, char **argv)
                 app.exit(result.pass ? 0 : (result.dataInvalid ? 9 : 8));
             });
         const int rc = app.exec();
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+        if (engineLongProducer) {
+            // 引擎引导过的进程不走正常 return（双图形栈析构顺序未定义，探针实测
+            // return 后 SIGSEGV(139) 会吞掉判据码）。与 DYN-engine 同一纪律。
+            // 注意：帧泵已在 SkyLongRun 收尾由 producer->stop() 停掉，这里只做
+            // 引擎侧离屏资源的释放（stop 幂等）。
+            if (liveSkyRuntime) {
+                liveSkyRuntime->stop();
+                liveSkyRuntime.reset();
+            }
+            std::fflush(nullptr);
+            _exit(backendOk ? rc : 3);
+        }
+#endif
         return (rc == 0 && !backendOk) ? 3 : rc;
     }
 
