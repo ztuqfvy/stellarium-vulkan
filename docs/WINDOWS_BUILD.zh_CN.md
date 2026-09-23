@@ -431,6 +431,15 @@ $env:STELQUICK_DYN_CHECK = "1"; $env:STELQUICK_GRAPHICS_API = "d3d11"
 期望：1a `A2CHECK: VERDICT=PASS`；1b `DYNCHECK: VERDICT=PASS`（7/7）；1c 同 PASS。
 注意 1b/1c 各约 30 秒（含 15s 测量窗）。
 
+> **阶段 1 已完成（2026-09-23，远程 SSH + schtasks /it 通道）**：
+> 1a PASS（12 探针 0 失败）；1b PASS（59.8 fps，C06 按已知缺陷 SKIP）；
+> 1c FAIL 1/7 —— D1-C01 d3d11 稳态 35.0 fps < 门槛 36.0，复跑 33.4 仍 FAIL，
+> 定性为 d3d11 交换链双缓冲排空节奏（~30ms ≈ 2 个 vsync），非方差、非仪器问题。
+> d3d11 为兜底后端，记档不阻塞；证据见
+> `docs/evidence/2026-09-23-windows-stage1/`。环境：RTX 4060 / Vulkan 1.4.325 /
+> driver 591.74 / MSVC VS18 / Qt 6.11.2。构建首战修一道 NOMINMAX（da692f0，
+> windows.h min/max 宏击穿 std::min/max，C2589）。
+
 ### 阶段 2：合流形态首次 Windows 构建（数小时级，主目标，可能踩坑）
 
 > 上文 §1 说"不要碰根构建"——**那条只约束第一轮的静态纹理对照**。
