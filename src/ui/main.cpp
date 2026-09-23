@@ -28,6 +28,30 @@
 #include "ui/LegacyHostCheck.hpp"
 
 #include <QGuiApplication>
+#if defined(STELQUICK_WIDGETS_HOST)
+// A3 前置探针（2026-09-23）：宿主换成 QApplication（QGuiApplication 的严格超集）。
+// 动机：引擎**现成的**无头引导路径 LegacyAppCheck A3-C01 依赖
+//   new StelMainView(...) + show() + WA_DontShowOnScreen → initializeGL → StelApp::init
+// 而 StelMainView : public QGraphicsView 是 Widgets 类；QGuiApplication 下创建
+// 任何 QWidget 会直接 abort（"Cannot create a QWidget without QApplication"）。
+// 本形态由 CMake 选项 STELQUICKUI_WIDGETS_HOST 开启，默认关闭以保持既有基线。
+#include <QApplication>
+#endif
+#if defined(STELQUICK_HAS_ENGINE)
+// A3 前置探针：引擎无头引导所需的头（使用面照抄 src/main.cpp）
+#include "StelMainView.hpp"
+#include "core/StelApp.hpp"
+#include "core/StelCore.hpp"
+#include "core/StelFileMgr.hpp"
+#include "core/StelTranslator.hpp"
+#include "core/StelIniParser.hpp"
+#include "StelLogger.hpp"
+#include <QDir>
+#include <QEventLoop>
+#include <QSettings>
+#include <QThread>
+#include <unistd.h>
+#endif
 #include <QElapsedTimer>
 #include <QFileInfo>
 #include <QQmlApplicationEngine>
@@ -283,8 +307,177 @@ void runInteractionTest(QGuiApplication *app, QQuickWindow *window, int baseW, i
 
 } // namespace
 
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+// ── A3 前置探针：引擎无头引导 × QML 窗口同进程（STELQUICK_ENGINE_COEXIST=1）──
+//
+// 回答进度实况 §8.6 记录的未知数"QApplication × QQuickWindow 混用"。
+// 与 render/legacy/LegacyAppCheck（A3-C01）的区别：那里的进程**只有引擎**；
+// 本探针在**已经跑起来的 QQuickWindow 旁边**引导同一份引擎（同一进程、同一份
+// stelMain 符号），验证两者共存。
+//
+// 为什么必须用 QApplication：引擎现成的无头引导路径依赖
+//   new StelMainView(conf) + show() + WA_DontShowOnScreen → initializeGL → StelApp::init
+// 而 StelMainView : public QGraphicsView 是 Widgets 类，QGuiApplication 下创建
+// 任何 QWidget 会 abort。这正是本探针存在的理由。
+//
+// 退出码：0 = 全部判据通过；8 = 存在失败项。
+int runEngineCoexistProbe(QGuiApplication *app, QQuickWindow *window)
+{
+    int painted = 0;
+    QObject::connect(window, &QQuickWindow::frameSwapped, window, [&painted]() { ++painted; });
+
+    const auto api = window->rendererInterface() ? window->rendererInterface()->graphicsApi()
+                                                 : QSGRendererInterface::Unknown;
+    std::printf("COEXIST: ── A3 前置探针：引擎无头引导 × QML 窗口同进程 ──\n");
+    std::printf("COEXIST: 宿主形态 = QApplication（Widgets）、QML 后端 = %s\n", apiName(api));
+    std::fflush(stdout);
+
+    // 先让 QML 窗口真出一轮帧，作为"引擎未引导时窗口是活的"基线。
+    // 注意：Qt Quick 是**按需渲染**——静态页面渲完就停，只数现成的帧会得到 0。
+    // 所以基线本身也必须用"主动请求重绘"的方式取，两侧才可比。
+    {
+        QElapsedTimer warm;
+        warm.start();
+        while (warm.elapsed() < 1500) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+            window->update();
+        }
+    }
+    const int framesBeforeBoot = painted;
+    std::printf("COEXIST: 引导前 QML 帧数 = %d（sceneGraphInitialized=%d）\n",
+                framesBeforeBoot, window->isSceneGraphInitialized() ? 1 : 0);
+    std::fflush(stdout);
+
+    // ── 引擎前置：照抄 src/main.cpp 的顺序（缺一不可）──────────────────────
+    StelFileMgr::init();
+    const QString userDir = StelFileMgr::getUserDir();
+    StelLogger::init(userDir + QStringLiteral("/log.txt"));
+
+    QString configFileFullPath = StelFileMgr::findFile(
+        QStringLiteral("config.ini"),
+        StelFileMgr::Flags(StelFileMgr::Writable | StelFileMgr::File));
+    if (configFileFullPath.isEmpty())
+        configFileFullPath = StelFileMgr::findFile(QStringLiteral("config.ini"), StelFileMgr::New);
+    if (configFileFullPath.isEmpty()) {
+        std::printf("COEXIST: C-00 FAIL 既找不到也建不出 config.ini\n");
+        std::fflush(stdout);
+        return 8;
+    }
+    auto *confSettings = new QSettings(configFileFullPath, StelIniFormat, nullptr);
+    StelTranslator::init(StelFileMgr::getInstallationDir() + QStringLiteral("/data/languages.tab"));
+
+    std::printf("COEXIST: 安装目录 = %s\n", qPrintable(StelFileMgr::getInstallationDir()));
+    std::printf("COEXIST: 用户目录 = %s\n", qPrintable(userDir));
+    std::printf("COEXIST: 配置文件 = %s\n", qPrintable(configFileFullPath));
+    std::fflush(stdout);
+
+    int failCount = 0;
+
+    // ── C-01 引擎无头引导（与 A3-C01 同一路径，但此刻 QML 窗口已存在）──────────
+    StelMainView *mainWin = new StelMainView(confSettings);
+    mainWin->setAttribute(Qt::WA_DontShowOnScreen, true);
+    mainWin->resize(1280, 720);
+    mainWin->show();
+
+    QElapsedTimer bootClock;
+    bootClock.start();
+    while (bootClock.elapsed() < 30000 && !StelApp::isInitialized()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        if (!StelApp::isInitialized())
+            QThread::msleep(10);
+    }
+    const bool booted = StelApp::isInitialized();
+    if (!booted)
+        ++failCount;
+    std::printf("COEXIST: C-01 %s 引擎无头初始化%s（耗时 %lldms，WA_DontShowOnScreen，"
+                "QML 窗口同时存活）\n",
+                booted ? "PASS" : "FAIL",
+                booted ? "成功" : "失败（30s 内 initializeGL 未触发）",
+                static_cast<long long>(bootClock.elapsed()));
+
+    // ── C-02 引擎 GL 形态（照抄 A3-C02：不采信请求值，只记拿到值）──────────────
+    if (booted) {
+        const StelMainView::GLInfo &gi = StelMainView::getInstance().getGLInformation();
+        const bool glOk = (gi.mainContext != nullptr) && gi.majorVersion >= 3;
+        if (!glOk)
+            ++failCount;
+        std::printf("COEXIST: C-02 %s 引擎主上下文 version=%d.%d core=%d renderer=\"%s\"\n",
+                    glOk ? "PASS" : "FAIL", gi.majorVersion,
+                    gi.mainContext ? gi.mainContext->format().minorVersion() : 0,
+                    gi.isCoreProfile ? 1 : 0, qPrintable(gi.renderer));
+    }
+
+    // ── C-03 引导后 QML 窗口仍能出帧（共存的核心判据）────────────────────────
+    // 同样必须**主动请求重绘**：Qt Quick 按需渲染，静态页面不会自发产帧，
+    // 只数 frameSwapped 会把"没东西请求重绘"误判成"引擎把窗口拖死了"。
+    const int framesAtBoot = painted;
+    QElapsedTimer observe;
+    observe.start();
+    while (observe.elapsed() < 3000) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        window->update();
+    }
+    const int delta = painted - framesAtBoot;
+    const bool alive = delta >= 60; // 3s ≥60 帧（≥20fps）：同一请求节奏下与引导前同量级
+    if (!alive)
+        ++failCount;
+    std::printf("COEXIST: C-03 %s 引导后 QML 窗口仍能出帧：+%d 帧 / 3s（主动请求重绘，"
+                "引导前基线 %d 帧 / 1.5s）\n",
+                alive ? "PASS" : "FAIL", delta, framesBeforeBoot);
+
+    // ── C-04 引擎显式帧驱动可用（update/draw 不炸，T11 的前提）────────────────
+    if (booted) {
+        StelApp &stelApp = StelApp::getInstance();
+        stelApp.getCore()->setTimeRate(0.0);
+        bool driveOk = true;
+        QElapsedTimer driveClock;
+        driveClock.start();
+        try {
+            for (int i = 0; i < 4; ++i) {
+                stelApp.update(0.0);
+                stelApp.draw();
+            }
+        } catch (...) {
+            driveOk = false;
+        }
+        if (!driveOk)
+            ++failCount;
+        std::printf("COEXIST: C-04 %s 引擎显式帧驱动 update/draw ×4 未抛异常（%lldms）\n",
+                    driveOk ? "PASS" : "FAIL", static_cast<long long>(driveClock.elapsed()));
+    }
+
+    std::printf("COEXIST: VERDICT=%s 失败项=%d\n", failCount == 0 ? "PASS" : "FAIL", failCount);
+    std::printf("COEXIST: 结论：引擎无头引导与 QML 窗口同进程共存%s\n",
+                failCount == 0 ? "成立" : "不成立");
+    Q_UNUSED(app);
+
+    const int rc = failCount == 0 ? 0 : 8;
+    std::printf("COEXIST: 退出码=%d\n", rc);
+    std::fflush(nullptr);
+
+    // 不走 return：本探针把引擎与 QML 两套完整栈拉进同一进程，正常析构路径会撞上
+    // 静态对象析构顺序（StelApp/StelMainView 与 QQuickWindow 各自的 GL/Metal 上下文
+    // 谁先销毁），实测 return 之后进程 SIGSEGV(139)，退出码被信号覆盖成 139。
+    // 探针只对判据负责，用 _exit 直接交付退出码（前面已 fflush）。
+    _exit(rc);
+}
+#endif
+
 int main(int argc, char **argv)
 {
+#if defined(STELQUICK_HAS_ENGINE)
+    // ── 静态库里的 qrc 必须显式初始化（2026-09-23 实测踩到）──────────────────
+    // data/mainRes.qrc 与 data/gui/guiRes.qrc 由 QT_ADD_RESOURCES 编成
+    // qrc_mainRes.cpp / qrc_guiRes.cpp 并加入 libstelMain.a。但**静态库中的 qrc
+    // 对象文件没有任何被引用的符号**，链接器按需拉取的模型下不会把它装进可执行文件，
+    // 于是 qInitResources_* 从不执行 → 资源未注册 → 引擎读
+    // ":/shaders/preethamAtmosphere.vert" 失败 → qFatal → SIGABRT(134)。
+    // 这两行强制引用该符号，把资源真正注册进 Qt 资源系统。
+    // （stellarium 主目标自己编了 qrc 所以从没暴露；只有链接静态库的新目标才会踩。）
+    Q_INIT_RESOURCE(mainRes);
+    Q_INIT_RESOURCE(guiRes);
+#endif
+
     // 0. macOS 渲染兼容开关必须在创建任何窗口之前生效
     applyMacOsVulkanWorkaround();
 
@@ -315,7 +508,12 @@ int main(int argc, char **argv)
                     apiName(wantedApi));
     QQuickWindow::setGraphicsApi(wantedApi);
 
+#if defined(STELQUICK_WIDGETS_HOST)
+    QApplication app(argc, argv);
+    std::printf("STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）\n");
+#else
     QGuiApplication app(argc, argv);
+#endif
     app.setApplicationName("stelQuickUI");
     app.setOrganizationName("stellarium-vulkan");
 
@@ -528,6 +726,17 @@ int main(int argc, char **argv)
     QObject::connect(window, &QQuickWindow::sceneGraphInitialized, window, checkBackendApi);
 
     window->show();
+
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+    // ── A3 前置探针：引擎无头引导 × QML 窗口同进程 ──────────────────────────
+    // 必须在 window->show() 之后调用：要验证的正是"QML 窗口已存在时引导引擎"。
+    if (qEnvironmentVariableIsSet("STELQUICK_ENGINE_COEXIST")) {
+        const int coexistRc = runEngineCoexistProbe(&app, window);
+        std::printf("COEXIST: 退出码=%d\n", coexistRc);
+        std::fflush(stdout);
+        return coexistRc;
+    }
+#endif
 
     // 兜底轮询：每 100ms 试一次，最多 5s。判定成功后立刻停表（幂等，不重复打印）。
     {

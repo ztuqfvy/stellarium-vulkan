@@ -56,6 +56,14 @@ ENDIF()
 # 只有"设备探针"这一项诊断数据会缺。这让"没装 SDK 也能先跑起来看效果"成立。
 option(STELQUICK_VULKAN_PROBE "构建 VkDeviceProbe（需要有 Vulkan 加载库）" ON)
 
+# ── A3 前置探针：Widgets 宿主形态（2026-09-23）──────────────────────────────
+# 打开后宿主类从 QGuiApplication 换成 QApplication，用于验证两件事：
+#   ① QApplication 承载 QQuickWindow 时渲染零退化（QApplication 是超集，理论安全，
+#      但 stelQuickUI 历史上从未在这个宿主下跑过）；
+#   ② 引擎现成引导路径（StelMainView/QGraphicsView，Widgets 类）能与 QML 窗口同进程。
+# 默认关闭：既有 A1/A2/DYN 基线是在 QGuiApplication 下取的，不能悄悄换宿主。
+option(STELQUICKUI_WIDGETS_HOST "用 QApplication 承载 QQuickWindow（A3 引擎共存前置）" OFF)
+
 # ── 与 stelMain 重复的源文件（仅独立工程形态编译）──────────────────────────
 # render/legacy/FrameMailbox 与 render/legacy/LegacySkyHost 已随 stellarium_lib_SRCS
 # 编入 stelMain。子目标形态下必须排除，否则：
@@ -164,6 +172,17 @@ target_link_libraries(stelQuickUI PRIVATE
     Qt6::OpenGL
 )
 
+# A3 前置探针：QApplication 所在模块。
+# 子目标形态下 stelMain 已把 Widgets 传递进来，仍显式声明——不依赖传递依赖的实现细节；
+# 独立工程形态则必须显式查找。
+IF(STELQUICKUI_WIDGETS_HOST)
+    IF(NOT TARGET Qt6::Widgets)
+        find_package(Qt6 REQUIRED COMPONENTS Widgets)
+    ENDIF()
+    target_link_libraries(stelQuickUI PRIVATE Qt6::Widgets)
+    target_compile_definitions(stelQuickUI PRIVATE STELQUICK_WIDGETS_HOST=1)
+ENDIF()
+
 # ── 子目标形态：链接引擎 ────────────────────────────────────────────────────
 # stelMain 是根构建的引擎静态库（stellarium_lib_SRCS，含 StelApp/StelCore/
 # StelMainView 与 render/legacy 帧桥）。stelQuickUI 链接它 = "与旧宿主同进程同一份引擎"，
@@ -174,6 +193,10 @@ target_link_libraries(stelQuickUI PRIVATE
 IF(NOT STELQUICKUI_STANDALONE)
     IF(TARGET stelMain)
         target_link_libraries(stelQuickUI PRIVATE stelMain)
+        # 声明"本形态能看见引擎符号"：main.cpp 的 A3 前置探针
+        # （STELQUICK_ENGINE_COEXIST=1）需要 StelMainView/StelApp/StelFileMgr。
+        # 独立工程形态没有引擎，相关代码整体不编译。
+        target_compile_definitions(stelQuickUI PRIVATE STELQUICK_HAS_ENGINE=1)
     ELSE()
         message(FATAL_ERROR
             "子目标形态下未找到 stelMain。src/ui 必须在 src/CMakeLists.txt 之后 "

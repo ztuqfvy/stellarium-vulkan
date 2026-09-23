@@ -1,0 +1,17 @@
+=== configure: -DSTELQUICKUI_WIDGETS_HOST=ON ===
+CMake Warning at /opt/homebrew/share/cmake/Modules/CPack.cmake:541 (message):
+  CPack.cmake has already been included!!
+Call Stack (most recent call first):
+  build-release/_deps/nlopt-src/CMakeLists.txt:389 (include)
+
+
+-- Sky Culture Converter is DISABLED.
+-- Found lupdate: /opt/homebrew/opt/qt/bin/lupdate
+-- Found lconvert: /opt/homebrew/opt/qt/bin/lconvert
+-- Configuring done (5.2s)
+-- Generating done (1.0s)
+-- Build files have been written to: /Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release
+configure rc=0
+
+ENABLE_STELQUICKUI:BOOL=ON
+STELQUICKUI_WIDGETS_HOST:BOOL=ON

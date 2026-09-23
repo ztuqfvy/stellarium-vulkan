@@ -1042,3 +1042,70 @@ P-BRG-04 的降级 UI **已实现并验证切换**。尚缺：30 分钟全量 CS
 
 `docs/evidence/2026-09-23-t10-build-merge/`（含 configure 三态、构建、链接事实、
 sha256 不变性、两种形态回归、A1 四项、A2/DYN/S3 自检、INVALID 首跑）。
+
+## 2026-09-23｜A3 前置探针：`QApplication` 承载 `QQuickWindow` + 引擎同进程共存
+
+T10 合流完成后暴露出的**真前置**（进度实况 §8.6 记为未知数）。结论：
+**未知数成立、已做掉、共存成立。**
+
+### 1. 为什么必须先做掉它
+
+T11 的任务表述是"把渲染回调换成 `StelApp::update()/draw()`"，但：
+
+| 事实 | 出处 |
+|---|---|
+| 引擎现成无头引导路径 = `new StelMainView(conf)` + `show()` + `WA_DontShowOnScreen` → `initializeGL` → `StelApp::init` | `render/legacy/LegacyAppCheck.cpp` A3-C01 |
+| `StelMainView` **是 Widgets 类** | `src/StelMainView.hpp:46` → `public QGraphicsView` |
+| `StelMainView::init()` 里 `gui = new StelGui()`（完整 Widgets 版） | `src/StelMainView.cpp:947` |
+| `stelQuickUI` 是 `QGuiApplication`，且只链 `Qt6::Quick/Qml/Gui/Core/OpenGL` | `src/ui/main.cpp` / `CMakeLists.txt` |
+
+`QGuiApplication` 下创建任何 `QWidget` 会 abort。**不改宿主，T11 第一步就是进程直接死。**
+
+### 2. 改了什么
+
+| 文件 | 改动 |
+|---|---|
+| `src/ui/CMakeLists.txt` | 新增 `option(STELQUICKUI_WIDGETS_HOST … OFF)`；开启时查并链 `Qt6::Widgets` + 定义 `STELQUICK_WIDGETS_HOST=1`。子目标形态追加 `STELQUICK_HAS_ENGINE=1` |
+| `src/ui/main.cpp` | ① 宿主条件切换 `QApplication` / `QGuiApplication`；② `main()` 开头显式 `Q_INIT_RESOURCE(mainRes/guiRes)`；③ 新增探针 `runEngineCoexistProbe`（`STELQUICK_ENGINE_COEXIST=1`） |
+
+默认 **OFF**：既有 A1/A2/DYN 基线是在 `QGuiApplication` 下取的，不能悄悄换宿主。
+
+### 3. 验收（判据见测试文档 §6.6 B-A3P-01..04）
+
+| 项 | 结果 |
+|---|---|
+| 阶段一·`QApplication` 承载 `QQuickWindow` | ✅ A2 12/12 PASS、DYN 7/7 PASS（54.9 fps），与 `QGuiApplication` 基线同级 |
+| 阶段二·C-01 引擎无头初始化（QML 窗口同时存活） | ✅ 成功，0ms 同步完成 |
+| 阶段二·C-02 引擎 GL 形态 | ✅ `version=4.1 core=1 renderer="Apple M3"` |
+| 阶段二·C-03 引导后 QML 窗口仍能出帧 | ✅ Metal +179 帧/3s、Vulkan +178 帧/3s（基线 82~83 帧/1.5s） |
+| 阶段二·C-04 引擎 `update/draw` ×4 | ✅ 未抛异常（39~43ms） |
+| 默认形态回归（Widgets OFF） | ✅ A2 PASS、DYN PASS（54.8 fps） |
+| 负控·探针不泄露到默认形态 | ✅ 0 行 COEXIST 输出、rc=0 |
+| `stellarium` 字节不变性 | ✅ OFF/ON 两次一致（`8c6b8a15…`）；stash 掉本轮改动重建亦一致 |
+
+### 4. 三个过程中挖出的真问题
+
+**① 静态库里的 qrc 不会自动注册 → `qFatal` → SIGABRT(134)。**
+首跑崩在 `AtmospherePreetham.cpp:52`（shader 读不到），但星表/DSO/LandscapeMgr 全加载成功。
+根因：`qrc_mainRes.cpp` / `qrc_guiRes.cpp` 编进 `libstelMain.a`，而**静态库中的 qrc 对象文件
+没有任何被引用的符号**，按需拉取下不会被装进可执行文件 → `qInitResources_*` 从不执行。
+`stellarium` 主目标自己编了 qrc 所以从没暴露。处置：`main()` 开头 `Q_INIT_RESOURCE(...)`。
+
+**② C-03 判据初版错误（假红）。** 只数 `frameSwapped` → "引导后 +0 帧"。
+真相是 **Qt Quick 按需渲染**，静态页面渲完就停。两侧改为主动 `window->update()`
+请求重绘后取帧，判据才成立。**对 T11 的直接含意：合流后的长跑不能靠"窗口自己会出帧"
+度量，必须由驱动方显式请求重绘。**
+
+**③ 退出路径 SIGSEGV(139)。** 引擎与 QML 两套栈同时存在，正常 `return` 撞上静态析构
+顺序（两套 GL/Metal 上下文谁先销毁）。处置：`fflush` 后 `_exit(rc)` 直接交付退出码。
+
+### 5. 遗留问题（T11 基础设施工）
+
+`COEXIST: 安装目录 = .` —— `StelFileMgr` 在 `stelQuickUI.app` 附近找不到 `CHECK_FILE`，
+最终命中 `STELLARIUM_DATA_ROOT` 默认值 `.`，星表走相对路径 `./stars/...`。
+⇒ **stelQuickUI 当前必须从仓库根启动**（`stellarium` 主目标无此限制）。
+
+### 6. 留证
+
+`docs/evidence/2026-09-23-a3-host-probe/`（含崩溃现场、两大后端 PASS、
+默认形态回归、负控、字节不变性复查 + README 索引）。

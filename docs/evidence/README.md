@@ -64,6 +64,7 @@ python -c "b=open('run_evidence_matrix.cmd','rb').read(); print(sum(1 for x in b
 |---|---|
 | `2026-09-21-run_autotest-matrix-windows-vulkan-d3d11-opengl.txt` | `run_autotest.cmd matrix` 三后端原始 stdout + 负控原始输出；整份由 `tools/evidence/collect.ps1` 生成（不再有一次性注入命令） |
 | `2026-09-23-t10-build-merge/` | T10 构建合流的本地验收原始输出（configure 三态、双目标构建、链接事实、`stellarium` sha256 不变性、两种构建形态回归、A1 四项、A2/DYN/S3 自检、一次 INVALID 首跑）。索引见该目录 `README.md` |
+| `2026-09-23-a3-host-probe/` | A3 前置探针（T11 起手前）：`QApplication` 承载 `QQuickWindow` + 引擎无头引导同进程共存。含**首发崩溃现场**（静态库 qrc 未注册 → `qFatal` → SIGABRT 134）、Metal/Vulkan 两大后端 PASS、默认形态回归、负控、`stellarium` 字节不变性复查。索引见该目录 `README.md` |
 | `../../tools/evidence/collect.ps1` | **本目录证据的唯一规范生成器**（见下） |
 
 文件格式约定：正文为未经修饰的原始捕获；仅首尾由脚本注入**出处头**（提交号、

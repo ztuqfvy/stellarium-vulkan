@@ -1,0 +1,4 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=Apple M3（判定来源=信号/兜底）
