@@ -24,6 +24,9 @@
 #ifdef Q_OS_MACOS
 #include <mach/mach.h>
 #elif defined(Q_OS_WIN)
+#ifndef NOMINMAX
+#define NOMINMAX //!< 防 windows.h 的 min/max 宏击穿 std::min/std::max（MSVC C2589）
+#endif
 #include <windows.h>
 #include <psapi.h>
 #endif
