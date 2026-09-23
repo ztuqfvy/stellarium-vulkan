@@ -3,6 +3,7 @@
 
 #include "render/legacy/FrameMailbox.hpp"
 
+#include <QElapsedTimer>
 #include <QImage>
 #include <QPointer>
 #include <QSGImageNode>
@@ -24,6 +25,7 @@ SkyViewport::~SkyViewport()
     // 清空邮箱回调，避免生产者线程继续往已销毁对象上投递唤醒
     if (m_mailbox)
         m_mailbox->setFrameAvailableCallback(nullptr);
+    // 采样定时器随对象销毁（父子关系归本项，无需手动删）
     // 纹理只在场景图线程使用；项析构时窗口即将销毁，直接释放安全
     delete m_texture;
     delete m_dummyTexture;
@@ -52,6 +54,14 @@ void SkyViewport::setFrameMailbox(FrameMailbox *mailbox)
                     guard->update();
             }, Qt::QueuedConnection);
         });
+
+        // 显示帧率采样（GUI 线程每秒一次），供 degraded 判定与诊断属性
+        if (!m_fpsTimer) {
+            m_fpsTimer = new QTimer(this);
+            m_fpsTimer->setInterval(1000);
+            connect(m_fpsTimer, &QTimer::timeout, this, &SkyViewport::sampleDisplayFps);
+        }
+        m_fpsTimer->start();
     }
 
     // 解绑（mailbox == nullptr）时保留已上传的最后一帧纹理：画面不闪，
@@ -134,6 +144,10 @@ QSGNode *SkyViewport::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
             std::fflush(stderr);
         }
         if (lease.valid() && frame.frameNumber != m_uploadedFrameNumber) {
+            // 上传统计起点：像素拷贝 + createTextureFromImage 全算"上传耗时"
+            // （RHI 惰性提交在渲染期发生，此处量的是场景图线程的同步成本）
+            QElapsedTimer uploadClock;
+            uploadClock.start();
             // 包装槽位内存为 QImage（不拷贝）。格式契约见 LegacyFrame 注释：
             // RGBA8、原点左上、行优先、非预乘 alpha。
             const QImage sourceImage(frame.pixels,
@@ -177,6 +191,14 @@ QSGNode *SkyViewport::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
                 node->setTextureCoordinatesTransform(QSGImageNode::NoTransform);
                 m_uploadedFrameNumber = frame.frameNumber;
                 m_displayedFrameNumber.store(frame.frameNumber);
+                // 上传统计（原子量，GUI 线程随时可读）
+                {
+                    const quint64 us = quint64(uploadClock.nsecsElapsed() / 1000);
+                    m_uploadCount.fetch_add(1);
+                    m_uploadSumUs.fetch_add(us);
+                    quint64 prevMax = m_uploadMaxUs.load();
+                    while (us > prevMax && !m_uploadMaxUs.compare_exchange_weak(prevMax, us)) {}
+                }
                 // GUI 侧的诊断属性：异步通知，不阻塞渲染线程
                 const quint64 shown = frame.frameNumber;
                 QMetaObject::invokeMethod(this, [this, shown]() {
@@ -189,6 +211,47 @@ QSGNode *SkyViewport::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     // 逻辑矩形：纹理（物理像素）映射到此矩形，DPR>1 时即为 1:1 设备像素
     node->setRect(boundingRect());
     return node;
+}
+
+// ── 消费侧计量（GUI 线程）──────────────────────────────────────────────────
+void SkyViewport::sampleDisplayFps()
+{
+    // THREAD: GUI（QTimer）。每秒采样 displayedFrameNumber 增量 = 显示帧率。
+    const quint64 now = m_displayedFrameNumber.load();
+    const quint64 delta = (now > m_lastSampledFrameNumber) ? now - m_lastSampledFrameNumber : 0;
+    m_lastSampledFrameNumber = now;
+    m_displayedFps = double(delta);
+    emit statsChanged();
+
+    // P-BRG-04 降级判定：阈值>0 且确有帧在显示但速率低于阈值 → 降级预览。
+    // fps==0（完全无帧）不算降级，算"无信号"，避免未启动生产者时误报。
+    const bool degraded = (m_degradeThreshold > 0.0) && m_displayedFps > 0.0
+                          && m_displayedFps < m_degradeThreshold;
+    if (degraded != m_degraded) {
+        m_degraded = degraded;
+        emit degradedChanged(m_degraded);
+    }
+}
+
+void SkyViewport::setDegradeThreshold(qreal fps)
+{
+    if (qFuzzyCompare(m_degradeThreshold, fps))
+        return;
+    m_degradeThreshold = fps;
+    emit degradeThresholdChanged(m_degradeThreshold);
+    // 立即复评一次，不等下个采样周期
+    sampleDisplayFps();
+}
+
+qreal SkyViewport::uploadMeanMs() const
+{
+    const quint64 count = m_uploadCount.load();
+    return count ? qreal(m_uploadSumUs.load()) / qreal(count) / 1000.0 : 0.0;
+}
+
+qreal SkyViewport::uploadMaxMs() const
+{
+    return qreal(m_uploadMaxUs.load()) / 1000.0;
 }
 
 } // namespace stelapp

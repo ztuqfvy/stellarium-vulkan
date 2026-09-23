@@ -20,6 +20,7 @@
 
 #include <QQuickItem>
 #include <QString>
+#include <QTimer>
 #include <atomic>
 
 class QSGImageNode;
@@ -59,12 +60,38 @@ public:
     // 后端判定（GUI 线程调用一次，来自 main.cpp 的场景图 API 校验结果）。
     void applyBackendResult(const QString &runtimeApiName, bool isVulkan);
 
+    // ── 消费侧计量与降级状态（P-BRG-01 / P-BRG-04，2026-09-23）────────────────
+    // displayedFps：GUI 线程每秒采样 displayedFrameNumber 增量（显示速率，
+    //   不是生产速率）。degraded：显示速率低于 degradeThreshold 时的降级标记
+    //   （P-BRG-04：进入 15fps 预览时 UI 必须明确显示降级状态）。
+    //   degradeThreshold<=0 表示降级判定关闭（A2 逐像素校验路径保持零干预）。
+    // upload 计量：场景图线程"像素拷贝 + createTextureFromImage"耗时（微秒累计），
+    //   任意线程可读（原子量）；上传次数与最大值用于管线健康判定。
+    Q_PROPERTY(double displayedFps READ displayedFps NOTIFY statsChanged)
+    Q_PROPERTY(bool degraded READ degraded NOTIFY degradedChanged)
+    Q_PROPERTY(qreal degradeThreshold READ degradeThreshold WRITE setDegradeThreshold
+                   NOTIFY degradeThresholdChanged)
+    Q_PROPERTY(quint64 uploadCount READ uploadCount NOTIFY statsChanged)
+    Q_PROPERTY(qreal uploadMeanMs READ uploadMeanMs NOTIFY statsChanged)
+    Q_PROPERTY(qreal uploadMaxMs READ uploadMaxMs NOTIFY statsChanged)
+
+    double displayedFps() const { return m_displayedFps; }
+    bool degraded() const { return m_degraded; }
+    qreal degradeThreshold() const { return m_degradeThreshold; }
+    void setDegradeThreshold(qreal fps);
+    quint64 uploadCount() const { return m_uploadCount.load(); }
+    qreal uploadMeanMs() const;
+    qreal uploadMaxMs() const;
+
 signals:
     void backendChanged(QString backend);
     void readyChanged(bool ready);
     void backendFailed(QString message);
     void viewportGenerationChanged(quint32 generation);
     void displayedFrameNumberChanged(quint64 frameNumber);
+    void statsChanged();
+    void degradedChanged(bool degraded);
+    void degradeThresholdChanged(qreal threshold);
 
 protected:
     QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data) override;
@@ -84,6 +111,19 @@ private:
     quint64 m_uploadedFrameNumber = 0;
 
     std::atomic<quint64> m_displayedFrameNumber{0};
+
+    // 上传统计（场景图线程写，GUI 线程读；全部原子量，无锁）
+    std::atomic<quint64> m_uploadCount{0};
+    std::atomic<quint64> m_uploadSumUs{0};   // 微秒累计（毫秒精度不足）
+    std::atomic<quint64> m_uploadMaxUs{0};
+
+    // 显示帧率与降级（GUI 线程独占；定时器在 setFrameMailbox 时启动）
+    QTimer *m_fpsTimer = nullptr;
+    quint64 m_lastSampledFrameNumber = 0;
+    double m_displayedFps = 0.0;
+    bool m_degraded = false;
+    qreal m_degradeThreshold = 0.0;
+    void sampleDisplayFps();
 };
 
 } // namespace stelapp

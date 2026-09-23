@@ -11,11 +11,14 @@
  *   STELQUICK_AUTOTEST_SECONDS=N → N 秒后自动退出（返回码见下）。
  *   STELQUICK_WINDOW_TEST=1      → 交互回归自测（缩放 + 隐藏/显示），见文件末尾。
  *   STELQUICK_A2_CHECK=1         → A2 静态图逐像素校验（用例 I-STC-01/02）。
+ *   STELQUICK_DYN_CHECK=1        → 动态帧通路自检（I-DYN / P-BRG-01 前置 / P-BRG-04）。
+ *   STELQUICK_LIVE=1             → 手动查看动态帧流（人眼观察，不自动退出）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
  *         5 A2 静态图校验失败；6 A2 校验手段不可用（不得据此声称通过）；
- *         7 被测可执行文件不存在（Windows run_autotest.cmd）；8 T6 显式帧驱动自检失败。
+ *         7 被测可执行文件不存在（Windows run_autotest.cmd）；8 T6 显式帧驱动自检失败
+ *           （DYN 动态帧通路自检失败同用 8）。
  *
  * 运行：直接双击 stelQuickUI.app 即可（main.cpp 自动定位 Vulkan 加载库）。
  */
@@ -116,6 +119,8 @@ void ensureVulkanLoaderPath()
 #include "render/legacy/FrameMailbox.hpp"
 #include "render/legacy/StaticFrameSource.hpp"
 #include "ui/A2FrameCheck.hpp"
+#include "ui/DynFrameCheck.hpp"
+#include "ui/LiveFrameSource.hpp"
 #include "ui/quick/SkyViewport.hpp"
 
 namespace {
@@ -412,11 +417,16 @@ int main(int argc, char **argv)
     // 邮箱声明在 engine 之前，保证比所有 FrameLease 活得久（FrameLease 的生命周期契约）。
     qmlRegisterType<stelapp::SkyViewport>("StelQuickUI", 1, 0, "SkyViewport");
     stelapp::FrameMailbox frameMailbox;
+    // 动态帧生产者（消费侧接线）：DYN 自检 / STELQUICK_LIVE 手动模式使用。
+    // 生命周期必须短于邮箱（生产者析构时解绑回调），故声明在邮箱之后。
+    stelapp::LiveFrameSource liveSource;
 
     const bool a2Check = qEnvironmentVariableIsSet("STELQUICK_A2_CHECK");
-    // 起始页：A2 校验必须停在天空页；手动模式下可用 STELQUICK_PAGE 指定
-    const QString startPage = a2Check ? QStringLiteral("sky")
-                                      : qEnvironmentVariable("STELQUICK_PAGE", QStringLiteral("diag"));
+    const bool dynCheck = qEnvironmentVariableIsSet("STELQUICK_DYN_CHECK");
+    // 起始页：A2/DYN 校验必须停在天空页；手动模式下可用 STELQUICK_PAGE 指定
+    const QString startPage = (a2Check || dynCheck || qEnvironmentVariableIsSet("STELQUICK_LIVE"))
+                                  ? QStringLiteral("sky")
+                                  : qEnvironmentVariable("STELQUICK_PAGE", QStringLiteral("diag"));
 
     // 3. 加载 QML
     QQmlApplicationEngine engine;
@@ -553,6 +563,58 @@ int main(int argc, char **argv)
         return (rc == 0 && !backendOk) ? 3 : rc;
     }
 
+    // 动态帧通路自检（消费侧接线，I-DYN / P-BRG-01 前置 / P-BRG-04）
+    if (dynCheck) {
+        if (!skyViewport) {
+            std::fprintf(stderr, "DYN 校验失败：未找到 SkyViewport\n");
+            return 6;
+        }
+        stelapp::DynFrameCheck::runStartupSequence(
+            &app, window, skyViewport, &frameMailbox,
+            stelapp::DynFrameCheck::optionsFromEnv(),
+            [&app](const stelapp::DynCheckResult &result) {
+                std::printf("DYNCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("DYNCHECK: %s\n", line.toUtf8().constData());
+                if (!result.ran) {
+                    std::printf("DYNCHECK: VERDICT=UNAVAILABLE（装配失败，不得据此声称通过）\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("DYNCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 8);
+            });
+        const int rc = app.exec();
+        return (rc == 0 && !backendOk) ? 3 : rc;
+    }
+
+    // 手动查看模式（动态）：STELQUICK_LIVE=1 起动态帧生产者。
+    // 与静态图案投递互斥（邮箱契约：同一时刻只允许一个生产者）。
+    const bool liveMode = qEnvironmentVariableIsSet("STELQUICK_LIVE");
+    if (liveMode && skyViewport) {
+        stelapp::LiveFrameSourceConfig liveCfg;
+        const QByteArray fpsEnv = qgetenv("STELQUICK_LIVE_FPS");
+        if (!fpsEnv.isEmpty())
+            liveCfg.fps = fpsEnv.toDouble();
+        const QByteArray sizeEnv = qgetenv("STELQUICK_LIVE_SIZE");
+        if (!sizeEnv.isEmpty()) {
+            const QList<QByteArray> wh = sizeEnv.split('x');
+            if (wh.size() == 2)
+                liveCfg.physicalSize = QSize(wh.at(0).toInt(), wh.at(1).toInt());
+        }
+        skyViewport->setDegradeThreshold(qEnvironmentVariable("STELQUICK_DEGRADE_FPS", "15").toDouble());
+        QString liveError;
+        if (liveSource.start(&frameMailbox, liveCfg, &liveError))
+            std::printf("STELQUICK: 动态帧生产者已启动（%dx%d，%.1f fps）\n",
+                        liveCfg.physicalSize.width(), liveCfg.physicalSize.height(), liveCfg.fps);
+        else
+            std::fprintf(stderr, "STELQUICK: 动态帧生产者启动失败：%s\n",
+                         liveError.toUtf8().constData());
+        std::fflush(stdout);
+    }
+
     // 手动查看模式：投递一次静态测试图案，便于人眼确认通路已通。
     // 说明：静态帧源只投一次，窗口后续缩放不会重新生成图案（图案会被缩放显示）；
     // A2 主体接入真实产帧后，此段整体删除。
@@ -561,7 +623,7 @@ int main(int argc, char **argv)
     // （StackLayout 还没给视口分配尺寸）→ 逻辑 0x0 → 报"视口物理尺寸过小…1x1"。
     // 这个抖动一直以"假失败日志"形式存在（不影响 A2 模式，那边自己带等待）。
     // 处置：改成轮询等视口拿到有效尺寸再投递，最多等 5s；超时才报真失败。
-    if (skyViewport) {
+    if (skyViewport && !liveMode) {
         auto *pending = new QTimer(&app);
         pending->setInterval(50);
         QObject::connect(pending, &QTimer::timeout, &app,
@@ -620,5 +682,6 @@ int main(int argc, char **argv)
     }
 
     const int rc = app.exec();
+    liveSource.stop();   // 生产者停机先于邮箱析构（析构顺序：liveSource 在 frameMailbox 之后声明）
     return backendOk ? rc : 3;
 }

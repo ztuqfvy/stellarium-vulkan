@@ -25,6 +25,32 @@ Item {
         anchors.fill: parent
     }
 
+    // P-BRG-04：进入降级预览（显示帧率低于阈值）时必须明确告警。
+    // 只在 degraded 为真时可见——A2 逐像素校验路径不设阈值（degraded 恒 false），
+    // 因此探针区域不被污染；本角标同时是"降级透明"这条验收的可视证据。
+    Rectangle {
+        id: degradeBadge
+        visible: viewport.degraded
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 12
+        width: badgeText.implicitWidth + 24
+        height: badgeText.implicitHeight + 16
+        radius: 6
+        color: "#CC7A1F1F"          // 半透明深红：醒目且不遮挡判读
+        border.color: "#FFE0A0A0"
+        border.width: 1
+
+        Text {
+            id: badgeText
+            anchors.centerIn: parent
+            color: "#FFF0E0E0"
+            font.pixelSize: 16
+            font.bold: true
+            text: qsTr("降级预览 · %1 fps").arg(Math.round(viewport.displayedFps))
+        }
+    }
+
     // 开发期对照实验：普通 Image 元素加载同一张测试图案。
     // Image 显示而 SkyViewport 不显示 → 问题在 QSGImageNode/纹理路径；
     // Image 也不显示 → 问题在窗口渲染/抓帧路径。

@@ -38,6 +38,11 @@ set(stelQuickUI_SOURCES
     main.cpp
     A2FrameCheck.hpp
     A2FrameCheck.cpp
+    DynFrameCheck.hpp
+    DynFrameCheck.cpp
+    # 消费侧接线：动态帧生产者（LegacySkyHost 动态驱动，独立线程）
+    LiveFrameSource.hpp
+    LiveFrameSource.cpp
     LegacyHostCheck.hpp
     LegacyHostCheck.cpp
     quick/BackendInfo.hpp

@@ -836,3 +836,87 @@ max=197ms 为单帧毛刺（t≈1709s，仅 1 帧），不影响门槛（>50ms �
 - `docs/evidence/2026-09-22-stelt9-consistency-reac/run.log`（8/8 PASS 全文）
 - `docs/evidence/2026-09-22-stelt9-consistency-reac/build.csv.gz`（97977 行逐帧 CSV）
 - 探针（20s / 63.75 fps / T9-C00 PASS）当时为前台直跑未存档，数字以本节记录为准
+
+## 2026-09-23｜Qt 6.12.0 受控升级实验：官方 macOS 包**不含 Vulkan**，实验就地终止
+
+§7.5 支线 1 的执行结果（结论与预期不同，故单列）：
+
+| 步骤 | 结果 |
+|---|---|
+| 官方安装器并存安装 Qt 6.12.0（`~/Qt/6.12.0`，macos + harmonyos + wasm 套件齐全） | 完成 |
+| `cmake -B build-ui-6120 -S src/ui -DCMAKE_PREFIX_PATH=~/Qt/6.12.0/macos` | 配置通过 |
+| 编译 | **失败**：`src/ui/main.cpp:34: fatal error: 'QVulkanInstance' file not found` |
+| 核实 | `~/Qt/6.12.0/macos/lib/QtGui.framework/Headers/` 下 **vulkan 相关头为 0 个**（`grep -c vulkan` = 0） |
+| Homebrew 侧 | `brew outdated qt` 为空 → homebrew-core 仍是 6.11.2，无 6.12 可升 |
+
+**结论**：Qt 6.12.0 官方 macOS 二进制包**与 6.11.x 一样不带 Vulkan 支持**（这是打包渠道差异，
+不是版本缺陷——6.11.x 时代就因此被迫使用 Homebrew Qt）。因此"升级 Qt 版本"这条路径，
+在"官方安装器"形态下**连编译都过不去**，谈不上验证 §6.2 黑屏是否修复。
+
+**对 §6.2 缺陷的可选后续**（按成本排序，均属支线，不阻塞主线）：
+1. **源码构建**：`~/Qt/6.12.0/Src` 已在（官方安装器自带源码）→ `qtbase` + `qtdeclarative`
+   用 `-feature-vulkan` 自建（M3 上约 40–90 分钟）。这是唯一能真正回答"6.12 + MoltenVK 是否修好"的路径。
+2. 等 homebrew-core 收录 6.12（Homebrew 的 qt 是带 Vulkan 的形态）。
+3. 直接向上游报最小 bug（Windows 原生 Vulkan PASS / macOS MoltenVK FAIL，同代码同 Qt 版本，附 12 探针明细）。
+
+**留证**：`build-ui-6120/`（配置成功、编译失败的现场；构建目录不入库）。
+
+---
+
+## 2026-09-23｜消费侧接线：动态帧通路 + 消费侧计量 + 降级 UI（P-BRG-01/04 前置）
+
+A2 产帧侧（T6/T9/A3）此前只把帧送到邮箱为止；本阶段把**消费侧**接上：
+帧持续流进 QML 窗口，并补齐 P-BRG-01 要的"上传耗时/队列"计量与 P-BRG-04 的降级 UI。
+
+### 1. 新增组件
+
+- `src/ui/LiveFrameSource.{hpp,cpp}`：动态帧生产者线程。
+  `LegacySkyHost(kOwn 上下文，自建离屏) + LegacyTestScene`（动态合成场景，f(simSeconds)）
+  在**独立线程**按可配速率（默认 60fps）驱动 `renderOneFrame()` 投递邮箱。
+  `setFps()` 支持跨线程调速（降级探针用）。线程模型与将来接真实引擎的形态同构：
+  引擎接入（AppFacade，A4）时只换渲染回调体，线程/生命周期骨架不动。
+- `src/ui/DynFrameCheck.{hpp,cpp}`：动态帧通路自检（D1-C01..C07，退出码 0/8/6）。
+- `SkyViewport` 扩展：上传统计（count/mean/max，微秒精度）、`displayedFps`（GUI 线程每秒采样）、
+  `degraded`（显示速率 < 阈值）+ `degradeThreshold`（<=0 关闭，A2 逐像素路径零干预）。
+- `SkyTestPage.qml`：降级角标（`visible: viewport.degraded`），是 P-BRG-04"降级透明"的可视证据。
+- `main.cpp`：`STELQUICK_DYN_CHECK=1`（自检）、`STELQUICK_LIVE=1`（手动看动态帧流）两个模式。
+
+### 2. 判据与结果（2026-09-23，Apple M3 / Homebrew Qt 6.11.2）
+
+| 判据 | 内容 | metal 8s | vulkan 6s |
+|---|---|---|---|
+| D1-C01 | 生产者零失败且产出 ≥0.6×名义 | PASS（316 帧 / 54.5 fps） | PASS（264 帧 / 54.2 fps） |
+| D1-C02 | 显示帧号持续推进 | PASS（+264 / +211） | PASS |
+| D1-C03 | 邮箱丢弃 ≤5% | PASS（0/316） | PASS（0/264） |
+| D1-C04 | 邮箱帧龄最大 <500ms | PASS（183ms） | PASS（181ms） |
+| D1-C05 | 上传 count>0 且 max<100ms | PASS（305 次 / mean 0.38ms / max 2.23ms） | PASS（253 次 / max 2.71ms） |
+| D1-C06 | 相隔 700ms 两次抓帧不同 | PASS（内容动态） | **SKIP**（§6.2 已知 Vulkan 黑屏） |
+| D1-C07 | 降速窗 degraded=true 且恢复后 false（P-BRG-04） | PASS | PASS |
+| 总判 | | **VERDICT=PASS / rc=0** | PASS / rc=0（C06 SKIP 不计失败） |
+
+**负控（能红）**：`STELQUICK_LIVE_FPS=5`（名义速率低于降级阈值 → "恢复"段无法回到 15fps 以上）
+→ `D1-C07 FAIL`、**rc=8**，其余 6 项仍 PASS。证明"全绿"不是无条件默认。
+**A2 回归**：`STELQUICK_A2_CHECK=1` + metal → **12/12 PASS / rc=0**，计量与降级角标未污染逐像素路径。
+
+### 3. 首跑踩到的三个坑（都已修，值得复用）
+
+1. **`LegacyTestScene` 是惰性的**：`ok()` 只在首次 `render()` 后为真（着色器/VAO 那时才编译）。
+   构造后立即断言 `ok()` 必然假 → 误判"装配失败"。改为首帧后自检，失败原因经 `lastError()` 上报。
+2. **GL 对象必须在装配它的线程上销毁**：装配失败时主线程析构 `unique_ptr<LegacySkyHost>`
+   会触发 Qt 断言 `Cannot make QOpenGLContext current in a different thread` 并以 **SIGABRT(134)** 收尾。
+   修法：失败与正常退出路径都安排在**工作线程内** `reset()` 掉 host/scene。
+3. **同一次事件循环内连抓两帧必然相同**：`grabWindow()` 两次背靠背取到同一渲染帧，
+   "内容动态"判据假红。改为相隔 700ms 抓两张。
+
+### 4. 留证
+
+- `docs/evidence/2026-09-23-consumer-dyn-bridge/metal-8s.txt`（7/7 PASS 全文）
+- `.../metal-negctl-lowfps.txt`（负控：C07 红、rc=8）
+- `.../vulkan-6s.txt`（Vulkan：计量全过、C06 SKIP）
+- `.../a2-regression-metal.txt`（A2 逐像素回归 12/12）
+
+### 5. 现状与下一步
+
+P-BRG-01 的消费侧口径（上传耗时、队列/丢弃、帧龄）**已具备测量能力**；
+P-BRG-04 的降级 UI **已实现并验证切换**。尚缺：30 分钟全量 CSV 计量长跑（按 §6.1.1 协议）
+与真实引擎接入（AppFacade）——后者换掉 `LiveFrameSource` 的渲染回调即可。
