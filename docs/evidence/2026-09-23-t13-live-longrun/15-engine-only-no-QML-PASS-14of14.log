@@ -1,0 +1,31 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+LEGACYHOST: ==== A2 主体 T6｜旧宿主显式帧驱动自检 ====
+LEGACYHOST: T6 旧宿主显式帧驱动自检：14/14 项通过
+LEGACYHOST: T6-C01 PASS 无窗口环境：topLevelWindows=0 allWindows=0 （自检在窗口创建前、且不进入事件循环，故不存在"paint 事件顺手帮我们画了一帧"这一可能）
+LEGACYHOST: T6-C02 PASS GL 上下文形态：own=1 offscreen=1 version=4.1 core=1 renderer="Apple M3"
+LEGACYHOST: T6-C03 PASS 超上限尺寸被显式拒绝（不静默截断）：目标尺寸 4097x64 超过 maxDimension=4096（显式失败，不静默截断）。
+LEGACYHOST: T6-C04 PASS 场景 GL 资源装配成功（着色器编译+链接、VAO/VBO 创建）
+LEGACYHOST: T6-C05 PASS 请求 12 帧 → 投递 12 帧（丢失 0，失败 0）；邮箱侧 published=12 dropped=0
+LEGACYHOST: T6-C06 PASS 邮箱队列有界：completeSlots=3 ≤ 3，readersHeld=0
+LEGACYHOST: T6-C07 PASS 帧序号严格递增、行步长=3840、物理=960x540、逻辑=480x270（=physical/dpr，dpr=2）、世代恒为 2、状态编号=仿真时间×1000
+LEGACYHOST: T6-C08 PASS 行序翻转与水平方向：顶部绿带优势最小 69.5（>30 合格），左侧红带优势最小 173.4（>20 合格）——若忘记翻转，顶部带会出现在图像底部
+LEGACYHOST: T6-C09 PASS 帧内容非平凡：最少不同颜色数=166（≥16），最小平均亮度=0.0201（>0）
+LEGACYHOST: T6-C10 PASS 12 帧得到 12 个互不相同的像素指纹——内容确实在变，不是静态残留或缓存复读
+LEGACYHOST: T6-C11 PASS 同一仿真时间 sim=4.000 重渲染 → 指纹 8f01b2423ea62457（首帧 8f01b2423ea62457）——确定性成立，说明内容由仿真时间决定，而非随机或墙钟
+LEGACYHOST: T6-C12 PASS 太阳质心水平位置逐帧单调推进：95.5 143.5 191.5 239.5 287.5 335.5 383.5 431.5 479.5 527.5 575.5 623.5（有向运动，非噪声抖动）
+LEGACYHOST: T6-C13 PASS 耗时统计可用：lastRender=2ms lastReadback=1ms total=3ms bytesPerFrame=2073600（T9 长跑统计的基础量）
+LEGACYHOST: T6-C14 PASS 全程未创建任何窗口：topLevelWindows=0 allWindows=0
+LEGACYHOST: frame=1 sim=4.000 num=1 hash=0x8f01b2423ea62457 mean=0.4919 sunX=95.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=30ms readback=0ms
+LEGACYHOST: frame=2 sim=5.000 num=2 hash=0xae852c106d7840b3 mean=0.4913 sunX=143.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=2ms readback=1ms
+LEGACYHOST: frame=3 sim=6.000 num=3 hash=0xae80f89800205db3 mean=0.4910 sunX=191.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=1ms readback=0ms
+LEGACYHOST: frame=4 sim=7.000 num=4 hash=0x89ab2464f1ec6bb3 mean=0.4913 sunX=239.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=1ms readback=0ms
+LEGACYHOST: frame=5 sim=8.000 num=5 hash=0xab70280af42a6857 mean=0.4919 sunX=287.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=3ms readback=0ms
+LEGACYHOST: frame=6 sim=9.000 num=6 hash=0x65e0ca2a87f414a8 mean=0.4920 sunX=335.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=0ms readback=1ms
+LEGACYHOST: frame=7 sim=10.000 num=7 hash=0x346a9eb70c42b8b0 mean=0.4921 sunX=383.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=1ms readback=0ms
+LEGACYHOST: frame=8 sim=11.000 num=8 hash=0xb2d19222b3619f12 mean=0.4396 sunX=431.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=1ms readback=0ms
+LEGACYHOST: frame=9 sim=12.000 num=9 hash=0x660f6357cf513289 mean=0.2564 sunX=479.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=2ms readback=0ms
+LEGACYHOST: frame=10 sim=13.000 num=10 hash=0x0f32976a9b946b67 mean=0.0730 sunX=527.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=1ms readback=0ms
+LEGACYHOST: frame=11 sim=14.000 num=11 hash=0x450949e4bfbaec3e mean=0.0201 sunX=575.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=0ms readback=1ms
+LEGACYHOST: frame=12 sim=15.000 num=12 hash=0xb241c6992d57759a mean=0.0201 sunX=623.5 physical=960x540 logical=480x270 stride=3840 gen=2 render=2ms readback=1ms
+LEGACYHOST: VERDICT=PASS

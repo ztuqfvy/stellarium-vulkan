@@ -221,7 +221,7 @@ constexpr double kFrameAgeMs = 500.0;      //!< 邮箱帧龄上限（max 口径�
 // 门槛取 100ms：相对 SL-C06 的 500ms 收紧 5 倍，同时给"引擎单帧 20ms + 偶发
 // 双帧排队 + 场景图抖动"留出足够余量（实测基线见测试文档 §6.9）。
 constexpr double kFrameAgeP95Ms = 100.0;   //!< 稳态帧龄 p95 上限
-constexpr double kMemSlopeMiBPerMin = 1.0; //!< footprint 斜率上限
+constexpr double kMemSlopeMiBPerMin = 1.0; //!< footprint 稳态**增长**斜率上限（负值=释放缓存，不违规）
 constexpr double kDegradedShareMax = 0.01; //!< 降级误报占比上限
 
 } // namespace
@@ -747,11 +747,14 @@ void SkyLongRun::runStartupSequence(
                                    .arg(kFrameAgeMs, 0, 'f', 0));
 
                            // ── SL-C07 内存稳定 ─────────────────────────────────
-                           const bool c07 = !steadyFp.empty()
-                                            && std::fabs(memSlope) <= kMemSlopeMiBPerMin;
+                           // 只判"增长"：本判据的目的是抓内存泄漏，泄漏表现为持续增长。
+                           // 负斜率 = 引擎在释放 warmup 期缓存，属正常（2026-09-23 T13
+                           // 实测 Metal 形态 -10.1 MiB/min，旧口径 |斜率| 把它误判成 FAIL）。
+                           const bool c07 = !steadyFp.empty() && memSlope <= kMemSlopeMiBPerMin;
                            add("SL-C07", c07,
                                QStringLiteral("稳态 phys_footprint 斜率 %1 MiB/min"
-                                              "（|斜率|≤%2）；窗口内 %3 → %4 MiB（增 %5）")
+                                              "（增长上限 %2，负值=释放缓存不违规）；"
+                                              "窗口内 %3 → %4 MiB（增 %5）")
                                    .arg(memSlope, 0, 'f', 3)
                                    .arg(kMemSlopeMiBPerMin, 0, 'f', 1)
                                    .arg(steadyFp.empty() ? 0.0 : steadyFp.front(), 0, 'f', 1)

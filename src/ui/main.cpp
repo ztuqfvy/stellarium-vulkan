@@ -207,6 +207,51 @@ void warmUpSceneGraph(QQuickWindow *window, int timeoutMs = 5000)
     }
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// 引擎接管 GPU 前的**静默期**：让 QML 场景图把已排队的渲染做完、并进入空闲。
+//
+// 2026-09-23 T13 实测（根因，务必别丢）：warmUpSceneGraph 的最后 300ms 一直在
+// `window->update()`，**退出时 QML 仍有在途的渲染请求**；紧接着 boot 引擎
+// （`new StelMainView` + show → initializeGL 建重 GL 资源）、再启动帧泵首帧
+// `stelApp.draw()`（初始化 planets shaders），于是 QML 的 Vulkan/MoltenVK 提交与
+// 引擎的 OpenGL/Metal 提交在 GPU 上**并发**，MoltenVK 侧丢设备：
+//
+//   vkDebug: VK_ERROR_OUT_OF_DEVICE_MEMORY ... kIOGPUCommandBufferCallbackErrorPageFault
+//   Device loss detected in vkWaitForFences()
+//   Graphics device lost, cleaning up scenegraph and releasing RHI
+//
+// 丢一次本身能自愈（18:22 那次丢了照样跑完 300s），但**重建撞上 Metal 熔断**
+// （`SubmissionsIgnored (for causing prior/excessive GPU errors)`）就变成
+// `Failed to create swapchain: -4` 直接死。判别证据（同一构建同机器）：
+//   · 纯引擎路径（STELQUICK_LEGACY_HOST_TEST，无 QML）   → 14/14 PASS，0 次丢设备
+//   · 纯 QML 路径（替身生产者，无引擎）                   → PASS 54.5fps，0 次丢设备
+//   · 两条路径**同时**跑（engine 生产者）                 → 必丢设备，重建成败随机
+//
+// 处置与实测边界（**重要，别把结论读歪**）：
+//   · 加静默期**不足以**避免丢设备：实测（QUIESCE_MS=800）仍丢 2 次。它的
+//     实际价值是把结局从"Qt 内部致命路径 → SIGSEGV(139)"变成"RHI 重建失败 →
+//     场景图瘫掉、QML 显示 0fps，但进程活着、判据可读（退出码 8）"——失败可控。
+//   · **真因是 MoltenVK**：同一份合流场景，QML 用 Vulkan/MoltenVK 后端丢设备
+//     4/4 次（重建成败随机），换原生 Metal RHI（STELQUICK_GRAPHICS_API=metal）
+//     丢设备 0/2 次、11/11 判据全绿。⇒ 属 MoltenVK 与 Apple-OpenGL 同进程共存
+//     的缺陷，不是本项目代码问题。详见 docs/BUILD_RECORD.zh_CN.md 的 T13 节。
+// 时长可用 STELQUICK_QUIESCE_MS 覆盖（诊断用；默认 800ms）。
+// ══════════════════════════════════════════════════════════════════════════
+void quiesceSceneGraph(int ms)
+{
+    QElapsedTimer quiet;
+    quiet.start();
+    while (quiet.elapsed() < ms)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+}
+
+//! 静默时长（ms）：环境变量 STELQUICK_QUIESCE_MS 覆盖，默认 800。
+int quiesceMs()
+{
+    const int v = qEnvironmentVariableIntValue("STELQUICK_QUIESCE_MS");
+    return v > 0 ? v : 800;
+}
+
 #if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
 // engine 生产者的**设计产能**（判据下限的基数，也是帧泵名义速率）。
 // 为什么不是 UI 刷新上限 60fps：真实引擎每帧要跑完整场景（星表 + DSO + 大气 +
@@ -1182,6 +1227,9 @@ int main(int argc, char **argv)
             // 不是从数据倒推）——引擎 tick 会牵引 QML 上屏栅格，绝对毫秒门槛不适用。
             longOptions.producerSharesGuiThread = true;
             warmUpSceneGraph(window);
+            // 引擎重 GL 初始化（StelMainView::initializeGL）之前先让 QML 静默——
+            // 根因与判别证据见 quiesceSceneGraph 头注释（T13）。
+            quiesceSceneGraph(quiesceMs());
             liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
             stelapp::LiveSkyRuntime::Config engineCfg;
             engineCfg.renderSize = longOptions.physicalSize;
@@ -1192,12 +1240,17 @@ int main(int argc, char **argv)
                 std::fprintf(stderr, "长跑：引擎引导失败：%s\n",
                              producerError.toUtf8().constData());
                 liveSkyRuntime.reset();
-            } else if (!liveSkyRuntime->start(&frameMailbox, engineCfg, &producerError)) {
-                std::fprintf(stderr, "长跑：引擎帧泵启动失败：%s\n",
-                             producerError.toUtf8().constData());
-                liveSkyRuntime.reset();
             } else {
-                producer = liveSkyRuntime.get();
+                // 引导已完成（引擎的 GL 资源已建）；再静默一次，使帧泵首帧
+                // `stelApp.draw()`（planets GL shaders 初始化）也在 QML 空闲时进行。
+                quiesceSceneGraph(quiesceMs());
+                if (!liveSkyRuntime->start(&frameMailbox, engineCfg, &producerError)) {
+                    std::fprintf(stderr, "长跑：引擎帧泵启动失败：%s\n",
+                                 producerError.toUtf8().constData());
+                    liveSkyRuntime.reset();
+                } else {
+                    producer = liveSkyRuntime.get();
+                }
             }
         }
 #else
