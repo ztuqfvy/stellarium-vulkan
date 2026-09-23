@@ -23,6 +23,9 @@
 
 #ifdef Q_OS_MACOS
 #include <mach/mach.h>
+#elif defined(Q_OS_WIN)
+#include <windows.h>
+#include <psapi.h>
 #endif
 
 namespace stelapp {
@@ -30,6 +33,10 @@ namespace stelapp {
 namespace {
 
 // ── 内存读数（与 T9 同口径：用 phys_footprint，RSS 会被页面回收掩盖增长）───
+// macOS：task_vm_info.phys_footprint（含压缩内存，泄漏哨兵的正牌指标）。
+// Windows：PrivateUsage（进程私有提交字节）——不会被页面回收掩盖，语义最接近；
+//          WorkingSetSize 当 resident。跨平台口径注记：绝对值不可比，判据只吃
+//          稳态窗内的**增长斜率**（SL-C07 只判增长），两种读数下语义一致。
 qint64 residentBytes()
 {
 #ifdef Q_OS_MACOS
@@ -38,6 +45,12 @@ qint64 residentBytes()
     if (task_info(mach_task_self(), TASK_VM_INFO,
                   reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS)
         return qint64(info.resident_size);
+#elif defined(Q_OS_WIN)
+    PROCESS_MEMORY_COUNTERS_EX pmc{};
+    if (GetProcessMemoryInfo(GetCurrentProcess(),
+                             reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&pmc),
+                             sizeof(pmc)))
+        return qint64(pmc.WorkingSetSize);
 #endif
     return -1;
 }
@@ -50,6 +63,16 @@ qint64 footprintBytes()
     if (task_info(mach_task_self(), TASK_VM_INFO,
                   reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS)
         return qint64(info.phys_footprint);
+#elif defined(Q_OS_WIN)
+    PROCESS_MEMORY_COUNTERS_EX pmc{};
+    if (GetProcessMemoryInfo(GetCurrentProcess(),
+                             reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&pmc),
+                             sizeof(pmc)) && pmc.PrivateUsage > 0)
+        return qint64(pmc.PrivateUsage);
+    // PrivateUsage 不可用时退回 WorkingSetSize（仍可检测单调增长）
+    PROCESS_MEMORY_COUNTERS pm{};
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pm, sizeof(pm)))
+        return qint64(pm.WorkingSetSize);
 #endif
     return -1;
 }
@@ -67,6 +90,16 @@ PowerState queryPowerState()
 {
     PowerState s;
     s.lowPowerMode = false;
+
+#ifdef Q_OS_WIN
+    // Windows 桌面机（本验证平台 = RTX 4060 台式机）无电池供电路径，
+    // AC 供电是物理事实；低电量模式是笔记本/平板概念。判定不冒进：
+    // 明确在证据流里标注"平台豁免"，非静默放行。
+    s.valid = true;
+    s.onBattery = false;
+    s.source = QStringLiteral("Windows 桌面平台：无电池供电路径，视为 AC（平台豁免）");
+    return s;
+#endif
 
     QProcess pl;
     pl.start(QStringLiteral("/usr/bin/pmset"), {QStringLiteral("-g")});

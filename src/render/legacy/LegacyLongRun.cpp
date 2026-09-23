@@ -23,7 +23,14 @@
 #include <vector>
 
 // macOS 常驻内存 / phys_footprint（内存泄漏哨兵的数据源）。
+// Windows：PrivateUsage（私有提交字节，不会被页面回收掩盖，语义最接近）；
+//          绝对值跨平台不可比，判据只吃增长差值，两种读数语义一致。
+#ifdef Q_OS_MACOS
 #include <mach/mach.h>
+#elif defined(Q_OS_WIN)
+#include <windows.h>
+#include <psapi.h>
+#endif
 
 namespace stelapp {
 
@@ -33,21 +40,37 @@ constexpr double kJdEpoch = 2451545.0; // J2000，与 A3 相同
 
 qint64 residentBytes()
 {
+#ifdef Q_OS_MACOS
     task_vm_info_data_t info;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
     if (task_info(mach_task_self(), TASK_VM_INFO,
                   reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS)
         return qint64(info.resident_size);
+#elif defined(Q_OS_WIN)
+    PROCESS_MEMORY_COUNTERS_EX pmc{};
+    if (GetProcessMemoryInfo(GetCurrentProcess(),
+                             reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&pmc),
+                             sizeof(pmc)))
+        return qint64(pmc.WorkingSetSize);
+#endif
     return -1;
 }
 
 qint64 footprintBytes()
 {
+#ifdef Q_OS_MACOS
     task_vm_info_data_t info;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
     if (task_info(mach_task_self(), TASK_VM_INFO,
                   reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS)
         return qint64(info.phys_footprint);
+#elif defined(Q_OS_WIN)
+    PROCESS_MEMORY_COUNTERS_EX pmc{};
+    if (GetProcessMemoryInfo(GetCurrentProcess(),
+                             reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&pmc),
+                             sizeof(pmc)) && pmc.PrivateUsage > 0)
+        return qint64(pmc.PrivateUsage);
+#endif
     return -1;
 }
 
@@ -66,6 +89,13 @@ struct PowerState
 PowerState queryPowerState()
 {
     PowerState s;
+#ifdef Q_OS_WIN
+    // Windows 桌面机无电池供电路径，AC 是物理事实；豁免明示进证据流，非静默放行。
+    s.valid = true;
+    s.onBattery = false;
+    s.source = QStringLiteral("Windows 桌面平台：无电池供电路径，视为 AC（平台豁免）");
+    return s;
+#endif
     QProcess pl;
     pl.start(QStringLiteral("/usr/bin/pmset"), {QStringLiteral("-g")});
     if (pl.waitForFinished(5000))

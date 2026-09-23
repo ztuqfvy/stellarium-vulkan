@@ -396,3 +396,92 @@ git add docs\evidence\<文件> ; git commit -m "验收留证：<日期> 三后�
 回归检查：`tools\negctl\check_rc_propagation.cmd`。它跑的是**真的** `run_autotest.cmd`
 （不是副本），桩 DUT 返回 2，断言"打印码 == 进程返回码"。对修复前的副本实测
 `RESULT: FAIL - printed=2 process=0 / exit 1`，对修复后实测 `PASS / exit 0`。
+
+---
+
+# 第二轮（2026-09-23 起）：合流形态 × 原生 Vulkan 共存验证
+
+> **背景**：macOS 上已定案「MoltenVK × Apple-OpenGL 同进程共存必丢设备」
+> （4/4 失败，判别矩阵与最小复现见 `docs/evidence/2026-09-23-t13-live-longrun/`）。
+> 合流形态验收在 macOS 上用 Metal RHI 通过（30 min 长跑 11/11）。
+> **本轮唯一问题：这个共存缺陷是 macOS/MoltenVK 专属，还是 Qt 的通用问题？**
+> 你的机器（Ryzen 7 3700X + RTX 4060）有平台原生 Vulkan 驱动，是回答它的唯一手段。
+
+## 10. 三阶段任务（便宜的在前面，主目标在阶段 2/3）
+
+### 阶段 1：独立工程形态回归（半小时级，必做）
+
+代码 `git pull` 后重建（构建步骤同上文 §3，产物 `build-ui\Release\stelQuickUI.exe`）。
+跑三组，回传 stdout：
+
+```powershell
+# 1a. A2 静态纹理（Vulkan 原生驱动下刷新基线）
+$env:STELQUICK_A2_CHECK = "1"; $env:STELQUICK_A2_DUMP = "C:\temp\a2_vulkan_r2.png"
+.\build-ui\Release\stelQuickUI.exe
+
+# 1b. DYN 动态帧自检（替身生产者，Vulkan）
+$env:STELQUICK_DYN_CHECK = "1"; Remove-Item Env:STELQUICK_GRAPHICS_API -ErrorAction SilentlyContinue
+.\build-ui\Release\stelQuickUI.exe
+
+# 1c. d3d11 对照
+$env:STELQUICK_DYN_CHECK = "1"; $env:STELQUICK_GRAPHICS_API = "d3d11"
+.\build-ui\Release\stelQuickUI.exe
+```
+
+期望：1a `A2CHECK: VERDICT=PASS`；1b `DYNCHECK: VERDICT=PASS`（7/7）；1c 同 PASS。
+注意 1b/1c 各约 30 秒（含 15s 测量窗）。
+
+### 阶段 2：合流形态首次 Windows 构建（数小时级，主目标，可能踩坑）
+
+> 上文 §1 说"不要碰根构建"——**那条只约束第一轮的静态纹理对照**。
+> 本轮的判定性实验必须跑真实引擎（OpenGL）与 QML Vulkan 同进程，
+> 也就是**必须**根构建。这是有准备的攻坚，不是失误。
+
+```powershell
+# 依赖策略二选一（首次建议 A）：
+# A. Stellarium 官方 Windows 依赖包（上游 wiki 的 "MSVC 开发" 页有打包好的 deps）
+# B. vcpkg（libnova/gettext/ffmpeg/...），在根 CMakeLists 里对接 toolchain
+
+cmake -B build-win -S . `
+  -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/msvc2022_64 `
+  -DENABLE_STELQUICKUI=ON -DSTELQUICKUI_WIDGETS_HOST=ON `
+  -G "Visual Studio 17 2022" -A x64
+cmake --build build-win --config Release --parallel
+```
+
+- 代码已做 Windows 适配：`SkyLongRun.cpp` / `LegacyLongRun.cpp` 的内存读数
+  （macOS `phys_footprint` → Windows `PrivateUsage`）与环境门
+  （桌面机无电池路径 → 平台豁免，证据流明示）。
+- **预期会失败**（MSVC 严格度 / 依赖路径 / CMake 发现顺序），失败不是白跑：
+  **把完整错误日志原样回传**，我在 Mac 侧修完推上来再试。
+- 产物：`build-win\src\ui\Release\stelQuickUI.exe`（或 `build-win\Release\...`）。
+
+### 阶段 3（阶段 2 成功后）：判定性实验
+
+```powershell
+# 3a. DYN 在真实引擎 + 原生 Vulkan 下复跑（约 1 分钟）
+$env:STELQUICK_DYN_CHECK = "1"; $env:STELQUICK_DYN_PRODUCER = "engine"
+.\build-win\src\ui\Release\stelQuickUI.exe
+
+# 3b. 合流形态短窗长跑（Vulkan，约 4 分钟）
+$env:STELQUICK_LONGRUN = "1"; $env:STELQUICK_LONGRUN_PRODUCER = "engine"
+$env:STELQUICK_LONGRUN_WARMUP_SECONDS = "120"; $env:STELQUICK_LONGRUN_SECONDS = "180"
+$env:STELQUICK_LONGRUN_CSV = "C:\temp\t13-win.csv"
+.\build-win\src\ui\Release\stelQuickUI.exe
+```
+
+**结果读法**：
+
+| 3a/3b 结果 | 结论 | 动作 |
+|---|---|---|
+| PASS，0 次设备丢失 | 共存缺陷是 **MoltenVK 专属**，Qt 无辜 | 关闭风险项；Vulkan 交付路径确认畅通 |
+| 同样丢设备 | Qt 的 Vulkan RHI 与外部 OpenGL 共存有通用缺陷 | 严重升级：A3 交付形态需复议（QML 后端在 GL 宿主下选 Metal/D3D） |
+
+3b PASS 后可选 30 min 正式跑（`WARMUP=900 SECONDS=1800`，判据 SL-C01..C11）。
+
+## 11. 回传清单（每阶段）
+
+1. 完整 stdout/stderr（PowerShell 里加 `*> C:\temp\r1.log` 再贴文件）。
+2. 阶段 2 的 CMake 配置输出 + 首个编译错误（若失败）。
+3. `vulkaninfo --summary` 的 GPU 段（确认驱动版本）。
+4. 3b 的 `C:\temp\t13-win.csv` 与 `.frames.csv`。
