@@ -1,0 +1,24 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 自动定位 Vulkan 加载库 /opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+STELLRUN: 环境前置通过（Now drawing from 'AC Power'，低电量模式关）
+STELLRUN: 预热 900 秒开始（生产者名义 60.0 fps，1280x720）
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+STELLRUN: 测量 900 秒开始（预热段数据保留在 CSV，统计不含）
+STELLRUN: 消费侧长跑：预热 900s + 测量 1800s；稳态显示 42.20 fps / 生产 38.35 fps；上屏间隔 p95 34.40ms / p99 35.86ms；丢弃 0；内存斜率 3.338 MiB/min
+STELLRUN: SL-C01 FAIL 生产者零失败=是（测量段渲染 72524 帧 / 失败 0）；稳态实测 38.35 fps（下限 40）
+STELLRUN: SL-C02 PASS 稳态显示帧率 42.20 fps（下限 40）；显示帧号 69210 → 119798（窗口 1199s）
+STELLRUN: SL-C03 FAIL 稳态上屏间隔（42542 帧）：mean 32.85 / p50 16.70 / p95 34.40 / p99 35.86 / max 592146.12 ms（门槛 p99≤50、max≤100；vsync 下 16.7/33.4ms 混排属正常漏一帧，判据只管异常长停顿）
+STELLRUN: SL-C04 PASS 测量段邮箱：投递 72524 / 丢弃 0（须 0）
+STELLRUN: SL-C05 PASS 测量段上传 63173 次，增量均值 0.422ms（<5.0），全程最坏 21.03ms（<100）
+STELLRUN: SL-C06 PASS 测量段邮箱帧龄最大 211ms（<500）
+STELLRUN: SL-C07 FAIL 稳态 phys_footprint 斜率 3.338 MiB/min（|斜率|≤1.0）；窗口内 192.3 → 242.9 MiB（增 50.6）
+STELLRUN: SL-C08 PASS 测量期间环境漂移 0 次违规（每 60s 复核；0 次才说明数据在合规环境取得）
+STELLRUN: SL-C09 FAIL 测量段窗口暴露 1208/1800 个采样点（被遮挡/最小化时场景图降频，显示数据不可信）
+STELLRUN: SL-C10 PASS 测量段降级误报 0/1800 个采样点（0.000%，上限 1%）
+STELLRUN: SL-INFO 逐秒 CSV：docs/evidence/2026-09-23-sky-longrun/build.csv（2699 行）
+STELLRUN: SL-INFO 逐帧上屏 CSV：docs/evidence/2026-09-23-sky-longrun/build.csv.frames.csv（109636 行）
+STELLRUN: VERDICT=FAIL
+EXIT=8

@@ -43,6 +43,9 @@ set(stelQuickUI_SOURCES
     # 消费侧接线：动态帧生产者（LegacySkyHost 动态驱动，独立线程）
     LiveFrameSource.hpp
     LiveFrameSource.cpp
+    # 消费侧全量计量长跑（P-BRG-01 验收）
+    SkyLongRun.hpp
+    SkyLongRun.cpp
     LegacyHostCheck.hpp
     LegacyHostCheck.cpp
     quick/BackendInfo.hpp

@@ -80,6 +80,7 @@ public:
     qreal degradeThreshold() const { return m_degradeThreshold; }
     void setDegradeThreshold(qreal fps);
     quint64 uploadCount() const { return m_uploadCount.load(); }
+    quint64 uploadSumUs() const { return m_uploadSumUs.load(); }
     qreal uploadMeanMs() const;
     qreal uploadMaxMs() const;
 

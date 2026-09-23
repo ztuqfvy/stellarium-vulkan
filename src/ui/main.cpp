@@ -12,13 +12,16 @@
  *   STELQUICK_WINDOW_TEST=1      → 交互回归自测（缩放 + 隐藏/显示），见文件末尾。
  *   STELQUICK_A2_CHECK=1         → A2 静态图逐像素校验（用例 I-STC-01/02）。
  *   STELQUICK_DYN_CHECK=1        → 动态帧通路自检（I-DYN / P-BRG-01 前置 / P-BRG-04）。
+ *   STELQUICK_LONGRUN=1          → 消费侧全量计量长跑（P-BRG-01 验收：warmup + measure
+ *                                  两段，逐秒 + 逐帧上屏 CSV，环境前置不合规拒绝测量）。
  *   STELQUICK_LIVE=1             → 手动查看动态帧流（人眼观察，不自动退出）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
  *         5 A2 静态图校验失败；6 A2 校验手段不可用（不得据此声称通过）；
  *         7 被测可执行文件不存在（Windows run_autotest.cmd）；8 T6 显式帧驱动自检失败
- *           （DYN 动态帧通路自检失败同用 8）。
+ *           （DYN 动态帧通路自检 / 长跑判据失败同用 8）；
+ *         9 长跑环境前置不合规（未接电源 / 低电量模式开启，未开始测量）。
  *
  * 运行：直接双击 stelQuickUI.app 即可（main.cpp 自动定位 Vulkan 加载库）。
  */
@@ -121,6 +124,7 @@ void ensureVulkanLoaderPath()
 #include "ui/A2FrameCheck.hpp"
 #include "ui/DynFrameCheck.hpp"
 #include "ui/LiveFrameSource.hpp"
+#include "ui/SkyLongRun.hpp"
 #include "ui/quick/SkyViewport.hpp"
 
 namespace {
@@ -423,8 +427,10 @@ int main(int argc, char **argv)
 
     const bool a2Check = qEnvironmentVariableIsSet("STELQUICK_A2_CHECK");
     const bool dynCheck = qEnvironmentVariableIsSet("STELQUICK_DYN_CHECK");
-    // 起始页：A2/DYN 校验必须停在天空页；手动模式下可用 STELQUICK_PAGE 指定
-    const QString startPage = (a2Check || dynCheck || qEnvironmentVariableIsSet("STELQUICK_LIVE"))
+    const bool longRun = qEnvironmentVariableIsSet("STELQUICK_LONGRUN");
+    // 起始页：A2/DYN/长跑校验必须停在天空页；手动模式下可用 STELQUICK_PAGE 指定
+    const QString startPage = (a2Check || dynCheck || longRun
+                               || qEnvironmentVariableIsSet("STELQUICK_LIVE"))
                                   ? QStringLiteral("sky")
                                   : qEnvironmentVariable("STELQUICK_PAGE", QStringLiteral("diag"));
 
@@ -585,6 +591,37 @@ int main(int argc, char **argv)
                 std::printf("DYNCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
                 std::fflush(stdout);
                 app.exit(result.pass ? 0 : 8);
+            });
+        const int rc = app.exec();
+        return (rc == 0 && !backendOk) ? 3 : rc;
+    }
+
+    // 消费侧全量计量长跑（P-BRG-01 验收）：warmup + measure 两段，逐秒/逐帧 CSV。
+    // 环境前置不合规时以退出码 9 拒绝测量（不产生任何测量数据）。
+    if (longRun) {
+        if (!skyViewport) {
+            std::fprintf(stderr, "长跑失败：未找到 SkyViewport\n");
+            return 6;
+        }
+        stelapp::SkyLongRun::runStartupSequence(
+            &app, window, skyViewport, &frameMailbox,
+            stelapp::SkyLongRun::optionsFromEnv(),
+            [&app](const stelapp::SkyLongRunResult &result) {
+                std::printf("STELLRUN: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("STELLRUN: %s\n", line.toUtf8().constData());
+                if (!result.ran) {
+                    std::printf("STELLRUN: VERDICT=%s\n",
+                                result.envBlocked ? "ENV_FAIL" : "UNAVAILABLE");
+                    std::fflush(stdout);
+                    app.exit(result.envBlocked ? 9 : 6);
+                    return;
+                }
+                std::printf("STELLRUN: VERDICT=%s\n",
+                            result.dataInvalid ? "INVALID"
+                                               : (result.pass ? "PASS" : "FAIL"));
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : (result.dataInvalid ? 9 : 8));
             });
         const int rc = app.exec();
         return (rc == 0 && !backendOk) ? 3 : rc;

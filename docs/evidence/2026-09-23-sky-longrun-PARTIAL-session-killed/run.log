@@ -1,0 +1,9 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 自动定位 Vulkan 加载库 /opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+STELLRUN: 环境前置通过（Now drawing from 'AC Power'，低电量模式关）
+STELLRUN: 预热 900 秒开始（生产者名义 60.0 fps，1280x720）
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+STELLRUN: 测量 900 秒开始（预热段数据保留在 CSV，统计不含）
