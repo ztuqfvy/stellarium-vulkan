@@ -773,9 +773,13 @@ int main(int argc, char **argv)
     // 1. 必须在创建任何窗口之前显式选择后端（计划一第 2 节）
     //
     // 默认强制 Vulkan，且失败不静默回退（A1 验收要求）。
-    // STELQUICK_GRAPHICS_API 只用于**诊断对照**：把同一份场景换成别的后端跑，
-    // 用来隔离"Vulkan 专用缺陷"与"通用渲染缺陷"。正常验收不得使用。
-    //   metal  — macOS 对照组（MoltenVK 之外的原生 Metal RHI）
+    // STELQUICK_GRAPHICS_API 的两个用途（2026-09-23 T13 定案）：
+    //   1. **诊断对照**：隔离"Vulkan 专用缺陷"与"通用渲染缺陷"。
+    //   2. **Metal 后端 = T13 验收配置**：MoltenVK 与 Apple-OpenGL 同进程共存
+    //      必丢设备（判别矩阵见 docs/evidence/2026-09-23-t13-live-longrun/），
+    //      该缺陷已独立归档；合流形态验收跑使用 `=metal`。
+    //   其余取值仍只作诊断对照，正常验收不得使用。
+    //   metal  — macOS：T13 起为合流形态验收配置（亦是 MoltenVK 之外的对照组）
     //   opengl — 跨平台对照组
     //   d3d11 / d3d12 — Windows 对照组（D3D11 是 Qt 在 Windows 的默认后端，
     //                   比 OpenGL 更贴近"该平台的健康基线"，故 Windows 上首选它做对照）

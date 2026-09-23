@@ -1,0 +1,321 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: 自动定位 Vulkan 加载库 /opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+StelFileMgr found install location "."
+System language (ISO 639 / ISO 3166): zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "en" in section "stellarium"
+Empty translation file for language  "en" in section "stellarium"
+Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+OpenGL module type: desktop OpenGL
+StelGLWidget constructor
+StelGraphicsScene constructor
+qt.qpa.openglcontext: Could not create NSOpenGLContext with shared context, falling back to unshared context.
+initializeGL(windowWidth = 1280, windowHeight = 720)
+OpenGL supported version:  "4.1 Metal - 91.7"
+Current Format:  QSurfaceFormat(version 4.1, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 32, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize -1, stencilBufferSize 8, samples 0, swapBehavior QSurfaceFormat::DoubleBuffer, swapInterval 0, colorSpace QColorSpace(), profile  QSurfaceFormat::CoreProfile)
+Initializing StelMainView
+Luminance textures are not supported
+Running in High Graphics Mode
+Maximum texture anisotropy: 16
+Maximum 2D texture size: 16384
+Driver version string: 4.1 Metal - 91.7
+GL vendor: Apple
+GL renderer: Apple M3
+GL Shading Language version: 4.10
+stel.OpenGLArray: Vertex Array Objects are supported
+Initial high-DPI scaling factor: 2
+qt.qpa.fonts: Populating font family aliases took 73 ms. Replace uses of missing font family "DejaVu Sans" with one that exists to avoid this cost. 
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium"
+Empty translation file for language  "zh_CN" in section "stellarium"
+Application language: zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures"
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-sky"
+Empty translation file for language  "zh_CN" in section "stellarium-sky"
+Empty skyculture-independent translation file for language  "zh_CN"
+Sky language: zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-planetary-features"
+Empty translation file for language  "zh_CN" in section "stellarium-planetary-features"
+Planetary features language: zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-scripts"
+Empty translation file for language  "zh_CN" in section "stellarium-scripts"
+Scripts language: zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Sky culture description language: zh_CN
+Cache directory: /Users/ztuqfvy/Library/Caches/stellarium-vulkan/stelQuickUI
+Loaded 252 countries
+Loaded 193 regions
+Loading Solar System data (1: planets and moons) ...
+Loading from: ./data/ssystem_major.ini
+Loaded 83 Solar System bodies from  ./data/ssystem_major.ini
+Solar System now has 83 entries.
+Loading Solar System data (2: minor bodies) ...
+Loading from: /Users/ztuqfvy/Library/Application Support/Stellarium/data/ssystem_minor.ini
+Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium/data/ssystem_minor.ini section 152637(152637)
+Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium/data/ssystem_minor.ini section 66146(66146)
+minor body  "(66146)" has no IAU code in section  "66146(66146)"
+minor body  "(152637)" has no IAU code in section  "152637(152637)"
+Loaded 477 Solar System bodies from  /Users/ztuqfvy/Library/Application Support/Stellarium/data/ssystem_minor.ini
+Solar System now has 560 entries.
+File ssystem_minor.ini is loaded successfully...
+ExtendedElements: loaded epoch tables for 4 asteroids from "./data/asteroid_elements.json" ( 0 not matched in ssystem_minor.ini)
+SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+qt.gui.imageio: libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Loading nomenclature for Solar system bodies ...
+Loaded 16058 / 16094 items of planetary surface nomenclature
+Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
+Loading star data ...
+Loading star catalog: ./stars/hip_gaia3/stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+Loading star catalog: ./stars/hip_gaia3/stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+Loading star catalog: ./stars/hip_gaia3/stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+Loading star catalog: ./stars/hip_gaia3/stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+Finished loading star catalogue data, max_geodesic_level: 3
+Loading scientific star designations from ./stars/hip_gaia3/name.fab
+Loaded 5060 / 5060 scientific designations
+Loading scientific star designations from ./stars/hip_gaia3/extra_name.fab
+Loaded 26200 / 26200 scientific designations
+Loading variable stars data from ./stars/hip_gaia3/gcvs.cat
+[...] GCVS 5.1-20250615
+Loaded 47323 / 47323 variable stars
+Loading double stars from ./stars/hip_gaia3/wds_hip_part.dat
+Loaded 22992 / 22992 double stars
+Loading cross-identification data from ./stars/hip_gaia3/cross-id.cat
+Loaded 327097 / 327097 cross-identification data records for stars
+Loading orbital parameters data for binary system from ./stars/hip_gaia3/binary_orbitparam.dat
+Loaded 15 / 15 orbital parameters data for binary system
+Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 159 Barium stars, and 220 have PM>1000mas/yr.
+navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+Loading DSO data ...
+[...] Stellarium DSO Catalog, version 3.23 (standard edition)
+Loaded 94899 DSO records
+Loading DSO name data ...
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+Loaded 1361 / 1388 DSO name records successfully
+No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+Loading DSO outline data ...
+Loaded 100 DSO outline records successfully
+Loading DSO discovery data ...
+Loaded 183 / 183 DSO discovery records successfully
+LandscapeMgr: initialized Cache for 100 MB.
+Loading star names from ./skycultures/common_star_names.fab
+Loaded 411 / 411 common star names
+Loaded 88 / 88 constellation records successfully for culture modern
+Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+Loading constellation boundary data ... 
+Loaded 781 constellation boundary segments
+Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install more star catalogs
+Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install more star catalogs
+Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
+Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
+Loaded 88 / 92 asterism records successfully for culture modern
+Initializing basic GL shaders... 
+Creating GUI ...
+Loading style file: :/graphicGui/normalStyle.css
+Loaded plugin "Exoplanets"
+[Exoplanets] Version of the format of the catalog: 1
+[Exoplanets] loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Exoplanets/exoplanets.json
+Loaded plugin "MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/MeteorShowers/MeteorShowers.json
+[MeteorShowersMgr] Version of the format of the catalog: 2
+Loaded plugin "Novae"
+[Novae] version of the catalog: 1
+[Novae] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Novae/novae.json
+Loaded plugin "Oculars"
+Oculars::validateAndLoadIniFile() ocular.ini exists at: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Oculars/ocular.ini . Checking version...
+Oculars::validateAndLoadIniFile() found existing ini file version 3.1
+Loaded plugin "Satellites"
+[Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Satellites/satellites.json
+Satellite has invalid orbit: "STARLINK-4451" "53492"
+Satellite has invalid orbit: "STARLINK-31079" "58598"
+Loaded plugin "SolarSystemEditor"
+Using the ssystem_minor.ini file that already exists in the user directory...
+Loaded 895910 discovery circumstances records for minor planets...
+SSE: Comet cross-index data: Overwriting entry for "453P"
+SSE: Comet cross-index data: Overwriting entry for "467P"
+SSE: Comet cross-index data: Overwriting entry for "465P"
+SSE: Comet cross-index data: Overwriting entry for "466P"
+SSE: Comet cross-index data: Overwriting entry for "468P"
+SSE: Comet cross-index data: Overwriting entry for "470P"
+SSE: Comet cross-index data: Overwriting entry for "472P"
+SSE: Comet cross-index data: Overwriting entry for "475P"
+SSE: Comet cross-index data: Overwriting entry for "477P"
+SSE: Comet cross-index data: Overwriting entry for "473P"
+SSE: Comet cross-index data: Overwriting entry for "476P"
+SSE: Comet cross-index data: Overwriting entry for "479P"
+SSE: Comet cross-index data: Overwriting entry for "480P"
+SSE: Comet cross-index data: Overwriting entry for "481P"
+Loaded 2570 discovery circumstances records for comets...
+OpenGL viewport size: 2560 x 1440
+Creating scene FBO with size 2560x1440
+LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
+Initializing planets GL shaders... 
+StelPainter: Warnings while linking transformShaderProgram shader program:
+WARNING: Could not find vertex shader attribute 'texCoord' to match BindAttributeLocation request.
+WARNING: Could not find vertex shader attribute 'normalIn' to match BindAttributeLocation request.
+
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.0200 天/秒，起点 JD=2461307.00759）
+STELLRUN: 生产者=engine(真实引擎)
+STELLRUN: 环境前置通过（Now drawing from 'AC Power'，低电量模式关）
+STELLRUN: 生产者由调用方装配，本跑只负责计量
+STELLRUN: 预热 900 秒开始（生产者名义 50.0 fps，1280x720）
+Satellite has invalid orbit: "SAR Lupe 5" "33244"
+Satellite has invalid orbit: "STARLINK-11694 [DTC]" "64243"
+Satellite has invalid orbit: "STARLINK-38142" "100183"
+Satellite has invalid orbit: "STARLINK-31027" "58720"
+Satellite has invalid orbit: "STARLINK-1171" "45062"
+Satellite has invalid orbit: "STARLINK-2273" "47993"
+Satellite has invalid orbit: "STARLINK-1278" "45408"
+Satellite has invalid orbit: "STARLINK-1329" "45531"
+Satellite has invalid orbit: "STARLINK-1448" "45665"
+Satellite has invalid orbit: "STARLINK-37674" "100278"
+Satellite has invalid orbit: "EAGLEEYE" "60508"
+Satellite has invalid orbit: "STARLINK-4408" "53206"
+Satellite has invalid orbit: "DONGPO 01" "53453"
+Satellite has invalid orbit: "PACE-1" "48909"
+Satellite has invalid orbit: "STARLINK-11228 [DTC]" "60398"
+Satellite has invalid orbit: "STARLINK-1797" "46698"
+Satellite has invalid orbit: "STARLINK-38342" "100544"
+Satellite has invalid orbit: "STARLINK-37696" "100274"
+Satellite has invalid orbit: "STARLINK-4045" "53152"
+Satellite has invalid orbit: "STARLINK-4387" "53490"
+Satellite has invalid orbit: "STARLINK-4442" "53480"
+Satellite has invalid orbit: "STARLINK-37709" "100490"
+Satellite has invalid orbit: "STARLINK-1272" "45386"
+Satellite has invalid orbit: "STARLINK-36255" "67102"
+Satellite has invalid orbit: "STARLINK-1828" "46725"
+Satellite has invalid orbit: "STARLINK-1433" "45711"
+Satellite has invalid orbit: "STARLINK-37705" "100273"
+Satellite has invalid orbit: "ISAT" "43879"
+Satellite has invalid orbit: "STARLINK-5701" "55487"
+Satellite has invalid orbit: "STARLINK-4394" "53467"
+Satellite has invalid orbit: "STARLINK-4425" "53208"
+Satellite has invalid orbit: "STARLINK-37330" "100498"
+Satellite has invalid orbit: "STARLINK-3098" "49442"
+Satellite has invalid orbit: "STARLINK-1453" "45670"
+Satellite has invalid orbit: "STARLINK-3765" "52295"
+Satellite has invalid orbit: "STARLINK-38017" "100499"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3G" "46459"
+Satellite has invalid orbit: "STARLINK-37966" "100478"
+Satellite has invalid orbit: "STARLINK-5470" "54776"
+Satellite has invalid orbit: "STARLINK-1068" "44772"
+Satellite has invalid orbit: "STARLINK-4458" "53668"
+Satellite has invalid orbit: "STARLINK-3069" "49176"
+Satellite has invalid orbit: "STARLINK-4405" "53201"
+Satellite has invalid orbit: "STARLINK-37753" "100298"
+Satellite has invalid orbit: "STARLINK-37978" "100497"
+Satellite has invalid orbit: "STARLINK-4389" "53475"
+Satellite has invalid orbit: "STARLINK-37497" "100494"
+Satellite has invalid orbit: "STARLINK-36282" "100473"
+Satellite has invalid orbit: "STARLINK-4422" "53639"
+Satellite has invalid orbit: "STARLINK-3083" "49158"
+STELLRUN: 测量 1800 秒开始（预热段数据保留在 CSV，统计不含）
+Satellite has invalid orbit: "STARLINK-4446" "53505"
+Satellite has invalid orbit: "STARLINK-37594" "100484"
+Satellite has invalid orbit: "STARLINK-37394" "100475"
+Satellite has invalid orbit: "STARLINK-4390" "53653"
+Satellite has invalid orbit: "STARLINK-4386" "53649"
+Satellite has invalid orbit: "STARLINK-2185" "47767"
+Satellite has invalid orbit: "STARLINK-37751" "100491"
+Satellite has invalid orbit: "STARLINK-4454" "53499"
+Satellite has invalid orbit: "STARLINK-38333" "100453"
+Satellite has invalid orbit: "STARLINK-1856" "47143"
+Satellite has invalid orbit: "STARLINK-30233" "57302"
+Satellite has invalid orbit: "STARLINK-4598" "53630"
+Satellite has invalid orbit: "STARLINK-37762" "100415"
+Satellite has invalid orbit: "STARLINK-4293" "52989"
+Satellite has invalid orbit: "STARLINK-37996" "100410"
+Satellite has invalid orbit: "STARLINK-38011" "100412"
+Satellite has invalid orbit: "STARLINK-30239" "57291"
+Satellite has invalid orbit: "STARLINK-38285" "100448"
+Satellite has invalid orbit: "STARLINK-37721" "100220"
+Satellite has invalid orbit: "STARLINK-37626" "100419"
+Satellite has invalid orbit: "STARLINK-4433" "53478"
+Satellite has invalid orbit: "STARLINK-38026" "100408"
+Satellite has invalid orbit: "STARLINK-38013" "100430"
+Satellite has invalid orbit: "STARLINK-37939" "100480"
+Satellite has invalid orbit: "STARLINK-38300" "100434"
+Satellite has invalid orbit: "STARLINK-38325" "100445"
+Satellite has invalid orbit: "STARLINK-38317" "100458"
+Satellite has invalid orbit: "STARLINK-30224" "57416"
+Satellite has invalid orbit: "STARLINK-1672" "46537"
+Satellite has invalid orbit: "STARLINK-38248" "100435"
+Satellite has invalid orbit: "STARLINK-1407" "45703"
+Satellite has invalid orbit: "STARLINK-31495" "59313"
+Satellite has invalid orbit: "STARLINK-37623" "100481"
+Satellite has invalid orbit: "FLOCK 4BE-15" "60491"
+Satellite has invalid orbit: "STARLINK-38004" "100493"
+Satellite has invalid orbit: "STARLINK-3356" "51133"
+Satellite has invalid orbit: "STARLINK-37967" "100479"
+Satellite has invalid orbit: "STARLINK-37457" "100294"
+Satellite has invalid orbit: "STARLINK-5093" "56332"
+Satellite has invalid orbit: "STARLINK-37698" "100423"
+Satellite has invalid orbit: "STARLINK-4360" "53482"
+Satellite has invalid orbit: "STARLINK-5551" "56359"
+Satellite has invalid orbit: "STARLINK-4447" "53472"
+Satellite has invalid orbit: "STARLINK-11588 [DTC]" "63319"
+Satellite has invalid orbit: "STARLINK-5041" "53891"
+Satellite has invalid orbit: "STARLINK-5888" "56348"
+Satellite has invalid orbit: "DELTA 2 R/B(1)" "20453"
+Satellite has invalid orbit: "STARLINK-37906" "100476"
+Satellite has invalid orbit: "STARLINK-1810" "46709"
+Satellite has invalid orbit: "STARLINK-37699" "100279"
+Satellite has invalid orbit: "STARLINK-11440 [DTC]" "62513"
+Satellite has invalid orbit: "STARLINK-38377" "100521"
+Satellite has invalid orbit: "STARLINK-1337" "45582"
+Satellite has invalid orbit: "STARLINK-38379" "100520"
+Satellite has invalid orbit: "STARLINK-30236" "57300"
+Satellite has invalid orbit: "STARLINK-5837" "56346"
+Satellite has invalid orbit: "STARLINK-5482" "56358"
+Satellite has invalid orbit: "STARLINK-5550" "56361"
+Satellite has invalid orbit: "STARLINK-38266" "100255"
+Satellite has invalid orbit: "STARLINK-37764" "100414"
+Satellite has invalid orbit: "STARLINK-5997" "56327"
+Satellite has invalid orbit: "STARLINK-5887" "56349"
+Satellite has invalid orbit: "STARLINK-37942" "100280"
+Satellite has invalid orbit: "STARLINK-5562" "56336"
+Satellite has invalid orbit: "STARLINK-4607" "53740"
+Satellite has invalid orbit: "STARLINK-6035" "56323"
+Satellite has invalid orbit: "STARLINK-37377" "100483"
+Satellite has invalid orbit: "STARLINK-37985" "100477"
+Satellite has invalid orbit: "STARLINK-5980" "56326"
+Satellite has invalid orbit: "STARLINK-6033" "56322"
+Satellite has invalid orbit: "STARLINK-37980" "100283"
+Satellite has invalid orbit: "STARLINK-4464" "53669"
+Satellite has invalid orbit: "STARLINK-11610 [DTC]" "63135"
+Satellite has invalid orbit: "STARLINK-11605 [DTC]" "63134"
+Satellite has invalid orbit: "STARLINK-38332" "100444"
+Satellite has invalid orbit: "HRC MONOBLOCK CAMERA" "66052"
+Satellite has invalid orbit: "STARLINK-2519" "48305"
+Satellite has invalid orbit: "STARLINK-11680 [DTC]" "63554"
+Satellite has invalid orbit: "STARLINK-11303 [DTC]" "62096"
+Satellite has invalid orbit: "STARLINK-4406" "53667"
+Satellite has invalid orbit: "STARLINK-38223" "100190"
+Satellite has invalid orbit: "STARLINK-2131" "47728"
+Satellite has invalid orbit: "STARLINK-34055" "63819"
+STELLRUN: 消费侧长跑：预热 900s + 测量 1800s；稳态显示 40.30 fps / 生产 40.27 fps；上屏间隔 p95 51.04ms / p99 56.01ms；丢弃 0；内存斜率 0.141 MiB/min；帧龄 p95 14.00ms / max 65.00ms
+STELLRUN: SL-C01 PASS 生产者零失败=是（测量段渲染 72602 帧 / 失败 0）；稳态实测 40.27 fps（下限 40）
+STELLRUN: SL-C02 PASS 稳态显示帧率 40.30 fps（下限 40）；显示帧号 61357 → 109671（窗口 1199s）
+STELLRUN: SL-C03 PASS 稳态上屏间隔（48208 帧）：mean 24.90 / p50 22.81 / p95 51.04 / p99 56.01 / max 153.12 ms；门槛 p99≤74.45、max 档占比 ≤0.01%（> 148.90ms 的帧）（共线程形态：p99 相对口径 3×帧间隔（74.45ms，天花板 100ms）+ max 占比口径）（vsync 下 16.7/33.4ms 混排属正常漏一帧，判据只管异常长停顿）
+STELLRUN: SL-C04 PASS 测量段邮箱：投递 72602 / 丢弃 0（须 0）
+STELLRUN: SL-C05 PASS 测量段上传 57109 次，增量均值 0.170ms（<5.0），全程最坏 7.93ms（<100）
+STELLRUN: SL-C06 PASS 测量段邮箱帧龄最大 65ms（<500）
+STELLRUN: SL-C07 PASS 稳态 phys_footprint 斜率 0.141 MiB/min（增长上限 1.0，负值=释放缓存不违规）；窗口内 2888.5 → 2888.6 MiB（增 0.2）
+STELLRUN: SL-C08 PASS 测量期间环境漂移 0 次违规（每 60s 复核；0 次才说明数据在合规环境取得）
+STELLRUN: SL-C09 PASS 测量段窗口暴露 1800/1800 个采样点（被遮挡/最小化时场景图降频，显示数据不可信）
+STELLRUN: SL-C10 PASS 测量段降级误报 0/1800 个采样点（0.000%，上限 1%）
+STELLRUN: SL-C11 PASS 稳态帧龄（12002 个 100ms 粒度样本）：mean 1.92 / p95 14.00 / p99 24.00 / max 65.00 ms（门槛 p95≤100）
+STELLRUN: SL-INFO 逐秒 CSV：/tmp/t13-official2.csv（2699 行）
+STELLRUN: SL-INFO 逐帧上屏 CSV：/tmp/t13-official2.csv.frames.csv（108894 行）
+STELLRUN: VERDICT=PASS
