@@ -1,0 +1,7 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+Failed to create Vulkan instance: -9
+Failed to create platform Vulkan instance
+QVulkanDefaultInstance: Failed to create Vulkan instance
+A1 失败：无法获取 Qt 默认 Vulkan 实例（QVulkanDefaultInstance::instance() 返回空）。
+检查 Vulkan 加载库是否可用（Windows：vulkan-1.dll；macOS：QT_VULKAN_LIB）。
+禁止静默回退 Metal/GL，程序退出（码 3）。

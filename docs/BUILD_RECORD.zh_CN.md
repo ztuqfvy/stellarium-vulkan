@@ -980,3 +980,65 @@ P-BRG-04 的降级 UI **已实现并验证切换**。尚缺：30 分钟全量 CS
 降级切换已验证可切可恢复。剩下的是**真实引擎接入（A4/AppFacade）**——
 把 `LiveFrameSource` 的渲染回调从 `LegacyTestScene` 换成 `StelApp::update()/draw()`（A3 已验证的双绘法），
 线程与计量骨架不动；届时按本组判据复跑即可（macOS 逐像素判据仍受 §6.2 Vulkan 缺陷限制）。
+
+## 2026-09-23｜T10 构建合流：`stelQuickUI` 成为根构建子目标
+
+里程碑 **A3 的第一步**（见进度实况 §8.4）。合流前 `src/ui` 是**完全独立的工程**
+（`cmake -B build-ui -S src/ui`，只编 15 个文件、**不含引擎**），因此"把渲染回调换成
+`StelApp::update()/draw()`"这句话缺少前提：那个可执行文件根本没链接引擎。
+
+### 1. 改了什么
+
+| 文件 | 改动 |
+|---|---|
+| 根 `CMakeLists.txt` | 新增 `ENABLE_STELQUICKUI`（默认 0）；开启时 `FIND_PACKAGE(Qt6 REQUIRED COMPONENTS Quick Qml OpenGL)`，并对 Qt5 直接 `FATAL_ERROR` |
+| `src/CMakeLists.txt` | `stellarium` 目标之后新增 `IF(ENABLE_STELQUICKUI) ADD_SUBDIRECTORY(ui) ENDIF()` |
+| `src/ui/CMakeLists.txt` | 改为**双形态**：`CMAKE_SOURCE_DIR == CMAKE_CURRENT_SOURCE_DIR` 即独立工程，否则子目标 |
+
+双形态不是折中，是必要——Windows 侧"看渲染效果 + 驱动形态对照"仍走形态 ②（依赖面只有 VS2022 + Qt6），
+见 `docs/WINDOWS_BUILD.zh_CN.md`。
+
+### 2. 唯一有技术含量的坑：重复编译引擎文件
+
+`render/legacy/{FrameMailbox,LegacySkyHost}` **已在 `stellarium_lib_SRCS` 里编入 `stelMain`**。
+子目标形态下若照抄独立工程的源列表，这两个文件会被编第二遍：
+
+- 轻则体积翻倍（`.text` 两份）；
+- 重则 `duplicate symbol`；
+- **最坏的不是报错而是"能跑"**：两份实现各自持有静态状态（如 `FrameMailbox` 的序号计数器），
+  表现为随机不可复现的行为漂移——比链接失败难查一个数量级。
+
+处置：拆出 `STELQUICKUI_SOURCES_SHARED`，仅独立工程形态 `list(APPEND)`，
+进而在子目标形态 `target_link_libraries(stelQuickUI PRIVATE stelMain)`。
+`nm` 实测确认符号来自 `libstelMain.a` 而非本目标（`docs/evidence/2026-09-23-t10-build-merge/t10-link-facts.txt`）。
+
+### 3. 验收（判据见测试文档 §6.5）
+
+| 项 | 结果 |
+|---|---|
+| 单次 configure 出双产物 | ✅ `build-release/src/stellarium` + `build-release/src/ui/stelQuickUI.app` |
+| 开关对旧目标零影响 | ✅ OFF/ON 两次构建 `stellarium` **sha256 完全一致**（`f860d5a1…`） |
+| A1 四项（合流版 stelQuickUI） | ✅ `runtimeApi=Vulkan` rc=0 / 禁用 Vulkan rc=3 / WINDOWTEST PASS / 免环境变量可运行 |
+| A2 逐像素（合流版） | ✅ 12/12 PASS rc=0 |
+| DYN 动态帧通路（合流版） | ✅ 7/7 PASS rc=0（生产者 54.2 fps，与独立工程版 54.8 fps 同级） |
+| S3 引擎集成自检（合流后 stellarium） | ✅ `STELA3_CHECK` 8/8 PASS rc=0 |
+| 独立工程形态回归 | ✅ `cmake -B build-ui -S src/ui` 仍可配置 + 构建 |
+| 默认值 | ✅ 去掉缓存后 `ENABLE_STELQUICKUI=0`，目标清单里 `stelQuickUI` 计数为 0 |
+
+### 4. 一处 INVALID 而非 FAIL
+
+合流版 DYN 首跑 D1-C02 红（显示帧推进 151 < 192）。**不是合流退化**：
+首跑紧接 `-j8` 全量链接，`uptime` load average ≈ 10（8 核），生产者掉到 47.0 fps；
+同负载下独立工程版对照为 54.8 fps（对照本身能绿，说明是负载回升），复跑合流版 7/7 全绿。
+**环境异常判 INVALID，不计入结论**——与 §6.1.1 协议第 5 条同一纪律。留证 `...-INVALID-contended.txt`。
+
+### 5. 代价（明确记账）
+
+合流后 `stelQuickUI` 随根构建承担全部依赖，`otool -L` 里出现
+`QtWebEngineWidgets` / `QtWebEngineCore` / `QtWidgets` / `QtOpenGLWidgets`——
+这是"引擎与 QML 同进程"必须付的代价（§8.6「依赖面膨胀」）。形态 ② 保留即为此保留。
+
+### 6. 留证
+
+`docs/evidence/2026-09-23-t10-build-merge/`（含 configure 三态、构建、链接事实、
+sha256 不变性、两种形态回归、A1 四项、A2/DYN/S3 自检、INVALID 首跑）。

@@ -760,6 +760,22 @@ SET_TARGET_PROPERTIES(stelMain PROPERTIES FOLDER "src/core")
 SET_TARGET_PROPERTIES(stellarium PROPERTIES FOLDER "src")
 
 #############################################################################################
+#################### Qt Quick (QML) 现代 UI 宿主 —— 里程碑 A3（T10 构建合流）################
+#############################################################################################
+# src/ui 原为独立工程（cmake -S src/ui），本次转为根构建的可选子目标：
+#   cmake -B build -DENABLE_STELQUICKUI=ON ...   → 一次 configure 同时产出
+#   src/stellarium（旧宿主，行为不变）与 src/ui/stelQuickUI.app（QML 宿主）。
+#
+# 关键：stelQuickUI 链接 stelMain 而非自建引擎副本。
+#   render/legacy/{FrameMailbox,LegacySkyHost} 已在 stellarium_lib_SRCS 内，
+#   因此 src/ui/CMakeLists.txt 在子目标模式下**不再重复编译这两个文件**，
+#   避免同一符号出现两份定义（详见该文件注释）。
+# 默认关闭（ENABLE_STELQUICKUI=0）→ 根构建与合流前完全一致。
+IF(ENABLE_STELQUICKUI)
+     ADD_SUBDIRECTORY(ui)
+ENDIF()
+
+#############################################################################################
 ################################## Build unit tests #########################################
 #############################################################################################
 

@@ -1,0 +1,11 @@
+=== 硬证据：合流开关不得扰动 stellarium 目标产物 ===
+
+-- 形态 A：ENABLE_STELQUICKUI=OFF
+stellarium sha256 = f860d5a17544baa329fae082a7c412bf8d95550ce060e36c383e9f44d65dda6f
+-rwxr-xr-x@ 1 ztuqfvy  staff  37660552 Sep 23 16:35 build-release/src/stellarium
+
+-- 形态 B：ENABLE_STELQUICKUI=ON
+stellarium sha256 = f860d5a17544baa329fae082a7c412bf8d95550ce060e36c383e9f44d65dda6f
+-rwxr-xr-x@ 1 ztuqfvy  staff  37660552 Sep 23 16:35 build-release/src/stellarium
+
+结论：两形态下 stellarium 字节完全一致 → 合流开关对旧目标零影响。

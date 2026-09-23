@@ -1,0 +1,9 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+WINDOWTEST: 开始（放大 24 步 → 缩小 24 步 → 隐藏/显示 3 次）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=Apple M3（判定来源=信号/兜底）
+WINDOWTEST: 预热 3 帧完成，开始测量
+WINDOWTEST: 阶段 1 完成（累计 maxStall=24ms maxResize=1ms）
+WINDOWTEST: 阶段 2 完成（累计 maxStall=33ms maxResize=5ms）
+WINDOWTEST: 结果 steps=54 maxStallMs=41 maxResizeMs=35 maxFrameGapMs=64 阈值=250ms VERDICT=PASS

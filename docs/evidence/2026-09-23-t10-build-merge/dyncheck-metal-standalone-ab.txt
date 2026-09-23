@@ -1,0 +1,14 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 rendered=352 failed=0（期望 ≥288，速率实测 54.8 fps）
+DYNCHECK: D1-C02 PASS 显示帧号推进 299（下限 192，vsync 封顶属正常）
+DYNCHECK: D1-C03 PASS 邮箱 published=352 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 182ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=344 mean=0.51ms max=1.53ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS

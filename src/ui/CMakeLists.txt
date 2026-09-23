@@ -1,38 +1,75 @@
-# stelQuickUI — A1 阶段 Qt Quick Vulkan 宿主（独立构建）
+# stelQuickUI — Qt Quick Vulkan 宿主
 #
-# 说明（A3 转换时删除此注释）：本 CMakeLists 目前是**独立工程**，
-# 与根 CMakeLists 互不引用——`cmake -B build-ui -S src/ui`。
-# A3 起转为根构建的子目标（stelQuickUI），并接入 AppFacade。
+# ── 两种构建形态（2026-09-23，T10 构建合流）─────────────────────────────────
+# ① 子目标形态（里程碑 A3，推荐）：作为根构建的一部分，与 stellarium 共用引擎。
+#      cmake -B build-release -S . -DENABLE_STELQUICKUI=ON \
+#            -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/qt
+#      cmake --build build-release            # 同时产出 stellarium 与 stelQuickUI.app
+#    此时本文件**不能**自建引擎副本：render/legacy/{FrameMailbox,LegacySkyHost}
+#    已在 stellarium_lib_SRCS 里编译进 stelMain，重复编译会让同名符号出现两份定义。
+#    故子目标形态下这两个文件被排除（见下方 STELQUICKUI_SHARED_SOURCES），改为链接 stelMain。
 #
-# 构建：
-#   macOS：
-#     /opt/homebrew/bin/cmake -B build-ui -S src/ui -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/qt
-#     /opt/homebrew/bin/cmake --build build-ui
-#   Windows（VS2022 x64 开发者命令行 / Qt 自带终端，见 docs/WINDOWS_BUILD.zh_CN.md）：
-#     cmake -B build-ui -S src/ui -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/msvc2022_64 -G "Visual Studio 17 2022" -A x64
-#     cmake --build build-ui --config Release --parallel
+# ② 独立工程形态（A1/A2 阶段遗留，保留用于"小依赖面快速迭代"与 Windows 留证）：
+#      macOS：
+#        /opt/homebrew/bin/cmake -B build-ui -S src/ui -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/qt
+#        /opt/homebrew/bin/cmake --build build-ui
+#      Windows（VS2022 x64 开发者命令行 / Qt 自带终端，见 docs/WINDOWS_BUILD.zh_CN.md）：
+#        cmake -B build-ui -S src/ui -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/msvc2022_64 -G "Visual Studio 17 2022" -A x64
+#        cmake --build build-ui --config Release --parallel
+#    此形态不含引擎（只编本目录 15 个文件 + render 下的开发期替代物），仅用于看渲染效果。
+#
 # 运行（macOS 环境变量见 docs/BUILD_RECORD.zh_CN.md；Windows 无需任何环境变量）：
 #   export VK_DRIVER_FILES=/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json
 #   export QT_VULKAN_LIB=/opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib
-#   STELQUICK_AUTOTEST_SECONDS=5 ./build-ui/stelQuickUI.app/Contents/MacOS/stelQuickUI
-cmake_minimum_required(VERSION 3.21)
-project(stelQuickUI LANGUAGES CXX)
+#   STELQUICK_AUTOTEST_SECONDS=5 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOMOC ON)
+# ── 形态判定 ────────────────────────────────────────────────────────────────
+# 独立工程形态自己起 project()；子目标形态继承根工程的 project(Stellarium)、
+# C++17、CMAKE_AUTOMOC 等设置，不做任何重复声明。
+IF(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    SET(STELQUICKUI_STANDALONE ON)
+ELSE()
+    SET(STELQUICKUI_STANDALONE OFF)
+ENDIF()
+
+IF(STELQUICKUI_STANDALONE)
+    cmake_minimum_required(VERSION 3.21)
+    project(stelQuickUI LANGUAGES CXX)
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_AUTOMOC ON)
+ENDIF()
 
 # Qt6::OpenGL（QtOpenGL 模块）为 A2 主体产帧侧所需：
 # LegacySkyHost / LegacyTestScene 用 QOpenGLShaderProgram / QOpenGLBuffer /
 # QOpenGLVertexArrayObject —— 这三者不在 QtGui 里，必须显式链接 QtOpenGL。
 # 它是 qtbase 的一部分（libQt6OpenGL），所有官方 Qt6 安装都自带，不额外引入第三方依赖。
-find_package(Qt6 REQUIRED COMPONENTS Quick Qml Gui Core OpenGL)
+# 子目标形态下由根 CMakeLists 依据 ENABLE_STELQUICKUI 预先 find_package 过；此处兜底，
+# 保证两种形态都一定拿到这四个 target。
+IF(NOT TARGET Qt6::Quick OR NOT TARGET Qt6::Qml OR NOT TARGET Qt6::OpenGL)
+    find_package(Qt6 REQUIRED COMPONENTS Quick Qml Gui Core OpenGL)
+ENDIF()
 
 # Vulkan 设备探针：桌面默认开；鸿蒙交叉编译时由命令行关闭（OHOS NDK 不保证提供 libvulkan）。
 # Windows/Linux 上若未安装 Vulkan SDK（没有 find_package 所需的 headers/loader），
 # 下面会自动降级为 OFF 并告警——渲染本身不依赖 SDK（Qt 运行时 dlopen 系统 Vulkan），
 # 只有"设备探针"这一项诊断数据会缺。这让"没装 SDK 也能先跑起来看效果"成立。
 option(STELQUICK_VULKAN_PROBE "构建 VkDeviceProbe（需要有 Vulkan 加载库）" ON)
+
+# ── 与 stelMain 重复的源文件（仅独立工程形态编译）──────────────────────────
+# render/legacy/FrameMailbox 与 render/legacy/LegacySkyHost 已随 stellarium_lib_SRCS
+# 编入 stelMain。子目标形态下必须排除，否则：
+#   - stelQuickUI 自带一份定义，链接器又可能从 stelMain 拉入同名目标文件
+#     → 轻则体积翻倍，重则 duplicate symbol；
+#   - 更糟的是"看起来能跑"：两份实现各自持有静态状态（如 FrameMailbox 的序号），
+#     调试时表现为随机不可复现的行为差异——比链接失败更难查。
+# 因此这两个文件在子目标形态下**不编译**，统一由 stelMain 提供。
+SET(STELQUICKUI_SOURCES_SHARED
+    ../render/legacy/FrameMailbox.hpp
+    ../render/legacy/FrameMailbox.cpp
+    ../render/legacy/LegacySkyHost.hpp
+    ../render/legacy/LegacySkyHost.cpp
+)
 
 set(stelQuickUI_SOURCES
     main.cpp
@@ -52,20 +89,21 @@ set(stelQuickUI_SOURCES
     quick/BackendInfo.cpp
     quick/SkyViewport.hpp
     quick/SkyViewport.cpp
-    # A2 帧桥：邮箱 + 测试图案 + 开发期帧源（A2 主体完成后 StaticFrameSource 被旧 GL 读回替换）
-    ../render/legacy/FrameMailbox.hpp
-    ../render/legacy/FrameMailbox.cpp
+    # A2 帧桥：测试图案 + 开发期帧源（A2 主体完成后 StaticFrameSource 被旧 GL 读回替换）
     ../render/legacy/TestPattern.hpp
     ../render/legacy/TestPattern.cpp
     ../render/legacy/StaticFrameSource.hpp
     ../render/legacy/StaticFrameSource.cpp
     # A2 主体产帧侧（T6/T7）：旧宿主显式帧驱动 + 读回。
     # LegacyTestScene 与 StaticFrameSource 同性质，都是开发期替代物，A3 换成真实天空。
-    ../render/legacy/LegacySkyHost.hpp
-    ../render/legacy/LegacySkyHost.cpp
     ../render/legacy/LegacyTestScene.hpp
     ../render/legacy/LegacyTestScene.cpp
 )
+
+# 独立工程形态自带帧桥与旧宿主；子目标形态交由 stelMain 提供。
+IF(STELQUICKUI_STANDALONE)
+    list(APPEND stelQuickUI_SOURCES ${STELQUICKUI_SOURCES_SHARED})
+ENDIF()
 
 if(STELQUICK_VULKAN_PROBE)
     find_package(Vulkan QUIET)
@@ -92,7 +130,7 @@ qt_add_qml_module(stelQuickUI
     URI StelQuickUI
     VERSION 1.0
     # 模块产物单独放 qml/ 子目录，避免与可执行文件名冲突（ld errno=21）
-    OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qmlmodule
+    OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/qmlmodule
     QML_FILES
         qml/MainWindow.qml
         qml/DiagnosticPage.qml
@@ -111,8 +149,8 @@ qt_add_qml_module(stelQuickUI
 # 处置：显式把 qmldir 作为资源加入模块。
 qt_add_resources(stelQuickUI "stelquickui_qmldir"
     PREFIX "/StelQuickUI"
-    BASE "${CMAKE_BINARY_DIR}/qmlmodule"
-    FILES "${CMAKE_BINARY_DIR}/qmlmodule/qmldir"
+    BASE "${CMAKE_CURRENT_BINARY_DIR}/qmlmodule"
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/qmlmodule/qmldir"
 )
 
 # 包含路径以 src/ 为根："ui/quick/..."、"render/vulkan/..."
@@ -126,10 +164,28 @@ target_link_libraries(stelQuickUI PRIVATE
     Qt6::OpenGL
 )
 
+# ── 子目标形态：链接引擎 ────────────────────────────────────────────────────
+# stelMain 是根构建的引擎静态库（stellarium_lib_SRCS，含 StelApp/StelCore/
+# StelMainView 与 render/legacy 帧桥）。stelQuickUI 链接它 = "与旧宿主同进程同一份引擎"，
+# 这正是 A3 后续把渲染回调换成 setJD/update/draw 的前提。
+# TARGET_EXISTS 守卫：独立工程形态下 stelMain 不存在，跳过。
+# 注意 target_include_directories(stelMain PRIVATE src/) 是 PRIVATE，
+# 所以这里必须自己带 include 根（上面已做）。
+IF(NOT STELQUICKUI_STANDALONE)
+    IF(TARGET stelMain)
+        target_link_libraries(stelQuickUI PRIVATE stelMain)
+    ELSE()
+        message(FATAL_ERROR
+            "子目标形态下未找到 stelMain。src/ui 必须在 src/CMakeLists.txt 之后 "
+            "通过 ADD_SUBDIRECTORY(ui) 引入。")
+    ENDIF()
+ENDIF()
+
 # Qt6::GuiPrivate：main.cpp 需要 <QtGui/private/qvulkandefaultinstance_p.h>
 # 取 Qt 全局唯一的默认 Vulkan 实例（避免自建实例与 Qt 内部实例并存导致
 # surface 归属冲突 + 退出期崩溃，见 main.cpp 注释）。2026-09-21。
 # 注意：Qt6::GuiPrivate 不在 Qt6 COMPONENTS 里，必须显式 find_package 才会出现。
+# 根构建在 USE_BUNDLED_QTCOMPRESS=1（默认）下不查 GuiPrivate，故此处独立查找。
 find_package(Qt6 QUIET COMPONENTS GuiPrivate)
 if(TARGET Qt6::GuiPrivate)
     target_link_libraries(stelQuickUI PRIVATE Qt6::GuiPrivate)
@@ -198,8 +254,9 @@ endif()
 #     -DCMAKE_FIND_ROOT_PATH=$HOME/.local/opt/ohos/additional-packages \
 #     -DSTELQUICK_VULKAN_PROBE=OFF
 #
-# ── 本次移植的范围边界（重要）────────────────────────────────────────────
-# 本文件是**独立工程**，只编 15 个文件（见 stelQuickUI_SOURCES），不涉及 Stellarium
-# 根构建的依赖（Qt6 WebEngine/Charts/MultiMedia、libnova、gettext…）。
-# 因此 Windows 上"看渲染效果 + 做驱动形态对照"只需 VS2022 + Qt6，**不需要**碰根
-# CMakeLists。根构建（A3 集成）是另一件事，依赖面大得多，不要和本次混在一起做。
+# ── 依赖面边界（重要）────────────────────────────────────────────────────────
+# 独立工程形态：只编本文件列出的源，不涉及 Stellarium 根构建的依赖
+#   （Qt6 WebEngine/Charts/MultiMedia、libnova、gettext…）→ Windows 上"看渲染效果 +
+#   做驱动形态对照"只需 VS2022 + Qt6。
+# 子目标形态：随根构建一起承担全部依赖（含 WebEngine/Charts/MultiMedia 等），
+#   这是"引擎与 QML 同进程"必须付的代价，也是 T10 合流的实质内容。

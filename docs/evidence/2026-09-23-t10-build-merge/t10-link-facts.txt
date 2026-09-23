@@ -1,0 +1,24 @@
+# T10 链接事实（合流后）
+
+生成时间: 2026-09-23 16:34:40 +0800
+
+## 引擎库形态
+build-release/src/libstelMain.a: current ar archive
+
+## stelQuickUI 引用的引擎符号（应出自 libstelMain.a，而非本目标重复编译）
+18
+127
+
+## 独立工程形态（build-ui）同项对照
+48
+468
+
+## stelQuickUI 的 Qt/引擎动态依赖（QtQuick/QtQml 已链入 = 合流成立）
+/opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib (compatibility version 1.0.0, current version 1.4.0)
+/opt/homebrew/opt/qtwebengine/lib/QtWebEngineWidgets.framework/Versions/A/QtWebEngineWidgets (compatibility version 6.0.0, current version 6.11.2)
+/opt/homebrew/opt/qtwebengine/lib/QtWebEngineCore.framework/Versions/A/QtWebEngineCore (compatibility version 6.0.0, current version 6.11.2)
+/opt/homebrew/opt/qtdeclarative/lib/QtQuick.framework/Versions/A/QtQuick (compatibility version 6.0.0, current version 6.11.2)
+/opt/homebrew/opt/qtdeclarative/lib/QtQml.framework/Versions/A/QtQml (compatibility version 6.0.0, current version 6.11.2)
+/opt/homebrew/opt/qtbase/lib/QtOpenGLWidgets.framework/Versions/A/QtOpenGLWidgets (compatibility version 6.0.0, current version 6.11.2)
+/opt/homebrew/opt/qtbase/lib/QtOpenGL.framework/Versions/A/QtOpenGL (compatibility version 6.0.0, current version 6.11.2)
+/opt/homebrew/opt/qtbase/lib/QtWidgets.framework/Versions/A/QtWidgets (compatibility version 6.0.0, current version 6.11.2)

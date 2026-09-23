@@ -461,6 +461,12 @@ IF(ENABLE_INDI)
      ADD_DEFINITIONS(-DENABLE_INDI)
 ENDIF()
 
+# Qt Quick (QML) 现代 UI 宿主 —— 里程碑 A3 第一步（构建合流，2026-09-23，任务 T10）。
+# 开启后 src/ui 作为根构建的子目标编译，与 stellarium 共用 libstelMain（同一份引擎代码），
+# 从而让"真实引擎的帧送进 QML 窗口"这件事具备链接前提。
+# 默认 0：不开启时根构建与合流前**完全一致**，不引入 Qt Quick/Qml 依赖。
+SET(ENABLE_STELQUICKUI 0 CACHE BOOL "Define whether to build the Qt Quick (QML) UI host 'stelQuickUI' as a subdirectory of the root build.")
+
 # SPOUT allows relaying the Stellarium OpenGL framebuffer as DirectX texture in other programs.
 # It exists on Windows only. Syphon is a similar system for MacOS, this might be added by a Mac developer.
 IF(WIN32)
@@ -648,6 +654,17 @@ SET(USE_BUNDLED_QTCOMPRESS 1 CACHE BOOL "Use bundled version of qtcompress")
 # For the case of Qt5 this condition evaluates to false.
 IF(Qt6_VERSION VERSION_GREATER_EQUAL 6.10 AND NOT USE_BUNDLED_QTCOMPRESS)
      FIND_PACKAGE(Qt6 REQUIRED COMPONENTS GuiPrivate)
+ENDIF()
+# stelQuickUI（可选子目标，里程碑 A3 构建合流）需要 Qt Quick/Qml/OpenGL。
+# 这三个模块属 qtdeclarative（Quick/Qml）+ qtbase（OpenGL），Homebrew Qt 6.11.2 均已具备。
+# 只在开启时查找，未开启的根构建与合流前逐字节等价（不新增任何 Qt 组件依赖）。
+IF(ENABLE_STELQUICKUI)
+     IF(NOT Qt6_FOUND)
+          MESSAGE(FATAL_ERROR
+               "ENABLE_STELQUICKUI 仅支持 Qt6：src/ui 使用 Qt6 专有 API（QQuickWindow、"
+               "QSGRendererInterface、QVulkanInstance）与 Qt6 私有头 qvulkandefaultinstance_p.h。")
+     ENDIF()
+     FIND_PACKAGE(Qt6 REQUIRED COMPONENTS Quick Qml OpenGL)
 ENDIF()
 IF(USE_PLUGIN_TELESCOPECONTROL OR ENABLE_GPS)
      FIND_PACKAGE(Qt${QT_VERSION_MAJOR} COMPONENTS SerialPort REQUIRED)
