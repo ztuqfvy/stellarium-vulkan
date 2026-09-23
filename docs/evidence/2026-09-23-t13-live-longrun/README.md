@@ -32,6 +32,7 @@
 | `04-engine-short-GPU-DEVICE-LOST.log` | engine 短窗**重跑**：预热最初几秒 `VK_ERROR_OUT_OF_DEVICE_MEMORY` + `kIOGPUCommandBufferCallbackErrorPageFault`，`SIGABRT(134)`，逐秒 CSV **0 行** |
 | `05-neg-stall-GPU-DEVICE-LOST.log` | 负控（`STELQUICK_LONGRUN_STALL_MS=150`）同样 GPU 设备丢失。**注意：该负控本身会长时间占住 GUI 线程，在内存紧张环境下不建议使用**——可红性证据待补 |
 | `06-probe-dyn-engine-same-crash.log` | **判别证据**：走 **T12 既有路径**（`STELQUICK_DYN_CHECK=1` + `STELQUICK_DYN_PRODUCER=engine`，该分支代码本次未改动）在同一时段**同样崩溃、同一位置** ⇒ 与 T13 改动无关，是环境问题 |
+| `07-engine-short-RETRY-still-GPU-DEVICE-LOST.log` | 内存部分回落（unused 92M→806M、compressor 7.0G→5.5G）后**再试一次**：仍在引擎初始化阶段设备丢失（6 处记录）。⇒ **806M 不足以承载 3.1GiB 需求**，须真正释放内存后再跑 |
 
 **环境读数（崩溃时段）**：`PhysMem: 15G used / 92M unused`、`compressor 6740M`、
 `swap used 2165M`。两次**成功**的 engine 跑是在 `free 1479M / compressor 5073M` 时。
