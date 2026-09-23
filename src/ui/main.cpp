@@ -152,6 +152,7 @@ void ensureVulkanLoaderPath()
 #include "render/legacy/StaticFrameSource.hpp"
 #include "ui/A2FrameCheck.hpp"
 #include "ui/DynFrameCheck.hpp"
+#include "ui/IFrameProducer.hpp"
 #include "ui/LiveFrameSource.hpp"
 #include "ui/SkyLongRun.hpp"
 #include "ui/quick/SkyViewport.hpp"
@@ -173,6 +174,71 @@ const char *apiName(QSGRendererInterface::GraphicsApi api)
     default: return "Unknown";
     }
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// 引擎相关操作前的**顺序纪律**：先让 QML 场景图完成首次渲染，再碰引擎。
+//
+// 2026-09-23 T11 实测（代价不小，务必别丢）：顺序反了（先引导引擎、后让场景图
+// 初始化）会让 QML 的图形后端从**请求值漂移**（setGraphicsApi(Metal) → 运行时
+// runtimeApi=Vulkan），进而触发 MoltenVK 静态纹理黑屏缺陷——视口全黑，第一眼
+// 会被误判成"引擎帧没投递"。
+//
+// 注意必须用 window->update() **主动请求重绘**：Qt Quick 是按需渲染，静态页面
+// 渲完就停，不请求就永远等不到 isSceneGraphInitialized()。
+// ══════════════════════════════════════════════════════════════════════════
+void warmUpSceneGraph(QQuickWindow *window, int timeoutMs = 5000)
+{
+    QElapsedTimer warm;
+    warm.start();
+    while (warm.elapsed() < timeoutMs && !window->isSceneGraphInitialized())
+    {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        window->update();
+    }
+    // 场景图就绪后再给 300ms 让首帧真正渲出来（RHI 设备在首次渲染时创建）
+    QElapsedTimer settle;
+    settle.start();
+    while (settle.elapsed() < 300)
+    {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        window->update();
+    }
+}
+
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+// engine 生产者的**设计产能**（判据下限的基数，也是帧泵名义速率）。
+// 为什么不是 UI 刷新上限 60fps：真实引擎每帧要跑完整场景（星表 + DSO + 大气 +
+// 地面）再 glReadPixels 读回，开销远超 16.7ms。2026-09-23 T12 实测：稳态在
+// 35~52 fps 区间随机器负载波动，且**需约 10s 才能从 warmup 爬到稳态**。
+// 取 50 作为产能档，判据下限 0.6×50 = 30 fps 留出合理余量。
+constexpr double kEngineNominalFps = 50.0;
+
+// 从环境变量构造引擎帧泵配置（LIVE_FPS / LIVE_SIZE / LIVE_SIMRATE）。
+// simRate 与 fps 的默认值由调用方给，因为两种用法的需求不同：
+//   · LIVE_ENGINE 手动查看 → simRate 0.02（1 天 / 50s，接近真实观感）
+//   · DYN 自检 engine 生产者 → simRate 0.1（8~20 秒走足够天数，保证 D1-C06
+//     "两次抓帧不同"有足够像素位移，不靠运气）
+stelapp::LiveSkyRuntime::Config engineConfigFromEnv(double defaultSimRate,
+                                                    double defaultFps = 60.0)
+{
+    stelapp::LiveSkyRuntime::Config cfg;
+    const QByteArray fpsEnv = qgetenv("STELQUICK_LIVE_FPS");
+    if (!fpsEnv.isEmpty())
+        cfg.fps = fpsEnv.toDouble();
+    else
+        cfg.fps = defaultFps;
+    const QByteArray sizeEnv = qgetenv("STELQUICK_LIVE_SIZE");
+    if (!sizeEnv.isEmpty())
+    {
+        const QList<QByteArray> wh = sizeEnv.split('x');
+        if (wh.size() == 2)
+            cfg.renderSize = QSize(wh.at(0).toInt(), wh.at(1).toInt());
+    }
+    const QByteArray simEnv = qgetenv("STELQUICK_LIVE_SIMRATE");
+    cfg.simRate = simEnv.isEmpty() ? defaultSimRate : simEnv.toDouble();
+    return cfg;
+}
+#endif
 
 // ══════════════════════════════════════════════════════════════════════════
 // 交互回归自测：STELQUICK_WINDOW_TEST=1
@@ -962,14 +1028,87 @@ int main(int argc, char **argv)
     }
 
     // 动态帧通路自检（消费侧接线，I-DYN / P-BRG-01 前置 / P-BRG-04）
+    //
+    // T12：生产者可切（STELQUICK_DYN_PRODUCER）。
+    //   · 默认/"test" —— LiveFrameSource（LegacyTestScene 替身，独立线程 + kOwn 上下文）
+    //   · "engine"    —— LiveSkyRuntime（**真实引擎** StelApp::update/draw，GUI 线程 + 借上下文）
+    // 两种生产者的装配方式差异巨大（后者须先 boot 引擎），故装配在此完成，
+    // 自检只接收已启动的 IFrameProducer——同一套 7 项判据在两者上复跑。
     if (dynCheck) {
         if (!skyViewport) {
             std::fprintf(stderr, "DYN 校验失败：未找到 SkyViewport\n");
             return 6;
         }
+        stelapp::DynFrameCheck::Options dynOptions = stelapp::DynFrameCheck::optionsFromEnv();
+        const QByteArray producerKind = qgetenv("STELQUICK_DYN_PRODUCER");
+        const bool engineProducer = (producerKind == "engine");
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+        if (engineProducer)
+        {
+            // 真实引擎的测量窗与产能口径（依据见 kEngineNominalFps 注释）：
+            // ① 默认 20 秒 —— 引擎前 ~10s 在从 warmup 爬升，窗口太短则尾窗仍在爬升段，
+            //    判据会稳定卡在边界（T12 首测：15s 窗尾窗 34.5~36.4 fps vs 下限 36.0）；
+            // ② 名义速率 50 —— 引擎受渲染开销限制达不到 UI 上限 60fps，
+            //    用它当名义是定性错误。
+            if (!qEnvironmentVariableIsSet("STELQUICK_DYN_SECONDS"))
+                dynOptions.seconds = 20;
+            if (!qEnvironmentVariableIsSet("STELQUICK_LIVE_FPS"))
+                dynOptions.producerFps = kEngineNominalFps;
+        }
+#endif
+        stelapp::IFrameProducer *producer = nullptr;
+        QString producerError;
+
+        if (!engineProducer) {
+            // 替身生产者：LegacyTestScene，独立线程 + kOwn 离屏上下文。
+            stelapp::LiveFrameSourceConfig cfg;
+            cfg.physicalSize = dynOptions.physicalSize;
+            cfg.devicePixelRatio = dynOptions.devicePixelRatio;
+            cfg.fps = dynOptions.producerFps;
+            cfg.simRate = 1.0;
+            if (liveSource.start(&frameMailbox, cfg, &producerError))
+                producer = &liveSource;
+        }
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+        else {
+            // 真实引擎生产者：先暖机（顺序纪律见 warmUpSceneGraph），再 boot 引擎，
+            // 最后起帧泵。三者缺一不可——不暖机会后端漂移，不 boot 则 start 拒绝。
+            warmUpSceneGraph(window);
+            liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+            if (!liveSkyRuntime->boot(&producerError)) {
+                std::fprintf(stderr, "DYNCHECK: 引擎引导失败：%s\n",
+                             producerError.toUtf8().constData());
+                liveSkyRuntime.reset();
+            } else if (!liveSkyRuntime->start(&frameMailbox, engineConfigFromEnv(0.1, kEngineNominalFps),
+                                              &producerError)) {
+                std::fprintf(stderr, "DYNCHECK: 引擎帧泵启动失败：%s\n",
+                             producerError.toUtf8().constData());
+                liveSkyRuntime.reset();
+            } else {
+                producer = liveSkyRuntime.get();
+            }
+        }
+#else
+        else {
+            producerError = QStringLiteral(
+                "engine 生产者需要 Widgets 宿主形态构建（-DSTELQUICKUI_WIDGETS_HOST=ON 且 "
+                "-DENABLE_STELQUICKUI=ON）");
+        }
+#endif
+
+        if (!producer) {
+            std::fprintf(stderr, "DYNCHECK: 生产者装配失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("DYNCHECK: VERDICT=UNAVAILABLE（生产者未装配，不得据此声称通过）\n");
+            std::fflush(stdout);
+            return 6;
+        }
+
+        std::printf("DYNCHECK: 生产者=%s\n", engineProducer ? "engine(真实引擎)" : "test(替身场景)");
+        std::fflush(stdout);
+
         stelapp::DynFrameCheck::runStartupSequence(
-            &app, window, skyViewport, &frameMailbox,
-            stelapp::DynFrameCheck::optionsFromEnv(),
+            &app, window, skyViewport, &frameMailbox, producer, dynOptions,
             [&app](const stelapp::DynCheckResult &result) {
                 std::printf("DYNCHECK: %s\n", result.summary.toUtf8().constData());
                 for (const QString &line : result.details)
@@ -985,6 +1124,18 @@ int main(int argc, char **argv)
                 app.exit(result.pass ? 0 : 8);
             });
         const int rc = app.exec();
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+        if (engineProducer) {
+            // 引擎引导过的进程不走正常 return：双图形栈析构顺序未定义（探针实测
+            // return 后 SIGSEGV(139) 吞掉判据码）。与探针/T11 同一纪律。
+            if (liveSkyRuntime) {
+                liveSkyRuntime->stop();
+                liveSkyRuntime.reset();
+            }
+            std::fflush(nullptr);
+            _exit(backendOk ? rc : 3);
+        }
+#endif
         return (rc == 0 && !backendOk) ? 3 : rc;
     }
 
@@ -1028,44 +1179,16 @@ int main(int argc, char **argv)
             return 6;
         }
         liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
-        // 引擎引导前先让 QML 场景图完成初始化（与 A3 探针相同的顺序纪律）。
-        // 2026-09-23 实测：不暖机直接引导引擎，QML 后端会漂移成 Vulkan
-        // （runtimeApi=Vulkan，触发 MoltenVK 静态纹理黑屏缺陷，视口全黑）；
-        // 暖机（主动请求重绘直到场景图就绪）后引导，后端保持请求值。
-        // 注意必须用 window->update() 主动请求：Qt Quick 按需渲染，静态页面不自发产帧。
-        {
-            QElapsedTimer warm;
-            warm.start();
-            while (warm.elapsed() < 5000 && !window->isSceneGraphInitialized()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
-                window->update();
-            }
-            // 场景图就绪后再给 300ms 让首帧真正渲出来（RHI 设备在首次渲染时创建）
-            QElapsedTimer settle;
-            settle.start();
-            while (settle.elapsed() < 300) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
-                window->update();
-            }
-        }
+        // 引擎操作前的顺序纪律：先让 QML 场景图完成首次渲染（见 warmUpSceneGraph）。
+        warmUpSceneGraph(window);
         QString bootError;
         if (!liveSkyRuntime->boot(&bootError)) {
             std::fprintf(stderr, "LIVESKY: 引擎引导失败：%s\n", bootError.toUtf8().constData());
             std::fflush(stderr);
             return 8;
         }
-        stelapp::LiveSkyRuntime::Config engineCfg;
-        // 复用 LIVE 模式的环境变量（fps / 尺寸），另有 JD 推进速率
-        const QByteArray engineFps = qgetenv("STELQUICK_LIVE_FPS");
-        if (!engineFps.isEmpty())
-            engineCfg.fps = engineFps.toDouble();
-        const QByteArray engineSize = qgetenv("STELQUICK_LIVE_SIZE");
-        if (!engineSize.isEmpty()) {
-            const QList<QByteArray> wh = engineSize.split('x');
-            if (wh.size() == 2)
-                engineCfg.renderSize = QSize(wh.at(0).toInt(), wh.at(1).toInt());
-        }
-        engineCfg.simRate = qEnvironmentVariable("STELQUICK_LIVE_SIMRATE", "0.02").toDouble();
+        // 手动查看模式：simRate 默认 0.02（1 天 / 50s，接近真实观感）
+        const stelapp::LiveSkyRuntime::Config engineCfg = engineConfigFromEnv(0.02);
         skyViewport->setDegradeThreshold(qEnvironmentVariable("STELQUICK_DEGRADE_FPS", "15").toDouble());
         QString startError;
         if (!liveSkyRuntime->start(&frameMailbox, engineCfg, &startError)) {

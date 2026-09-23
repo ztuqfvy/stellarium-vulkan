@@ -65,6 +65,8 @@ python -c "b=open('run_evidence_matrix.cmd','rb').read(); print(sum(1 for x in b
 | `2026-09-21-run_autotest-matrix-windows-vulkan-d3d11-opengl.txt` | `run_autotest.cmd matrix` 三后端原始 stdout + 负控原始输出；整份由 `tools/evidence/collect.ps1` 生成（不再有一次性注入命令） |
 | `2026-09-23-t10-build-merge/` | T10 构建合流的本地验收原始输出（configure 三态、双目标构建、链接事实、`stellarium` sha256 不变性、两种构建形态回归、A1 四项、A2/DYN/S3 自检、一次 INVALID 首跑）。索引见该目录 `README.md` |
 | `2026-09-23-a3-host-probe/` | A3 前置探针（T11 起手前）：`QApplication` 承载 `QQuickWindow` + 引擎无头引导同进程共存。含**首发崩溃现场**（静态库 qrc 未注册 → `qFatal` → SIGABRT 134）、Metal/Vulkan 两大后端 PASS、默认形态回归、负控、`stellarium` 字节不变性复查。索引见该目录 `README.md` |
+| `2026-09-23-t11-live-runtime/` | T11 引擎共进程帧驱动 `LiveSkyRuntime`：探针 C-05/06/07（借上下文装配 / 两帧读回 1ms / 内容非空且随 JD 变化）、LIVE_ENGINE 冒烟（Metal + Vulkan，抓帧真实星空）、A2/DYN/S3 回归、默认形态隔离、`frames/*.png`。索引见该目录 `README.md` |
+| `2026-09-23-t12-dyn-engine/` | T12 DYN 判据在**真实引擎生产者**下复跑：主证据 `30-FINAL-metal-PASS.*`（7/7 PASS + 逐 250 ms 采样 CSV）、Vulkan 对照（D1-C06 SKIP）、test 基线、形态不匹配负控（rc=6）、A2/S3/独立工程回归；另留**新旧判据口径对照**（`10/11/12-OLDformula-*`、`20/21-nominal60-*`）与**双重释放崩溃现场**（`12-*-ABORT-doublefree`）。索引见该目录 `README.md` |
 | `../../tools/evidence/collect.ps1` | **本目录证据的唯一规范生成器**（见下） |
 
 文件格式约定：正文为未经修饰的原始捕获；仅首尾由脚本注入**出处头**（提交号、

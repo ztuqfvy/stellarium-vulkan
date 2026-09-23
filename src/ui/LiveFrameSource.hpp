@@ -24,6 +24,8 @@
  */
 #pragma once
 
+#include "ui/IFrameProducer.hpp"
+
 #include <QSize>
 #include <QString>
 #include <QElapsedTimer>
@@ -54,11 +56,13 @@ struct LiveFrameSourceConfig
     bool coreProfile = true;
 };
 
-class LiveFrameSource
+//! T12：本类实现 IFrameProducer——DynFrameCheck 对生产者的运行期能力（调速/计数/停机）
+//! 只依赖该接口，因此 LiveSkyRuntime（真实引擎）可直接顶替本类跑同一套判据。
+class LiveFrameSource : public IFrameProducer
 {
 public:
     LiveFrameSource();
-    ~LiveFrameSource();
+    ~LiveFrameSource() override;
     LiveFrameSource(const LiveFrameSource &) = delete;
     LiveFrameSource &operator=(const LiveFrameSource &) = delete;
 
@@ -66,12 +70,12 @@ public:
     bool start(FrameMailbox *mailbox, const LiveFrameSourceConfig &config, QString *errorOut);
 
     //! 停止并 join（幂等；未启动时为空操作）。清理全部在工作线程内完成。
-    void stop();
+    void stop() override;
 
     bool isRunning() const { return m_running.load(); }
 
     //! 跨线程调速（P-BRG-04 降级探针用）。<=0 表示全速。
-    void setFps(double fps) { m_fps.store(fps); }
+    void setFps(double fps) override { m_fps.store(fps); }
     double fps() const { return m_fps.load(); }
 
     //! 运行期统计快照（原子计数，任意线程可读）。
@@ -82,6 +86,9 @@ public:
         double producerFps = 0.0; //!< 最近 1s 窗口的实测生产速率
     };
     RuntimeStats runtimeStats() const;
+
+    //! IFrameProducer：口径统一为"已进邮箱的帧"（本类 rendered 即投递成功次数）。
+    ProducerCounters counters() const override;
 
 private:
     void frameLoop(const LiveFrameSourceConfig &config);

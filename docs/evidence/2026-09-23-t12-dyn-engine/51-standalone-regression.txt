@@ -1,0 +1,11 @@
+=== 独立工程形态回归：cmake -B build-ui -S src/ui ===
+
+-- Configuring done (0.6s)
+-- Generating done (0.1s)
+-- Build files have been written to: /Users/ztuqfvy/qt_demo/stellarium_vulkan/build-ui
+configure rc=0
+[  7%] Built target stelQuickUI_qmlimportscan
+[  9%] Built target generate_qmlls_build_ini_file
+[  9%] Built target stelQuickUI_autogen_timestamp_deps
+[ 12%] Built target stelQuickUI_autogen
+[100%] Built target stelQuickUI

@@ -46,6 +46,7 @@
 #if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
 
 #include "render/legacy/LegacySkyHost.hpp"
+#include "ui/IFrameProducer.hpp"
 
 class QTimer;
 class QSettings;
@@ -55,7 +56,10 @@ namespace stelapp {
 
 class FrameMailbox;
 
-class LiveSkyRuntime
+//! T12：实现 IFrameProducer，使本类可被 DynFrameCheck 以"生产者无关"的方式驱动——
+//! 即 DYN 的 7 项判据能在**真实引擎**上复跑，而不只是 LiveFrameSource 替身。
+//! 差异口径：setFps 在本类是 GUI 线程内改 QTimer 间隔（不是原子量），调用线程受限。
+class LiveSkyRuntime : public IFrameProducer
 {
 public:
     struct Config
@@ -84,7 +88,7 @@ public:
 
     //! 停帧泵并释放离屏资源（GL 资源在本线程、引擎上下文 current 时清理）。
     //! 引擎本体（StelApp/StelMainView）**不关**——进程退出路径由应用层决定。
-    void stop();
+    void stop() override;
 
     bool isBooted() const { return m_booted; }
     bool isRunning() const { return m_timer != nullptr; }
@@ -98,6 +102,13 @@ public:
         double fps = 0.0;        //!< 最近 1s 窗口实测投递速率
     };
     Stats stats() const;
+
+    // ── IFrameProducer ────────────────────────────────────────────────────────
+    //! 动态调速（P-BRG-04 降级探针）：改 QTimer 间隔。**仅 GUI 线程可调**
+    //! （LiveFrameSource 的同名方法是跨线程原子量，两者差异在此，调用方需按实现遵守）。
+    void setFps(double fps) override;
+    //! 口径统一：rendered 取 "已进邮箱的帧数"（published），与 LiveFrameSource 一致。
+    ProducerCounters counters() const override;
 
 private:
     void pumpTick();

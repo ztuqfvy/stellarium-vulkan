@@ -191,4 +191,15 @@ LiveFrameSource::RuntimeStats LiveFrameSource::runtimeStats() const
     return s;
 }
 
+// IFrameProducer 适配：口径统一（"已进邮箱的帧"）。本类的 rendered 就是
+// renderOneFrame 成功次数，而成功即已 attachMailbox 投递，故一一对应。
+ProducerCounters LiveFrameSource::counters() const
+{
+    ProducerCounters c;
+    c.rendered = m_rendered.load();
+    c.failed = m_failed.load();
+    c.fps = m_measuredFps.load();
+    return c;
+}
+
 } // namespace stelapp

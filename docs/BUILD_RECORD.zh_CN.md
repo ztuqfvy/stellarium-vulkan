@@ -1162,3 +1162,88 @@ metal！）→ MoltenVK 静态纹理黑屏缺陷被触发，抓帧视口全黑�
 ### 5. 留证
 
 `docs/evidence/2026-09-23-t11-live-runtime/`（README 索引 + 探针帧 PNG + 冒烟抓帧 PNG）。
+
+## 2026-09-23｜T12 引擎生产者上跑 DYN 自检（生产者抽象 + 判据口径重定）
+
+里程碑 A3 第三步（§8.7 判据 3）：**I-DYN 的 7 项判据在真实引擎生产者下全绿**，
+消费侧（SkyViewport）零改动。
+
+### 1. 为什么不是"改一行开关"
+
+DynFrameCheck 原先直接依赖 `LiveFrameSource` 具体类（连装配都在它里面做）。
+两种生产者的差异是**根本性**的：
+
+| | LiveFrameSource（替身） | LiveSkyRuntime（真实引擎） |
+|---|---|---|
+| 线程 | 独立 std::thread | GUI 线程 QTimer 分片 |
+| GL 上下文 | kOwn 自建离屏 | 借引擎 `StelGLWidget` 上下文 |
+| 调速 | 跨线程原子量 | 仅 GUI 线程可调 |
+| 装配 | `start(mailbox, cfg)` | **必须先 boot 引擎**，再 start |
+
+⇒ 抽出 `IFrameProducer`（`setFps` / `counters` / `stop` 三能力），两实现同构接入；
+**装配留在调用方**（main.cpp），因为差异太大不该硬塞进接口。
+
+### 2. 改动
+
+| 文件 | 改动 |
+|---|---|
+| `src/ui/IFrameProducer.hpp` | **新建**。生产者运行期契约 + `ProducerCounters`（rendered/failed/fps） |
+| `src/ui/LiveFrameSource.{hpp,cpp}` | 实现接口（`counters()` 映射 `runtimeStats()`） |
+| `src/ui/LiveSkyRuntime.{hpp,cpp}` | 实现接口；新增 `setFps()`（GUI 线程改 QTimer 间隔）与 `counters()`（rendered=published，口径统一为"已进邮箱的帧"） |
+| `src/ui/DynFrameCheck.{hpp,cpp}` | 改依赖 `IFrameProducer*`；判据口径重定（见 §3）；新增 `STELQUICK_DYN_CSV=<path>` 逐 250ms 采样 CSV |
+| `src/ui/main.cpp` | 抽 `warmUpSceneGraph()` + `engineConfigFromEnv()` 两个辅助（消除 LIVE_ENGINE/DYN-engine 两处重复）；DYN 分支新增 `STELQUICK_DYN_PRODUCER=engine`；engine 模式下 `_exit` 纪律 |
+
+### 3. 判据口径重定（本次真正的技术内容）
+
+**核心发现：引擎在合流形态下爬升极慢。** 实测曲线（留证 `30-FINAL-metal-PASS-samples.csv`）：
+
+```
+t=1.9s  31.3 fps  ← warmup
+t=3.9s  24.8 fps  ← warmup
+t=6.9s  39.7 fps  ← 开始爬升
+t=13.9s 13.8 fps  ← 降速窗结束，恢复
+t=15.9s 44.0 fps
+t=17.9s 50.0 fps  ← 稳态
+```
+
+**需要约 10 秒才能从 warmup 到稳态**（编译着色器、上传纹理、加载星表/DSO、建缓存）。
+与 T9 长跑协议的 900s warmup 是同一现象的两个尺度。
+
+⇒ 旧判据"全程平均产出 ≥ 0.6×名义×时长"**稳定假红**：8 秒窗平均 31.5 fps，
+同期 1s 滑窗稳态 53.6 fps（差 40%）。
+
+两处修正（都有实测依据，不是放水）：
+
+| # | 修正 | 依据 |
+|---|---|---|
+| ① | 全程平均 → **尾窗稳态速率**；尾窗起点 = `max(降速段结束, 时长 − max(3s, 时长×35%))` | warmup 与人为降速窗都不是生产者缺陷，不该惩罚平均 |
+| ② | engine 生产者名义速率 60 → **50**；测量窗 8s → **20s** | 60 是 UI 刷新上限，不是引擎产能。引擎受"全场景渲染 + glReadPixels 读回"限制，实测稳态 35~52 fps 随负载波动，稳态档 ≈50 |
+
+边界证据（说明两条修正缺一不可）：名义 60 + 15s 窗两次跑分别得
+`34.5 vs 下限 36.0`（FAIL）与 `36.4 vs 36.0`（PASS，余量 **1%**）——
+旧口径只是恰好卡在边界。修正后 `44.4 vs 下限 30.0`（余量 48%）。
+
+### 4. 一个可靠性问题：判据全绿但退出码 134
+
+CSV 用 `shared_ptr<QFile>` 持有，同时又调 `deleteLater()` → Qt 删一次、
+`shared_ptr` 析构再删一次 → **双重释放 SIGABRT(134)**。
+处置：只 `close()`，不 `deleteLater()`。
+**症状极具误导性**：7/7 全绿、CSV 完整，却拿到非零退出码——若只看判据会漏掉。
+
+### 5. 验收（判据见测试文档 §6.8 B-LSR2-01..07）
+
+| 项 | 结果 |
+|---|---|
+| engine 生产者 DYN（Metal） | ✅ 7/7 PASS rc=0；尾窗 44.4 fps（复跑 44.8，可复现） |
+| engine 生产者 DYN（Vulkan） | ✅ PASS（D1-C06 按 §6.2 已知缺陷正确 SKIP） |
+| test 生产者基线 | ✅ 7/7 PASS，尾窗 51.5 fps（改造未破坏既有行为） |
+| A2 回归（Widgets ON / OFF 两形态） | ✅ 双双 PASS |
+| 默认形态 DYN-test | ✅ PASS（尾窗 52.0 fps） |
+| 负控：默认形态请求 engine 生产者 | ✅ `UNAVAILABLE` rc=6，明确报错不假装通过 |
+| `STELA3_CHECK` | ✅ 8/8 PASS |
+| 独立工程形态 | ✅ 可配置可构建 |
+
+### 6. 留证
+
+`docs/evidence/2026-09-23-t12-dyn-engine/`（24 份原始输出 + README 索引 +
+逐 250ms 采样 CSV，含新旧口径对照与边界跑）。

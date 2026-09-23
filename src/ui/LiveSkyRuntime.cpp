@@ -237,6 +237,30 @@ LiveSkyRuntime::Stats LiveSkyRuntime::stats() const
     return s;
 }
 
+// ── IFrameProducer ────────────────────────────────────────────────────────────
+// 调速：改 QTimer 间隔即改名义产帧节奏。**仅 GUI 线程**（QTimer 亲和性），
+// 与 LiveFrameSource 的跨线程原子调速不同——调用方（DynFrameCheck）在 GUI 线程
+// 定时器内调用，对本实现合法。名义值只决定 QTimer 间隔；实际速率恒以实测为准。
+void LiveSkyRuntime::setFps(double fps)
+{
+    const double eff = fps > 0.0 ? fps : 60.0;
+    m_cfg.fps = eff;
+    if (m_timer)
+        m_timer->setInterval(qMax(1, int(1000.0 / eff)));
+}
+
+ProducerCounters LiveSkyRuntime::counters() const
+{
+    const Stats s = stats();
+    ProducerCounters c;
+    // "已进邮箱的帧"口径：published（不是 requested——requested 含被邮箱拒收的 tick）。
+    // 这与 LiveFrameSource 的 rendered 语义一致（那边渲染成功即投递成功）。
+    c.rendered = s.published;
+    c.failed = s.failed;
+    c.fps = s.fps;
+    return c;
+}
+
 } // namespace stelapp
 
 #endif // STELQUICK_HAS_ENGINE && STELQUICK_WIDGETS_HOST

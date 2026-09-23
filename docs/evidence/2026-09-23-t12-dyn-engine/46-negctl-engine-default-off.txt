@@ -1,0 +1,6 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+DYNCHECK: 生产者装配失败：engine 生产者需要 Widgets 宿主形态构建（-DSTELQUICKUI_WIDGETS_HOST=ON 且 -DENABLE_STELQUICKUI=ON）
+DYNCHECK: VERDICT=UNAVAILABLE（生产者未装配，不得据此声称通过）
