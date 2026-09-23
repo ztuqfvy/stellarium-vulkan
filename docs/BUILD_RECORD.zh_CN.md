@@ -1109,3 +1109,56 @@ T11 的任务表述是"把渲染回调换成 `StelApp::update()/draw()`"，但�
 
 `docs/evidence/2026-09-23-a3-host-probe/`（含崩溃现场、两大后端 PASS、
 默认形态回归、负控、字节不变性复查 + README 索引）。
+
+## 2026-09-23｜T11 引擎共进程帧驱动：`LiveSkyRuntime`（A3 第一步落地）
+
+T10 合流 + A3 前置探针铺路后的正题。**交付**：真实引擎（`StelApp::update/draw`）
+在 QML 进程内产帧 → 离屏读回 → `FrameMailbox` → QML 上屏，消费侧零改动。
+
+### 1. 设计定案（探针定案，不再争论）
+
+| 决策点 | 定案 | 依据 |
+|---|---|---|
+| 帧驱动线程 | **GUI 线程**（QTimer 分片），不是 LiveFrameSource 式独立线程 | 引擎上下文 owner = QApplication 主线程；跨线程 makeCurrent 直接 abort；探针已证明 GUI 线程 update/draw 安全且 QML 零退化 |
+| GL 上下文 | `LegacySkyHost` 的 `GlContextMode::kBorrowed`（**为 A3 预留的路径，本次启用**） | 借引擎的 `StelGLWidget`（QOpenGLWidget）上下文 |
+| 离屏目标 | `LegacySkyHost` 自己的 FBO（RGBA8+D24S8，1280x720） | 探针 C-07 证明引擎 draw **尊重外部 FBO 绑定**（非黑 + 随 JD 变化） |
+| 时间推进 | `timeRate=0` + 显式 `setJD(jd0 + sim × simRate)` | 可复现、可对账（帧元数据 stateNumber=毫秒量化 JD） |
+
+### 2. 改动
+
+| 文件 | 改动 |
+|---|---|
+| `src/ui/LiveSkyRuntime.{hpp,cpp}` | **新建**。boot（引擎无头引导，照抄探针前置链）+ start（借上下文装配 + 帧泵）+ stop；双宏守卫，独立工程/默认形态编译为空 |
+| `src/render/legacy/LegacySkyHost.{hpp,cpp}` | 新增 `contextManagedExternally`（默认 false，kOwn 行为不变）：借用模式下宿主只校验 current、不自行 makeCurrent。三处统一（renderOneFrame / withContextCurrent / setTargetSize） |
+| `src/ui/main.cpp` | `STELQUICK_LIVE_ENGINE=1` 模式（复用 LIVE_FPS/SIZE，新增 LIVE_SIMRATE）；boot 前暖机；退出 `_exit` 纪律 |
+| `src/ui/CMakeLists.txt` | LiveSkyRuntime 进源列表（无条件） |
+
+### 3. 两处返工（都是真问题）
+
+**① `doneCurrent()` 清空 `surface()`。** 借用模式首跑"无可用绘制表面"：
+`QOpenGLContext::doneCurrent()` 把 `surface()` 置空，宿主自己 makeCurrent 拿到 nullptr。
+**处置**：`contextManagedExternally` —— 上下文由调用方（`StelMainView::glContextMakeCurrent`）
+管理，宿主只校验。kOwn 路径零改动（A2/DYN/S3 回归确认）。
+
+**② QML 后端漂移 → 视口黑屏。** 不暖机直接引导引擎：`runtimeApi=Vulkan`（请求的是
+metal！）→ MoltenVK 静态纹理黑屏缺陷被触发，抓帧视口全黑。
+根因：QML 场景图的**首次渲染**（RHI 设备创建）发生在引擎 GL 上下文创建之后时，
+后端解析偏离请求值。**处置**：boot 前暖机（`window->update()` 主动请求重绘直到
+`isSceneGraphInitialized()`，再 settle 300ms）——A3 探针"先暖机后引导"的顺序
+是必要条件，不是巧合。修复后 runtimeApi=Metal ✓。
+
+### 4. 验收
+
+| 项 | 结果 |
+|---|---|
+| 探针 C-05 借上下文装配 | ✅ GL 4.1 Metal，Apple M3 |
+| 探针 C-06 引擎帧驱动 + 读回 | ✅ 2/2 帧，读回 1ms/帧 |
+| 探针 C-07 内容非空且随 JD 变化 | ✅ 非黑 100%，两帧哈希不同 |
+| LIVE_ENGINE 冒烟（metal） | ✅ rc=0，runtimeApi=Metal，抓帧 = 真实星空（黄昏全景 + 星点 + 方位标记） |
+| A2 / DYN 回归（Widgets 宿主形态） | ✅ PASS / PASS |
+| STELA3_CHECK（LegacySkyHost 改动后） | ✅ 8/8 PASS rc=0 |
+| 默认形态（Widgets OFF）回归 | ✅ A2/DYN PASS，LIVESKY 输出 0 行 |
+
+### 5. 留证
+
+`docs/evidence/2026-09-23-t11-live-runtime/`（README 索引 + 探针帧 PNG + 冒烟抓帧 PNG）。

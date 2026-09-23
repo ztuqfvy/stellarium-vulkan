@@ -1,0 +1,154 @@
+[  0%] Built target EquationOfTime-static_autogen_timestamp_deps
+[  0%] Built target Exoplanets-static_autogen_timestamp_deps
+[  0%] Built target AngleMeasure-static_autogen_timestamp_deps
+[  0%] Built target ArchaeoLines-static_autogen_timestamp_deps
+[  0%] Built target Calendars-static_autogen_timestamp_deps
+[  0%] Built target TimeNavigator-static_autogen_timestamp_deps
+[  0%] Built target Observability-static_autogen_timestamp_deps
+[  0%] Built target MeteorShowers-static_autogen_timestamp_deps
+[  0%] Built target NavStars-static_autogen_timestamp_deps
+[  0%] Built target MosaicCamera-static_autogen_timestamp_deps
+[  0%] Built target Novae-static_autogen_timestamp_deps
+[  0%] Built target Oculars-static_autogen_timestamp_deps
+[  0%] Built target Pulsars-static_autogen_timestamp_deps
+[  0%] Built target PointerCoordinates-static_autogen_timestamp_deps
+[  0%] Built target OnlineQueries-static_autogen_timestamp_deps
+[  0%] Built target Planes-static_autogen_timestamp_deps
+[  0%] Built target Quasars-static_autogen_timestamp_deps
+[  0%] Built target RemoteControl-static_autogen_timestamp_deps
+[  0%] Built target RemoteSync-static_autogen_timestamp_deps
+[  0%] Built target Scenery3d-static_autogen_timestamp_deps
+[  0%] Built target Satellites-static_autogen_timestamp_deps
+[  0%] Built target Supernovae-static_autogen_timestamp_deps
+[  0%] Built target TextUserInterface-static_autogen_timestamp_deps
+[  0%] Built target TelescopeControl_common_autogen_timestamp_deps
+[  0%] Built target indiclient_autogen_timestamp_deps
+[  0%] Built target NebulaTextures-static_autogen_timestamp_deps
+[  0%] Built target generate-cpp
+[  0%] Built target SkyCultureMaker-static_autogen_timestamp_deps
+[  0%] Built target SolarSystemEditor-static_autogen_timestamp_deps
+[  0%] Built target QXlsx_autogen_timestamp_deps
+[  0%] Built target qtcompress_stel_autogen_timestamp_deps
+[  0%] Built target glues_stel_autogen_timestamp_deps
+[  0%] Built target stellarium_qmlimportscan
+[  0%] Built target AngleMeasure-static_autogen
+[  0%] Built target TimeNavigator-static_autogen
+[  0%] Built target ArchaeoLines-static_autogen
+[  0%] Built target Calendars-static_autogen
+[  0%] Built target Exoplanets-static_autogen
+[  0%] Built target EquationOfTime-static_autogen
+[  0%] Built target MosaicCamera-static_autogen
+[  1%] Built target NavStars-static_autogen
+[  1%] Built target MeteorShowers-static_autogen
+[  1%] Built target Observability-static_autogen
+[  1%] Built target Novae-static_autogen
+[  1%] Built target Oculars-static_autogen
+[  1%] Built target OnlineQueries-static_autogen
+[  1%] Built target Planes-static_autogen
+[  1%] Built target PointerCoordinates-static_autogen
+[  1%] Built target Quasars-static_autogen
+[  1%] Built target Pulsars-static_autogen
+[  1%] Built target RemoteControl-static_autogen
+[  1%] Built target RemoteSync-static_autogen
+[  1%] Built target Satellites-static_autogen
+[  1%] Built target Scenery3d-static_autogen
+[  1%] Built target TelescopeControl_common_autogen
+[  1%] Built target Supernovae-static_autogen
+[  3%] Built target TextUserInterface-static_autogen
+[  3%] Built target indiclient_autogen
+[  3%] Built target nlopt_autogen_timestamp_deps
+[  3%] Built target NebulaTextures-static_autogen
+[  3%] Built target SolarSystemEditor-static_autogen
+[  3%] Built target SkyCultureMaker-static_autogen
+[  3%] Built target glues_stel_autogen
+[  3%] Built target QXlsx_autogen
+[  5%] Built target qtcompress_stel_autogen
+[  5%] Built target TimeNavigator-static
+[  5%] Built target AngleMeasure-static
+[  7%] Built target ArchaeoLines-static
+[  9%] Built target EquationOfTime-static
+[ 11%] Built target Exoplanets-static
+[ 12%] Built target MosaicCamera-static
+[ 12%] Built target NavStars-static
+[ 14%] Built target MeteorShowers-static
+[ 16%] Built target Observability-static
+[ 18%] Built target Novae-static
+[ 20%] Built target Oculars-static
+[ 22%] Built target Planes-static
+[ 27%] Built target Calendars-static
+[ 27%] Built target OnlineQueries-static
+[ 27%] Built target Pulsars-static
+[ 29%] Built target PointerCoordinates-static
+[ 31%] Built target Quasars-static
+[ 31%] Built target Supernovae-static
+[ 33%] Built target RemoteSync-static
+[ 37%] Built target Satellites-static
+[ 38%] Built target Scenery3d-static
+[ 42%] Built target RemoteControl-static
+[ 44%] Built target TelescopeControl_common
+[ 44%] Built target nlopt_autogen
+[ 46%] Built target TextUserInterface-static
+[ 50%] Built target indiclient
+[ 50%] Built target NebulaTextures-static
+[ 51%] Built target glues_stel
+[ 53%] Built target SolarSystemEditor-static
+[ 53%] Built target qtcompress_stel
+[ 53%] Built target TelescopeControl_INDI_autogen_timestamp_deps
+[ 53%] Built target TelescopeControl_Lx200_autogen_timestamp_deps
+[ 53%] Built target TelescopeControl_NexStar_autogen_timestamp_deps
+[ 57%] Built target SkyCultureMaker-static
+[ 57%] Built target TelescopeControl_Rts2_autogen_timestamp_deps
+[ 57%] Built target TelescopeControl_INDI_autogen
+[ 57%] Built target TelescopeControl_Rts2_autogen
+[ 57%] Built target TelescopeControl_Lx200_autogen
+[ 57%] Built target TelescopeControl_NexStar_autogen
+[ 62%] Built target nlopt
+[ 68%] Built target QXlsx
+[ 68%] Built target LensDistortionEstimator-static_autogen_timestamp_deps
+[ 70%] Built target TelescopeControl_INDI
+[ 70%] Built target TelescopeControl_Rts2
+[ 70%] Built target TelescopeControl_Lx200
+[ 72%] Built target TelescopeControl_NexStar
+[ 72%] Built target TelescopeControl_gui_autogen_timestamp_deps
+[ 72%] Built target LensDistortionEstimator-static_autogen
+[ 72%] Built target TelescopeControl_gui_autogen
+[ 72%] Built target LensDistortionEstimator-static
+[ 72%] Built target TelescopeControl_gui
+[ 72%] Built target TelescopeControl-static_autogen_timestamp_deps
+[ 72%] Built target TelescopeControl-static_autogen
+[ 74%] Built target TelescopeControl-static
+[ 74%] Built target AllStaticPlugins
+[ 74%] Built target stelMain_autogen_timestamp_deps
+[ 74%] Built target stelMain_autogen
+[100%] Built target stelMain
+[100%] Built target stellarium_autogen_timestamp_deps
+[100%] Automatic MOC and UIC for target stellarium
+[100%] Built target stellarium_autogen
+[100%] Building CXX object src/CMakeFiles/stellarium.dir/stellarium_autogen/mocs_compilation.cpp.o
+[100%] Building CXX object src/CMakeFiles/stellarium.dir/main.cpp.o
+[100%] Linking CXX executable stellarium
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/md4c/lib/libmd4c-html.0.dylib' which was built for newer version 26.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/md4c/lib/libmd4c.0.dylib' which was built for newer version 26.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtwebengine/lib/QtWebEngineWidgets.framework/Versions/A/QtWebEngineWidgets' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtwebengine/lib/QtWebEngineCore.framework/Versions/A/QtWebEngineCore' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtwebchannel/lib/QtWebChannel.framework/Versions/A/QtWebChannel' which was built for newer version 27.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtbase/lib/QtPrintSupport.framework/Versions/A/QtPrintSupport' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtdeclarative/lib/QtQuick.framework/Versions/A/QtQuick' which was built for newer version 26.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtcharts/lib/QtCharts.framework/Versions/A/QtCharts' which was built for newer version 27.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtbase/lib/QtOpenGLWidgets.framework/Versions/A/QtOpenGLWidgets' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtbase/lib/QtOpenGL.framework/Versions/A/QtOpenGL' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtpositioning/lib/QtPositioning.framework/Versions/A/QtPositioning' which was built for newer version 27.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtsvg/lib/QtSvgWidgets.framework/Versions/A/QtSvgWidgets' which was built for newer version 26.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtsvg/lib/QtSvg.framework/Versions/A/QtSvg' which was built for newer version 26.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtmultimedia/lib/QtMultimediaWidgets.framework/Versions/A/QtMultimediaWidgets' which was built for newer version 26.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtbase/lib/QtWidgets.framework/Versions/A/QtWidgets' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtspeech/lib/QtTextToSpeech.framework/Versions/A/QtTextToSpeech' which was built for newer version 27.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtmultimedia/lib/QtMultimedia.framework/Versions/A/QtMultimedia' which was built for newer version 26.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtbase/lib/QtConcurrent.framework/Versions/A/QtConcurrent' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtdeclarative/lib/QtQml.framework/Versions/A/QtQml' which was built for newer version 26.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtbase/lib/QtNetwork.framework/Versions/A/QtNetwork' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtserialport/lib/QtSerialPort.framework/Versions/A/QtSerialPort' which was built for newer version 27.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtbase/lib/QtGui.framework/Versions/A/QtGui' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtbase/lib/QtDBus.framework/Versions/A/QtDBus' which was built for newer version 14.0
+ld: warning: building for macOS-12.0, but linking with dylib '/opt/homebrew/opt/qtbase/lib/QtCore.framework/Versions/A/QtCore' which was built for newer version 14.0
+[100%] Built target stellarium

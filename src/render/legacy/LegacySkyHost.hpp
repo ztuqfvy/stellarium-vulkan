@@ -79,6 +79,14 @@ struct LegacySkyHostConfig
     int glMajor = 3;
     int glMinor = 3;
     bool coreProfile = true;
+    //! 上下文由外部管理（仅对 kBorrowed 有意义，2026-09-23 T11 加入）。
+    //!
+    //! 为什么需要它：`QOpenGLContext::doneCurrent()` 会把 `surface()` 清空，因此
+    //! 借用模式下**无法**靠 `context->surface()` 自己 makeCurrent——调用方
+    //! （旧宿主 StelMainView::glContextMakeCurrent）显然是更好的上下文管理者。
+    //! 置真时：本类不再 makeCurrent/doneCurrent，改为**校验**调用时上下文已 current。
+    //! kOwn 模式一律忽略本字段（自建上下文必须自己 makeCurrent）。
+    bool contextManagedExternally = false;
 };
 
 //! 初始化后实测到的 GL 事实（不采信"请求值"，只记"拿到值"）。

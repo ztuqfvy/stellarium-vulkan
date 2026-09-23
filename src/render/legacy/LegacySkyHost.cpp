@@ -248,9 +248,16 @@ bool LegacySkyHost::setTargetSize(const QSize &physicalSize, QString *errorOut)
     // 尺寸变了才重建附件；且必须在上下文 current 的前提下做
     if (sizeChanged || d->fbo == 0)
     {
-        if (!d->context->makeCurrent(d->offscreen
-                                        ? static_cast<QSurface *>(d->offscreen)
-                                        : d->context->surface()))
+        // 外部管理上下文（借用模式）：不自行 makeCurrent，只校验（见配置字段注释）
+        if (d->config.contextManagedExternally)
+        {
+            if (QOpenGLContext::currentContext() != d->context)
+                return fail(QStringLiteral("setTargetSize: 声明了外部管理上下文，但调用时"
+                                           "引擎上下文并非 current。"));
+        }
+        else if (!d->context->makeCurrent(d->offscreen
+                                              ? static_cast<QSurface *>(d->offscreen)
+                                              : d->context->surface()))
             return fail(QStringLiteral("setTargetSize: makeCurrent 失败。"));
 
         QOpenGLFunctions *f = d->gl;
@@ -342,6 +349,14 @@ bool LegacySkyHost::withContextCurrent(const std::function<void()> &fn)
 {
     if (!d->initialized || !d->context || !fn)
         return false;
+    // 外部管理上下文（借用模式）：调用方负责 makeCurrent，本类只用不切（见配置字段注释）。
+    if (d->config.contextManagedExternally)
+    {
+        if (QOpenGLContext::currentContext() != d->context)
+            return false;
+        fn();
+        return true;
+    }
     QSurface *surface = d->offscreen ? static_cast<QSurface *>(d->offscreen)
                                      : d->context->surface();
     if (!surface)
@@ -375,10 +390,22 @@ bool LegacySkyHost::renderOneFrame(double simSeconds, QString *errorOut)
 
     QSurface *surface = d->offscreen ? static_cast<QSurface *>(d->offscreen)
                                      : d->context->surface();
-    if (!surface)
-        return fail(QStringLiteral("renderOneFrame: 无可用绘制表面。"));
-    if (!d->context->makeCurrent(surface))
-        return fail(QStringLiteral("renderOneFrame: makeCurrent 失败。"));
+    // 外部管理上下文（借用模式）：调用方已 current，这里只校验，不自行 makeCurrent。
+    // 理由见 LegacySkyHostConfig::contextManagedExternally 注释。
+    if (d->config.contextManagedExternally)
+    {
+        if (QOpenGLContext::currentContext() != d->context)
+            return fail(QStringLiteral("renderOneFrame: 声明了外部管理上下文，但调用时"
+                                       "引擎上下文并非 current（调用方须先 "
+                                       "StelMainView::glContextMakeCurrent）。"));
+    }
+    else
+    {
+        if (!surface)
+            return fail(QStringLiteral("renderOneFrame: 无可用绘制表面。"));
+        if (!d->context->makeCurrent(surface))
+            return fail(QStringLiteral("renderOneFrame: makeCurrent 失败。"));
+    }
 
     QOpenGLFunctions *f = d->gl;
     const QSize size = d->readback.physicalSize;

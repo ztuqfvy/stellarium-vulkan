@@ -46,8 +46,13 @@
 #include "core/StelTranslator.hpp"
 #include "core/StelIniParser.hpp"
 #include "StelLogger.hpp"
+// T11 核心机制验证（C-05..C-07）：借引擎上下文 + 真实引擎帧驱动 + 读回。
+// LegacySkyHost 的 GlContextMode::kBorrowed 就是为"与旧宿主同进程"预留的路径。
+#include "render/legacy/FrameMailbox.hpp"
+#include "render/legacy/LegacySkyHost.hpp"
 #include <QDir>
 #include <QEventLoop>
+#include <QImage>
 #include <QSettings>
 #include <QThread>
 #include <unistd.h>
@@ -150,6 +155,10 @@ void ensureVulkanLoaderPath()
 #include "ui/LiveFrameSource.hpp"
 #include "ui/SkyLongRun.hpp"
 #include "ui/quick/SkyViewport.hpp"
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+// T11：真实引擎进程内帧驱动（替代 LiveFrameSource 的"真实引擎"形态）
+#include "ui/LiveSkyRuntime.hpp"
+#endif
 
 namespace {
 
@@ -446,6 +455,173 @@ int runEngineCoexistProbe(QGuiApplication *app, QQuickWindow *window)
                     driveOk ? "PASS" : "FAIL", static_cast<long long>(driveClock.elapsed()));
     }
 
+    // ── C-05..C-07 真实引擎帧驱动 + 离屏读回（T11 全部设计的前提）──────────────
+    //
+    // 要回答的**唯一**问题：引擎的 update/draw 是否画到 **LegacySkyHost 自己绑定的
+    // 离屏 FBO**，还是硬编码画到 QOpenGLWidget 的默认 FBO？
+    //   - 若尊重外部绑定 → "引擎产帧 → 邮箱 → QML 上屏"整条链成立，T11 只剩机械工作；
+    //   - 若忽略外部绑定 → 读回全黑，T11 必须改为读 QOpenGLWidget 自身的 FBO
+    //     （grabFramebuffer 路径），设计要动。
+    //
+    // 机制：LegacySkyHost 的 GlContextMode::kBorrowed 专为"与旧宿主同进程"预留
+    // （见 LegacySkyHost.hpp 第 52-54 行），内部直接取 QOpenGLContext::currentContext()。
+    // 我们用 StelMainView 的公开接口 glContextMakeCurrent() 把引擎上下文借出来。
+    if (booted) {
+        // 刻意用 new 且不 delete：本探针只对判据负责，末尾 _exit 不走析构栈。
+        // 让栈对象在这里析构反而会触发借来上下文的 makeCurrent/清理顺序问题。
+        auto *host = new stelapp::LegacySkyHost();
+        stelapp::LegacySkyHostConfig hostCfg;
+        hostCfg.contextMode = stelapp::GlContextMode::kBorrowed;
+        // 借用模式下上下文由我们（旧宿主接口）管理：doneCurrent() 会清空 surface()，
+        // 所以不能让 LegacySkyHost 自己 makeCurrent（2026-09-23 首跑实测）。
+        hostCfg.contextManagedExternally = true;
+        hostCfg.physicalSize = QSize(1280, 720);
+        hostCfg.devicePixelRatio = 1.0;
+        hostCfg.maxDimension = 4096;
+
+        mainWin->glContextMakeCurrent();
+        QString hostError;
+        const bool hostOk = host->initialize(hostCfg, &hostError);
+        mainWin->glContextDoneCurrent();
+
+        if (!hostOk)
+            ++failCount;
+        const stelapp::LegacyGlInfo &hostGl = host->glInfo();
+        std::printf("COEXIST: C-05 %s 借用引擎上下文装配离屏宿主（mode=borrowed ownContext=%d "
+                    "GL=%s renderer=\"%s\" maxRenderbuffer=%d maxTexture=%d）\n",
+                    hostOk ? "PASS" : "FAIL", hostGl.ownContext ? 1 : 0,
+                    qPrintable(hostGl.version), qPrintable(hostGl.renderer),
+                    hostGl.maxRenderbufferSize, hostGl.maxTextureSize);
+        if (!hostOk)
+            std::printf("COEXIST: C-05 失败原因：%s\n", qPrintable(hostError));
+        std::fflush(stdout);
+
+        if (hostOk) {
+            stelapp::FrameMailbox probeBox;
+            host->attachMailbox(&probeBox);
+
+            StelApp &stelApp2 = StelApp::getInstance();
+            StelCore *core = stelApp2.getCore();
+            // 关掉引擎自己的时间推进，改用**显式 setJD**，保证"帧内容变化"可复现且可对账。
+            core->setTimeRate(0.0);
+            const double jd0 = core->getJD();
+
+            // sim 参数在此复用为"帧序号"：每 +1.0 推进 0.25 天（6 小时），
+            // 星空/大气/日月光照必然显著不同——这正是"不是静态残留"的硬证据。
+            host->setRenderCallback([&stelApp2, core, jd0](double dt, double sim, const QSize &) {
+                core->setJD(jd0 + sim * 0.25);
+                stelApp2.update(dt);
+                stelApp2.draw();
+            });
+
+            struct ProbeFrame
+            {
+                quint64 frameNumber = 0;
+                quint64 hash = 0;
+                double nonBlackRatio = 0.0;
+                QSize size;
+            };
+            auto grabOne = [&](double sim) -> ProbeFrame {
+                ProbeFrame pf;
+                QString frameError;
+                // 外部管理上下文：由旧宿主接口 current 引擎上下文，
+                // renderOneFrame 内部不再切上下文，只校验。
+                mainWin->glContextMakeCurrent();
+                const bool rendered = host->renderOneFrame(sim, &frameError);
+                mainWin->glContextDoneCurrent();
+                if (!rendered) {
+                    std::printf("COEXIST: 帧请求失败 sim=%.2f：%s\n", sim,
+                                qPrintable(frameError));
+                    return pf;
+                }
+                stelapp::FrameLease lease = probeBox.takeLatestFrame();
+                if (!lease.valid())
+                    return pf;
+                const stelapp::LegacyFrame &fr = lease.frame();
+                pf.frameNumber = fr.frameNumber;
+                pf.size = fr.physicalSize;
+
+                // FNV-1a 逐像素哈希 + 非黑像素比例。
+                // 非黑比例用来区分"引擎真画了"与"全黑 FBO"；哈希用来区分"两帧内容不同"。
+                quint64 h = 1469598103934665603ull;
+                const quint64 prime = 1099511628211ull;
+                quint64 nonBlack = 0;
+                for (int y = 0; y < fr.physicalSize.height(); ++y) {
+                    const quint8 *row = fr.pixels + qsizetype(y) * fr.rowStride;
+                    for (int x = 0; x < fr.physicalSize.width(); ++x) {
+                        const quint8 *p = row + qsizetype(x) * 4;
+                        h ^= p[0]; h *= prime;
+                        h ^= p[1]; h *= prime;
+                        h ^= p[2]; h *= prime;
+                        h ^= p[3]; h *= prime;
+                        if (p[0] || p[1] || p[2])
+                            ++nonBlack;
+                    }
+                }
+                pf.hash = h;
+                const quint64 total = quint64(fr.physicalSize.height())
+                                      * quint64(fr.rowStride / 4);
+                pf.nonBlackRatio = total ? double(nonBlack) / double(total) : 0.0;
+
+                // 可选：转存 PNG 供人眼核对（STELQUICK_PROBE_DUMP_DIR=<目录>）
+                const QString dumpDir = qEnvironmentVariable("STELQUICK_PROBE_DUMP_DIR");
+                if (!dumpDir.isEmpty()) {
+                    const QImage view(fr.pixels, fr.physicalSize.width(),
+                                      fr.physicalSize.height(), fr.rowStride,
+                                      QImage::Format_RGBA8888);
+                    const QString path = QStringLiteral("%1/probe-frame-sim%2.png")
+                                             .arg(dumpDir)
+                                             .arg(int(sim * 100));
+                    std::printf("COEXIST: 帧转存 %s → %s\n",
+                                view.copy().save(path) ? "成功" : "失败",
+                                qPrintable(path));
+                }
+                return pf;
+            };
+
+            const ProbeFrame first = grabOne(0.0);
+            const ProbeFrame second = grabOne(1.0);
+            const stelapp::LegacySkyHost::Stats hs = host->stats();
+
+            // C-06：两帧都读回成功、零失败
+            const bool readbackOk = first.frameNumber > 0 && second.frameNumber > 0
+                                    && hs.failed == 0 && hs.published >= 2;
+            if (!readbackOk)
+                ++failCount;
+            std::printf("COEXIST: C-06 %s 真实引擎帧驱动 + 离屏读回：请求=%llu 发布=%llu "
+                        "丢弃=%llu 失败=%llu（帧 %llu/%llu，%dx%d，读回 %lldms/帧）\n",
+                        readbackOk ? "PASS" : "FAIL",
+                        static_cast<unsigned long long>(hs.requested),
+                        static_cast<unsigned long long>(hs.published),
+                        static_cast<unsigned long long>(hs.droppedByMailbox),
+                        static_cast<unsigned long long>(hs.failed),
+                        static_cast<unsigned long long>(first.frameNumber),
+                        static_cast<unsigned long long>(second.frameNumber),
+                        first.size.width(), first.size.height(),
+                        static_cast<long long>(hs.lastReadbackMs));
+
+            // C-07：帧内容非空 **且** 随 JD 变化 —— 这一条才真正证明
+            // "引擎画到了我们的 FBO"而不是"读到了一块没人写过的黑内存"。
+            const bool nonEmpty = first.nonBlackRatio > 0.001 && second.nonBlackRatio > 0.001;
+            const bool changed = first.hash != 0 && first.hash != second.hash;
+            const bool contentOk = nonEmpty && changed;
+            if (!contentOk)
+                ++failCount;
+            std::printf("COEXIST: C-07 %s 帧内容非空且随 JD 变化：非黑比例 %.4f / %.4f，"
+                        "哈希 %016llx / %016llx（JD +0.25 天）\n",
+                        contentOk ? "PASS" : "FAIL", first.nonBlackRatio,
+                        second.nonBlackRatio,
+                        static_cast<unsigned long long>(first.hash),
+                        static_cast<unsigned long long>(second.hash));
+            if (!nonEmpty)
+                std::printf("COEXIST: C-07 诊断：帧疑似全黑 —— 引擎可能忽略了外部 FBO 绑定，"
+                            "需改走 QOpenGLWidget 自身 FBO 读回路径。\n");
+            else if (!changed)
+                std::printf("COEXIST: C-07 诊断：两帧哈希相同 —— JD 未真正生效或引擎未重绘。\n");
+            std::fflush(stdout);
+        }
+    }
+
     std::printf("COEXIST: VERDICT=%s 失败项=%d\n", failCount == 0 ? "PASS" : "FAIL", failCount);
     std::printf("COEXIST: 结论：引擎无头引导与 QML 窗口同进程共存%s\n",
                 failCount == 0 ? "成立" : "不成立");
@@ -622,13 +798,20 @@ int main(int argc, char **argv)
     // 动态帧生产者（消费侧接线）：DYN 自检 / STELQUICK_LIVE 手动模式使用。
     // 生命周期必须短于邮箱（生产者析构时解绑回调），故声明在邮箱之后。
     stelapp::LiveFrameSource liveSource;
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+    // T11：真实引擎帧驱动（STELQUICK_LIVE_ENGINE=1）。堆上持有，app.exec() 返回后
+    // 显式 stop；析构顺序仍保证先于邮箱（声明在邮箱之后）。
+    std::unique_ptr<stelapp::LiveSkyRuntime> liveSkyRuntime;
+#endif
 
     const bool a2Check = qEnvironmentVariableIsSet("STELQUICK_A2_CHECK");
     const bool dynCheck = qEnvironmentVariableIsSet("STELQUICK_DYN_CHECK");
     const bool longRun = qEnvironmentVariableIsSet("STELQUICK_LONGRUN");
+    const bool liveEngine = qEnvironmentVariableIsSet("STELQUICK_LIVE_ENGINE");
     // 起始页：A2/DYN/长跑校验必须停在天空页；手动模式下可用 STELQUICK_PAGE 指定
     const QString startPage = (a2Check || dynCheck || longRun
-                               || qEnvironmentVariableIsSet("STELQUICK_LIVE"))
+                               || qEnvironmentVariableIsSet("STELQUICK_LIVE")
+                               || liveEngine)
                                   ? QStringLiteral("sky")
                                   : qEnvironmentVariable("STELQUICK_PAGE", QStringLiteral("diag"));
 
@@ -836,9 +1019,66 @@ int main(int argc, char **argv)
         return (rc == 0 && !backendOk) ? 3 : rc;
     }
 
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+    // ── T11：真实引擎帧驱动模式（STELQUICK_LIVE_ENGINE=1）────────────────────
+    // 引擎引导 + 帧泵全在 GUI 线程；与 LiveFrameSource 互斥（邮箱单生产者契约）。
+    if (liveEngine) {
+        if (!skyViewport) {
+            std::fprintf(stderr, "LIVE_ENGINE 失败：未找到 SkyViewport\n");
+            return 6;
+        }
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        // 引擎引导前先让 QML 场景图完成初始化（与 A3 探针相同的顺序纪律）。
+        // 2026-09-23 实测：不暖机直接引导引擎，QML 后端会漂移成 Vulkan
+        // （runtimeApi=Vulkan，触发 MoltenVK 静态纹理黑屏缺陷，视口全黑）；
+        // 暖机（主动请求重绘直到场景图就绪）后引导，后端保持请求值。
+        // 注意必须用 window->update() 主动请求：Qt Quick 按需渲染，静态页面不自发产帧。
+        {
+            QElapsedTimer warm;
+            warm.start();
+            while (warm.elapsed() < 5000 && !window->isSceneGraphInitialized()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+                window->update();
+            }
+            // 场景图就绪后再给 300ms 让首帧真正渲出来（RHI 设备在首次渲染时创建）
+            QElapsedTimer settle;
+            settle.start();
+            while (settle.elapsed() < 300) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+                window->update();
+            }
+        }
+        QString bootError;
+        if (!liveSkyRuntime->boot(&bootError)) {
+            std::fprintf(stderr, "LIVESKY: 引擎引导失败：%s\n", bootError.toUtf8().constData());
+            std::fflush(stderr);
+            return 8;
+        }
+        stelapp::LiveSkyRuntime::Config engineCfg;
+        // 复用 LIVE 模式的环境变量（fps / 尺寸），另有 JD 推进速率
+        const QByteArray engineFps = qgetenv("STELQUICK_LIVE_FPS");
+        if (!engineFps.isEmpty())
+            engineCfg.fps = engineFps.toDouble();
+        const QByteArray engineSize = qgetenv("STELQUICK_LIVE_SIZE");
+        if (!engineSize.isEmpty()) {
+            const QList<QByteArray> wh = engineSize.split('x');
+            if (wh.size() == 2)
+                engineCfg.renderSize = QSize(wh.at(0).toInt(), wh.at(1).toInt());
+        }
+        engineCfg.simRate = qEnvironmentVariable("STELQUICK_LIVE_SIMRATE", "0.02").toDouble();
+        skyViewport->setDegradeThreshold(qEnvironmentVariable("STELQUICK_DEGRADE_FPS", "15").toDouble());
+        QString startError;
+        if (!liveSkyRuntime->start(&frameMailbox, engineCfg, &startError)) {
+            std::fprintf(stderr, "LIVESKY: 帧泵启动失败：%s\n", startError.toUtf8().constData());
+            std::fflush(stderr);
+            return 8;
+        }
+    }
+#endif
+
     // 手动查看模式（动态）：STELQUICK_LIVE=1 起动态帧生产者。
     // 与静态图案投递互斥（邮箱契约：同一时刻只允许一个生产者）。
-    const bool liveMode = qEnvironmentVariableIsSet("STELQUICK_LIVE");
+    const bool liveMode = !liveEngine && qEnvironmentVariableIsSet("STELQUICK_LIVE");
     if (liveMode && skyViewport) {
         stelapp::LiveFrameSourceConfig liveCfg;
         const QByteArray fpsEnv = qgetenv("STELQUICK_LIVE_FPS");
@@ -929,5 +1169,16 @@ int main(int argc, char **argv)
 
     const int rc = app.exec();
     liveSource.stop();   // 生产者停机先于邮箱析构（析构顺序：liveSource 在 frameMailbox 之后声明）
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+    if (liveSkyRuntime)
+        liveSkyRuntime->stop();
+    // 引擎引导过的进程不走正常 return：双图形栈（引擎 GL + QML RHI）的析构顺序
+    // 未定义，A3 前置探针实测 return 后 SIGSEGV(139) 吞掉判据码。
+    // 与探针同一纪律：_exit 直接交付退出码。
+    if (liveEngine) {
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+    }
+#endif
     return backendOk ? rc : 3;
 }
