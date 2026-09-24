@@ -1,0 +1,222 @@
+[start] 2026-09-24T12:16:32.2959102+08:00 warmup=900s measure=1800s
+stelQuickUI.exe : QVulkanInstance already created; setExtensions() has no effect
+����λ�� C:\temp\t18-win-longrun.ps1:74 �ַ�: 1
++ & $exe *>> $out
++ ~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (QVulkanInstance...) has no effect:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+STELQUICK: 宿主形��?= QApplication（Widgets，A3 引擎共存前置�?
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形��，键盘�?ActionRouter 单点路由�?
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来�?信号/兜底�?
+StelFileMgr found install location "E:/Qt_demo/stellarium-vulkan"
+System language (ISO 639 / ISO 3166): zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "en" in section "stellarium"
+Empty translation file for language  "en" in section "stellarium"
+Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1
+, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBe
+havior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfil
+e)
+OpenGL module type: desktop OpenGL
+StelGLWidget constructor
+StelGraphicsScene constructor
+initializeGL(windowWidth = 1280, windowHeight = 720)
+OpenGL supported version:  "3.3.0 NVIDIA 591.74"
+Current Format:  QSurfaceFormat(version 3.3, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 24, redBuf
+ferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize 8, stencilBufferSize 8, samples 0, swapBehavior QSurfac
+eFormat::DoubleBuffer, swapInterval 1, colorSpace QColorSpace(QColorSpace::SRgb, QColorSpace::Primaries::SRgb, QColorSp
+ace::TransferFunction::SRgb), profile  QSurfaceFormat::CoreProfile)
+Initializing StelMainView
+Luminance textures are not supported
+Running in High Graphics Mode
+Maximum texture anisotropy: 16
+Maximum 2D texture size: 32768
+Detected: OpenGL 3.3
+Driver version string: 3.3.0 NVIDIA 591.74
+GL vendor: NVIDIA Corporation
+GL renderer: NVIDIA GeForce RTX 4060/PCIe/SSE2
+GL Shading Language version: 3.30 NVIDIA via Cg compiler
+GLSL Version Number detected: 3.3
+GLSL version is fine, we should not see a graphics problem.
+stel.OpenGLArray: Vertex Array Objects are supported
+Initial high-DPI scaling factor: 1
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium"
+Empty translation file for language  "zh_CN" in section "stellarium"
+Application language: zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures"
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-sky"
+Empty translation file for language  "zh_CN" in section "stellarium-sky"
+Empty skyculture-independent translation file for language  "zh_CN"
+Sky language: zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-planetary-features"
+Empty translation file for language  "zh_CN" in section "stellarium-planetary-features"
+Planetary features language: zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-scripts"
+Empty translation file for language  "zh_CN" in section "stellarium-scripts"
+Scripts language: zh_CN
+Could not determine locale directory
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Sky culture description language: zh_CN
+Cache directory: C:\Users\ztuqfvy\AppData\Local\stellarium-vulkan\stelQuickUI\cache
+Loaded 252 countries
+Loaded 193 regions
+No valid QPositionInfoSource. Old IP queries should still work.
+Loading Solar System data (1: planets and moons) ...
+Loading from: E:\Qt_demo\stellarium-vulkan\data\ssystem_major.ini
+Loaded 83 Solar System bodies from  E:\Qt_demo\stellarium-vulkan\data\ssystem_major.ini
+Solar System now has 83 entries.
+Loading Solar System data (2: minor bodies) ...
+Loading from: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\data\ssystem_minor.ini
+Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in C:\Users\ztuqfvy\AppData\R
+oaming\Stellarium\data\ssystem_minor.ini section 152637(152637)
+Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in C:\Users\ztuqfvy\AppData\Ro
+aming\Stellarium\data\ssystem_minor.ini section 66146(66146)
+minor body  "(66146)" has no IAU code in section  "66146(66146)"
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+minor body  "(152637)" has no IAU code in section  "152637(152637)"
+Loaded 627 Solar System bodies from  C:\Users\ztuqfvy\AppData\Roaming\Stellarium\data\ssystem_minor.ini
+Solar System now has 710 entries.
+File ssystem_minor.ini is loaded successfully...
+ExtendedElements: loaded epoch tables for 4 asteroids from "E:\\Qt_demo\\stellarium-vulkan\\data\\asteroid_elements.jso
+n" ( 0 not matched in ssystem_minor.ini)
+SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+qt.gui.imageio: libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Loading nomenclature for Solar system bodies ...
+Loaded 16058 / 16094 items of planetary surface nomenclature
+Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Dona
+ldjohanson
+Loading star data ...
+Loading star catalog: E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+Loading star catalog: E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+Loading star catalog: E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+Loading star catalog: E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+Finished loading star catalogue data, max_geodesic_level: 3
+Loading scientific star designations from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\name.fab
+Loaded 5060 / 5060 scientific designations
+Loading scientific star designations from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\extra_name.fab
+Loaded 26200 / 26200 scientific designations
+Loading variable stars data from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\gcvs.cat
+[...] GCVS 5.1-20250615
+Loaded 47323 / 47323 variable stars
+Loading double stars from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\wds_hip_part.dat
+Loaded 22992 / 22992 double stars
+Loading cross-identification data from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\cross-id.cat
+Loaded 327097 / 327097 cross-identification data records for stars
+Loading orbital parameters data for binary system from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\binary_orbitparam.d
+at
+Loaded 15 / 15 orbital parameters data for binary system
+Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 1
+59 Barium stars, and 220 have PM>1000mas/yr.
+navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+Loading DSO data ...
+[...] Stellarium DSO Catalog, version 3.23 (standard edition)
+Loaded 94899 DSO records
+Loading DSO name data ...
+Loaded 1362 / 1389 DSO name records successfully
+No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, 
+PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119
+230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+Loading DSO outline data ...
+Loaded 100 DSO outline records successfully
+Loading DSO discovery data ...
+Loaded 183 / 183 DSO discovery records successfully
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.5 LGPL version 2.1 or later
+LandscapeMgr: initialized Cache for 100 MB.
+Loading star names from E:\Qt_demo\stellarium-vulkan\skycultures\common_star_names.fab
+Loaded 411 / 411 common star names
+Loaded 88 / 88 constellation records successfully for culture modern
+Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+Loading constellation boundary data ... 
+Loaded 781 constellation boundary segments
+Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install mor
+e star catalogs
+Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install mor
+e star catalogs
+Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install mor
+e star catalogs
+Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install mo
+re star catalogs
+Loaded 88 / 92 asterism records successfully for culture modern
+stel.spout: Sender name is: stellarium
+stel.spout: Found 1 GPUs
+stel.spout:        GPU 0 :  NVIDIA GeForce RTX 4060
+stel.spout: Currently used: GPU 0
+stel.spout: Sender has been created in OpenGL/DirectX interop mode
+stel.spout: DX9 mode: false
+Initializing basic GL shaders... 
+Creating GUI ...
+Loading style file: :/graphicGui/normalStyle.css
+Loaded plugin "Exoplanets"
+[Exoplanets] Version of the format of the catalog: 1
+[Exoplanets] loading catalog file: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\Exoplanets\exoplanets.json
+Loaded plugin "MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\MeteorShowers\MeteorShower
+s.json
+[MeteorShowersMgr] Version of the format of the catalog: 2
+Loaded plugin "Novae"
+[Novae] version of the catalog: 1
+[Novae] Loading catalog file: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\Novae\novae.json
+Loaded plugin "Oculars"
+Oculars::validateAndLoadIniFile() ocular.ini exists at: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\Oculars\ocu
+lar.ini . Checking version...
+Oculars::validateAndLoadIniFile() found existing ini file version 3.1
+Loaded plugin "Satellites"
+[Satellites] loading catalogue file: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\Satellites\satellites.json
+Loaded plugin "SolarSystemEditor"
+Using the ssystem_minor.ini file that already exists in the user directory...
+Loaded 895910 discovery circumstances records for minor planets...
+SSE: Comet cross-index data: Overwriting entry for "453P"
+SSE: Comet cross-index data: Overwriting entry for "467P"
+SSE: Comet cross-index data: Overwriting entry for "465P"
+SSE: Comet cross-index data: Overwriting entry for "466P"
+SSE: Comet cross-index data: Overwriting entry for "468P"
+SSE: Comet cross-index data: Overwriting entry for "470P"
+SSE: Comet cross-index data: Overwriting entry for "472P"
+SSE: Comet cross-index data: Overwriting entry for "475P"
+SSE: Comet cross-index data: Overwriting entry for "477P"
+SSE: Comet cross-index data: Overwriting entry for "473P"
+SSE: Comet cross-index data: Overwriting entry for "476P"
+SSE: Comet cross-index data: Overwriting entry for "479P"
+SSE: Comet cross-index data: Overwriting entry for "480P"
+SSE: Comet cross-index data: Overwriting entry for "481P"
+Loaded 2576 discovery circumstances records for comets...
+OpenGL viewport size: 1280 x 720
+Creating scene FBO with size 1280x720
+LIVESKY: 引擎引导完成�?ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"�?
+StelCore: ����ʱ��ģʽ -> "HostDriven" JD = "2461307.67830"
+StelMainView: ������֡��������ֹͣ��������̬������֡�õ���������
+LIVESKY: 帧泵已启动（1280x720，名�?50.0 fps，JD 速率 0.0200 �?秒，起点 JD=2461307.67830，时�?HostDriven�?
+STELLRUN: 环境前置通过（Windows ����ƽ̨���޵�ع���·������Ϊ AC��ƽ̨���⣩，低电量模式关）
+STELLRUN: 生产�?engine(真实引擎)
+STELLRUN: 生产者由调用方装配，本跑只负责计�?
+STELLRUN: 预热 900 秒开始（生产者名�?50.0 fps�?280x720�?
+Initializing planets GL shaders... 
+Dubious result: Landscape  "Hurricane"  not calibrated. Opacity test represents mathematical horizon only.
+Satellite has invalid orbit: "SAR Lupe 5" "33244"
+Satellite has invalid orbit: "ISAT" "43879"
+STELLRUN: 测量 1800 秒开始（预热段数据保留在 CSV，统计不含）
+STELLRUN: 消费侧长跑：预热 900s + 测量 1800s；稳态显�?50.00 fps / 生产 50.00 fps；上屏间�?p95 22.19ms / p99 33.05ms；丢�?0；内存斜�?0.091 MiB/min；帧�?p95 9.00ms / max 17.00ms
+STELLRUN: SL-C01 PASS 生产者零失败=是（测量段渲�?89950 �?/ 失败 0）；稳��实�?50.00 fps（下�?40�?
+STELLRUN: SL-C02 PASS 稳��显示帧�?50.00 fps（下�?40）；显示帧号 75034 �?134934（窗�?1198s�?
+STELLRUN: SL-C03 PASS 稳��上屏间隔（59999 帧）：mean 20.00 / p50 19.98 / p95 22.19 / p99 33.05 / max 58.24 ms；门�?p99�?0.00、max 档占�?�?.01%�? 120.00ms 的帧）（共线程形态：p99 相对口径 3×帧间隔（60.00ms，天花板 100ms�? max 占比口径）（vsync �?16.7/33.4ms 混排属正常漏丢�帧，判据只管异常长停顿）
+STELLRUN: SL-C04 PASS 测量段邮箱：投��?89950 / 丢弃 0（须 0�?
+STELLRUN: SL-C05 PASS 测量段上�?89864 次，增量均��?0.595ms�?5.0），全程朢��?13.84ms�?100�?
+STELLRUN: SL-C06 PASS 测量段邮箱帧龄最�?5ms�?500�?
+STELLRUN: SL-C07 PASS 稳��?phys_footprint 斜率 0.091 MiB/min（增长上�?1.0，负�?释放缓存不违规）；窗口内 1410.8 �?1412.2 MiB（增 1.5�?
+STELLRUN: SL-C08 PASS 测量期间环境漂移 0 次违规（�?60s 复核�? 次才说明数据在合规环境取得）
+STELLRUN: SL-C09 PASS 测量段窗口暴�?1799/1799 个采样点（被遮挡/朢�小化时场景图降频，显示数据不可信�?
+STELLRUN: SL-C10 PASS 测量段降级误�?0/1799 个采样点�?.000%，上�?1%�?
+STELLRUN: SL-C11 PASS 稳��帧龄（10971 �?100ms 粒度样本）：mean 2.57 / p95 9.00 / p99 12.00 / max 17.00 ms（门�?p95�?00�?
+STELLRUN: SL-INFO 逐秒 CSV：C:\temp\t18-win-30min.csv�?699 行）
+STELLRUN: SL-INFO 逐帧上屏 CSV：C:\temp\t18-win-30min.csv.frames.csv�?34980 行）
+STELLRUN: VERDICT=PASS
+�����ˢ�9�8�8�8�0�1�9�5��9�3�9�0�1�4�0�5�0�9�9�9�9�5�9�5�9�5�1�1�9�0���1�8�2�0�1�7
