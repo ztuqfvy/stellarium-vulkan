@@ -1,0 +1,78 @@
+# T14 审计原始 grep 记录（main@f02ab6c，2026-09-24 08:50:09)
+
+## grep-1 模块辅助定时器（core）
+$ grep -rl QTimer src/core/
+  src/core/StelMovementMgr.hpp
+  src/core/SimbadSearcher.cpp
+  src/core/StelLocationMgr_p.hpp
+  src/core/StelApp.hpp
+  src/core/StelVideoMgr.cpp
+  src/core/StelApp.cpp
+  src/core/modules/LandscapeMgr.cpp
+  src/core/modules/HipsMgr.cpp
+  src/core/modules/LabelMgr.cpp
+  src/core/modules/MarkerMgr.cpp
+  src/core/modules/LandscapeMgr.hpp
+  src/core/StelLocationMgr.cpp
+
+## grep-2 场景图钩子（期望零命中）
+$ grep -rn "beforeRendering|afterAnimating|beforeSynchronizing" src/ (排除 src/ui 测量段)
+(空 = 引擎无 QSG 相位钩子)
+
+## grep-3 QML 宿主事件处理（期望零命中）
+$ grep -rn "QKeyEvent|QMouseEvent|Wheel|Key_" src/ui/quick/
+(空 = 合流形态零输入转发)
+
+## grep-4 引擎时钟写入方
+$ grep -rn "core->setJD|getCore()->setJD|core->setTimeRate|getCore()->setTimeRate" src/ plugins/ (排除 Calendars 自有类)
+  src/ui/LiveSkyRuntime.cpp:140:    core->setTimeRate(0.0);
+  src/ui/LiveSkyRuntime.cpp:144:        core->setJD(m_jd0 + sim * m_cfg.simRate);
+  src/ui/main.cpp:557:        stelApp.getCore()->setTimeRate(0.0);
+  src/ui/main.cpp:623:            core->setTimeRate(0.0);
+  src/ui/main.cpp:629:                core->setJD(jd0 + sim * 0.25);
+  src/scripting/StelMainScriptAPI.cpp:164:	StelApp::getInstance().getCore()->setJD(JD);
+  src/scripting/StelMainScriptAPI.cpp:193:		core->setJDE(JD);
+  src/scripting/StelMainScriptAPI.cpp:195:		core->setJD(JD);
+  src/scripting/StelMainScriptAPI.cpp:231:	StelApp::getInstance().getCore()->setTimeRate(ts * 0.00001157407407407407 * StelApp::getInstance().getScriptMgr().getScriptRate());
+  src/scripting/StelScriptMgr.cpp:933:	core->setTimeRate(core->getTimeRate() * factor);
+  src/core/SolarEclipseComputer.cpp:256:	core->setJD(JD);
+  src/core/SolarEclipseComputer.cpp:629:	core->setJD(JD - 5./1440.);
+  src/core/SolarEclipseComputer.cpp:633:	core->setJD(JD + 5./1440.);
+  src/core/SolarEclipseComputer.cpp:644:	core->setJD(JD);
+  src/core/SolarEclipseComputer.cpp:677:	core->setJD(JD);
+  src/core/SolarEclipseComputer.cpp:713:		core->setJD(JD - 5./1440.);
+  src/core/SolarEclipseComputer.cpp:718:		core->setJD(JD + 5./1440.);
+  src/core/SolarEclipseComputer.cpp:791:	core->setJD(currentJD);
+  src/core/SolarEclipseComputer.cpp:805:	core->setJD(JDMid);
+  src/core/SolarEclipseComputer.cpp:827:	core->setJD(JDMid);
+  src/core/SolarEclipseComputer.cpp:880:			core->setJD(JDP2);
+  src/core/SolarEclipseComputer.cpp:895:				core->setJD(JD);
+  src/core/SolarEclipseComputer.cpp:906:			core->setJD(JDP3);
+  src/core/SolarEclipseComputer.cpp:918:				core->setJD(JD);
+  src/core/SolarEclipseComputer.cpp:946:				core->setJD(JD);
+  src/core/SolarEclipseComputer.cpp:1202:			core->setJD(JDC1);
+  src/core/SolarEclipseComputer.cpp:1226:			core->setJD(JDC2);
+  src/core/SolarEclipseComputer.cpp:1278:			core->setJD(JD);
+  src/core/SolarEclipseComputer.cpp:1314:	core->setJD(currentJD);
+  src/core/SolarEclipseComputer.cpp:1763:	core->setJD(JD);
+
+## grep-5 core 墙钟读取点
+$ grep -rln "QDateTime::current|QTime::currentTime" src/core/ src/gui/
+  src/core/StelCore.cpp
+  src/core/StelApp.cpp
+  src/core/StelUtils.cpp
+  src/core/modules/SolarSystem.cpp
+  src/gui/ViewDialog.cpp
+  src/gui/ScriptConsole.cpp
+
+## grep-6 StelAction QWidget 假设
+$ grep -n "qAction|addAction|setShortcutContext" src/core/StelActionMgr.cpp
+  50:	, qAction(Q_NULLPTR)
+  66:	QWidget* mainView = &StelMainView::getInstance();
+  67:	qAction = new QAction(this);
+  69:	mainView->addAction(qAction);
+  70:	connect(qAction, SIGNAL(triggered()), this, SLOT(trigger()));
+  76:	qAction->setShortcuts(QList<QKeySequence>() << keySequence << altKeySequence);
+  77:	qAction->setShortcutContext(global ? Qt::ApplicationShortcut : Qt::WidgetShortcut);
+  198:StelAction* StelActionMgr::addAction(const QString& id, const QString& groupId, const QString& text,
+  210:StelAction* StelActionMgr::addAction(const QString& id, const QString& groupId, const QString& text,

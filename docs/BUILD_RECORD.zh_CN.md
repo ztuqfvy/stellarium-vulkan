@@ -1503,3 +1503,37 @@ Failed to create swapchain: -4
 **T13 证据**：`docs/evidence/2026-09-23-t13-live-longrun/`（17 号 = 首战全套
 逐秒+逐帧 CSV；18 号 = 第二战 PASS 全套）。
 
+
+---
+
+## 2026-09-24｜T14 更新循环与时钟审计（**纯盘点，不改行为**）
+
+> Windows 支线同日完成三阶段（阶段 1 回归 + 阶段 2 MSVC 根构建 + 阶段 3 判定性实验
+> 3b 11/11 PASS 零设备丢失，见 WINDOWS_BUILD.zh_CN.md §10-§11 与
+> `docs/evidence/2026-09-24-windows-stage23/`）。主线 T14 同步开工。
+
+**交付物**：`docs/T14_UPDATE_CLOCK_AUDIT.zh_CN.md`（完整报告）+
+`docs/evidence/2026-09-24-t14-audit/grep_records.txt`（原始 grep 记录，含零命中断言）。
+
+### 四个决定性发现
+
+1. **旧形态帧驱动是单源单链**：`fpsTimer`（PreciseTimer）是唯一节拍器，
+   `update+draw` 都在其 paint 回调里（StelMainView.cpp:429-430）。接管面只有这一个点。
+2. **fpsTimer 在合流形态天然休眠**：`new StelMainView` 从不 show → `drawEnded()`
+   永不执行 → fpsTimer 永不 start。引擎侧不存在僵尸定时器偷偷 update（T13 长跑零冲突佐证）。
+3. **引擎时钟与墙钟强耦合**：`StelCore::updateTime` 每 tick 用
+   `QDateTime::currentMSecsSinceEpoch() × timeSpeed` 推进 JD，**dt 参数不参与时间推进**。
+   合流形态现状 `setTimeRate(0)` + 每帧显式 `setJD` 事实上已是"宿主单点写时钟"，
+   T16 的工作是把这个事实**机制化**为 ClockController，而非新建。
+4. **StelActionMgr QWidget 假设实锤**：QAction 挂在从不 show 的 StelMainView 上，
+   QML 窗口收不到快捷键分发；且引擎内已有 700+ StelAction 键位——T15 ActionRouter
+   必须复用 `StelActionMgr::matches` 单点匹配，**禁止另建键位表**（否则静默双轨）。
+
+### 判定速览（详见报告 §4 总表）
+
+- **接管**：fpsTimer（→QML 帧泵）、引擎输入 4 入口（handleClick/Wheel/MouseMoves/Keys，
+  T15 白名单）、LiveSkyRuntime setJD（→T16 ClockController）、插件/脚本时钟写入（零改造合规）
+- **拆除**：drawEnded 动态调频、cursorTimeoutTimer、GUI 时钟对话框 ×6（T17 QML 等价）
+- **保留**：screensaverInhibitorTimer、模块辅助定时器 ×7、测量设施、SkyViewport 刷新链
+
+**T15/T16 移交清单**见报告 §5。T14 关闭，#34（T15）解锁。
