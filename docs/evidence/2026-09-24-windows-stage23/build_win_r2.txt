@@ -1,0 +1,116 @@
+﻿閫傜敤浜?.NET Framework MSBuild 鐗堟湰 18.10.1-1.26427.6+3cd27c13e
+
+  Automatic MOC and UIC for target ArchaeoLines-static
+  Automatic MOC and UIC for target AngleMeasure-static
+  Automatic MOC and UIC for target Oculars-static
+  Automatic MOC and UIC for target Observability-static
+  Automatic MOC and UIC for target NebulaTextures-static
+  Automatic MOC and UIC for target Novae-static
+  Automatic MOC and UIC for target OnlineQueries-static
+  ArchaeoLines-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\ArchaeoLines\src\Release\ArchaeoLines.lib
+  Automatic MOC and UIC for target Planes-static
+  Automatic MOC and UIC for target Calendars-static
+  Automatic MOC and UIC for target MosaicCamera-static
+  Automatic MOC and UIC for target EquationOfTime-static
+  Automatic MOC and UIC for target NavStars-static
+  Automatic MOC and UIC for target Exoplanets-static
+  Automatic MOC and UIC for target MeteorShowers-static
+  Automatic MOC and UIC for target PointerCoordinates-static
+  Automatic MOC and UIC for target Pulsars-static
+  Observability-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Observability\src\Release\Observability.lib
+  Novae-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Novae\src\Release\Novae.lib
+  NebulaTextures-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\NebulaTextures\src\Release\NebulaTextures.lib
+  AngleMeasure-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\AngleMeasure\src\Release\AngleMeasure.lib
+  OnlineQueries-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\OnlineQueries\src\Release\OnlineQueries.lib
+  Oculars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Oculars\src\Release\Oculars.lib
+  Automatic MOC and UIC for target Quasars-static
+  Automatic MOC and UIC for target RemoteSync-static
+  Automatic MOC and UIC for target RemoteControl-static
+  Planes-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Planes\src\Release\Planes.lib
+  Automatic MOC and UIC for target Scenery3d-static
+  Automatic MOC and UIC for target SkyCultureMaker-static
+  Automatic MOC and UIC for target Satellites-static
+  Automatic MOC and UIC for target SolarSystemEditor-static
+  Pulsars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Pulsars\src\Release\Pulsars.lib
+  NavStars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\NavStars\src\Release\NavStars.lib
+  PointerCoordinates-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\PointerCoordinates\src\Release\PointerCoordinates.lib
+  EquationOfTime-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\EquationOfTime\src\Release\EquationOfTime.lib
+  MeteorShowers-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\MeteorShowers\src\Release\MeteorShowers.lib
+  MosaicCamera-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\MosaicCamera\src\Release\MosaicCamera.lib
+  Automatic MOC and UIC for target Supernovae-static
+  Exoplanets-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Exoplanets\src\Release\Exoplanets.lib
+  1>Automatic MOC and UIC for target nlopt
+  Quasars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Quasars\src\Release\Quasars.lib
+  Automatic MOC and UIC for target TelescopeControl_common
+  RemoteSync-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\RemoteSync\src\Release\RemoteSync.lib
+  Automatic MOC and UIC for target TimeNavigator-static
+  Automatic MOC and UIC for target TextUserInterface-static
+  Automatic UIC for target zlib_stel
+  SkyCultureMaker-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\SkyCultureMaker\src\Release\SkyCultureMaker.lib
+  Scenery3d-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Scenery3d\src\Release\Scenery3d.lib
+  SolarSystemEditor-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\SolarSystemEditor\src\Release\SolarSystemEditor.lib
+  RemoteControl-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\RemoteControl\src\Release\RemoteControl.lib
+  Satellites-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Satellites\src\Release\Satellites.lib
+  Calendars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Calendars\src\Release\Calendars.lib
+  Supernovae-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Supernovae\src\Release\Supernovae.lib
+  TelescopeControl_common.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\common\Release\TelescopeControl_common.lib
+  Automatic MOC and UIC for target TelescopeControl_Lx200
+  Automatic MOC and UIC for target TelescopeControl_ASCOM
+  TimeNavigator-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TimeNavigator\src\Release\TimeNavigator.lib
+  nlopt.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\nlopt-build\Release\nlopt.lib
+  Automatic MOC and UIC for target TelescopeControl_NexStar
+  zlib_stel.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\external\Release\zlib_stel.lib
+  TextUserInterface-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TextUserInterface\src\Release\TextUserInterface.lib
+  Automatic MOC and UIC for target LensDistortionEstimator-static
+  Automatic MOC and UIC for target TelescopeControl_Rts2
+  TelescopeControl_Lx200.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\Lx200\Release\TelescopeControl_Lx200.lib
+  TelescopeControl_ASCOM.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\ASCOM\Release\TelescopeControl_ASCOM.lib
+  TelescopeControl_NexStar.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\NexStar\Release\TelescopeControl_NexStar.lib
+  TelescopeControl_Rts2.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\Rts2\Release\TelescopeControl_Rts2.lib
+  Automatic MOC and UIC for target indiclient
+  LensDistortionEstimator-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\LensDistortionEstimator\src\Release\LensDistortionEstimator.lib
+  indiclient.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\external\Release\indiclient.lib
+  Automatic MOC and UIC for target TelescopeControl_INDI
+  TelescopeControl_INDI.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\INDI\Release\TelescopeControl_INDI.lib
+  Automatic MOC and UIC for target TelescopeControl_gui
+  TelescopeControl_gui.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\gui\Release\TelescopeControl_gui.lib
+  Automatic MOC and UIC for target TelescopeControl-static
+  TelescopeControl-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\Release\TelescopeControl.lib
+  Automatic MOC and UIC for target glm
+  Automatic MOC and UIC for target QXlsx
+  Automatic UIC for target glues_stel
+  Automatic MOC and UIC for target md4c
+  Automatic UIC for target qtcompress_stel
+  Generating check-version-update
+  
+  Generating version.cpp
+  glm.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\glm-build\glm\Release\glm.lib
+  Automatic MOC and UIC for target version
+  qtcompress_stel.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\external\Release\qtcompress_stel.lib
+  md4c.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\md4c-build\src\Release\md4c.lib
+  glues_stel.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\external\Release\glues_stel.lib
+  Automatic MOC and UIC for target common
+  Automatic MOC and UIC for target md4c-html
+  QXlsx.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\qxlsxqt6-build\Release\QXlsxQt6.lib
+E:\VisualStudio\CanPin\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): warning MSB8065: 椤光€淓:\Qt_demo\stellarium-vulkan\build-win\CMakeFiles\94d9c502be1ada08d236b6d96a3c67a7\check-version-update.rule鈥濈殑鑷畾涔夌敓鎴愭垚鍔燂紝浣嗗皻鏈垱寤烘寚瀹氱殑杈撳嚭鈥渆:\qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\check-version-update鈥濄€傝繖鍙兘浼氬鑷村閲忕敓鎴愭棤娉曟甯稿伐浣溿€?[E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\version_autogen.vcxproj]
+E:\VisualStudio\CanPin\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): warning MSB8064: 椤光€淓:\Qt_demo\stellarium-vulkan\build-win\CMakeFiles\94d9c502be1ada08d236b6d96a3c67a7\version.cpp.rule鈥濈殑鑷畾涔夌敓鎴愭垚鍔燂紝浣嗘寚瀹氱殑渚濊禆椤光€渆:\qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\check-version-update鈥濅笉瀛樺湪銆傝繖鍙兘浼氬鑷村閲忕敓鎴愭棤娉曟甯稿伐浣溿€?[E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\version_autogen.vcxproj]
+  version.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\Release\version.lib
+  md4c-html.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\md4c-build\src\Release\md4c-html.lib
+  common.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\Release\common.lib
+  Automatic MOC and UIC for target stelMain
+  Automatic MOC and UIC for target ShowMySky
+  ShowMySky.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\ShowMySky\Release\ShowMySky-Qt6.dll
+  Automatic MOC and UIC for target fake-show-my-sky-client
+  fake-show-my-sky-client.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\Release\fake-show-my-sky-client.dll
+  stelMain.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\Release\stelMain.lib
+  Automatic MOC and UIC for target stellarium
+  1>Automatic MOC and UIC for target stelQuickUI
+  stellarium.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\Release\stellarium.exe
+  Running AUTOMOC file extraction for target stelQuickUI
+  Adding manifest...
+  main.cpp
+  stelquickui_qmltyperegistrations.cpp
+    姝ｅ湪鍒涘缓搴?E:/Qt_demo/stellarium-vulkan/build-win/src/ui/Release/stelQuickUI.lib 鍜屽璞?E:/Qt_demo/stellarium-vulkan/build-win/src/ui/Release/stelQuickUI.exp
+  stelQuickUI.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+  Building Custom Rule E:/Qt_demo/stellarium-vulkan/CMakeLists.txt
+

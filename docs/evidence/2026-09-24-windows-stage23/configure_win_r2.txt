@@ -1,0 +1,296 @@
+-- Found CMake 4.3.1-msvc1
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.19045.
+-- The C compiler identification is MSVC 19.51.36257.0
+-- The CXX compiler identification is MSVC 19.51.36257.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: E:/VisualStudio/CanPin/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: E:/VisualStudio/CanPin/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test HAVE_STDATOMIC
+-- Performing Test HAVE_STDATOMIC - Success
+-- Platform: Windows-10.0.19045 (AMD64)
+-- Found Git 2.51.0.windows.1
+-- Building Stellarium 26.1+ (v26.1.267; Mode: Release)
+-- Found Qt6: E:/Qt/6.11.2/msvc2022_64/bin/qmake.exe (found suitable version 6.11.2)
+-- Found WrapVulkanHeaders: E:/Vulkan/SDK/include
+-- Building an OpenGL/OpenGL ES build
+-- CPM: Adding package ShowMySky-Qt6@0.4.0 (0.4.0)
+cmake.exe : CMake Deprecation Warning at build-win/_deps/showmysky-qt6-src/CMakeLists.txt:3 (cmake_policy):
+所在位置 行:1 字符: 484
++ ... cmake.exe"; & $cmake -B build-win -S . -DCMAKE_PREFIX_PATH="E:/Qt/6.1 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (CMake Deprecati...(cmake_policy)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  The OLD behavior for policy CMP0110 will be removed from a future version
+  of CMake.
+
+  The cmake-policies(7) manual explains that the OLD behaviors of all
+  policies are deprecated and that a policy should be set to OLD only under
+  specific short-term circumstances.  Projects should be ported to the NEW
+  behavior and not rely on setting a policy to OLD.
+
+
+-- Looking for C++ include glm/glm.hpp
+-- Looking for C++ include glm/glm.hpp - not found
+-- CPM: Adding package glm@1.0.1 (1.0.1)
+CMake Deprecation Warning at build-win/_deps/glm-src/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at build-win/_deps/glm-src/CMakeLists.txt:2 (cmake_policy):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- GLM: Version 1.0.1
+-- GLM: Build with C++ features auto detection
+-- CPM: Adding package Eigen3@3.4.0 (3.4.0)
+-- Populating eigen3
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.19045.
+-- Configuring done (0.4s)
+-- Generating done (0.0s)
+-- Build files have been written to: E:/Qt_demo/stellarium-vulkan/build-win/_deps/eigen3-subbuild
+閫傜敤浜?.NET Framework MSBuild 鐗堟湰 18.10.1-1.26427.6+3cd27c13e
+
+  1>Checking Build System
+  1>Creating directories for 'eigen3-populate'
+  Performing download step (download, verify and extract) for 'eigen3-populate'
+  -- Downloading...
+     dst='E:/Qt_demo/stellarium-vulkan/build-win/_deps/eigen3-subbuild/eigen3-populate-prefix/src/eigen-3.4.0.tar.bz2'
+     timeout='none'
+     inactivity timeout='none'
+  -- Using src='https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.bz2'
+  -- verifying file...
+         file='E:/Qt_demo/stellarium-vulkan/build-win/_deps/eigen3-subbuild/eigen3-populate-prefix/src/eigen-3.4.0.tar.bz2'
+  -- Downloading... done
+  -- extracting...
+       src='E:/Qt_demo/stellarium-vulkan/build-win/_deps/eigen3-subbuild/eigen3-populate-prefix/src/eigen-3.4.0.tar.bz2'
+       dst='E:/Qt_demo/stellarium-vulkan/build-win/_deps/eigen3-src'
+  -- extracting... [tar xf]
+  -- extracting... [analysis]
+  -- extracting... [rename]
+  -- extracting... [clean up]
+  -- extracting... done
+  Building Custom Rule E:/Qt_demo/stellarium-vulkan/build-win/_deps/eigen3-subbuild/CMakeLists.txt
+  No update step for 'eigen3-populate'
+  No patch step for 'eigen3-populate'
+  No configure step for 'eigen3-populate'
+  No build step for 'eigen3-populate'
+  No install step for 'eigen3-populate'
+  No test step for 'eigen3-populate'
+  Completed 'eigen3-populate'
+  Building Custom Rule E:/Qt_demo/stellarium-vulkan/build-win/_deps/eigen3-subbuild/CMakeLists.txt
+-- ABI version: 15
+-- Will build ShowMySky library
+-- GPS: support by Qt's NMEA handling enabled.
+-- Unit tests support: disabled
+-- Using bundled zlib version at E:/Qt_demo/stellarium-vulkan/src/external/zlib
+-- Using bundled qtcompress at E:/Qt_demo/stellarium-vulkan/src/external/qtcompress
+-- CPM: Adding package QXlsxQt6@ ()
+CMake Warning at E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6/QtPublicDependencyHelpers.cmake:339 (message):
+  This project is using headers of the GuiPrivate module and will therefore
+  be tied to this specific Qt module build version.  Running this project
+  against other versions of the Qt modules may crash at any arbitrary point.
+  This is not a bug, but a result of using Qt internals.  You have been
+  warned!
+
+  You can disable this warning by setting QT_NO_PRIVATE_MODULE_WARNING to ON.
+Call Stack (most recent call first):
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6GuiPrivate/Qt6GuiPrivateConfig.cmake:48 (_qt_internal_show_private_module_warni
+ng)
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6/Qt6Config.cmake:257 (find_package)
+  build-win/_deps/qxlsxqt6-src/QXlsx/CMakeLists.txt:22 (find_package)
+
+
+-- CPM: Adding package md4c@0.5.2 (0.5.2)
+CMake Deprecation Warning at build-win/_deps/md4c-src/CMakeLists.txt:2 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Found windeployqt: E:/Qt/6.11.2/msvc2022_64/bin/windeployqt.exe
+-- Found Spout library: E:/Qt_demo/stellarium-vulkan/util/spout2/x64/SpoutLibrary.dll
+-- Could NOT find Inno Setup compiler. You won't be able to build setup files.
+-- Could NOT find Doxygen (missing: DOXYGEN_EXECUTABLE) 
+-- Checking that std::from_chars for floats is supported by the C++ library
+-- Checking that std::from_chars for floats is supported by the C++ library - yes
+-- Checking that std::execution::par is supported by the C++ library
+-- Checking that std::execution::par is supported by the C++ library - yes
+-- Looking for mremap
+-- Looking for mremap - not found
+-- Looking for timespec_get
+-- Looking for timespec_get - found
+-- Looking for clock_gettime
+-- Looking for clock_gettime - not found
+-- CPM: Adding package indiclient@2.1.3 (2.1.3)
+-- Populating indiclient
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.19045.
+-- Configuring done (0.4s)
+-- Generating done (0.0s)
+-- Build files have been written to: E:/Qt_demo/stellarium-vulkan/build-win/_deps/indiclient-subbuild
+閫傜敤浜?.NET Framework MSBuild 鐗堟湰 18.10.1-1.26427.6+3cd27c13e
+
+  1>Checking Build System
+  1>Creating directories for 'indiclient-populate'
+  Performing download step (download, verify and extract) for 'indiclient-populate'
+  -- Downloading...
+     dst='E:/Qt_demo/stellarium-vulkan/build-win/_deps/indiclient-subbuild/indiclient-populate-prefix/src/v2.1.3.zip'
+     timeout='none'
+     inactivity timeout='none'
+  -- Using src='https://github.com/indilib/indi/archive/v2.1.3.zip'
+  -- verifying file...
+         file='E:/Qt_demo/stellarium-vulkan/build-win/_deps/indiclient-subbuild/indiclient-populate-prefix/src/v2.1.3.zip'
+  -- Downloading... done
+  -- extracting...
+       src='E:/Qt_demo/stellarium-vulkan/build-win/_deps/indiclient-subbuild/indiclient-populate-prefix/src/v2.1.3.zip'
+       dst='E:/Qt_demo/stellarium-vulkan/build-win/_deps/indiclient-src'
+  -- extracting... [tar xf]
+  -- extracting... [analysis]
+  -- extracting... [rename]
+  -- extracting... [clean up]
+  -- extracting... done
+  Building Custom Rule E:/Qt_demo/stellarium-vulkan/build-win/_deps/indiclient-subbuild/CMakeLists.txt
+  No update step for 'indiclient-populate'
+  No patch step for 'indiclient-populate'
+  No configure step for 'indiclient-populate'
+  No build step for 'indiclient-populate'
+  No install step for 'indiclient-populate'
+  No test step for 'indiclient-populate'
+  Completed 'indiclient-populate'
+  Building Custom Rule E:/Qt_demo/stellarium-vulkan/build-win/_deps/indiclient-subbuild/CMakeLists.txt
+-- Adding Speech output.
+CMake Warning (dev) at E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Core/Qt6CoreMacros.cmake:3573 (message):
+  Qt policy QTP0001 is not set: ':/qt/qml/' is the default resource prefix
+  for QML modules.  Check https://doc.qt.io/qt-6/qt-cmake-policy-qtp0001.html
+  for policy details.  Use the qt_policy command to set the policy and
+  suppress this warning.
+
+Call Stack (most recent call first):
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:816 (__qt_internal_setup_policy)
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:1513 (qt6_add_qml_module)
+  src/ui/CMakeLists.txt:142 (qt_add_qml_module)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Core/Qt6CoreMacros.cmake:3573 (message):
+  Qt policy QTP0004 is not set: You need qmldir files for each extra
+  directory that contains .qml files for your module.  Check
+  https://doc.qt.io/qt-6/qt-cmake-policy-qtp0004.html for policy details.
+  Use the qt_policy command to set the policy and suppress this warning.
+
+Call Stack (most recent call first):
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:4040 (__qt_internal_setup_policy)
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:1035 (qt6_target_qml_sources)
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:1513 (qt6_add_qml_module)
+  src/ui/CMakeLists.txt:142 (qt_add_qml_module)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning at plugins/OnlineQueries/src/CMakeLists.txt:57 (MESSAGE):
+  Qt6::WebEngineWidgets or its dependencies (Positioning, WebChannel,
+  WebEngineCore) not found.  If these packages exist for your platform,
+  install and rerun.  Else the program will call the system web browser where
+  required.
+
+
+-- Found Python3: C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0/python3.12.exe (found version "3.12.10") found components: Interpreter
+-- Found Threads: TRUE
+CMake Warning at plugins/LensDistortionEstimator/src/CMakeLists.txt:1 (FIND_PACKAGE):
+  By not providing "Findexiv2.cmake" in CMAKE_MODULE_PATH this project has
+  asked CMake to find a package configuration file provided by "exiv2", but
+  CMake did not find one.
+
+  Could not find a package configuration file provided by "exiv2" with any of
+  the following names:
+
+    exiv2.cps
+    exiv2Config.cmake
+    exiv2-config.cmake
+
+  Add the installation prefix of "exiv2" to CMAKE_PREFIX_PATH or set
+  "exiv2_DIR" to a directory containing one of the above files.  If "exiv2"
+  provides a separate development package or SDK, be sure it has been
+  installed.
+
+
+-- CPM: Adding package NLopt@2.9.0 (2.9.0)
+-- NLopt version 2.9.0
+-- Looking for getopt.h
+-- Looking for getopt.h - not found
+-- Looking for unistd.h
+-- Looking for unistd.h - not found
+-- Looking for stdint.h
+-- Looking for stdint.h - found
+-- Looking for time.h
+-- Looking for time.h - found
+-- Looking for sys/time.h
+-- Looking for sys/time.h - not found
+-- Looking for getpid
+-- Looking for getpid - found
+-- Looking for syscall
+-- Looking for syscall - not found
+-- Looking for isinf
+-- Looking for isinf - not found
+-- Looking for isnan
+-- Looking for isnan - not found
+-- Looking for gettimeofday
+-- Looking for gettimeofday - not found
+-- Looking for qsort_r
+-- Looking for qsort_r - not found
+-- Looking for time
+-- Looking for time - found
+-- Looking for copysign
+-- Looking for copysign - found
+-- Looking for getopt
+-- Looking for getopt - not found
+-- Looking for sys/types.h
+-- Looking for sys/types.h - found
+-- Looking for stddef.h
+-- Looking for stddef.h - found
+-- Check size of uint32_t
+-- Check size of uint32_t - done
+-- Check size of unsigned int
+-- Check size of unsigned int - done
+-- Check size of unsigned long
+-- Check size of unsigned long - done
+-- Looking for sqrt in m
+-- Looking for sqrt in m - not found
+-- Looking for fpclassify
+-- Looking for fpclassify - FALSE
+-- Performing Test HAVE_THREAD_LOCAL_STORAGE
+-- Performing Test HAVE_THREAD_LOCAL_STORAGE - Failed
+-- Performing Test HAVE_THREAD_LOCAL_STORAGE
+-- Performing Test HAVE_THREAD_LOCAL_STORAGE - Success
+-- Looking for __cplusplus
+-- Looking for __cplusplus - found
+CMake Warning at E:/VisualStudio/CanPin/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CPac
+k.cmake:541 (message):
+  CPack.cmake has already been included!!
+Call Stack (most recent call first):
+  build-win/_deps/nlopt-src/CMakeLists.txt:389 (include)
+
+
+-- Sky Culture Converter is DISABLED.
+-- Found lupdate: E:/Qt/6.11.2/msvc2022_64/bin/lupdate.exe
+-- Found lconvert: E:/Qt/6.11.2/msvc2022_64/bin/lconvert.exe
+-- Configuring done (76.5s)
+-- Generating done (5.6s)
+-- Build files have been written to: E:/Qt_demo/stellarium-vulkan/build-win

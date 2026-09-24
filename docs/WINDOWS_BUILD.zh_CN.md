@@ -486,6 +486,15 @@ $env:STELQUICK_LONGRUN_CSV = "C:\temp\t13-win.csv"
 | PASS，0 次设备丢失 | 共存缺陷是 **MoltenVK 专属**，Qt 无辜 | 关闭风险项；Vulkan 交付路径确认畅通 |
 | 同样丢设备 | Qt 的 Vulkan RHI 与外部 OpenGL 共存有通用缺陷 | 严重升级：A3 交付形态需复议（QML 后端在 GL 宿主下选 Metal/D3D） |
 
+> **阶段 2/3 已完成（2026-09-24，远程全自动）——判定：MoltenVK 专属，Qt 无辜。**
+> 阶段 2 首次 MSVC 根构建成功（四道坎：上游资产 vintage 錯配 → blob 指纹定位
+> checkout `22c8f8ed`；unistd.h → `98dee2c`；SpoutLibrary.dll 运行时 PATH）。
+> 3a FAIL 1/7（D1-C04 首帧 1125ms>500，启动性能差异非共存缺陷，0 次设备丢失）；
+> 3b 短窗长跑 **11/11 PASS rc=0**：50.00fps / 9000 帧 0 丢弃 / 帧龄 p99 24.43ms /
+> 内存斜率 0.377 MiB/min / **0 次设备丢失**。风险项关闭，Vulkan 交付路径确认畅通。
+> 证据：`docs/evidence/2026-09-24-windows-stage23/`。可选后续：30min 正式长跑
+> （WARMUP=900 SECONDS=1800）；D1-C04 首帧优化单独立项。
+
 3b PASS 后可选 30 min 正式跑（`WARMUP=900 SECONDS=1800`，判据 SL-C01..C11）。
 
 ## 11. 回传清单（每阶段）
