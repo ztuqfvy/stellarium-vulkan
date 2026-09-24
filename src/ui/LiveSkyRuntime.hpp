@@ -46,6 +46,7 @@
 #if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
 
 #include "render/legacy/LegacySkyHost.hpp"
+#include "app/AppFacade.hpp"
 #include "ui/IFrameProducer.hpp"
 
 class QTimer;
@@ -59,7 +60,13 @@ class FrameMailbox;
 //! T12：实现 IFrameProducer，使本类可被 DynFrameCheck 以"生产者无关"的方式驱动——
 //! 即 DYN 的 7 项判据能在**真实引擎**上复跑，而不只是 LiveFrameSource 替身。
 //! 差异口径：setFps 在本类是 GUI 线程内改 QTimer 间隔（不是原子量），调用线程受限。
-class LiveSkyRuntime : public IFrameProducer
+//!
+//! T15：另实现 ISimPacing（AppFacade 暂停/继续 + 速率的落点）。时间推进从
+//! "jd0 + sim×simRate 的闭式公式"改为**逐 tick 累计**（m_jdAccum += dtWall×simRate×scale）：
+//!   - 暂停（scale=0）冻结 JD 但帧泵照跑，恢复无跳变（闭式公式做不到）；
+//!   - 默认 scale=1 时与旧公式数值等价（同起点同速率，仅累计浮点路径不同），
+//!     DYN/长跑判据不受影响。
+class LiveSkyRuntime : public IFrameProducer, public ISimPacing
 {
 public:
     struct Config
@@ -110,6 +117,12 @@ public:
     //! 口径统一：rendered 取 "已进邮箱的帧数"（published），与 LiveFrameSource 一致。
     ProducerCounters counters() const override;
 
+    // ── ISimPacing（AppFacade 暂停/继续 + 速率；仅 GUI 线程）──────────────────
+    void setSimScale(double scale) override;
+    double simScale() const override { return m_simScale; }
+    void setSimRate(double rate) override;
+    double simRate() const override { return m_cfg.simRate; }
+
 private:
     void pumpTick();
 
@@ -118,6 +131,10 @@ private:
     QTimer *m_timer = nullptr;
     QElapsedTimer m_simClock;
     double m_jd0 = 0.0;
+    // T15：累计推进状态（取代闭式公式 jd0+sim×simRate）
+    double m_jdAccum = 0.0;    //!< 当前累计 JD（渲染回调写引擎的值）
+    double m_lastSim = 0.0;    //!< 上一次 pumpTick 的 sim 值（dtWall 来源）
+    double m_simScale = 1.0;   //!< 推进比例（0=暂停）
     quint64 m_windowFrames = 0;
     double m_windowStart = 0.0;
     double m_lastWindowFps = 0.0;

@@ -1537,3 +1537,63 @@ Failed to create swapchain: -4
 - **保留**：screensaverInhibitorTimer、模块辅助定时器 ×7、测量设施、SkyViewport 刷新链
 
 **T15/T16 移交清单**见报告 §5。T14 关闭，#34（T15）解锁。
+
+---
+
+## 2026-09-24｜T15 命令通路：AppFacade 最小切片 + ActionRouter（**自检 PASS，回归三绿**）
+
+**交付物**：`src/app/AppFacade.{hpp,cpp}`（实作）、`src/app/ActionRouter.{hpp,cpp}`（实作）、
+`src/app/AppFacadeCheck.{hpp,cpp}`（自检）、`qml/MainWindow.qml`（命令栏 + Keys 路由）、
+`src/ui/main.cpp`（装配 + 拆除开关 + ACTIONCHECK 分支）、
+`src/ui/LiveSkyRuntime.{hpp,cpp}`（ISimPacing 实现 + JD 累计推进）、
+`src/core/StelActionMgr.{hpp,cpp}`（widget 分发开关）。
+证据：`docs/evidence/2026-09-24-t15-command-path/`。
+
+### 1. 三个设计决定（依据 T14 审计 §3.2 / §5）
+
+1. **拆除 QWidget 注册假设的方式是"开关"不是"删除"**：`StelAction` 加静态开关
+   `setWidgetShortcutDispatchEnabled()`，默认 **开**（纯 QWidget 形态 stellarium.exe 照旧把
+   QAction 挂到 StelMainView）；合流形态宿主在 QML 加载前显式关闭 → 不创建/不挂接 QAction，
+   `keySequence` 与 `matches()` 照常工作，键盘改由 `ActionRouter::routeKey` 单点路由
+   （**复用 `StelAction::matches`，不另建键位表**——避免 700+ 既有键位静默双轨）。
+2. **暂停/继续的落点不在 AppFacade，在帧泵**：新增最小接口 `ISimPacing`
+   （setSimScale/simScale/setSimRate/simRate），`LiveSkyRuntime` 实现。时间推进从闭式公式
+   `setJD(jd0 + sim×simRate)` 改为**逐 tick 累计** `m_jdAccum += dtWall×simRate×scale`：
+   暂停只冻 JD（帧泵照跑、恢复无跳变），这是闭式公式做不到的。ISimPacing 即 T16
+   ClockController 的前身。
+3. **zoom 用 `getAimFov()` 而不是 `getCurrentFov()` 做读写口径**：`zoomTo` 是 0.4s 动画，
+   aim 值等于"命令的目标"，连续点击不会读到动画中间值导致步进倍率漂移（自检 AC-2 因此能逐位精确断言）。
+
+### 2. 自检（`STELQUICK_ACTION_CHECK=1`）：**VERDICT=PASS rc=0，9 项断言全过**
+
+AC-1 拆除生效；AC-2 zoom 单步 60.0000→48.0000→38.4000→48.0000（逐位一致）；
+AC-3a 幂等零信号；AC-3b 运行态 ΔJD=0.041200 天/0.4s；AC-3c **暂停 0.5s JD 漂移 0.000e+00**；
+AC-3d 恢复推进；AC-4 禁用门（U-ACT-02）零副作用；AC-5 透传单次（U-ACT-01，ID 直呼 + Q 键各恰一次）；
+AC-6 焦点守卫基线（U-ACT-03）。
+
+### 3. 回归（任务书要求 DYN/A2/S3 零退化）：**三组全绿**
+
+| 组 | 结果 |
+|---|---|
+| A2 静态纹理（Metal） | PASS rc=0 |
+| DYN 动态帧（engine 生产者 + Metal） | **7/7 PASS rc=0**（尾窗 34.9fps；与 T12 期同口径 34.5~36.4 一致） |
+| S3 引擎集成（`STELA3_CHECK`，stellarium.exe） | **8/8 PASS rc=0** ← 同时证明开关默认开、旧形态零退化 |
+
+### 4. 短窗长跑冒烟：帧率读数受限，**不作为回归依据**（已归档说明）
+
+首跑被 42 分钟并行构建的尾巴污染（15 分钟均载 93.56）→ 37.24fps；复跑（电池供电、低电量模式已关、
+残余 Spotlight 负载）→ 38.71fps，与 T13 同口径短窗（40.67~42.87）差约 5%；同期 DYN 引擎形态
+尾窗 34.9fps 与 T12 期完全一致 → **判定为环境噪声，非 T15 退化**。SL-C07（内存斜率）在 60s 窗口内
+本就不适用（端点实际 -0.5 MiB 而回归拟合给出正斜率）。**待办：接电源 + 清负载后复跑 90s**。
+
+### 5. 过程中修掉的两个真问题
+
+- `QGuiApplication::focusWidget` 不存在（属 QApplication/Widgets）→ 改 `QApplication::focusWidget()` +
+  `<QApplication>` 包含（`QT_WIDGETS_LIB` 守卫）；
+- QML 把 Q_PROPERTY `fieldOfView` 当函数调用（`fieldOfView()`）→ 585 次 `TypeError` 刷屏，
+  改属性访问后计数归 0。
+
+### 6. 对 Windows 支线的影响
+
+T15 的代码改动（含 `StelActionMgr` 开关与 main.cpp 装配）需 Windows 侧重新构建才会生效；
+下次在 Windows 跑合流形态测试前先 `git pull` + 重建（阶段 2 的增量构建约数分钟）。

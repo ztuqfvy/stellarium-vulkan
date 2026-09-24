@@ -124,6 +124,19 @@ private:
 	StelProperty* boolProperty;
 	QMetaMethod slot;
 
+public:
+	//! T15：拆除"StelAction 必须注册到 QWidget"的假设（默认开，纯 QWidget 形态
+	//! stellarium.exe 依赖 QAction 挂到 StelMainView 才有快捷键分发）。
+	//! 合流形态宿主（stelQuickUI，QApplication + QQuickWindow）在引擎引导前关闭：
+	//! StelAction 不再创建/挂接 QAction——QML 窗口与从不 show 的 StelMainView
+	//! 不是同一 QWindow，QAction 分发本就到不了，白留只会造成"新旧双轨"错觉。
+	//! 关闭后 keySequence/altKeySequence 与 matches() 照常工作，
+	//! 快捷键改由 stelapp::ActionRouter::routeKey 单点路由。
+	static void setWidgetShortcutDispatchEnabled(bool enabled) { s_widgetShortcutDispatchEnabled = enabled; }
+	static bool isWidgetShortcutDispatchEnabled() { return s_widgetShortcutDispatchEnabled; }
+private:
+	static bool s_widgetShortcutDispatchEnabled;
+
 private slots:
 	void onChanged();
 private:

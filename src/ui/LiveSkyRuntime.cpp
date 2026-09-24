@@ -139,9 +139,14 @@ bool LiveSkyRuntime::start(FrameMailbox *mailbox, const Config &config, QString 
     // "帧内容随仿真时间变化"由我们完全控制，可复现、可对账（探针 C-07 同法）。
     core->setTimeRate(0.0);
     m_jd0 = core->getJD();
+    m_jdAccum = m_jd0;      // T15：累计推进起点
+    m_lastSim = 0.0;
 
     m_host->setRenderCallback([&stelApp, core, this](double dt, double sim, const QSize &) {
-        core->setJD(m_jd0 + sim * m_cfg.simRate);
+        Q_UNUSED(sim);
+        // T15：JD 由 pumpTick 逐 tick 累计（m_jdAccum），不再用闭式公式——
+        // 暂停（scale=0）冻结、恢复无跳变。dt 仍是墙钟帧差（动画惯性照常）。
+        core->setJD(m_jdAccum);
         stelApp.update(dt);
         stelApp.draw();
     });
@@ -170,6 +175,12 @@ void LiveSkyRuntime::pumpTick()
         return;
 
     const double sim = m_simClock.elapsed() / 1000.0;
+    // T15：仿真时间累计推进。dtWall 每 tick 必然推进（无论暂停与否），
+    // 所以暂停后恢复不会把暂停期间的墙钟一次性补进 JD（scale 门挡住）。
+    const double dtWall = sim - m_lastSim;
+    m_lastSim = sim;
+    if (m_simScale > 0.0)
+        m_jdAccum += dtWall * m_cfg.simRate * m_simScale;
     QString error;
     m_mainView->glContextMakeCurrent();
     const bool ok = m_host->renderOneFrame(sim, &error);
@@ -247,6 +258,27 @@ void LiveSkyRuntime::setFps(double fps)
     m_cfg.fps = eff;
     if (m_timer)
         m_timer->setInterval(qMax(1, int(1000.0 / eff)));
+}
+
+// ── ISimPacing（T15：AppFacade 暂停/继续 + 速率的落点）────────────────────────
+void LiveSkyRuntime::setSimScale(double scale)
+{
+    if (scale == m_simScale)
+        return;   // 幂等闸（与 AppFacade::setSimulationPaused 的门双重保险）
+    m_simScale = qMax(0.0, scale);   // 负值视为暂停（0），不允许倒放经由本接口
+    std::printf("LIVESKY: simScale -> %.3f\n", m_simScale);
+    std::fflush(stdout);
+}
+
+void LiveSkyRuntime::setSimRate(double rate)
+{
+    if (rate == m_cfg.simRate)
+        return;
+    // 负速率 = 倒放，引擎支持（时间倒退时 LegacySkyHost 的 dt 钳制保护上层积分）；
+    // 这里不做符号限制，只防离谱值。
+    m_cfg.simRate = rate;
+    std::printf("LIVESKY: simRate -> %.6f 天/秒\n", m_cfg.simRate);
+    std::fflush(stdout);
 }
 
 ProducerCounters LiveSkyRuntime::counters() const

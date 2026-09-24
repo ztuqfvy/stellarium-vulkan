@@ -162,9 +162,16 @@ void ensureVulkanLoaderPath()
 #include "ui/LiveFrameSource.hpp"
 #include "ui/SkyLongRun.hpp"
 #include "ui/quick/SkyViewport.hpp"
+// T15：命令通路（AppFacade + ActionRouter + 自检）。三者在无引擎形态下也是
+// 可编译的 no-op/注册表路径，无条件包含。
+#include "app/AppFacade.hpp"
+#include "app/ActionRouter.hpp"
+#include "app/AppFacadeCheck.hpp"
 #if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
 // T11：真实引擎进程内帧驱动（替代 LiveFrameSource 的"真实引擎"形态）
 #include "ui/LiveSkyRuntime.hpp"
+// T15：合流形态拆除 StelAction 的 QWidget 注册假设（setWidgetShortcutDispatchEnabled）
+#include "StelActionMgr.hpp"
 #endif
 
 namespace {
@@ -929,6 +936,8 @@ int main(int argc, char **argv)
     const bool dynCheck = qEnvironmentVariableIsSet("STELQUICK_DYN_CHECK");
     const bool longRun = qEnvironmentVariableIsSet("STELQUICK_LONGRUN");
     const bool liveEngine = qEnvironmentVariableIsSet("STELQUICK_LIVE_ENGINE");
+    // T15：命令通路自检（U-ACT-01..03 的自动化断言，判据见 AppFacadeCheck.hpp）
+    const bool actionCheck = qEnvironmentVariableIsSet("STELQUICK_ACTION_CHECK");
     // 起始页：A2/DYN/长跑校验必须停在天空页；手动模式下可用 STELQUICK_PAGE 指定
     const QString startPage = (a2Check || dynCheck || longRun
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
@@ -937,7 +946,33 @@ int main(int argc, char **argv)
                                   : qEnvironmentVariable("STELQUICK_PAGE", QStringLiteral("diag"));
 
     // 3. 加载 QML
+    // T15 命令通路装配（加载前注入，QML 命令栏/Keys 直接绑定）：
+    //   · 合流形态拆除 StelAction 的 QWidget 注册假设——QAction 不再挂到从不
+    //     show 的 StelMainView（QML 窗口本就收不到分发，白留只会"双轨"），
+    //     键盘唯一入口 = ActionRouter::routeKey（复用 StelAction::matches 单点）。
+    //   · AppFacade 命令注册进 ActionRouter；帧泵启动后 attachSimControl 注入
+    //     仿真推进控制（暂停/继续/速率）。
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+    StelAction::setWidgetShortcutDispatchEnabled(false);
+    std::printf("ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）\n");
+#endif
+    stelapp::AppFacade appFacade;
+    stelapp::ActionRouter actionRouter;
+    actionRouter.registerAction(QStringLiteral("app.togglePause"),
+                                { [&appFacade]() { appFacade.togglePause(); },
+                                  nullptr,
+                                  QStringLiteral("暂停/继续仿真") });
+    actionRouter.registerAction(QStringLiteral("app.zoomIn"),
+                                { [&appFacade]() { appFacade.zoomIn(); },
+                                  nullptr,
+                                  QStringLiteral("放大视场") });
+    actionRouter.registerAction(QStringLiteral("app.zoomOut"),
+                                { [&appFacade]() { appFacade.zoomOut(); },
+                                  nullptr,
+                                  QStringLiteral("缩小视场") });
     QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty(QStringLiteral("appFacade"), &appFacade);
+    engine.rootContext()->setContextProperty(QStringLiteral("ActionRouter"), &actionRouter);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      []() { std::exit(2); }, Qt::QueuedConnection);
     engine.load(QUrl(QStringLiteral("qrc:/StelQuickUI/qml/MainWindow.qml")));
@@ -1141,6 +1176,7 @@ int main(int argc, char **argv)
                 liveSkyRuntime.reset();
             } else {
                 producer = liveSkyRuntime.get();
+                appFacade.attachSimControl(liveSkyRuntime.get());   // T15：暂停/继续落点
             }
         }
 #else
@@ -1192,6 +1228,63 @@ int main(int argc, char **argv)
         }
 #endif
         return (rc == 0 && !backendOk) ? 3 : rc;
+    }
+
+    // T15 命令通路自检（STELQUICK_ACTION_CHECK=1）：需要真实引擎 + 帧泵运行
+    // （暂停冻结/恢复判据要有 JD 在走）。装配与 DYN-engine 完全同一顺序纪律
+    // （暖机 → boot → start → attach），判据本体见 AppFacadeCheck。
+    if (actionCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("ACTIONCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "ACTIONCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("ACTIONCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "ACTIONCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("ACTIONCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::AppFacadeCheck::runStartupSequence(
+            &app, window, &appFacade, &actionRouter,
+            [&app](const stelapp::AppFacadeCheck::Result &result) {
+                std::printf("ACTIONCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("ACTIONCHECK: %s\n", line.toUtf8().constData());
+                if (!result.ran) {
+                    std::printf("ACTIONCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("ACTIONCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 8);
+            });
+        const int rc = app.exec();
+        // 引擎引导过的进程不走正常 return（双图形栈析构纪律，与 DYN-engine 相同）
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
     }
 
     // 消费侧全量计量长跑（P-BRG-01 验收）：warmup + measure 两段，逐秒/逐帧 CSV。
@@ -1258,6 +1351,7 @@ int main(int argc, char **argv)
                     liveSkyRuntime.reset();
                 } else {
                     producer = liveSkyRuntime.get();
+                    appFacade.attachSimControl(liveSkyRuntime.get());   // T15：暂停/继续落点
                 }
             }
         }

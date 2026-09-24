@@ -98,6 +98,13 @@ set(stelQuickUI_SOURCES
     SkyLongRun.cpp
     LegacyHostCheck.hpp
     LegacyHostCheck.cpp
+    # T15 命令通路：QML → ActionRouter → AppFacade → 引擎（无引擎形态可编译 no-op）
+    ../app/AppFacade.hpp
+    ../app/AppFacade.cpp
+    ../app/ActionRouter.hpp
+    ../app/ActionRouter.cpp
+    ../app/AppFacadeCheck.hpp
+    ../app/AppFacadeCheck.cpp
     quick/BackendInfo.hpp
     quick/BackendInfo.cpp
     quick/SkyViewport.hpp

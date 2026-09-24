@@ -31,6 +31,8 @@
 #include <QAction>
 #include "StelMainView.hpp"
 
+bool StelAction::s_widgetShortcutDispatchEnabled = true;
+
 StelAction::StelAction(const QString& actionId,
 		       const QString& groupId,
 		       const QString& text,
@@ -63,16 +65,23 @@ StelAction::StelAction(const QString& actionId,
 		if (shortcuts.size() > 1)
 			setAltShortcut(shortcuts[1]);		
 	}
-	QWidget* mainView = &StelMainView::getInstance();
-	qAction = new QAction(this);
-	onChanged();
-	mainView->addAction(qAction);
-	connect(qAction, SIGNAL(triggered()), this, SLOT(trigger()));
-	connect(this, SIGNAL(changed()), this, SLOT(onChanged()));	
+	// T15：QWidget 分发开关联动。关闭时（合流形态宿主）完全不创建 QAction——
+	// keySequence/altKeySequence/matches() 照常，键盘由 ActionRouter::routeKey 路由。
+	if (StelAction::isWidgetShortcutDispatchEnabled())
+	{
+		QWidget* mainView = &StelMainView::getInstance();
+		qAction = new QAction(this);
+		onChanged();
+		mainView->addAction(qAction);
+		connect(qAction, SIGNAL(triggered()), this, SLOT(trigger()));
+	}
+	connect(this, SIGNAL(changed()), this, SLOT(onChanged()));
 }
 
 void StelAction::onChanged()
 {
+	if (!qAction)
+		return;   // T15：widget 分发拆除后无 QAction 可同步，键位仅存于 keySequence
 	qAction->setShortcuts(QList<QKeySequence>() << keySequence << altKeySequence);
 	qAction->setShortcutContext(global ? Qt::ApplicationShortcut : Qt::WidgetShortcut);
 }

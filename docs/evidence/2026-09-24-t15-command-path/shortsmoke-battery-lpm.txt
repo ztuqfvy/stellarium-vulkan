@@ -1,0 +1,26 @@
+# 短窗冒烟 · 复跑（电池供电，低电量模式已关 → 环境门前置通过；残余负载未清）
+# uptime: 10:29  up 8 days, 23:40, 1 user, load averages: 5.29 9.84 34.95
+# pmset: Now drawing from 'Battery Power' / lowpowermode=lowpowermode         0
+
+STELLRUN: 生产者=engine(真实引擎)
+STELLRUN: 环境前置通过（Now drawing from 'Battery Power'，低电量模式关）
+STELLRUN: 生产者由调用方装配，本跑只负责计量
+STELLRUN: 预热 30 秒开始（生产者名义 50.0 fps，1280x720）
+STELLRUN: 测量期间环境违规：Now drawing from 'Battery Power' 低电量模式=0
+STELLRUN: 测量 60 秒开始（预热段数据保留在 CSV，统计不含）
+STELLRUN: 测量期间环境违规：Now drawing from 'Battery Power' 低电量模式=0
+STELLRUN: 消费侧长跑：预热 30s + 测量 60s；稳态显示 38.23 fps / 生产 38.71 fps；上屏间隔 p95 58.88ms / p99 66.04ms；丢弃 0；内存斜率 10.373 MiB/min；帧龄 p95 21.00ms / max 53.00ms
+STELLRUN: SL-C01 FAIL 生产者零失败=是（测量段渲染 2263 帧 / 失败 0）；稳态实测 38.71 fps（下限 40）
+STELLRUN: SL-C02 FAIL 稳态显示帧率 38.23 fps（下限 40）；显示帧号 1896 → 3388（窗口 39s）
+STELLRUN: SL-C03 PASS 稳态上屏间隔（1526 帧）：mean 26.37 / p50 22.04 / p95 58.88 / p99 66.04 / max 83.54 ms；门槛 p99≤78.47、max 档占比 ≤0.01%（> 156.94ms 的帧）（共线程形态：p99 相对口径 3×帧间隔（78.47ms，天花板 100ms）+ max 占比口径）（vsync 下 16.7/33.4ms 混排属正常漏一帧，判据只管异常长停顿）
+STELLRUN: SL-C04 PASS 测量段邮箱：投递 2263 / 丢弃 0（须 0）
+STELLRUN: SL-C05 PASS 测量段上传 1773 次，增量均值 0.129ms（<5.0），全程最坏 0.82ms（<100）
+STELLRUN: SL-C06 PASS 测量段邮箱帧龄最大 53ms（<500）
+STELLRUN: SL-C07 FAIL 稳态 phys_footprint 斜率 10.373 MiB/min（增长上限 1.0，负值=释放缓存不违规）；窗口内 2812.2 → 2811.7 MiB（增 -0.5）
+STELLRUN: SL-C08 PASS 测量期间环境漂移 2 次违规（每 60s 复核；0 次才说明数据在合规环境取得）；已允许降频，降级为警告
+STELLRUN: SL-C09 PASS 测量段窗口暴露 60/60 个采样点（被遮挡/最小化时场景图降频，显示数据不可信）
+STELLRUN: SL-C10 PASS 测量段降级误报 0/60 个采样点（0.000%，上限 1%）
+STELLRUN: SL-C11 PASS 稳态帧龄（402 个 100ms 粒度样本）：mean 2.23 / p95 21.00 / p99 29.00 / max 53.00 ms（门槛 p95≤100）
+STELLRUN: SL-INFO 逐秒 CSV：/tmp/t15_smoke3.csv（89 行）
+STELLRUN: SL-INFO 逐帧上屏 CSV：/tmp/t15_smoke3.frames.csv（3414 行）
+STELLRUN: VERDICT=FAIL
