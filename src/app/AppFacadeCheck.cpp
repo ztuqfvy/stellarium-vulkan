@@ -19,6 +19,8 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QKeyEvent>
+#include <QQuickItem>
 #include <QQuickWindow>
 #include <QTimer>
 
@@ -246,6 +248,50 @@ void AppFacadeCheck::runStartupSequence(QCoreApplication *app,
     const bool c6 = router->canDispatchToSky();
     ctx->mark(c6 ? QStringLiteral("AC-6 无焦点时放行（canDispatchToSky=true）：OK")
                  : QStringLiteral("AC-6 无焦点时放行（canDispatchToSky=true）：FAIL"));
+
+    // ── AC-12 QML 键盘挂载点端到端（T17 引入）─────────────────────────────────
+    //
+    // 为什么需要这条：AC-5 证明的是 **C++ 侧** routeKey 逻辑正确（它直接调函数），
+    // 却证明不了"QML 那把键盘真的接到了 routeKey 上"。事实是 T15 把 Keys.onPressed
+    // 挂在 ApplicationWindow 上——`Keys` 是 Item 的附加属性，ApplicationWindow 继承自
+    // Window 而非 Item，挂载**从未生效**（运行时告警 "Could not attach Keys property
+    // ... is not an Item"，自 T15 起每份证据里都在，却没人把它与判据联系起来）。
+    // ⇒ 典型"仪器没接在实况上"：判据全绿而实况是坏的。
+    //
+    // 本条就地补上：
+    //   ① 挂载点必须存在，且确实是 Item（Keys 可附加的前提）；
+    //   ② 若场景图有 activeFocusItem（窗口已激活），把按键**真的从窗口投递进去**，
+    //      断言引擎动作恰好触发一次——这才是端到端；
+    //   ③ 窗口未激活时 SKIP（自动化运行下常见）：这是环境条件，不是缺陷，
+    //      照实写明"挂载点已就位但端到端未验"，不伪装成 OK。
+    {
+        QQuickItem *sink = window ? window->findChild<QQuickItem *>(QStringLiteral("skyKeySink"))
+                                  : nullptr;
+        StelAction *cardinal =
+            StelApp::isInitialized()
+                ? StelApp::getInstance().getStelActionManager()->findAction(
+                      QStringLiteral("actionShow_Cardinal_Points"))
+                : nullptr;
+        QQuickItem *focusItem = window ? window->activeFocusItem() : nullptr;
+
+        if (!sink) {
+            ctx->mark(QStringLiteral("AC-12 QML 键盘挂载点：FAIL（未找到 skyKeySink Item）"));
+        } else if (!cardinal) {
+            ctx->mark(QStringLiteral("AC-12 QML 键盘挂载点：SKIP（未找到 actionShow_Cardinal_Points）"));
+        } else if (!focusItem) {
+            ctx->mark(QStringLiteral("AC-12 QML 键盘挂载点：SKIP（挂载点 skyKeySink 就位=OK，"
+                                     "但场景图无 activeFocusItem（窗口未激活），端到端未验）"));
+        } else {
+            const quint64 before = router->dispatchCount();
+            const bool checked0 = cardinal->isChecked();
+            QKeyEvent press(QEvent::KeyPress, static_cast<int>(Qt::Key_Q), Qt::NoModifier);
+            QCoreApplication::sendEvent(window, &press);
+            const bool e2e = (router->dispatchCount() == before + 1)
+                             && (cardinal->isChecked() != checked0);
+            ctx->mark(QStringLiteral("AC-12 QML 键盘挂载点端到端（Q 键经窗口投递恰触发一次）：%1")
+                          .arg(e2e ? QStringLiteral("OK") : QStringLiteral("FAIL")));
+        }
+    }
 
     // ── AC-3a 同值幂等 ────────────────────────────────────────────────────────
     QObject::connect(facade, &AppFacade::simulationPausedChanged, ctx->app,

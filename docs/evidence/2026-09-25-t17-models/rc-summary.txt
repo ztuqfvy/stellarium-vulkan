@@ -1,0 +1,6 @@
+searchcheck-mac rc=0
+regression-clockcheck rc=0
+regression-actioncheck rc=0
+regression-a2-metal rc=0
+regression-dyn-engine-metal rc=0
+regression-s3-stela3 rc=0

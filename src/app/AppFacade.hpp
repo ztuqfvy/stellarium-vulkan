@@ -8,23 +8,38 @@
  * 实现轨迹：
  *   - A0 骨架（2026-09-17）定义属性面。
  *   - T15（2026-09-24）最小切片落地：simulationPaused + fieldOfView（含
- *     zoomIn/zoomOut 便捷命令）。时间速率经 ISimPacing 走帧泵真源。
+ *     zoomIn/zoomOut 便捷命令）。当时时间速率经 ISimPacing 走"宿主自己算"的帧泵。
+ *   - T16（2026-09-24）时钟所有权收编为引擎内 StelClockController。
+ *   - T17（2026-09-25）新增搜索/选择协调：持有 SearchResultsModel +
+ *     ObjectInfoModel，提供 searchObjects / selectSearchResult / clearSelection。
  *
- * 时间语义（T14 审计 docs/T14_UPDATE_CLOCK_AUDIT.zh_CN.md §2.4 的落地）：
- *   合流形态的时间真源在帧泵（LiveSkyRuntime 每帧累计推进 JD），
- *   引擎 StelCore::updateTime 的墙钟路径已被 setTimeRate(0) 架空。
- *   因此本类**不直接写引擎时钟**：暂停/继续/速率全部经 ISimPacing
- *   接口交给帧泵实现。ISimPacing 就是 T16 ClockController 的前身。
+ * 时间语义（**T16 后已更新，勿再引用 T15 的旧说法**）：
+ *   时间真源是**引擎内的 StelClockController**（docs/T16_SINGLE_SIM_CLOCK.zh_CN.md）：
+ *   合流形态下引擎时钟处于 HostDriven，由宿主帧泵每帧 advanceSimClock(dt) 单点推进；
+ *   StelCore::updateTime 在 HostDriven 下**不读墙钟**。
+ *   故本类仍然**不直接写引擎时钟**——但它现在只是"把命令转给 ISimPacing"，
+ *   而 ISimPacing 已退化为**对引擎时钟的纯投影**（暂停 = 引擎时钟 scale=0，
+ *   速率 = 引擎 timeSpeed）。ISimPacing 不再是"另一个时间源"。
+ *
+ * 搜索/选择的分工（T17）：
+ *   本类是**命令入口**，模型是**数据**。QML 侧约定：
+ *     列表用 `model: searchResults`（模型直供），命令走 appFacade。
+ *   理由：选择需要"引擎语义"（把 stableId 解析成对象并真的选中），
+ *   那是本类的职责；模型只负责把数据摆好，不碰引擎状态。
  *
  * 纪律：
  *   1. 所有方法只允许 GUI 线程调用（引擎对象全为 GUI 线程亲和，本类不设锁）。
  *   2. 引擎未编译（独立工程形态）或未引导时，全部方法安全 no-op——
- *      QML 命令栏在无引擎形态下可点，但不产生引擎效果（currentFov 返回 -1 可辨）。
+ *      QML 命令栏在无引擎形态下可点，但不产生引擎效果（currentFov 返回 -1 可辨；
+ *      搜索返回 0 行 + 明确空态理由）。
  *   3. 幂等：setSimulationPaused 对相同值直接返回（防双触发的第一道闸）。
  */
 #pragma once
 
 #include <QObject>
+
+#include "app/ObjectInfoModel.hpp"
+#include "app/SearchResultsModel.hpp"
 
 namespace stelapp {
 
@@ -81,6 +96,31 @@ public:
     Q_INVOKABLE void zoomOut();   //!< 视场 ×1.25
     Q_INVOKABLE void togglePause() { setSimulationPaused(!m_simulationPaused); }
 
+    // ---- T17 搜索 / 选择（模型持有 + 命令协调）----
+    //! 本类持有的两个模型（main.cpp 以 context property 注入 QML，见头注"分工"）。
+    //! 刻意不写成 Q_PROPERTY：QML 侧用 `model: searchResults` 直接消费模型本体，
+    //! 走 context property 与 T15 的 ActionRouter 同一惯例，避免多注册一个 QML 类型。
+    SearchResultsModel *searchResults() { return &m_search; }
+    ObjectInfoModel *objectInfo() { return &m_info; }
+
+    //! THREAD: gui
+    //! 发起搜索（转交模型；模型内部过请求编号门）。
+    //! @return 本次结果行数（无引擎/无匹配时为 0，空态理由见 searchResults().emptyReason）
+    Q_INVOKABLE int searchObjects(const QString &query, int maxItems = 20);
+
+    //! THREAD: gui
+    //! 选中搜索结果第 row 行：取该行 stableId → 引擎回查并选中 → 回填信息模型。
+    //! @return 是否选中成功（行越界/对象已失效/引擎不可用 → false 且信息模型归零）
+    Q_INVOKABLE bool selectSearchResult(int row);
+
+    //! THREAD: gui
+    //! 按稳定标识选择（QML 侧若有缓存/外链可用该方法绕开列表）。
+    Q_INVOKABLE bool selectByStableId(const QString &stableId);
+
+    //! THREAD: gui
+    //! 取消选中（引擎 unSelect + 信息模型归零）。
+    Q_INVOKABLE void clearSelection();
+
 signals:
     void simulationPausedChanged(bool paused);
     void timeRateChanged(double ratePerJulianDaySecond);
@@ -92,7 +132,11 @@ private:
 
     ISimPacing *m_sim = nullptr;
     bool m_simulationPaused = false;  // 与 LiveSkyRuntime 的 scale=1 默认一致（运行态）
-    double m_timeRate = 1.0;          // Julian day / second（镜像值，真源在 ISimPacing）
+    double m_timeRate = 1.0;          // Julian day / second（镜像值，真源在引擎时钟）
+
+    // T17：值成员（QObject 子对象随本类生命周期；父指针保证 QML 侧不会被提前回收）。
+    SearchResultsModel m_search{this};
+    ObjectInfoModel m_info{this};
 };
 
 } // namespace stelapp

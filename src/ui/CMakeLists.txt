@@ -115,6 +115,15 @@ set(stelQuickUI_SOURCES
     ../app/ActionRouter.cpp
     ../app/AppFacadeCheck.hpp
     ../app/AppFacadeCheck.cpp
+    # T17 搜索/选择：两个模型 + 自检。同样在独立工程形态下编为安全空实现
+    # （模型内部用 STELQUICK_HAS_ENGINE 守卫，不是靠 CMake 排除文件——
+    #  这样 QML 侧在无引擎形态也能拿到"明确的空态理由"而不是链接失败）。
+    ../app/SearchResultsModel.hpp
+    ../app/SearchResultsModel.cpp
+    ../app/ObjectInfoModel.hpp
+    ../app/ObjectInfoModel.cpp
+    ../app/SearchModelCheck.hpp
+    ../app/SearchModelCheck.cpp
     quick/BackendInfo.hpp
     quick/BackendInfo.cpp
     quick/SkyViewport.hpp
@@ -166,6 +175,7 @@ qt_add_qml_module(stelQuickUI
         qml/MainWindow.qml
         qml/DiagnosticPage.qml
         qml/SkyTestPage.qml
+        qml/SearchPage.qml
     NO_PLUGIN
 )
 

@@ -167,6 +167,11 @@ void ensureVulkanLoaderPath()
 #include "app/AppFacade.hpp"
 #include "app/ActionRouter.hpp"
 #include "app/AppFacadeCheck.hpp"
+// T17：搜索/选择模型 + 自检。模型是"数据"，命令走 AppFacade——
+// QML 侧约定 `model: searchResults` / `appFacade.searchObjects(...)`。
+#include "app/SearchModelCheck.hpp"
+#include "app/SearchResultsModel.hpp"
+#include "app/ObjectInfoModel.hpp"
 // T16：单一仿真时钟。控制器是 core 层的纯逻辑类（无 GL / 无 QObject），
 // 故无条件包含——STELQUICK_CLOCK_CHECK 分支在独立工程形态下同样可用。
 #include "core/StelClockController.hpp"
@@ -957,12 +962,18 @@ int main(int argc, char **argv)
     const bool liveEngine = qEnvironmentVariableIsSet("STELQUICK_LIVE_ENGINE");
     // T15：命令通路自检（U-ACT-01..03 的自动化断言，判据见 AppFacadeCheck.hpp）
     const bool actionCheck = qEnvironmentVariableIsSet("STELQUICK_ACTION_CHECK");
-    // 起始页：A2/DYN/长跑校验必须停在天空页；手动模式下可用 STELQUICK_PAGE 指定
+    // T17：搜索/选择模型自检（U-SRC-01..04 + 纵向判据，见 SearchModelCheck.hpp）
+    const bool searchCheck = qEnvironmentVariableIsSet("STELQUICK_SEARCH_CHECK");
+    // 起始页：A2/DYN/长跑校验必须停在天空页；搜索自检停在搜索页（顺带验证该 QML 页面
+    // 能真正被实例化——页面有语法/引用错误时这一步就会暴露，而不是等人工点击）；
+    // 手动模式下可用 STELQUICK_PAGE 指定。
     const QString startPage = (a2Check || dynCheck || longRun
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
-                                  : qEnvironmentVariable("STELQUICK_PAGE", QStringLiteral("diag"));
+                                  : (searchCheck ? QStringLiteral("search")
+                                                 : qEnvironmentVariable("STELQUICK_PAGE",
+                                                                        QStringLiteral("diag")));
 
     // 3. 加载 QML
     // T15 命令通路装配（加载前注入，QML 命令栏/Keys 直接绑定）：
@@ -992,6 +1003,13 @@ int main(int argc, char **argv)
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("appFacade"), &appFacade);
     engine.rootContext()->setContextProperty(QStringLiteral("ActionRouter"), &actionRouter);
+    // T17：两个模型作为**上下文属性**注入（与 ActionRouter 同一惯例）。
+    // 刻意不给 AppFacade 加 Q_PROPERTY 指针：那样 QML 引擎需要额外注册这两个类型，
+    // 而上下文属性的类型解析走 QObject 元对象，零注册成本、零"类型未注册"风险。
+    engine.rootContext()->setContextProperty(QStringLiteral("searchResults"),
+                                             appFacade.searchResults());
+    engine.rootContext()->setContextProperty(QStringLiteral("objectInfo"),
+                                             appFacade.objectInfo());
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      []() { std::exit(2); }, Qt::QueuedConnection);
     engine.load(QUrl(QStringLiteral("qrc:/StelQuickUI/qml/MainWindow.qml")));
@@ -1297,6 +1315,71 @@ int main(int argc, char **argv)
             });
         const int rc = app.exec();
         // 引擎引导过的进程不走正常 return（双图形栈析构纪律，与 DYN-engine 相同）
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T17 搜索/选择模型自检（STELQUICK_SEARCH_CHECK=1）：需要真实引擎
+    // （阶段 B 要真的能搜到天体）。装配顺序与 ACTION_CHECK 完全一致
+    // （暖机 → boot → start → attach → 判据），判据本体见 SearchModelCheck。
+    // 起始页已在上面切到 "search"，故同时验证搜索页 QML 可被实例化。
+    if (searchCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("SEARCHCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "SEARCHCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("SEARCHCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "SEARCHCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("SEARCHCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::SearchModelCheck::run(
+            &app, &appFacade,
+            [&app](const stelapp::SearchModelCheck::Result &result) {
+                std::printf("SEARCHCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("SEARCHCHECK: %s\n", line.toUtf8().constData());
+                if (!result.ran) {
+                    std::printf("SEARCHCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                if (result.unavailable) {
+                    // 阶段 A 已全绿、只是环境里没有可检索天体——照实报 UNAVAILABLE，
+                    // 绝不伪装成 PASS（"不许静默通过"纪律）。
+                    std::printf("SEARCHCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("SEARCHCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
+            });
+        const int rc = app.exec();
         if (liveSkyRuntime) {
             liveSkyRuntime->stop();
             liveSkyRuntime.reset();

@@ -1723,3 +1723,72 @@ SL-C01/C02 **PASS**（49.18/49.11 fps）；SL-C04/05/06/08/09/10/11 全 PASS
 T16 及 T15 的代码改动需 Windows 侧 `git pull` + 重建才会生效。
 Windows 侧同样会受益于重复驱动源拆除（该机此前 30 min 长跑 50.00fps 已达其 50Hz 屏上限，
 预计改善主要体现在 GPU/CPU 占用而非帧率）。
+
+---
+
+## 2026-09-25｜T17 两个模型：`SearchResultsModel` / `ObjectInfoModel`（**自检 26/26 PASS，回归零退化**）
+
+交付文档 `docs/T17_SEARCH_OBJECT_MODELS.zh_CN.md`；证据 `docs/evidence/2026-09-25-t17-models/`；
+一键复跑 `tools/t17-verify.sh`。
+
+### 1. 落地内容
+
+- `src/app/SearchResultsModel.{hpp,cpp}`（骨架 → 实现）：`QAbstractListModel`，
+  角色 name/englishName/objectType/typeName/stableId/rank；**请求编号门** `applyResults()`
+  （过期结果丢弃 + 计数可观测量 `discardedRequests()`）；空态理由；**总量上限**。
+- `src/app/ObjectInfoModel.{hpp,cpp}`（骨架 → 实现）：只读属性面 + `refresh()`（当场读数）
+  + `selectByStableId()`（跨查询回查）+ **一律归零**的失效处置。
+- `src/app/SearchModelCheck.{hpp,cpp}`（新）：自检（阶段 A 环境无关 / 阶段 B 需 fixture）。
+- `src/ui/qml/SearchPage.qml`（新）+ `MainWindow.qml` 接线；`AppFacade` 持有两模型并新增四个命令；
+  `main.cpp` 注入 context property + `STELQUICK_SEARCH_CHECK=1` 分支（rc 0/6/10）。
+
+### 2. 稳定标识的定形依据（引擎自己的注释）
+
+`StelObject.hpp:365-377`：`getID()` 在同一类型内唯一，但"**可与其他类型的 ID 自由冲突，
+因此 `getType()` 必须一并参与判定**" ⇒ `stableId = type + ":" + id`，
+回查走 `StelObjectMgr::searchByID(type, id)`。
+
+### 3. 为什么一个天体指针都不存
+
+`StelObjectType.hpp:44`：`using StelObjectP = QSharedPointerNoDelete<StelObject>` ——
+**不持有所有权**，存它不延长对象寿命。故模型内只留字符串，取值一律"当场重新解析"。
+契约里"不传悬空裸指针"的**真正原因**就在这里。
+
+### 4. 三个真实缺陷（详见交付文档 §3）
+
+1. **`maxItems` 形同虚设**：`StelObjectMgr::listMatchingObjects` 的 `maxNbItem` 是
+   **每模块**上限（各模块各取 N 条后 `+=` 拼接），实测请求 10 条拿到 20 条、
+   请求 3 条拿到 21 条 → 本层统一为**总量上限**，并暴露 `lastRawMatchCount()` 证明其生效。
+2. **排序口径与注释不符**：引擎头注声称"by order of relevance"，但聚合后
+   `std::sort` 按**名称字典序**重排 → `RankRole` 不是相关度序（本层初版注释写错了，已更正）；
+   排序策略移交 A4（需产品决策）。
+3. **T15 的键盘单点路由在 QML 侧从未接上**：`Keys` 是 `Item` 的附加属性，
+   T15 却挂在 `ApplicationWindow`（继承自 `Window`）上 → 告警
+   `Could not attach Keys property ... is not an Item` 自 T15 起就在每份证据里。
+   AC-5 抓不到，因为它**直接调用** `routeKey`（仪器没接在实况上）。
+   修法：挂到可聚焦 `Item`（`skyKeySink`）上；新增 **AC-12** 从窗口投递 `Q` 键做端到端断言 → **OK**；
+   佐证：该告警出现次数 **1 → 0**。
+
+### 5. 验收
+
+| 项 | 结论 |
+|---|---|
+| `STELQUICK_SEARCH_CHECK=1` | **26/26 PASS** rc=0（SRC-01..05 + 纵向 V1–V9） |
+| 关键数据 | 过期结果未覆盖新查询（行数仍 10，修复前 20）；丢弃计数 +2；稳定标识 `Star:HIP 32349 A`；总量上限 raw=21 → 3 |
+| CLOCKCHECK（回归） | 12/12 PASS |
+| ACTIONCHECK（回归 + 新 AC-12） | 全 PASS，AC-12 端到端 **OK** |
+| A2 / DYN / S3（回归） | PASS / 7-7 PASS / 8-8 PASS —— 零退化 |
+
+### 6. 环境/工具踩坑
+
+- **给构建命令接管道截断输出 = 给构建装了个随机杀手**：`cmake --build ... | grep ... | head -20`
+  在第 20 行关管道触发 SIGPIPE，整个构建被掐断；表现是"构建成功但二进制时间戳没变、
+  新判据没出现"。改为输出落日志、事后 grep。
+- 首跑即 PASS 后仍要读**数据里的异常**：`maxItems=10` 拿到 20 行才是缺陷 ① 的入口——
+  判据"通过"不等于"行为正确"。
+
+### 7. 对 Windows 支线的影响
+
+T15/T16/T17 三段改动需 Windows 侧 `git pull` + 重建才生效。本轮已实测：
+SSH 会话内 `Start-Process` 起的构建进程会**随会话结束被回收**（日志停在 configure 阶段、
+rc 文件未生成）→ 改用 `schtasks` 投递（脱离 SSH 生命周期）方可长跑构建。

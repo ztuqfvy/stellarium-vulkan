@@ -119,4 +119,34 @@ void AppFacade::zoomOut()
     setFieldOfView(fov * 1.25);
 }
 
+// ── T17：搜索 / 选择 ─────────────────────────────────────────────────────────
+
+int AppFacade::searchObjects(const QString &query, int maxItems)
+{
+    // 模型自己做引擎取数（含无引擎形态的安全降级），本类只转发并回一个"有几行"。
+    m_search.search(query, maxItems);
+    return m_search.count();
+}
+
+bool AppFacade::selectSearchResult(int row)
+{
+    const QString sid = m_search.stableIdAt(row);
+    if (sid.isEmpty()) {
+        // 行越界（QML 列表与模型短暂不同步时会走到这里）：归零而非沿用陈旧值。
+        m_info.clear();
+        return false;
+    }
+    return m_info.selectByStableId(sid);
+}
+
+bool AppFacade::selectByStableId(const QString &stableId)
+{
+    return m_info.selectByStableId(stableId);
+}
+
+void AppFacade::clearSelection()
+{
+    m_info.clearSelection();
+}
+
 } // namespace stelapp
