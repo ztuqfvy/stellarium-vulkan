@@ -1244,6 +1244,9 @@ void StelCore::setJD(double newJD)
 {
 	JD.first=newJD;
 	JD.second=computeDeltaT(newJD);	
+	// T16：外部跳转重锚仿真时钟。这是插件/脚本/GUI 写时钟（core->setJD）的
+	// 唯一入口——重锚后宿主帧泵会从这个新值继续推进，而不是把跳转值拽回去。
+	simClock.jumpTo(newJD);
 	resetSync();
 	setClearSkyOnce();
 }
@@ -1258,6 +1261,7 @@ void StelCore::setJDE(double newJDE)
 	// nitpickerish this is not exact, but as good as it gets...
 	JD.second=computeDeltaT(newJDE);
 	JD.first=newJDE-JD.second/86400.0;
+	simClock.jumpTo(JD.first);   // T16：与 setJD 同——脚本 setJDE 也必须重锚
 	resetSync();
 	setClearSkyOnce();
 }
@@ -1410,6 +1414,64 @@ void StelCore::toggleTimeSpeed()
 void StelCore::revertTimeDirection(void)
 {
 	setTimeRate(-1*getTimeRate());
+}
+
+// ── T16：单一仿真时钟（时钟所有权收编）───────────────────────────────────────
+// 设计动机与缺口分析见 StelClockController.hpp 头注。
+bool StelCore::isSimClockHostDriven() const
+{
+	return simClock.mode() == StelClockController::Mode::HostDriven;
+}
+
+void StelCore::setSimClockHostDriven(bool hostDriven)
+{
+	const auto want = hostDriven ? StelClockController::Mode::HostDriven
+	                             : StelClockController::Mode::EngineWallClock;
+	if (simClock.mode() == want)
+		return;   // 幂等
+
+	if (hostDriven)
+	{
+		// 起步锚定：以引擎当前 JD 为仿真起点。
+		// 用 JD.first（引擎上一次 updateTime 的结果）而不是 getSimClockJD()：
+		// 切入前真源还没被接管，引擎字段才是当前可见的天空时刻。
+		simClock.reset(getJD());
+	}
+	simClock.setMode(want);
+	// 切线必须重锚墙钟锚点：否则切回 EngineWallClock 时会按旧锚点一口气
+	// 补上"整段 HostDriven 时长 × 速率"，天空瞬间跳走。
+	resetSync();
+	qInfo() << "StelCore: 仿真时钟模式 ->" << StelClockController::modeName(want)
+	        << "JD =" << QString::number(getJD(), 'f', 5);
+}
+
+void StelCore::advanceSimClock(double dtWallSeconds)
+{
+	if (simClock.mode() != StelClockController::Mode::HostDriven)
+		return;   // 旧形态由 updateTime 的墙钟路径推进，宿主不得插手
+	simClock.advanceHostDriven(dtWallSeconds, timeSpeed);
+}
+
+void StelCore::setSimClockScale(double scale)
+{
+	if (simClock.scale() == scale)
+		return;   // 幂等（与 AppFacade 的暂停闸双重保险）
+	simClock.setScale(scale);
+}
+
+double StelCore::getSimClockScale() const
+{
+	return simClock.scale();
+}
+
+double StelCore::getSimClockJD() const
+{
+	return simClock.valid() ? simClock.jd() : JD.first;
+}
+
+QString StelCore::getSimClockModeName() const
+{
+	return StelClockController::modeName(simClock.mode());
 }
 
 void StelCore::moveObserverToSelected()
@@ -2298,13 +2360,22 @@ bool StelCore::getRealTimeSpeed() const
 // Increment time
 void StelCore::updateTime(double deltaTime)
 {
-	if (getRealTimeSpeed())
+	// ── T16：单一仿真时钟 ────────────────────────────────────────────────────
+	// HostDriven（合流形态）：JD 真源是 simClock，由宿主帧泵 advanceSimClock 单点推进，
+	//   本函数**不读墙钟**。这是 T14 §2.4 中"setTimeRate(0) 架空墙钟"的机制化替代：
+	//   从"用速率 0 把墙钟乘没"变成"墙钟路径根本不执行"。
+	//   ——同时这也是"外部跳转不被拽回"的原因：jumpTo 写的是同一个真源。
+	// EngineWallClock（旧形态）：原样保留（锚点 + 墙钟差 × 速率），逐位等价。
+	if (simClock.mode() == StelClockController::Mode::HostDriven)
 	{
-		JD.first = jdOfLastJDUpdate + (QDateTime::currentMSecsSinceEpoch() - milliSecondsOfLastJDUpdate) / 1000.0 * JD_SECOND;
+		JD.first = simClock.jd();
 	}
 	else
 	{
-		JD.first = jdOfLastJDUpdate + (QDateTime::currentMSecsSinceEpoch() - milliSecondsOfLastJDUpdate) / 1000.0 * timeSpeed;
+		JD.first = simClock.advanceEngineWallClock(
+		    jdOfLastJDUpdate,
+		    (QDateTime::currentMSecsSinceEpoch() - milliSecondsOfLastJDUpdate) / 1000.0,
+		    getRealTimeSpeed() ? JD_SECOND : timeSpeed);
 	}
 
 	// Fix time limits to -200000 to +200000 to prevent bugs

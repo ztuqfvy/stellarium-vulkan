@@ -79,6 +79,16 @@ SET(STELQUICKUI_SOURCES_SHARED
     ../render/legacy/LegacySkyHost.cpp
 )
 
+# ── T16：仿真时钟控制器（纯逻辑，无引擎依赖）────────────────────────────────
+# 子目标形态下它已随 stellarium_lib_SRCS 编入 stelMain；独立工程形态下没有引擎，
+# 必须自带一份（否则 main.cpp 的 STELQUICK_CLOCK_CHECK 分支链接失败——
+# 那个分支被刻意设计成可在无引擎环境运行，正是为了把"时钟语义"与"引擎是否跑通"解耦）。
+# 与 FrameMailbox/LegacySkyHost 同一条纪律：**同一形态下只能有一份定义**。
+SET(STELQUICKUI_SOURCES_CORE_PURE
+    ../core/StelClockController.hpp
+    ../core/StelClockController.cpp
+)
+
 set(stelQuickUI_SOURCES
     main.cpp
     A2FrameCheck.hpp
@@ -123,6 +133,7 @@ set(stelQuickUI_SOURCES
 # 独立工程形态自带帧桥与旧宿主；子目标形态交由 stelMain 提供。
 IF(STELQUICKUI_STANDALONE)
     list(APPEND stelQuickUI_SOURCES ${STELQUICKUI_SOURCES_SHARED})
+    list(APPEND stelQuickUI_SOURCES ${STELQUICKUI_SOURCES_CORE_PURE})
 ENDIF()
 
 if(STELQUICK_VULKAN_PROBE)

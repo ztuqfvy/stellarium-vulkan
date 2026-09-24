@@ -122,6 +122,16 @@ public:
 	//! Releases the main GL context
 	void glContextDoneCurrent();
 
+	//! T16：旧宿主帧节拍器（fpsTimer）当前是否在跑。
+	//! 合流形态（QML+Vulkan 宿主）下**必须为 false**——"同一时刻只有一个 update
+	//! 驱动源"这条约束的可观测判据，见 StelMainView::drawEnded() 的纵深防御守卫。
+	bool isLegacyFrameTimerActive() const;
+	//! T16：显式停掉旧宿主帧节拍器（合流宿主接管后立刻调用）。
+	//! 与 drawEnded() 内的守卫互补：守卫负责"不让它复活"，本方法负责"立刻停掉活着的"。
+	//! 两者缺一不可——fpsTimer 完全可能在宿主接管**之前**就已由 boot() 的
+	//! show()→paint 链条点燃（实测如此）。
+	void stopLegacyFrameTimer();
+
 	//! Returns the information about the GL context, this does not require the context to be active.
 	const GLInfo& getGLInformation() const { return glInfo; }
 

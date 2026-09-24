@@ -167,6 +167,9 @@ void ensureVulkanLoaderPath()
 #include "app/AppFacade.hpp"
 #include "app/ActionRouter.hpp"
 #include "app/AppFacadeCheck.hpp"
+// T16：单一仿真时钟。控制器是 core 层的纯逻辑类（无 GL / 无 QObject），
+// 故无条件包含——STELQUICK_CLOCK_CHECK 分支在独立工程形态下同样可用。
+#include "core/StelClockController.hpp"
 #if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
 // T11：真实引擎进程内帧驱动（替代 LiveFrameSource 的"真实引擎"形态）
 #include "ui/LiveSkyRuntime.hpp"
@@ -818,6 +821,22 @@ int main(int argc, char **argv)
 #else
     QGuiApplication app(argc, argv);
 #endif
+
+    // ── T16：单一仿真时钟的**纯逻辑**自检（STELQUICK_CLOCK_CHECK=1）──────────
+    // 不建窗口、不引导引擎、不起事件循环，只验 StelClockController 的语义本身。
+    // 独立成一支的理由：这是 T16 里唯一一处**能在无 GL / 无引擎环境下复跑**的证据，
+    // 也是"时钟语义"与"引擎是否恰好跑通"解耦的地方——合流形态若整体启动失败，
+    // 这一支仍能给出时钟语义的对错。
+    if (qEnvironmentVariableIsSet("STELQUICK_CLOCK_CHECK")) {
+        QStringList clockLog;
+        const bool clockOk = StelClockController::selfTest(&clockLog);
+        std::printf("CLOCKCHECK: 仿真时钟纯逻辑自检（%d 项，无 GL / 无引擎）\n", int(clockLog.size()));
+        for (const QString &line : clockLog)
+            std::printf("CLOCKCHECK: %s\n", line.toUtf8().constData());
+        std::printf("CLOCKCHECK: VERDICT=%s\n", clockOk ? "PASS" : "FAIL");
+        std::fflush(nullptr);
+        return clockOk ? 0 : 7;
+    }
     app.setApplicationName("stelQuickUI");
     app.setOrganizationName("stellarium-vulkan");
 

@@ -1539,10 +1539,61 @@ void StelMainView::drawEnded()
 	fpsTimer->setInterval(qMax(minTimeBetweenFrames, requiredFpsInterval));
 #endif
 
+	// ── T16：唯一 update 驱动源的纵深防御 ────────────────────────────────────
+	// 本函数是**旧宿主帧循环的自持点**：它一跑就 start(fpsTimer)，fpsTimer 超时又
+	// 触发重绘、重绘再到本函数——一个自给自足的 update/draw 循环。
+	//
+	// 合流形态（simClock 为 HostDriven）下宿主帧泵才是唯一驱动源，这里必须拦住：
+	// 否则会出现"宿主帧泵 + 旧宿主节拍器"两个 update 驱动源，症状是不报错、不崩溃，
+	// 只是 CPU 翻倍、帧率抖动——最难查的一类退化。
+	//
+	// ⚠️ 2026-09-24 T16 实测纠正（重要，别再用旧结论）：
+	//   此前 T14 判定"合流形态 fpsTimer 天然休眠（StelMainView 不 show → drawEnded
+	//   不跑）"——**该判定不成立**。反证一：boot() 里是调了 m_mainView->show() 的；
+	//   反证二：T16 的 AC-7 首跑用 isLegacyFrameTimerActive() 直接读到 **仍在跑**。
+	//   当时"日志里 paintGL/drawEnded 各 0 次"被当成证据，其实站不住——
+	//   paintGL() 因 QGraphicsView 拦截 paint 而永不执行（源码注释已说明），
+	//   drawEnded() 则**根本没有日志语句**：字符串不出现 ≠ 函数没执行。
+	//   结论：合流形态此前一直有**两个** update/draw 驱动源，本守卫是修真实缺陷。
+	//
+	// 因此守卫必须**主动停表**，而不只是"不自启"：fpsTimer 很可能在
+	// setSimClockHostDriven(true) 之前就已经被点燃，此时"不自启"对它毫无作用。
+	if (StelApp::isInitialized() && StelApp::getInstance().getCore()
+	    && StelApp::getInstance().getCore()->isSimClockHostDriven())
+	{
+		static bool loggedOnce = false;
+		if (fpsTimer->isActive())
+		{
+			fpsTimer->stop();
+			if (!loggedOnce)
+			{
+				loggedOnce = true;
+				qWarning() << "StelMainView::drawEnded: 合流形态（宿主驱动）——已停掉旧宿主帧"
+				              "节拍器，update/draw 驱动源收敛为单点。";
+			}
+		}
+		emit frameFinished();
+		return;
+	}
+
 	if(!fpsTimer->isActive())
 		fpsTimer->start();
 
 	emit frameFinished();
+}
+
+bool StelMainView::isLegacyFrameTimerActive() const
+{
+	return fpsTimer && fpsTimer->isActive();
+}
+
+void StelMainView::stopLegacyFrameTimer()
+{
+	if (fpsTimer && fpsTimer->isActive())
+	{
+		fpsTimer->stop();
+		qInfo() << "StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）";
+	}
 }
 
 void StelMainView::setFlagCursorTimeout(bool b)

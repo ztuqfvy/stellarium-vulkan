@@ -4,6 +4,18 @@
 > 方法：全工程 grep + 关键函数全文精读 + 与合流形态实测行为（T11–T13 长跑）交叉验证。
 > 目的：为 T15（AppFacade/ActionRouter）与 T16（单一仿真时钟）划定准确的接管面，每个触发源给出 **保留 / 拆除 / 接管** 判定。
 > 配套证据：`docs/evidence/2026-09-24-t14-audit/`（原始 grep 记录，含命令与行号）。
+>
+> ⚠️ **勘误（2026-09-24，T16 落地时发现）**：本文 §1.2 的关键结论 ②
+> 「合流形态下 `fpsTimer` 天然休眠」**不成立**。T16 的 AC-7 首跑用新加的
+> `StelMainView::isLegacyFrameTimerActive()` 直接读到 **`fpsTimer` 仍在跑**。
+> 当时的"佐证"（T13 长跑日志中 `paintGL`/`drawEnded` 各 0 次）无效：
+> `paintGL()` 因 QGraphicsView 拦截 paint 而**永不执行**（源码注释已说明），
+> `drawEnded()` 则**根本没有日志语句**——字符串不出现 ≠ 函数没执行；
+> 且 `LiveSkyRuntime::boot()` 里是**调了 `m_mainView->show()`** 的。
+> 真实结论：合流形态此前一直有**两个** update/draw 驱动源，
+> T16 已将其收敛为单点（见 `docs/T16_SINGLE_SIM_CLOCK.zh_CN.md` §2.4）。
+> 本文其余部分（§2 时钟审计、§3 冲突面、§4 速查表）经 T16 逐条复核，**仍然有效**。
+
 
 ---
 
@@ -31,7 +43,11 @@
 | M4 | SkyViewport 刷新 | 邮箱帧到达 → `item->update()` → 场景图 sync/render；`frameSwapped` 仅测量用 | SkyViewport.cpp:47-94 | **保留** |
 | M5 | 测量设施 | DynFrameCheck 采样 QTimer、A2FrameCheck 轮询 QTimer、SkyLongRun 100ms 采样 + frameSwapped | src/ui/*Check*.cpp / SkyLongRun.cpp | **保留**——验收设施，不进生产装配（main.cpp 按环境变量分支） |
 
-**关键结论 ②**：合流形态下 `fpsTimer` **天然休眠**——`new StelMainView(confSettings)` 从不 show，`drawEnded()` 永不执行，`fpsTimer` 永不 start（T13 长跑 0 冲突佐证）。引擎侧不存在"僵尸定时器偷偷 update"的风险。
+**关键结论 ②（⚠️ 已被 T16 推翻，见文首勘误）**：~~合流形态下 `fpsTimer` **天然休眠**——`new StelMainView(confSettings)` 从不 show，`drawEnded()` 永不执行，`fpsTimer` 永不 start（T13 长跑 0 冲突佐证）。引擎侧不存在"僵尸定时器偷偷 update"的风险。~~
+
+**更正后的结论**：合流形态下 `fpsTimer` **确实在跑**（`boot()` → `m_mainView->show()` → QWidget 绘制链 → `drawEnded()` → `fpsTimer->start()`，之后自持）。即合流形态存在**两个 update/draw 驱动源**（宿主帧泵 + 旧节拍器），
+这是 T16 要拆除的真实缺陷，而非"天然不存在"的风险。T16 的处置：`StelMainView::stopLegacyFrameTimer()`
+（宿主接管时显式停表）+ `drawEnded()` 内的停表守卫（防复活）+ AC-7 判据（可观测）。
 
 ### 1.3 场景图侧
 
@@ -126,7 +142,7 @@ setTimeRate(0)                    ← 架空引擎墙钟推进（updateTime 仍�
 
 | 源 | 判定 | 去向 |
 |----|------|------|
-| fpsTimer + drawEnded 调频（W1/W2） | 接管→拆除 | QML 帧泵（M1）已替代；T15 起旧路径仅 QWidget 形态 |
+| fpsTimer + drawEnded 调频（W1/W2） | 接管→**拆除**（T16 落实） | QML 帧泵（M1）替代。⚠️ 注意：本表原写"仅 QWidget 形态"，但 T16 实测该路径在合流形态**仍在跑**（见文首勘误）；T16 用 `stopLegacyFrameTimer()` + `drawEnded()` 守卫将其真正拆除 |
 | cursorTimeoutTimer（W3） | 拆除 | QML 光标策略 |
 | screensaverInhibitorTimer（W4） | 保留 | AppFacade 托管 |
 | 模块辅助定时器（W5） | 保留 | 不动 |

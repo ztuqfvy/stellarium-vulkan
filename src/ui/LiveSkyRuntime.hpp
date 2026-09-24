@@ -52,6 +52,7 @@
 class QTimer;
 class QSettings;
 class StelMainView;
+class StelCore;
 
 namespace stelapp {
 
@@ -66,6 +67,12 @@ class FrameMailbox;
 //!   - 暂停（scale=0）冻结 JD 但帧泵照跑，恢复无跳变（闭式公式做不到）；
 //!   - 默认 scale=1 时与旧公式数值等价（同起点同速率，仅累计浮点路径不同），
 //!     DYN/长跑判据不受影响。
+//!
+//! T16：**本类不再持有时钟状态**。T15 的 m_jdAccum/m_lastSim/m_simScale 全部上移到
+//! 引擎内的单一真源（StelCore 的 StelClockController）：
+//!   - 帧泵只做两件事：`core->advanceSimClock(dt)` 与 `renderOneFrame`；
+//!   - ISimPacing 的四个方法变成对引擎时钟的**纯投影**（读/写都落在引擎上）。
+//! 这样插件/脚本/GUI 的 core->setJD 与宿主推进共享同一个 JD，前者不再被后者拽回。
 class LiveSkyRuntime : public IFrameProducer, public ISimPacing
 {
 public:
@@ -118,10 +125,13 @@ public:
     ProducerCounters counters() const override;
 
     // ── ISimPacing（AppFacade 暂停/继续 + 速率；仅 GUI 线程）──────────────────
+    // T16：以下四个方法都是对**引擎仿真时钟**的投影，本类不再持有对应状态。
+    // 于是"暂停"只有一个真源：无论经 AppFacade 还是经插件/脚本调 setTimeRate，
+    // 落点都是同一个 StelClockController。
     void setSimScale(double scale) override;
-    double simScale() const override { return m_simScale; }
+    double simScale() const override;
     void setSimRate(double rate) override;
-    double simRate() const override { return m_cfg.simRate; }
+    double simRate() const override;
 
 private:
     void pumpTick();
@@ -130,11 +140,7 @@ private:
     Config m_cfg;
     QTimer *m_timer = nullptr;
     QElapsedTimer m_simClock;
-    double m_jd0 = 0.0;
-    // T15：累计推进状态（取代闭式公式 jd0+sim×simRate）
-    double m_jdAccum = 0.0;    //!< 当前累计 JD（渲染回调写引擎的值）
-    double m_lastSim = 0.0;    //!< 上一次 pumpTick 的 sim 值（dtWall 来源）
-    double m_simScale = 1.0;   //!< 推进比例（0=暂停）
+    double m_jd0 = 0.0;        //!< 仿真起点 JD（仅用于启动日志对账）
     quint64 m_windowFrames = 0;
     double m_windowStart = 0.0;
     double m_lastWindowFps = 0.0;
@@ -142,6 +148,8 @@ private:
     // 引擎侧对象（boot 创建，进程退出路径负责；本类不销毁引擎）
     QSettings *m_confSettings = nullptr;
     StelMainView *m_mainView = nullptr;
+    //! T16：仿真时钟真源所在（不持有所有权）。start() 后非空。
+    StelCore *m_core = nullptr;
     std::unique_ptr<LegacySkyHost> m_host;
 };
 

@@ -28,6 +28,8 @@
 #include "StelPropertyMgr.hpp"
 #include "SolarSystem.hpp"
 #include "Dithering.hpp"
+// T16：单一仿真时钟。值成员，需完整类型（类只有 4 个字长状态，包含成本可忽略）。
+#include "StelClockController.hpp"
 #include <QString>
 #include <QStringList>
 #include <QTime>
@@ -598,6 +600,36 @@ public slots:
 
 	void revertTimeDirection(void);
 
+	// ── T16：单一仿真时钟（时钟所有权收编）───────────────────────────────────
+	//! 设计动机见 StelClockController.hpp 头注，落地结论见
+	//! docs/T16_SINGLE_SIM_CLOCK.zh_CN.md。
+	//!
+	//! 两种模式（同一时刻只有一个推进源）：
+	//!   · EngineWallClock（默认）—— 旧形态。updateTime 每 tick 读墙钟，
+	//!     JD = 锚点 + 墙钟差 × 速率。与 T16 之前逐位一致。
+	//!   · HostDriven —— 合流形态。JD 由宿主帧泵经 advanceSimClock 单点推进，
+	//!     updateTime **不读墙钟**。
+	//! 合流宿主（QML+Vulkan）必须在帧泵启动前、引擎引导之后调用
+	//! setSimClockHostDriven(true)；旧宿主不应调用（保持默认即可）。
+	bool isSimClockHostDriven() const;
+	//! 切线（幂等）。切入 HostDriven 时以当前 JD 为仿真起点，避免切换瞬间跳变。
+	void setSimClockHostDriven(bool hostDriven);
+
+	//! 宿主帧泵推进（仅 HostDriven 模式生效）。dtWallSeconds 为墙钟秒差（非负）。
+	//! 实际推进量 = dtWall × getTimeRate() × getSimClockScale()。
+	//! 注释：速率复用引擎既有 timeSpeed 而非另设字段——插件调 setTimeRate(60)
+	//! 在 HostDriven 下即"宿主按 60 倍推进"，插件无需知道宿主存在（零改造）。
+	void advanceSimClock(double dtWallSeconds);
+
+	//! 推进比例：1=正常，0=暂停（帧泵照跑、JD 冻结）。负值钳为 0。
+	//! 与 timeSpeed==0 的区别：暂停**保留**速率，恢复后不重设速率。
+	void setSimClockScale(double scale);
+	double getSimClockScale() const;
+	//! 仿真时钟当前 JD（只读投影，两模式下的唯一真源）。
+	double getSimClockJD() const;
+	//! 时钟模式名（诊断/自检用）。
+	QString getSimClockModeName() const;
+
 	//! Increase the time speed
 	void increaseTimeSpeed();
 	//! Decrease the time speed
@@ -1020,6 +1052,9 @@ private:
 	QString startupTimeMode;
 	qint64 milliSecondsOfLastJDUpdate;    // Time in milliseconds when the time rate or time last changed
 	double jdOfLastJDUpdate;         // JD when the time rate or time last changed
+	// T16：单一仿真时钟。HostDriven 模式下它是 JD 的唯一真源；
+	// EngineWallClock 模式下它是墙钟推进结果的镜像（便于诊断与模式切换无跳变）。
+	StelClockController simClock;
 
 	DitheringMode ditheringMode = DitheringMode::Color888;
 

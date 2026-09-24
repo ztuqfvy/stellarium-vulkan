@@ -52,6 +52,9 @@ SET(stellarium_lib_SRCS
      core/SphericMirrorCalculator.hpp
      core/StelApp.cpp
      core/StelApp.hpp
+     # T16：单一仿真时钟（纯逻辑类，无 GL / 无 QObject 依赖）
+     core/StelClockController.cpp
+     core/StelClockController.hpp
      core/StelCore.cpp
      core/StelCore.hpp
      core/StelFileMgr.cpp
