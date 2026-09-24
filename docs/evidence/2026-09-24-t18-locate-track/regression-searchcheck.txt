@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 84 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 81 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
@@ -139,7 +139,6 @@ Oculars::validateAndLoadIniFile() found existing ini file version 3.1
 Loaded plugin "Satellites"
 [Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Satellites/satellites.json
 Satellite has invalid orbit: "STARLINK-4451" "53492"
-Satellite has invalid orbit: "STARLINK-31079" "58598"
 Loaded plugin "SolarSystemEditor"
 Using the ssystem_minor.ini file that already exists in the user directory...
 Loaded 895910 discovery circumstances records for minor planets...
@@ -161,9 +160,9 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.70621"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.73699"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.70621，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.73699，时钟=HostDriven）
 StelObject type "NoSuchType" unknown
 SEARCHCHECK: 26/26 PASS（含纵向判据 V1–V9）
 SEARCHCHECK: PASS SRC-01a 请求编号单调递增（1 → 2）
@@ -190,7 +189,7 @@ SEARCHCHECK: PASS T17-V9 行越界 → 返回 false 且信息页保持归零，�
 SEARCHCHECK: PASS SRC-04c 按 stableId 跨查询回查，重新选中同一天体（HIP 32349）
 SEARCHCHECK: PASS T17-V4 displayName 非空（Sirius）
 SEARCHCHECK: PASS T17-V5 typeName 非空（Star）
-SEARCHCHECK: PASS T17-V6 infoText 非空（881 字符）
+SEARCHCHECK: PASS T17-V6 infoText 非空（880 字符）
 SEARCHCHECK: PASS T17-V7 infoMap 非空（54 项）
 SEARCHCHECK: PASS T17-V8 stableId 形如 type:id（Star:HIP 32349 A）
 SEARCHCHECK: VERDICT=PASS

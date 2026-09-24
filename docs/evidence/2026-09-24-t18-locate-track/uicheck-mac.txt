@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 87 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 82 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
@@ -160,16 +160,21 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.73712"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.73677"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.73712，时钟=HostDriven）
-DYNCHECK: 生产者=engine(真实引擎)
-DYNCHECK: 动态帧通路自检：7 判据，2 失败
-DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[13.3s起]稳态 49.9 fps（下限 30.0）；全程累计 750 帧（含 warmup）
-DYNCHECK: D1-C02 FAIL 显示 尾窗稳态 0.0 fps（下限 20.0）；全程推进 0 帧
-DYNCHECK: D1-C03 PASS 邮箱 published=750 dropped=0（≤5%）
-DYNCHECK: D1-C04 PASS 邮箱帧龄最大 187ms（<500ms；降速段含 ~200ms 属预期）
-DYNCHECK: D1-C05 PASS 上传 count=2 mean=0.48ms max=0.56ms（<100ms）
-DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
-DYNCHECK: D1-C07 FAIL 降速窗内 degraded=false（须 true）/ 恢复后 degraded=false（须 false）
-DYNCHECK: VERDICT=FAIL
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.73677，时钟=HostDriven）
+UICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，共 8 条判据，每相位 300ms）
+Dubious result: Landscape  "Hurricane"  not calibrated. Opacity test represents mathematical horizon only.
+UICHECK: UI-01 搜索页控件锚点可寻且可见（locateButton=有 untrackButton=有 statusLabel=有，visible=true）：OK
+UICHECK: UI-02 无选中时两个按钮均禁用（enabled: 定位=false 取消=false）：OK
+UICHECK: UI-fixture 选中 Moon（stableId=Planet:Moon）
+UICHECK: UI-03 选中后定位按钮可用 / 取消跟踪仍禁用（enabled: 定位=true 取消=false）：OK
+UICHECK: UI-note 向窗口投递真实点击 @(425.5,541.0)——定位按钮尺寸 835×32，窗口 960×640，窗口受理=true
+UICHECK: UI-04 真实点击「定位并跟踪」→ 引擎 isTracking=true trackedName="Moon"（期望 "Moon"）：OK
+UICHECK: UI-05 跟踪中状态文案="正在跟踪：Moon"（应以「正在跟踪：」开头且含 Moon）：OK
+UICHECK: UI-06-note 负控靶点 = 状态 Label 中心 @(475.0,569.5)，Label 尺寸 934.0×13.0（非按钮，无交互处理器）
+UICHECK: UI-06 负控：点在非按钮控件上 → isTracking=true trackedName="Moon"（应与此前 "Moon" 相同）：OK
+UICHECK: UI-07 真实点击「取消跟踪」→ isTracking=false：OK
+UICHECK: UI-08 取消跟踪后文案=""（不得再声称正在跟踪）：OK
+UICHECK: 判据 8/8
+UICHECK: VERDICT=PASS

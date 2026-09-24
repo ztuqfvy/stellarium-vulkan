@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 87 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 77 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
@@ -139,7 +139,6 @@ Oculars::validateAndLoadIniFile() found existing ini file version 3.1
 Loaded plugin "Satellites"
 [Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Satellites/satellites.json
 Satellite has invalid orbit: "STARLINK-4451" "53492"
-Satellite has invalid orbit: "STARLINK-31079" "58598"
 Loaded plugin "SolarSystemEditor"
 Using the ssystem_minor.ini file that already exists in the user directory...
 Loaded 895910 discovery circumstances records for minor planets...
@@ -161,16 +160,16 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.70697"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.73775"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.70697，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.73775，时钟=HostDriven）
 DYNCHECK: 生产者=engine(真实引擎)
-DYNCHECK: 动态帧通路自检：7 判据，0 失败
-DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[13.3s起]稳态 49.6 fps（下限 30.0）；全程累计 732 帧（含 warmup）
-DYNCHECK: D1-C02 PASS 显示 尾窗稳态 49.4 fps（下限 20.0）；全程推进 684 帧
-DYNCHECK: D1-C03 PASS 邮箱 published=732 dropped=0（≤5%）
-DYNCHECK: D1-C04 PASS 邮箱帧龄最大 189ms（<500ms；降速段含 ~200ms 属预期）
-DYNCHECK: D1-C05 PASS 上传 count=591 mean=0.24ms max=5.09ms（<100ms）
+DYNCHECK: 动态帧通路自检：7 判据，2 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[13.3s起]稳态 49.9 fps（下限 30.0）；全程累计 729 帧（含 warmup）
+DYNCHECK: D1-C02 FAIL 显示 尾窗稳态 0.0 fps（下限 20.0）；全程推进 0 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=729 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 188ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=2 mean=0.42ms max=0.56ms（<100ms）
 DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
-DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
-DYNCHECK: VERDICT=PASS
+DYNCHECK: D1-C07 FAIL 降速窗内 degraded=false（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=FAIL

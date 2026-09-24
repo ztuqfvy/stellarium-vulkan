@@ -1,0 +1,18 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 74 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+DYNCHECK: 生产者=test(替身场景)
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+DYNCHECK: 动态帧通路自检：7 判据，2 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[5.3s起]稳态 54.0 fps（下限 36.0）；全程累计 324 帧（含 warmup）
+DYNCHECK: D1-C02 FAIL 显示 尾窗稳态 0.0 fps（下限 24.0）；全程推进 70 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=324 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 184ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=65 mean=0.24ms max=0.50ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 FAIL 降速窗内 degraded=false（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=FAIL

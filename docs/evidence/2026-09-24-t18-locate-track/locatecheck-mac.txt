@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 85 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 113 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
@@ -102,10 +102,10 @@ Loading DSO data ...
 [...] Stellarium DSO Catalog, version 3.23 (standard edition)
 Loaded 94899 DSO records
 Loading DSO name data ...
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
 Loaded 1361 / 1388 DSO name records successfully
 No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
 Loading DSO outline data ...
-qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
 Loaded 100 DSO outline records successfully
 Loading DSO discovery data ...
 Loaded 183 / 183 DSO discovery records successfully
@@ -139,7 +139,6 @@ Oculars::validateAndLoadIniFile() found existing ini file version 3.1
 Loaded plugin "Satellites"
 [Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Satellites/satellites.json
 Satellite has invalid orbit: "STARLINK-4451" "53492"
-Satellite has invalid orbit: "STARLINK-31079" "58598"
 Loaded plugin "SolarSystemEditor"
 Using the ssystem_minor.ini file that already exists in the user directory...
 Loaded 895910 discovery circumstances records for minor planets...
@@ -161,23 +160,23 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.70589"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.73658"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.70589，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.73658，时钟=HostDriven）
 Dubious result: Landscape  "Hurricane"  not calibrated. Opacity test represents mathematical horizon only.
 LOCATECHECK: T18 定位/跟踪自检全过（守卫/无选中不谎报/定位落地/跟踪跟随/放开不跟随/关跟踪/幂等重选/家园行星）
 LOCATECHECK: LOC-01 家园行星守卫谓词（同名拒绝/异名放行/空串不误拒/大小写严格）：OK
 LOCATECHECK: LOC-02 无选中时 setTracking(true) 拒绝（返回 false，理由 no-selection，isTracking=false）：OK
 LOCATECHECK: LOC-fixture 选中 Moon（stableId=Planet:Moon）：OK
-LOCATECHECK: LOC-info 基准 JD=2461307.70589，视口中心偏移等效 0.0000°（跟踪期望夹角=|偏移|）
+LOCATECHECK: LOC-info 基准 JD=2461307.73658，视口中心偏移等效 0.0000°（跟踪期望夹角=|偏移|）
 LOCATECHECK: LOC-03a locateSelected(true) 返回 true，理由 ok：OK
-LOCATECHECK: LOC-03b 自动移动结束后锁定夹角 0.0475°（期望 |0.0000|±0.50）：OK
-LOCATECHECK: LOC-04 (a) 跳 0.25 天后目标 AltAz 变化 127.67°（门槛 >5.0，证明世界确实动了）：OK
-LOCATECHECK: LOC-04 (b) 跟踪中目标到视向夹角 0.0747°（期望 |0.0000|±0.50）：OK
+LOCATECHECK: LOC-03b 自动移动结束后锁定夹角 0.0352°（期望 |0.0000|±0.50）：OK
+LOCATECHECK: LOC-04 (a) 跳 0.25 天后目标 AltAz 变化 127.65°（门槛 >5.0，证明世界确实动了）：OK
+LOCATECHECK: LOC-04 (b) 跟踪中目标到视向夹角 0.1468°（期望 |0.0000|±0.50）：OK
 LOCATECHECK: LOC-05a locateSelected(false) 只归中不跟踪（返回 true，isTracking=false）：OK
-LOCATECHECK: LOC-05b-note 归中等待的 2.5s 内天空自转 82.02°（自动移动 1.5s 追完之后视向即固定，余量即 off0 的来源）
-LOCATECHECK: LOC-05 (a2) 不跟踪时同样的跳变下目标 AltAz 变化 127.19°（门槛 >5.0，证明对照组的信号同样存在）：OK
-LOCATECHECK: LOC-05 (c) 不跟踪时夹角 32.9678° → 跳变后 158.17°（门槛 >5.0，与 LOC-04(b) 的 0.0747° 形成判别性对照）：OK
+LOCATECHECK: LOC-05b-note 归中等待的 2.5s 内天空自转 81.99°（自动移动 1.5s 追完之后视向即固定，余量即 off0 的来源）
+LOCATECHECK: LOC-05 (a2) 不跟踪时同样的跳变下目标 AltAz 变化 127.32°（门槛 >5.0，证明对照组的信号同样存在）：OK
+LOCATECHECK: LOC-05 (c) 不跟踪时夹角 32.9378° → 跳变后 158.39°（门槛 >5.0，与 LOC-04(b) 的 0.1468° 形成判别性对照）：OK
 LOCATECHECK: LOC-06 setTracking(false)（返回 true，isTracking=false，trackedName 空=true）：OK
 LOCATECHECK: LOC-07 幂等重选不打断跟踪（跟踪中「Moon」→ 重选同一 stableId 返回 true → 跟踪 true）：OK
 LOCATECHECK: LOC-08 家园行星端到端（选中 "Earth" 后 locateSelected 返回 false，理由 home-planet，isTracking=false）：OK

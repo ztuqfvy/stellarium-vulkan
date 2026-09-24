@@ -1812,6 +1812,13 @@ rc 文件未生成）→ 改用 `schtasks` 投递（脱离 SSH 生命周期）�
 - `src/app/ObjectInfoModel::selectByStableId`：**幂等闸**（已选中同一 `(type,id)` 时不发
   `setSelectedObject`）——修掉"重选同一对象静默取消跟踪"。
 - `src/app/LocateCheck.{hpp,cpp}`（新）：14 项自检，线性步骤表驱动器 + 成对判据。
+- `src/ui/main.cpp` 内新增 **`STELQUICK_UI_CHECK=1`（8 项）**：**从最外层注入**——
+  按 `objectName` 找真实 QML 控件 → 向 `QQuickWindow` 投递真实鼠标按下/抬起 →
+  断言引擎状态真的变了；反向再读 QML 控件真实属性（`enabled` / `Label.text`）；
+  含一条**负控**（点在非按钮控件上，跟踪状态须纹丝不动）。
+  动机：`LocateCheck` 走的是 C++ 公共 API，**结构上测不到 QML `onClicked` 接线**
+  （否则就是 T15 "`Keys` 挂错类型变死代码、两个任务后才被发现"的重演）。
+  `SearchPage.qml` 为此给两个按钮与状态 Label 补了 `objectName` 作锚点。
 - `src/ui/qml/SearchPage.qml` / `MainWindow.qml`：定位/跟踪按钮与状态行；双击结果行
   = **先确认选中成功**再定位。
 - `tools/t18-win-longrun.ps1`（新）：把 T13 那次"临时手写、用完即丢"的 Windows 长跑
@@ -1827,7 +1834,7 @@ rc 文件未生成）→ 改用 `schtasks` 投递（脱离 SSH 生命周期）�
 | 跟踪分支还加视口中心偏移 `viewportCenterOffset[1] * currentFov * π/180` | `StelMovementMgr.cpp:1264` |
 | `setFlagTracking(false)` 天然幂等（`!b \|\| !getWasSelected()` 都走清零分支） | `StelMovementMgr.cpp:1388-1395` |
 
-### 3. 两个真实缺陷（都不是 T18 引入的，是读源码/跑判据发现的）
+### 3. 三个真实缺陷（都不是 T18 引入的，是读源码/跑判据发现的）
 
 **① 引擎的跟踪标志泄漏。** `StelObjectMgr::unSelect()` **先**清
 `lastSelectedObjects`（`StelObjectMgr.cpp:541`）**再**发 `selectedObjectChanged`（542）；
@@ -1848,6 +1855,11 @@ rc 文件未生成）→ 改用 `schtasks` 投递（脱离 SSH 生命周期）�
 处置：`LocateCheck` 改为**只 append、由 `main.cpp` 单点打印**（对齐 T17 `SearchModelCheck`
 的风格），并删掉不再需要的 `#include <QDebug>`；`AppFacadeCheck` 保持原样以维持跨任务可比性，
 只在证据 README 里记明。
+
+**④ 验收设计本身的一个洞：只验 C++ 侧，"QML 接线是否活着"没人验。** 计划里 T18-C
+的验收方式是"人工跑一眼 UI"——不可复跑，而且正是**看不见死代码**的那种检查方式。
+处置即上面的 `STELQUICK_UI_CHECK`（8 判据，连跑 3 次稳定 PASS）；人工看一眼降级为辅助。
+判据明细见交付文档 §4.1b，日志见证据包 `uicheck-mac.txt`。
 
 ### 4. 判据设计里三处"防假绿"的硬约束
 
@@ -1874,28 +1886,40 @@ rc 文件未生成）→ 改用 `schtasks` 投递（脱离 SSH 生命周期）�
 | SEARCHCHECK（回归） | **26/26 PASS** —— `selectByStableId` 被改过，**最关键的一项** |
 | A2（回归） | 12 探针 PASS / 失败 0 项 |
 | S3（回归） | 8/8 PASS |
-| DYN（回归） | **2/3 PASS（间歇）** —— 见 §6 |
+| UI 层端到端（`uicheck-mac`） | **8/8 PASS**（objectName 锚点 + 窗口真实鼠标事件） |
+| DYN（回归，引擎 / 替身两半） | **0/3 与 0/3 PASS（环境不可测）** —— 见 §6 |
 | Windows 30 分钟长跑（`main@6bce85d`） | **VERDICT=PASS rc=0，SL-C01..C11 全绿**，设备丢失 0 次 |
 
-### 6. DYN 的 `rc=8`：定性成"既有间歇"，不是 T18 的退化（**别读成洗绿**）
+### 6. DYN 的 `rc=8`：定性成"环境敏感"，不是 T18 的退化（**别读成洗绿**）
 
 首轮全量回归 DYN 出红（`D1-C02 尾窗稳态 0.0 fps；全程推进 0 帧`、`D1-C07 degraded=false`），
 而 T15/T16/T17 三次同项都是 7/7 PASS。做了两个判别性实验：
 
 | 实验 | 结果 |
 |---|---|
-| **换生产者**：同一 T18 二进制，去掉引擎（替身生产者） | **PASS**（28.0 fps / 223 帧 / 降级正确）⇒ QML 侧本身没问题 |
+| **换生产者**（低负载）：同一 T18 二进制，去掉引擎（替身生产者） | **PASS**（28.0 fps / 223 帧 / 降级正确）⇒ 该次 QML 侧没问题 |
 | **换二进制**：`git stash` 掉 T18 全部改动 → 重建 T17 基线 → 9 次；恢复 T18 → 重建 → 9 次 | 基线 **6 PASS / 3 FAIL**；T18 **6 PASS / 3 FAIL** ⇒ **失败率相同（33%）** |
+| **换生产者**（同日下午高负载复测） | 替身 **4/4 FAIL**、引擎 **0/3 FAIL** ⇒ 停摆与引擎共存**无关** |
 
-⇒ **本机（M3 / macOS / Metal RHI）既有间歇缺陷**：真实引擎与 QML 同进程时 QML 场景图
-偶发停摆——生产者照跑 50 fps、邮箱帧龄个位数毫秒，而**日志里没有任何丢设备痕迹**
+⇒ **本机（M3 / macOS / Metal RHI）既有的环境敏感现象**：QML 场景图偶发/常发停摆
+——生产者照跑 50 fps、邮箱帧龄个位数毫秒，而**日志里没有任何丢设备痕迹**
 （`vkDebug` / `VK_ERROR` / `device lost` / `swapchain` 全无），显示侧推进 0~364 帧后停住。
-机械旁证：T18 对 `main.cpp` 只有 4 个 hunk，**DYN 分支逐字节未变**；
+
+⚠️ **"替身必 PASS"这条已被同日下午的复测推翻**：高负载（Spotlight 批量索引 + 装包，
+load avg ≈ 5.2、`displaysleep=2`）下替身同样全败；13:3x 两侧更是**全程 0 帧**，
+`caffeinate -dimsu` 也无效（最可能是**会话锁屏**——锁屏下没有 app 能拿到 drawable）。
+**这反而给出比 A/B 更干净的论证**：DYN 用 `startPage="sky"`、替身又不 boot 引擎
+⇒ 替身那一跑的**执行路径上不含 T18 的任何一个字节**，它照样失败 ⇒ 与本次改动
+**在代码层面就无因果关系**。
+
+机械旁证：T18 对 `main.cpp` 有 5 个 hunk，**DYN 分支逐字节未变**；
 `SkyViewport.*` / `DynFrameCheck.*` / `LiveSkyRuntime.*` 一个字节没碰。
 
-处置（判据协议，不是改代码）：`t18-verify.sh` 的 DYN 段跑 3 次、如实报 `N/3`，
-**不跑"直到绿"**；零退化的依据是**同口径 A/B 的失败率相同**；失败样本照实归档。
-原始记录见证据包 `dyn-ab-baseline-vs-t18.txt`。
+处置（判据协议，不是改代码）：`t18-verify.sh` 的 DYN 段**同时跑引擎与替身两半**，
+各报 `N/3`、附 `env_note` 环境注记，**不跑"直到绿"**；若替身对照也失败（尤其
+"全程 0 帧"），该读数视为**"仪器测不到"**、**不作为退化证据**，但**也不改写成
+INVALID**（原始 FAIL 照实保留）。零退化的依据是**同口径 A/B** + 上面那条因果论证。
+原始记录见证据包 `dyn-ab-baseline-vs-t18.txt`（含 §6 高负载复测）。
 
 顺带得到一条性质：本次三次里有一次 `C02 FAIL 但 C07 PASS`（显示先跑 343 帧、
 跨过降速窗后才停）⇒ **C07 不是 C02 的冗余项**。

@@ -1,7 +1,9 @@
 locatecheck-mac rc=0
+uicheck-mac rc=0
 regression-clockcheck rc=0
 regression-actioncheck rc=0
 regression-searchcheck rc=0
 regression-a2-metal rc=0
-regression-dyn-engine-metal 2/3 PASS（间歇，见 dyn-ab-baseline-vs-t18.txt）
+regression-dyn-engine-metal 0/3 PASS（间歇，见 dyn-ab-baseline-vs-t18.txt）
+regression-dyn-stub-metal 0/3 PASS（判别性对照：替身不含 T18 代码）
 regression-s3-stela3 rc=0

@@ -136,12 +136,18 @@ Item {
                 spacing: 4
 
                 Button {
+                    // objectName 是给最外层注入判据用的锚点（UICHECK U-03/U-06）：
+                    // C++ 侧按名字找到这个真实控件、向窗口投递真实鼠标事件。
+                    // 不用"直接调 appFacade.locateSelected"来测——那测不到 onClicked
+                    // 这段接线是不是死代码（T15 的 Keys 挂载就是这么埋了两个任务的）。
+                    objectName: "locateButton"
                     Layout.fillWidth: true
                     text: "定位并跟踪"
                     enabled: objectInfo.hasSelection
                     onClicked: appFacade.locateSelected(true)
                 }
                 Button {
+                    objectName: "untrackButton"
                     text: "取消跟踪"
                     enabled: appFacade.tracking
                     onClicked: appFacade.setTracking(false)
@@ -149,6 +155,7 @@ Item {
             }
 
             Label {
+                objectName: "locateStatusLabel"
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 font.pixelSize: 11

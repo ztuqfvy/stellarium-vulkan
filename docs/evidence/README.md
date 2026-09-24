@@ -79,7 +79,7 @@ python -c "b=open('run_evidence_matrix.cmd','rb').read(); print(sum(1 for x in b
 | `2026-09-24-t15-command-path/` | T15 命令通路：ACTIONCHECK 自检、A2/DYN/S3 回归、短冒烟（含一次**低电量模式污染**的留证）。索引见该目录 `README.md` |
 | `2026-09-24-t16-sim-clock/` | T16 单一仿真时钟：CLOCKCHECK 纯逻辑自检 + 命令通路回归 + 90 s 冒烟（含一次**电池降频**留证）。索引见该目录 `README.md` |
 | `2026-09-24-t17-models/` | T17 两个模型：SEARCHCHECK 26/26、ACTIONCHECK（含新 AC-12）、CLOCKCHECK/A2/DYN/S3 回归、三轮构建日志（`.log.gz`）。索引见该目录 `README.md` |
-| `2026-09-24-t18-locate-track/` | T18 定位与跟踪：LOCATECHECK **14/14**、SEARCHCHECK 26/26 等零退化回归，**另含 DYN 的定性 A/B 记录**（`dyn-ab-baseline-vs-t18.txt`：T17 基线 6/9 与 T18 6/9 失败率相同 ⇒ 判定既有间歇、非退化；DYN 因此改为跑 3 次报 `N/3`）。索引见该目录 `README.md` |
+| `2026-09-24-t18-locate-track/` | T18 定位与跟踪：LOCATECHECK **14/14**、**UICHECK 8/8**（UI 层端到端：objectName 锚点 + 窗口真实鼠标事件 + 负控）、SEARCHCHECK 26/26 等零退化回归，**另含 DYN 的定性记录**（`dyn-ab-baseline-vs-t18.txt`：T17 基线 6/9 与 T18 6/9 失败率相同；§6 记录同日高负载复测下**替身与引擎同时全败**——替身路径不含 T18 代码，故判定与本次改动无因果）。DYN 因此改为**跑引擎与替身两半、各报 `N/3`**，并按 `env_note` 记录环境。索引见该目录 `README.md` |
 | `2026-09-24-windows-stage23/` | Windows 支线阶段 2/3：合流构建与判定性实验（`r2_3a_dyn_engine.log`、`r2_3b_longrun.log`、逐秒/逐帧 CSV）。索引见该目录 `README.md` |
 | `2026-09-24-windows-30min/` | Windows **30 分钟正式长跑 ×2**：`t13-win-30min.*`（W-T13，`0f2faae`）与 `t17-win-30min.*`（**W-T17，`6bce85d`，SL-C01..C11 全绿 rc=0**），附 §3 日志编码恢复配方。索引见该目录 `README.md` |
 

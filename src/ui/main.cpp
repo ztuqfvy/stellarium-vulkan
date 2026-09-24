@@ -17,6 +17,11 @@
  *                                  T13 起生产者可切：STELQUICK_LONGRUN_PRODUCER=engine
  *                                  走**真实引擎**（合流形态长跑），默认替身场景。
  *   STELQUICK_LIVE=1             → 手动查看动态帧流（人眼观察，不自动退出）。
+ *   STELQUICK_LOCATE_CHECK=1     → T18 定位/跟踪自检（**C++ 侧**：守卫/锁定角距/
+ *                                  推进时间判别性对照，走 AppFacade 公共 API）。
+ *   STELQUICK_UI_CHECK=1         → T18 **UI 层端到端**自检：按 objectName 找真实
+ *                                  QML 控件 + 向窗口投递真实鼠标事件，断言引擎状态
+ *                                  因此改变（否则"QML 接线是死代码"测不出来）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -68,7 +73,9 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QQuickItem>
 #include <QQuickWindow>
+#include <QMouseEvent>
 #include <QSGRendererInterface>
 #include <QTimer>
 #include <QUrl>
@@ -447,6 +454,306 @@ void runInteractionTest(QGuiApplication *app, QQuickWindow *window, int baseW, i
                 test->steps, test->steps);
     std::fflush(stdout);
 }
+
+#if defined(STELQUICK_HAS_ENGINE) && defined(STELQUICK_WIDGETS_HOST)
+// ══════════════════════════════════════════════════════════════════════════
+// UI 层端到端自检：STELQUICK_UI_CHECK=1
+//
+// **为什么必须单独有这一条**（T15 血泪教训的同类风险，见 MEMORY 陷阱 3）：
+//   LocateCheck（src/app）走的全是 AppFacade 的 C++ 公共 API。它证明得了"定位
+//   逻辑对"，但**证明不了** QML 里的 `onClicked: appFacade.locateSelected(true)`
+//   是活的 —— 万一名字写错、或按钮压根没接上，C++ 侧自检照样 14/14 全绿。
+//   T15 正是这么栽的：`Keys` 是 **Item** 的附加属性，挂在 `ApplicationWindow`
+//   （继承 Window）上从未生效，QML 键盘路由整段是死代码，而 AC-5 抓不到
+//   （它直接调 routeKey）——埋了两个任务才被人肉发现。
+//
+// 所以本检查**从最外层注入**：
+//   1. 按 `objectName` 找到**真实的 QML 控件**（找不到即接线断了）；
+//   2. 向 QQuickWindow 投递**真实的鼠标按下/抬起事件**（不是直接 emit clicked()、
+//      也不是直接调 AppFacade —— 那两种都测不到 onClicked 这段接线）；
+//   3. 断言**引擎状态真的变了**（isTracking / trackedName）；
+//   4. 反向也验：读 QML 控件的真实属性（enabled / Label.text），证明 C++ → QML
+//      的绑定同样活着，而不是硬编码。
+//
+// 负控（UI-06）：往一个**非按钮**控件（状态 Label）中心点一下，tracking 必须纹丝不动。
+//   没有这一条，UI-04 的 PASS 也可能只是"点哪都算"。
+//
+// 判据 8 条：UI-01..08。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE
+//   （无可用 fixture —— 环境条件，不是接线缺陷，照实报而不伪装通过）。
+// ══════════════════════════════════════════════════════════════════════════
+
+struct UiLocateCheck
+{
+    QQuickWindow *window = nullptr;
+    stelapp::AppFacade *facade = nullptr;
+    QQuickItem *locateButton = nullptr;
+    QQuickItem *untrackButton = nullptr;
+    QQuickItem *statusLabel = nullptr;
+    QStringList details;
+    int passed = 0;
+    int total = 0;
+    int phase = 0;
+    int tickMs = 300;        // 相位间留一拍：让布局 polish 与 QML 重绑定真正发生
+    QString expectName;      // 被选中天体的显示名 —— trackedName 的期望值
+    QString trackedBefore;   // 负控前的 trackedName 快照
+    QTimer *timer = nullptr;
+};
+
+void uiLocateMark(UiLocateCheck *c, bool ok, const QString &line)
+{
+    ++c->total;
+    if (ok)
+        ++c->passed;
+    c->details.append(line
+                      + (ok ? QStringLiteral("：OK") : QStringLiteral("：FAIL")));
+}
+
+//! 控件中心点在**场景坐标**（= 窗口坐标系）里的位置。
+QPointF uiLocateCenter(QQuickItem *item)
+{
+    return item->mapToScene(QPointF(item->width() / 2.0, item->height() / 2.0));
+}
+
+//! 向窗口投递一次真实鼠标点击（按下 + 同点抬起）。返回事件是否被窗口受理。
+//! 不用 QtTest：本项目未引入该依赖，且 AC-12 已确立"从窗口投递真实事件"的先例。
+bool uiLocateClick(QQuickWindow *window, const QPointF &scenePos)
+{
+    const QPoint global = window->mapToGlobal(scenePos.toPoint());
+    QMouseEvent press(QEvent::MouseButtonPress, scenePos, scenePos,
+                      QPointF(global), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QMouseEvent release(QEvent::MouseButtonRelease, scenePos, scenePos,
+                        QPointF(global), Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(window, &press);
+    QCoreApplication::sendEvent(window, &release);
+    return press.isAccepted() || release.isAccepted();
+}
+
+//! 经 AppFacade 公共 API 挑一个可用 fixture（与 LocateCheck 同一候选表/同一口径）。
+//! 引擎聚合结果按**名称字典序**排序（T17 实测），故必须按下标逐个比对名字。
+bool uiLocatePickFixture(stelapp::AppFacade *facade, QString *nameOut)
+{
+    static const char *const candidates[] = {"Moon", "Jupiter", "Sirius", "Vega", "Polaris"};
+    for (const char *want : candidates)
+    {
+        const QString name = QString::fromLatin1(want);
+        const int n = facade->searchObjects(name, 8);
+        for (int i = 0; i < n; ++i)
+        {
+            if (!facade->selectSearchResult(i))
+                continue;
+            const QString en = facade->objectInfo()->englishName();
+            const QString dn = facade->objectInfo()->displayName();
+            if (en.compare(name, Qt::CaseInsensitive) != 0
+                && dn.compare(name, Qt::CaseInsensitive) != 0)
+                continue;
+            if (facade->objectInfo()->stableId().isEmpty())
+                continue;
+            *nameOut = dn.isEmpty() ? en : dn;
+            return true;
+        }
+    }
+    return false;
+}
+
+void uiLocateFinish(QGuiApplication *app, UiLocateCheck *c)
+{
+    c->timer->stop();
+    const bool pass = c->total > 0 && c->passed == c->total;
+    for (const QString &line : c->details)
+        std::printf("UICHECK: %s\n", line.toUtf8().constData());
+    std::printf("UICHECK: 判据 %d/%d\n", c->passed, c->total);
+    std::printf("UICHECK: VERDICT=%s\n", pass ? "PASS" : "FAIL");
+    std::fflush(stdout);
+    app->exit(pass ? 0 : 10);
+}
+
+void uiLocateUnavailable(QGuiApplication *app, UiLocateCheck *c, const QString &why)
+{
+    c->timer->stop();
+    for (const QString &line : c->details)
+        std::printf("UICHECK: %s\n", line.toUtf8().constData());
+    std::printf("UICHECK: %s\n", why.toUtf8().constData());
+    std::printf("UICHECK: VERDICT=UNAVAILABLE\n");
+    std::fflush(stdout);
+    app->exit(6);
+}
+
+void uiLocateAdvance(QGuiApplication *app, std::shared_ptr<UiLocateCheck> c);
+
+void uiLocateStep(QGuiApplication *app, std::shared_ptr<UiLocateCheck> c)
+{
+    switch (c->phase)
+    {
+    case 0: {
+        // ── UI-01：锚点存在 ─────────────────────────────────────────────
+        c->locateButton = c->window->findChild<QQuickItem *>(QStringLiteral("locateButton"));
+        c->untrackButton = c->window->findChild<QQuickItem *>(QStringLiteral("untrackButton"));
+        c->statusLabel = c->window->findChild<QQuickItem *>(QStringLiteral("locateStatusLabel"));
+        const bool anchors = c->locateButton && c->untrackButton && c->statusLabel;
+        uiLocateMark(c.get(), anchors && c->locateButton->isVisible(),
+                     QStringLiteral("UI-01 搜索页控件锚点可寻且可见（locateButton=%1 "
+                                    "untrackButton=%2 statusLabel=%3，visible=%4）")
+                         .arg(c->locateButton ? QStringLiteral("有") : QStringLiteral("无"),
+                              c->untrackButton ? QStringLiteral("有") : QStringLiteral("无"),
+                              c->statusLabel ? QStringLiteral("有") : QStringLiteral("无"),
+                              (c->locateButton && c->locateButton->isVisible())
+                                  ? QStringLiteral("true") : QStringLiteral("false")));
+        if (!anchors)
+        {
+            uiLocateUnavailable(app, c.get(),
+                                QStringLiteral("缺 QML 锚点：搜索页里 locateButton / "
+                                               "untrackButton / locateStatusLabel 至少一个 "
+                                               "objectName 找不到 —— 接线断了"));
+            return;
+        }
+        // 摆好"无选中"这个前置状态，下一拍再读控件的真实属性
+        c->facade->clearSelection();
+        break;
+    }
+    case 1: {
+        // ── UI-02：无选中 → 按钮被**绑定**禁用（读 QML 真实属性）────────
+        const bool locOff = c->locateButton && !c->locateButton->isEnabled();
+        const bool untOff = c->untrackButton && !c->untrackButton->isEnabled();
+        uiLocateMark(c.get(), locOff && untOff,
+                     QStringLiteral("UI-02 无选中时两个按钮均禁用（enabled: 定位=%1 取消=%2）")
+                         .arg(c->locateButton && c->locateButton->isEnabled()
+                                  ? QStringLiteral("true") : QStringLiteral("false"),
+                              c->untrackButton && c->untrackButton->isEnabled()
+                                  ? QStringLiteral("true") : QStringLiteral("false")));
+        // ── 选出一个 fixture，作为下一拍的靶子 ───────────────────────────
+        if (!uiLocatePickFixture(c->facade, &c->expectName))
+        {
+            uiLocateUnavailable(app, c.get(),
+                                QStringLiteral("无可用 fixture（Moon/Jupiter/Sirius/Vega/"
+                                               "Polaris 全部搜不到）—— 环境条件，非接线缺陷"));
+            return;
+        }
+        c->details.append(QStringLiteral("UI-fixture 选中 %1（stableId=%2）")
+                              .arg(c->expectName, c->facade->objectInfo()->stableId()));
+        break;
+    }
+    case 2: {
+        // ── UI-03：选中后定位按钮**由绑定**转为可用（C++ → QML 绑定活）──
+        const bool locOn = c->locateButton && c->locateButton->isEnabled();
+        const bool untOff = c->untrackButton && !c->untrackButton->isEnabled();
+        uiLocateMark(c.get(), locOn && untOff,
+                     QStringLiteral("UI-03 选中后定位按钮可用 / 取消跟踪仍禁用"
+                                    "（enabled: 定位=%1 取消=%2）")
+                         .arg(locOn ? QStringLiteral("true") : QStringLiteral("false"),
+                              c->untrackButton && c->untrackButton->isEnabled()
+                                  ? QStringLiteral("true") : QStringLiteral("false")));
+        // ── 真实点击（最外层注入）────────────────────────────────────────
+        const QPointF p = uiLocateCenter(c->locateButton);
+        c->details.append(QStringLiteral("UI-note 向窗口投递真实点击 @(%1,%2)——定位按钮"
+                                         "尺寸 %3×%4，窗口 %5×%6，窗口受理=%7")
+                              .arg(p.x(), 0, 'f', 1).arg(p.y(), 0, 'f', 1)
+                              .arg(c->locateButton->width(), 0, 'f', 0)
+                              .arg(c->locateButton->height(), 0, 'f', 0)
+                              .arg(c->window->width()).arg(c->window->height())
+                              .arg(uiLocateClick(c->window, p) ? QStringLiteral("true")
+                                                               : QStringLiteral("false")));
+        break;
+    }
+    case 3: {
+        // ── UI-04：点击真的把引擎推进了跟踪（QML → C++ 端到端）─────────
+        const bool tracking = c->facade->isTracking();
+        const QString tn = c->facade->trackedName();
+        const bool nameOk = !tn.isEmpty() && tn == c->expectName;
+        uiLocateMark(c.get(), tracking && nameOk,
+                     QStringLiteral("UI-04 真实点击「定位并跟踪」→ 引擎 isTracking=%1 "
+                                    "trackedName=\"%2\"（期望 \"%3\"）")
+                         .arg(tracking ? QStringLiteral("true") : QStringLiteral("false"),
+                              tn, c->expectName));
+        if (!(tracking && nameOk))
+        {
+            // 诊断（不计入判据数）：区分两种失败 ——
+            //   ① 合成的事件没落到按钮上（输入合成问题，产品无缺陷）
+            //   ② 接线本身是死代码（产品缺陷，需修 QML）
+            const bool sigOk = QMetaObject::invokeMethod(c->locateButton, "clicked");
+            c->details.append(QStringLiteral("UI-04-diag 直接 emit clicked() 返回=%1，"
+                                             "此后 isTracking=%2 —— 若此处为 true 而 "
+                                             "UI-04 为 FAIL，则缺陷在「事件没落到按钮」"
+                                             "（输入合成），反之才是 QML 接线死代码")
+                                  .arg(sigOk ? QStringLiteral("true") : QStringLiteral("false"),
+                                       c->facade->isTracking() ? QStringLiteral("true")
+                                                               : QStringLiteral("false")));
+        }
+        break;
+    }
+    case 4: {
+        // ── UI-05：状态文案跟着跟踪状态重绑（C++ → QML，且不谎报）────────
+        const QString text = c->statusLabel->property("text").toString();
+        uiLocateMark(c.get(), text.startsWith(QStringLiteral("正在跟踪：")) && text.contains(c->expectName),
+                     QStringLiteral("UI-05 跟踪中状态文案=\"%1\"（应以「正在跟踪：」开头且含 %2）")
+                         .arg(text, c->expectName));
+        c->trackedBefore = c->facade->trackedName();
+        // ── 负控：往**非按钮**控件（状态 Label）投递同一次真实点击 ───────
+        // 打印靶点几何：否则 UI-06 的 PASS 无法排除"点了个寂寞"（既没落到
+        // Label 也没落到任何按钮），那样这条负控就是空转。
+        const QPointF np = uiLocateCenter(c->statusLabel);
+        c->details.append(QStringLiteral("UI-06-note 负控靶点 = 状态 Label 中心 @(%1,%2)，"
+                                         "Label 尺寸 %3×%4（非按钮，无交互处理器）")
+                              .arg(np.x(), 0, 'f', 1).arg(np.y(), 0, 'f', 1)
+                              .arg(c->statusLabel->width(), 0, 'f', 1)
+                              .arg(c->statusLabel->height(), 0, 'f', 1));
+        uiLocateClick(c->window, np);
+        break;
+    }
+    case 5: {
+        // ── UI-06：负控 —— 点在 Label 上，跟踪状态必须纹丝不动 ──────────
+        const bool unchanged = c->facade->isTracking()
+                            && c->facade->trackedName() == c->trackedBefore;
+        uiLocateMark(c.get(), unchanged,
+                     QStringLiteral("UI-06 负控：点在非按钮控件上 → isTracking=%1 "
+                                    "trackedName=\"%2\"（应与此前 \"%3\" 相同）")
+                         .arg(c->facade->isTracking() ? QStringLiteral("true")
+                                                      : QStringLiteral("false"),
+                              c->facade->trackedName(), c->trackedBefore));
+        // ── 真实点击「取消跟踪」──────────────────────────────────────────
+        uiLocateClick(c->window, uiLocateCenter(c->untrackButton));
+        break;
+    }
+    case 6: {
+        // ── UI-07：取消跟踪按钮同样收到真实点击 ──────────────────────────
+        const bool off = !c->facade->isTracking();
+        uiLocateMark(c.get(), off,
+                     QStringLiteral("UI-07 真实点击「取消跟踪」→ isTracking=%1")
+                         .arg(c->facade->isTracking() ? QStringLiteral("true")
+                                                      : QStringLiteral("false")));
+        break;
+    }
+    default: {
+        // ── UI-08：取消后文案回到不声称跟踪的档（三档文案的第三档）───────
+        const QString text = c->statusLabel->property("text").toString();
+        uiLocateMark(c.get(), !text.startsWith(QStringLiteral("正在跟踪")),
+                     QStringLiteral("UI-08 取消跟踪后文案=\"%1\"（不得再声称正在跟踪）")
+                         .arg(text));
+        uiLocateFinish(app, c.get());
+        return;
+    }
+    }
+    ++c->phase;
+    uiLocateAdvance(app, c);
+}
+
+void uiLocateAdvance(QGuiApplication *app, std::shared_ptr<UiLocateCheck> c)
+{
+    QTimer::singleShot(c->tickMs, app, [app, c]() { uiLocateStep(app, c); });
+}
+
+int runUiLocateCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacade *facade)
+{
+    auto c = std::make_shared<UiLocateCheck>();
+    c->window = window;
+    c->facade = facade;
+    c->timer = new QTimer(app);
+    std::printf("UICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，"
+                "共 8 条判据，每相位 %dms）\n", c->tickMs);
+    std::fflush(stdout);
+    uiLocateStep(app, c);
+    return 0;
+}
+#endif
 
 } // namespace
 
@@ -968,6 +1275,8 @@ int main(int argc, char **argv)
     const bool searchCheck = qEnvironmentVariableIsSet("STELQUICK_SEARCH_CHECK");
     // T18：定位/跟踪自检（守卫/锁定角距/推进时间判别性对照，见 LocateCheck.hpp）
     const bool locateCheck = qEnvironmentVariableIsSet("STELQUICK_LOCATE_CHECK");
+    // T18：UI 层端到端自检（objectName 锚点 + 窗口真实鼠标事件，见下方 uiLocate*）
+    const bool uiCheck = qEnvironmentVariableIsSet("STELQUICK_UI_CHECK");
     // 起始页：A2/DYN/长跑校验必须停在天空页；搜索与定位自检停在搜索页
     // （顺带验证该 QML 页面能真正被实例化——页面有语法/引用错误时这一步就会暴露，
     //  而不是等人工点击）；手动模式下可用 STELQUICK_PAGE 指定。
@@ -975,7 +1284,7 @@ int main(int argc, char **argv)
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
-                                  : ((searchCheck || locateCheck)
+                                  : ((searchCheck || locateCheck || uiCheck)
                                          ? QStringLiteral("search")
                                          : qEnvironmentVariable("STELQUICK_PAGE",
                                                                 QStringLiteral("diag")));
@@ -1454,6 +1763,50 @@ int main(int argc, char **argv)
                 std::fflush(stdout);
                 app.exit(result.pass ? 0 : 10);
             });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T18 UI 层端到端自检（STELQUICK_UI_CHECK=1）：**从最外层注入**。
+    // 与 LOCATE_CHECK 的关键区别：LOCATE_CHECK 全程走 AppFacade 的 C++ 公共 API，
+    // 证明不了 QML 的 onClicked 接线是活的；本检查按 objectName 找真实控件、
+    // 向窗口投递真实鼠标事件，断言引擎状态真的因此改变（判据见下方 uiLocate*）。
+    // 装配顺序与 LOCATE_CHECK 一致（暖机 → boot → start → attach → 判据），
+    // 因为定位要真能搜到天体、真改引擎状态。
+    if (uiCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("UICHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "UICHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("UICHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "UICHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("UICHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        runUiLocateCheck(&app, window, &appFacade);
         const int rc = app.exec();
         if (liveSkyRuntime) {
             liveSkyRuntime->stop();
