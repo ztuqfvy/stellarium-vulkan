@@ -161,36 +161,16 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.66312"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461307.66685"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.66312，时钟=HostDriven）
-StelObject type "NoSuchType" unknown
-SEARCHCHECK: 26/26 PASS（含纵向判据 V1–V9）
-SEARCHCHECK: PASS SRC-01a 请求编号单调递增（1 → 2）
-SEARCHCHECK: PASS SRC-01b currentRequestId = 最后一次搜索（2）
-SEARCHCHECK: PASS SRC-01c 过期请求结果被拒收（applyResults 返回 false）
-SEARCHCHECK: PASS SRC-01d 过期结果未覆盖新查询（行数仍 10）
-SEARCHCHECK: PASS SRC-01e 陈旧行未进入模型（__STALE_ROW__ 不可见）
-SEARCHCHECK: PASS SRC-01f 丢弃计数 +2（过期 1 + 无效编号 1），实得 2
-SEARCHCHECK: PASS SRC-01g 编号 0 视为无效请求，被拒收
-SEARCHCHECK: PASS SRC-02a 无匹配查询 → 0 行 + 非空空态理由（「未找到匹配「zzz_no_such_object_zzz」的天体」）
-SEARCHCHECK: PASS SRC-02b 空查询 → 0 行 + 明确理由（「请输入天体名称」），不崩不挂
-SEARCHCHECK: PASS SRC-03a 清空后各字段归零（hasSelection=false + 全空）
-SEARCHCHECK: PASS SRC-03b 5 种非法/失效标识均返回 false 且字段全空（未留陈旧值）
-SEARCHCHECK: INFO fixture=Sirius | englishName=HIP 32349 | stableId=Star:HIP 32349 A
-SEARCHCHECK: PASS SRC-04a 同一查询跨次得到的标识完全一致（Star:HIP 32349 A）
-SEARCHCHECK: PASS SRC-04b 标识形如 type:id 且类型段 = getType()（Star:HIP 32349 A | Star）
-SEARCHCHECK: PASS SRC-05a 总量上限生效：查询「S」请求 3 条 → 实得 3 条（引擎原始匹配 21 条，**已触发截断**）
-SEARCHCHECK: PASS SRC-05b 原始匹配数 ≥ 截断后行数（raw=21 ≥ 3）
-SEARCHCHECK: PASS SRC-05c 未超限时行数 = min(原始, 上限)（4 = min(4, 10)）
-SEARCHCHECK: PASS T17-V1 选中第 0 行 → 信息模型英语名一致（HIP 32349）
-SEARCHCHECK: PASS T17-V2 再次搜索不影响既有选中（选中与搜索解耦）
-SEARCHCHECK: PASS T17-V3 取消选中 → 信息页归零（安全空值）
-SEARCHCHECK: PASS T17-V9 行越界 → 返回 false 且信息页保持归零，不崩
-SEARCHCHECK: PASS SRC-04c 按 stableId 跨查询回查，重新选中同一天体（HIP 32349）
-SEARCHCHECK: PASS T17-V4 displayName 非空（Sirius）
-SEARCHCHECK: PASS T17-V5 typeName 非空（Star）
-SEARCHCHECK: PASS T17-V6 infoText 非空（881 字符）
-SEARCHCHECK: PASS T17-V7 infoMap 非空（54 项）
-SEARCHCHECK: PASS T17-V8 stableId 形如 type:id（Star:HIP 32349 A）
-SEARCHCHECK: VERDICT=PASS
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461307.66685，时钟=HostDriven）
+DYNCHECK: 生产者=engine(真实引擎)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[13.3s起]稳态 49.9 fps（下限 30.0）；全程累计 700 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 49.9 fps（下限 20.0）；全程推进 652 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=700 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 191ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=562 mean=0.22ms max=0.61ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS

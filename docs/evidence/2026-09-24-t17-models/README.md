@@ -1,6 +1,6 @@
 # T17 证据包 — 两个模型（SearchResultsModel / ObjectInfoModel）
 
-日期：2026-09-25 · 提交：见仓库 `T17` 提交 · 交付文档：`docs/T17_SEARCH_OBJECT_MODELS.zh_CN.md`
+日期：2026-09-24 · 提交：见仓库 `T17` 提交 · 交付文档：`docs/T17_SEARCH_OBJECT_MODELS.zh_CN.md`
 
 一键复跑：`./tools/t17-verify.sh all`（或 `core` / `regress` 分跑）
 

@@ -1726,9 +1726,9 @@ Windows 侧同样会受益于重复驱动源拆除（该机此前 30 min 长跑 
 
 ---
 
-## 2026-09-25｜T17 两个模型：`SearchResultsModel` / `ObjectInfoModel`（**自检 26/26 PASS，回归零退化**）
+## 2026-09-24｜T17 两个模型：`SearchResultsModel` / `ObjectInfoModel`（**自检 26/26 PASS，回归零退化**）
 
-交付文档 `docs/T17_SEARCH_OBJECT_MODELS.zh_CN.md`；证据 `docs/evidence/2026-09-25-t17-models/`；
+交付文档 `docs/T17_SEARCH_OBJECT_MODELS.zh_CN.md`；证据 `docs/evidence/2026-09-24-t17-models/`；
 一键复跑 `tools/t17-verify.sh`。
 
 ### 1. 落地内容

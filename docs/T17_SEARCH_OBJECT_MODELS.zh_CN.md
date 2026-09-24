@@ -1,6 +1,6 @@
 # T17 交付报告 — 两个模型（SearchResultsModel / ObjectInfoModel）
 
-日期：2026-09-25 · 阶段：A3 正题（业务接口层）· 证据包：`docs/evidence/2026-09-25-t17-models/`
+日期：2026-09-24 · 阶段：A3 正题（业务接口层）· 证据包：`docs/evidence/2026-09-24-t17-models/`
 
 ---
 
@@ -202,7 +202,7 @@ T15 写的 `Keys.onPressed` 在 `ApplicationWindow` 根部**从未挂上**。
 - 阶段 A 全绿、阶段 B 无 fixture → **UNAVAILABLE（rc=6）**，并**照实打印阶段 A 的结果**，
   让"模型逻辑已验、只是环境没有天体"这一事实可见。
 
-判据明细见 `docs/evidence/2026-09-25-t17-models/README.md` §2。关键数据：
+判据明细见 `docs/evidence/2026-09-24-t17-models/README.md` §2。关键数据：
 
 | 判据 | 数据 |
 |---|---|
@@ -247,7 +247,7 @@ T15 写的 `Keys.onPressed` 在 `ApplicationWindow` 根部**从未挂上**。
 | `tools/t17-verify.sh` | 一键复跑（六项） |
 | `tools/t17-win-build.ps1` | Windows 侧后台构建脚本（VS 自带 cmake + rc 落盘） |
 | `docs/T17_SEARCH_OBJECT_MODELS.zh_CN.md` | 本文档 |
-| `docs/evidence/2026-09-25-t17-models/` | 证据包 |
+| `docs/evidence/2026-09-24-t17-models/` | 证据包 |
 
 **修改**
 

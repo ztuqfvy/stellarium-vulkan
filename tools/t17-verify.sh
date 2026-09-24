@@ -1,5 +1,5 @@
 #!/bin/zsh
-# T17 验证脚本（2026-09-25）。全部判据 + 回归，证据落 docs/evidence/2026-09-25-t17-models/
+# T17 验证脚本（2026-09-24）。全部判据 + 回归，证据落 docs/evidence/2026-09-24-t17-models/
 #
 # 用法：tools/t17-verify.sh          （跑全部）
 #       tools/t17-verify.sh core     （只跑 T17 自检）
@@ -12,7 +12,7 @@ export QT_VULKAN_LIB=/opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib
 export STELQUICK_GRAPHICS_API=metal
 
 BIN=./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI
-OUT=docs/evidence/2026-09-25-t17-models
+OUT=docs/evidence/2026-09-24-t17-models
 TARGET=${1:-all}
 mkdir -p "$OUT"
 

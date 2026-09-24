@@ -10,7 +10,7 @@
  *   - T15（2026-09-24）最小切片落地：simulationPaused + fieldOfView（含
  *     zoomIn/zoomOut 便捷命令）。当时时间速率经 ISimPacing 走"宿主自己算"的帧泵。
  *   - T16（2026-09-24）时钟所有权收编为引擎内 StelClockController。
- *   - T17（2026-09-25）新增搜索/选择协调：持有 SearchResultsModel +
+ *   - T17（2026-09-24）新增搜索/选择协调：持有 SearchResultsModel +
  *     ObjectInfoModel，提供 searchObjects / selectSearchResult / clearSelection。
  *
  * 时间语义（**T16 后已更新，勿再引用 T15 的旧说法**）：
