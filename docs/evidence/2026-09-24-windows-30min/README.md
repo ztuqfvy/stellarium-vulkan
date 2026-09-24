@@ -42,8 +42,8 @@
 | 文件 | 内容 |
 |---|---|
 | `t13-win-30min.txt` | 全量日志（UTF-8 转码自 UTF-16LE） |
-| `t13-win-30min.csv` | 逐秒 CSV（2699 行：fps/内存/暴露/降级/上传…） |
-| `t13-win-30min.frames.csv` | 逐帧上屏 CSV（134981 行） |
+| `t13-win-30min.csv.gz` | 逐秒 CSV（2699 行：fps/内存/暴露/降级/上传…） |
+| `t13-win-30min.frames.csv.gz` | 逐帧上屏 CSV（134981 行） |
 | `t13-win-30min.rc.txt` | 退出码（0） |
 
 ## 环境备注（复用价值）
