@@ -12,6 +12,9 @@
  *   - T16（2026-09-24）时钟所有权收编为引擎内 StelClockController。
  *   - T17（2026-09-24）新增搜索/选择协调：持有 SearchResultsModel +
  *     ObjectInfoModel，提供 searchObjects / selectSearchResult / clearSelection。
+ *   - T18（2026-09-24）新增定位与跟踪：locateSelected / setTracking /
+ *     toggleTracking / isTracking。这是 A4 固定流程
+ *     "开机→搜月球→定位→改时间→返回" 里的**定位环**。
  *
  * 时间语义（**T16 后已更新，勿再引用 T15 的旧说法**）：
  *   时间真源是**引擎内的 StelClockController**（docs/T16_SINGLE_SIM_CLOCK.zh_CN.md）：
@@ -27,11 +30,23 @@
  *   理由：选择需要"引擎语义"（把 stableId 解析成对象并真的选中），
  *   那是本类的职责；模型只负责把数据摆好，不碰引擎状态。
  *
+ * 定位/跟踪的语义（T18，**先读这段再改代码**）：
+ *   1. "定位" = 把视向对准当前选中天体；"跟踪" = 之后持续把视向锁在它身上。
+ *      引擎侧两者是分开的：`moveToObject()` 只做一次平滑移动（1.5s 自动移动），
+ *      `setFlagTracking(true)` 兼做移动 + 锁定（等价于旧 GUI 的空格键）。
+ *      ⇒ 本类的 `locateSelected(track=false)` 只移动，`locateSelected(true)` 移动+锁定。
+ *   2. **家园行星守卫**：选中天体的英文名 == 当前观察地点所在行星名时，
+ *      不能把视线对准"自己脚下"——旧 GUI 在多处都做了这条判断
+ *      （`SearchDialog.cpp:1468-1484` 等）。本类复用同一条判据，拒绝理由
+ *      经 `lastLocateRefusal()` 报 `"home-planet"`。
+ *   3. `isTracking()` 读的是**合取真值**：引擎 `getFlagTracking()`
+ *      **∧** 当前确有选中。原因见 .cpp 里的长注释（引擎在 unSelect 后不清标志）。
+ *
  * 纪律：
  *   1. 所有方法只允许 GUI 线程调用（引擎对象全为 GUI 线程亲和，本类不设锁）。
  *   2. 引擎未编译（独立工程形态）或未引导时，全部方法安全 no-op——
  *      QML 命令栏在无引擎形态下可点，但不产生引擎效果（currentFov 返回 -1 可辨；
- *      搜索返回 0 行 + 明确空态理由）。
+ *      搜索返回 0 行 + 明确空态理由；定位返回 false + 理由 "engine-unavailable"）。
  *   3. 幂等：setSimulationPaused 对相同值直接返回（防双触发的第一道闸）。
  */
 #pragma once
@@ -65,6 +80,11 @@ class AppFacade : public QObject
     Q_PROPERTY(bool simulationPaused READ simulationPaused WRITE setSimulationPaused NOTIFY simulationPausedChanged)
     Q_PROPERTY(double timeRate READ timeRate WRITE setTimeRate NOTIFY timeRateChanged)
     Q_PROPERTY(double fieldOfView READ fieldOfView WRITE setFieldOfView NOTIFY fieldOfViewChanged)
+    // T18：跟踪状态（只读投影。**不设 QML 可写**——写侧必须走命令，见纪律 3 的同类理由）。
+    Q_PROPERTY(bool tracking READ isTracking NOTIFY trackingChanged)
+    Q_PROPERTY(QString trackedName READ trackedName NOTIFY trackingChanged)
+    //! 上一次定位被拒的原因（稳定 ASCII 串）。QML 侧用 `locateRefusalText()` 取文案。
+    Q_PROPERTY(QString lastLocateRefusal READ lastLocateRefusal NOTIFY lastLocateRefusalChanged)
 
 public:
     explicit AppFacade(QObject *parent = nullptr);
@@ -121,14 +141,53 @@ public:
     //! 取消选中（引擎 unSelect + 信息模型归零）。
     Q_INVOKABLE void clearSelection();
 
+    // ---- T18 定位 / 跟踪 ----
+    //! THREAD: gui
+    //! 把视向对准当前选中天体。
+    //! @param track true = 移动并持续锁定（等价旧 GUI 空格键）；false = 只移动一次。
+    //! @return 是否落地。失败时 `lastLocateRefusal()` 给出原因（稳定 ASCII 串）。
+    Q_INVOKABLE bool locateSelected(bool track = true);
+
+    //! THREAD: gui
+    //! 开/关跟踪。开 = 同 locateSelected(true)（同一守卫）；关 = 仅解锁定，**不动选中**。
+    Q_INVOKABLE bool setTracking(bool on);
+    Q_INVOKABLE void toggleTracking() { setTracking(!isTracking()); }
+
+    //! THREAD: gui
+    //! "跟踪中"的**合取真值**：引擎标志 ∧ 当前确有选中。语义见头注第 3 条。
+    bool isTracking() const;
+    //! 正在跟踪的天体显示名；未跟踪时为空串。
+    QString trackedName() const;
+
+    //! 上一次定位被拒的原因（稳定 ASCII 串，QML 侧自行映射文案）：
+    //! `"ok"` / `"engine-unavailable"` / `"no-selection"` / `"home-planet"`。
+    //! 定位成功时复位为 `"ok"`。
+    QString lastLocateRefusal() const { return m_refusal; }
+
+    //! QML 侧文案（把稳定 token 翻成人话；判定逻辑永远看 token，不看文案）。
+    Q_INVOKABLE QString locateRefusalText() const;
+
+    //! 纯谓词：能否把视线对准该天体。抽出来是为了让自检能在**不需要家园行星
+    //! 真的可检索**的情况下验证守卫逻辑（见 LocateCheck LOC-01）。
+    //! 空串一律判 false —— 宁可漏判，也不要把"名字取不到"当成"是家园行星"而误拒。
+    static bool isHomePlanet(const QString &objectEnglishName, const QString &locationPlanetName);
+
+    // 观测量（自检用；不可作 UI 逻辑依据）
+    quint64 locateCount() const { return m_locateCount; }
+    quint64 locateRefusedCount() const { return m_locateRefusedCount; }
+
 signals:
     void simulationPausedChanged(bool paused);
     void timeRateChanged(double ratePerJulianDaySecond);
     void fieldOfViewChanged(double degrees);
+    void trackingChanged();
+    void lastLocateRefusalChanged();
 
 private:
     //! 引擎 StelMovementMgr 是否可用（已引导且 zoom 接口可达）。
     bool movementReady() const;
+    //! 记录拒绝理由（同时累加拒绝计数）。nullptr/空串 → "ok"。
+    void setRefusal(const char *reason);
 
     ISimPacing *m_sim = nullptr;
     bool m_simulationPaused = false;  // 与 LiveSkyRuntime 的 scale=1 默认一致（运行态）
@@ -137,6 +196,11 @@ private:
     // T17：值成员（QObject 子对象随本类生命周期；父指针保证 QML 侧不会被提前回收）。
     SearchResultsModel m_search{this};
     ObjectInfoModel m_info{this};
+
+    // T18
+    QString m_refusal = QStringLiteral("ok");
+    quint64 m_locateCount = 0;
+    quint64 m_locateRefusedCount = 0;
 };
 
 } // namespace stelapp

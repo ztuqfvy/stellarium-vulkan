@@ -1792,3 +1792,127 @@ Windows 侧同样会受益于重复驱动源拆除（该机此前 30 min 长跑 
 T15/T16/T17 三段改动需 Windows 侧 `git pull` + 重建才生效。本轮已实测：
 SSH 会话内 `Start-Process` 起的构建进程会**随会话结束被回收**（日志停在 configure 阶段、
 rc 文件未生成）→ 改用 `schtasks` 投递（脱离 SSH 生命周期）方可长跑构建。
+
+---
+
+## 2026-09-24｜T18 定位与跟踪（A4 固定流程的"定位环"）（**自检 14/14 PASS，6 套回归零退化；DYN 为既有间歇**）
+
+交付文档 `docs/T18_LOCATE_TRACK.zh_CN.md`；证据 `docs/evidence/2026-09-24-t18-locate-track/`；
+一键复跑 `tools/t18-verify.sh`（`all` / `core` / `regress` / `dyn N`）。
+
+起点是 A4 的通过条件 **I-REP-02「开机→搜月球→定位→改时间→返回」**：T17 交付了
+搜索→选择→信息页，"定位"这一环还是空的（选中天体后视向不动）。
+
+### 1. 落地内容
+
+- `src/app/AppFacade`：`locateSelected(track)` / `setTracking(on)` / `toggleTracking()` /
+  `isTracking()` / `trackedName()` / 只读 `Q_PROPERTY tracking`、`trackedName`、
+  `lastLocateRefusal` + `locateRefusalText()`（token 翻文案，**判定永远看 token**）+
+  `static isHomePlanet()` 纯谓词。
+- `src/app/ObjectInfoModel::selectByStableId`：**幂等闸**（已选中同一 `(type,id)` 时不发
+  `setSelectedObject`）——修掉"重选同一对象静默取消跟踪"。
+- `src/app/LocateCheck.{hpp,cpp}`（新）：14 项自检，线性步骤表驱动器 + 成对判据。
+- `src/ui/qml/SearchPage.qml` / `MainWindow.qml`：定位/跟踪按钮与状态行；双击结果行
+  = **先确认选中成功**再定位。
+- `tools/t18-win-longrun.ps1`（新）：把 T13 那次"临时手写、用完即丢"的 Windows 长跑
+  wrapper **固化成仓库资产**（参数化，先跑 8 秒冒烟验证管线）。
+
+### 2. 引擎侧的关键事实（决定了本层怎么设计）
+
+| 事实 | 出处 |
+|---|---|
+| "定位"与"跟踪"在引擎里是两件事：`moveToObject` 只移动一次；`setFlagTracking(true)` 兼做移动+锁定 | `StelMovementMgr.cpp:1386-1405` |
+| 自动移动时长默认 **1.5 s** | `StelMovementMgr.cpp:114` |
+| 家园行星守卫 = `getEnglishName() != getCurrentLocation().planetName`（**严格比对、区分大小写**，比英文名不比 ID） | `SearchDialog.cpp:1438/1458/1478`、`AstroCalcDialog.cpp:2641/8689/9218` |
+| 跟踪分支还加视口中心偏移 `viewportCenterOffset[1] * currentFov * π/180` | `StelMovementMgr.cpp:1264` |
+| `setFlagTracking(false)` 天然幂等（`!b \|\| !getWasSelected()` 都走清零分支） | `StelMovementMgr.cpp:1388-1395` |
+
+### 3. 两个真实缺陷（都不是 T18 引入的，是读源码/跑判据发现的）
+
+**① 引擎的跟踪标志泄漏。** `StelObjectMgr::unSelect()` **先**清
+`lastSelectedObjects`（`StelObjectMgr.cpp:541`）**再**发 `selectedObjectChanged`（542）；
+而 `StelMovementMgr::selectedObjectChange()` 整段包在
+`if (objectMgr->getWasSelected())` 里（`StelMovementMgr.cpp:757-766`），
+于是槽里跑的那一刻已"没有选中" ⇒ **`setFlagTracking(false)` 永不执行 ⇒ 标志泄漏**。
+处置：**不改引擎**，本层读**合取真值** `getFlagTracking() ∧ 选中非空`。
+证据固化在 `LOC-08b`：同时打印两个值，
+实测 `清前 合取=true/引擎原始=true → 清后 合取=false/引擎原始=true`。
+
+**② 引擎在每次选择变化时无条件关跟踪** ⇒ **重选同一对象会静默取消跟踪**（用户看到
+"跟踪自己断了"）。处置：`ObjectInfoModel::selectByStableId` 幂等闸（判据 `LOC-07`）。
+
+**③ 自检报告每条判据打印两遍。** `LocateCheck` 第一版照抄了 T15 `AppFacadeCheck.cpp:72-73`
+的"`qDebug` 实时行 + `details.append()`"模式，而 `main.cpp` 又打印一遍 `details`；
+验证脚本合并 stdout/stderr 后**每条判据成对出现**（`LOC-01` 在 167 行与 185 行各一次）。
+已核对 T15/T16/T17 三份 `ACTIONCHECK` 证据——**同样是每条 2 次**，属既有缺陷。
+处置：`LocateCheck` 改为**只 append、由 `main.cpp` 单点打印**（对齐 T17 `SearchModelCheck`
+的风格），并删掉不再需要的 `#include <QDebug>`；`AppFacadeCheck` 保持原样以维持跨任务可比性，
+只在证据 README 里记明。
+
+### 4. 判据设计里三处"防假绿"的硬约束
+
+1. **成对断言 + 判别性对照**：孤立断言"夹角≈0"可被三种反例假绿（世界没动 / 视向被锁在
+   赤道坐标里 / 定到别的对象上）。故必同时断言"**世界确实动了**"（跳 0.25 天后目标
+   AltAz 变化 > 5°，实测 **127.67°**）与"**视向跟着走**"（< 0.5°，实测 **0.0747°**），
+   再加对照组"不跟踪 → 同样跳变 → 夹角 > 5°"（实测 **32.97° → 158.17°**）。
+2. **量级必须显式打印**：自检 `simRate=0.1 天/秒` ⇒ 墙钟 1 s = 天空自转 36°，
+   所以"只归中不跟踪"后残留 33° 不是缺陷。`LOC-05b-note` 把等待期自转量测出来
+   （**82.02°**）并声明 `note()` **不计入判据数**，防止误读。
+3. **口径不复刻被测代码**：夹角在 J2000 赤道系里算，**刻意不抄**跟踪分支用的
+   `mountFrameToJ2000` 那串换算（那是被测量对象，不该混进判据输入）；
+   等价性另行核对（AltAz 挂载帧下 `mountFrameToJ2000` 就是 `altAzToJ2000(v, RefractionOff)`，
+   `StelMovementMgr.cpp:1537-1552`）。
+
+### 5. 验收数据
+
+| 项 | 结论 |
+|---|---|
+| `STELQUICK_LOCATE_CHECK=1` | **14/14 PASS** rc=0（夹具 `Moon`=`Planet:Moon`，即 I-REP-02 的"搜月球"） |
+| 关键读数 | 锁定夹角 **0.0475°**；跟踪中夹角 **0.0747°**；目标 AltAz 变化 **127.67°** |
+| CLOCKCHECK（回归） | 12/12 PASS —— T18 没碰时钟 |
+| ACTIONCHECK（回归） | 27 判据 **0 FAIL**（含 AC-12）—— AppFacade 被扩展过，关键回归 |
+| SEARCHCHECK（回归） | **26/26 PASS** —— `selectByStableId` 被改过，**最关键的一项** |
+| A2（回归） | 12 探针 PASS / 失败 0 项 |
+| S3（回归） | 8/8 PASS |
+| DYN（回归） | **2/3 PASS（间歇）** —— 见 §6 |
+| Windows 30 分钟长跑（`main@6bce85d`） | **VERDICT=PASS rc=0，SL-C01..C11 全绿**，设备丢失 0 次 |
+
+### 6. DYN 的 `rc=8`：定性成"既有间歇"，不是 T18 的退化（**别读成洗绿**）
+
+首轮全量回归 DYN 出红（`D1-C02 尾窗稳态 0.0 fps；全程推进 0 帧`、`D1-C07 degraded=false`），
+而 T15/T16/T17 三次同项都是 7/7 PASS。做了两个判别性实验：
+
+| 实验 | 结果 |
+|---|---|
+| **换生产者**：同一 T18 二进制，去掉引擎（替身生产者） | **PASS**（28.0 fps / 223 帧 / 降级正确）⇒ QML 侧本身没问题 |
+| **换二进制**：`git stash` 掉 T18 全部改动 → 重建 T17 基线 → 9 次；恢复 T18 → 重建 → 9 次 | 基线 **6 PASS / 3 FAIL**；T18 **6 PASS / 3 FAIL** ⇒ **失败率相同（33%）** |
+
+⇒ **本机（M3 / macOS / Metal RHI）既有间歇缺陷**：真实引擎与 QML 同进程时 QML 场景图
+偶发停摆——生产者照跑 50 fps、邮箱帧龄个位数毫秒，而**日志里没有任何丢设备痕迹**
+（`vkDebug` / `VK_ERROR` / `device lost` / `swapchain` 全无），显示侧推进 0~364 帧后停住。
+机械旁证：T18 对 `main.cpp` 只有 4 个 hunk，**DYN 分支逐字节未变**；
+`SkyViewport.*` / `DynFrameCheck.*` / `LiveSkyRuntime.*` 一个字节没碰。
+
+处置（判据协议，不是改代码）：`t18-verify.sh` 的 DYN 段跑 3 次、如实报 `N/3`，
+**不跑"直到绿"**；零退化的依据是**同口径 A/B 的失败率相同**；失败样本照实归档。
+原始记录见证据包 `dyn-ab-baseline-vs-t18.txt`。
+
+顺带得到一条性质：本次三次里有一次 `C02 FAIL 但 C07 PASS`（显示先跑 343 帧、
+跨过降速窗后才停）⇒ **C07 不是 C02 的冗余项**。
+Windows 侧同形态长跑 `SL-C09 = 1799/1799`、`SL-C10 = 0/1799` ⇒ 该现象**本机特有**。
+
+### 7. 环境/工具踩坑
+
+- **macOS 的 grep 是 BSD，BRE 不支持 `|` 交替**：`grep -n "A|B" file` 返回"无匹配"是
+  **假的**（`|` 被当字面量），排查时据此得出过两次错误结论。**一律用 `grep -E`。**
+- **给构建命令接管道 = 装随机杀手**（承 T17 同一条）：本次所有构建都写成输出落日志、
+  事后 grep 日志。
+- **Windows 日志编码比"UTF-16LE 按 BOM 转码"更麻烦**：`*>>` 生成的文件**无 BOM**，
+  且 exe 的 UTF-8 中文被 PowerShell 按 **CP936** 解码后再写成 UTF-16LE，
+  同一条 `STELRUN:` 行里还可能混排两种来源。恢复配方（已写进
+  `docs/evidence/2026-09-24-windows-30min/README.md` §3）：
+  切掉 ASCII 头 → `decode('utf-16-le')` → `encode('gb18030')` → `decode('utf-8')`；
+  用 `gbk` 会 `illegal multibyte sequence` 中断。判据 ID 与数值全是 ASCII，不受影响。
+- **`git stash` 做 A/B 前先备份**：本次把 7 个文件复制到 `/tmp/t18/keep/`，
+  `stash pop` 后**逐字节 `cmp`** 核验一致才继续。
+

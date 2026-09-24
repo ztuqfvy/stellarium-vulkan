@@ -99,9 +99,28 @@ bool ObjectInfoModel::selectByStableId(const QString &stableId)
         resetToEmpty();
         return false;
     }
-    if (!mgr.setSelectedObject(obj)) {
-        resetToEmpty();
-        return false;
+
+    // ── T18 幂等闸：重选**同一个**对象时不要重发 setSelectedObject ────────────
+    // 为什么必须加：StelMovementMgr::selectedObjectChange()（StelMovementMgr.cpp:757-766）
+    // 在"确有选中"的每次选择变化时都会 **无条件** `setFlagTracking(false)`。
+    // 于是"重复点同一条搜索结果"（QML 列表重入、信息页刷新、回到列表再点一次）
+    // 会**静默取消正在进行的跟踪**——用户看到的是"跟踪自己断了"。
+    // 判据用 (type, id) 而不是 stableId 字符串：与 selectByStableId 进来的
+    // 参数是同一份语义（splitStableId 已保证 type/id 非空）。
+    const QList<StelObjectP> &cur = mgr.getSelectedObject();
+    const bool alreadySame = !cur.isEmpty() && cur.first()
+                             && cur.first()->getType() == type
+                             && cur.first()->getID() == id;
+    if (!alreadySame) {
+        if (!mgr.setSelectedObject(obj)) {
+            resetToEmpty();
+            return false;
+        }
+    } else {
+        // 已选中同一对象：直接刷新信息面（走 refresh() 的那条路），
+        // 引擎侧一次 setSelectedObject 都不发 ⇒ 跟踪不被打断。
+        emit selectionChanged();     // 让 QML 知道"命令收到了"（值不变，幂等）
+        return refresh();
     }
     return refresh();
 }

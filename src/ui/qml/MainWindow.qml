@@ -98,7 +98,22 @@ ApplicationWindow {
                     text: "🔍－（缩小）"
                     onClicked: ActionRouter.trigger("app.zoomOut")
                 }
+                // T18：定位/跟踪。**不绑键位**——引擎自带的对准/跟踪快捷键
+                // 经 ActionRouter 的引擎透传已经可用，这里再绑一次就是双轨。
+                Button {
+                    text: appFacade.tracking ? "🛑 取消跟踪" : "🎯 定位并跟踪"
+                    enabled: objectInfo.hasSelection
+                    onClicked: appFacade.tracking ? appFacade.setTracking(false)
+                                                  : appFacade.locateSelected(true)
+                }
                 Item { Layout.fillWidth: true }
+                Label {
+                    // T18：天球上的跟踪状态。用 trackingChanged 驱动（属性变更通知），
+                    // 不像右边的视场那样轮询——跟踪是离散状态，没有动画中间值。
+                    color: appFacade.tracking ? "#2e7d32" : "#757575"
+                    text: appFacade.tracking ? ("跟踪中：" + appFacade.trackedName)
+                                             : "未跟踪"
+                }
                 Label {
                     // 视场显示：fieldOfView 是 Q_PROPERTY（属性读取，不能加括号调用）；
                     // zoomTo 是 0.4s 动画，用轻量定时器轮询刷新。

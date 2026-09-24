@@ -1,0 +1,17 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+CLOCKCHECK: 仿真时钟纯逻辑自检（12 项，无 GL / 无引擎）
+CLOCKCHECK: ST-01 默认态（EngineWallClock / 未锚定 / scale=1）：OK
+CLOCKCHECK: ST-02 reset 锚定起点：OK
+CLOCKCHECK: ST-03 宿主推进 dt=1s × rate=0.5 → +0.5：OK
+CLOCKCHECK: ST-04 三次 0.25s × rate=1 → 恰好 +0.75（只与 dt 有关）：OK
+CLOCKCHECK: ST-05 scale=0 连续推进 1.0s 墙钟 → JD 零漂移：OK
+CLOCKCHECK: ST-06 暂停 5s 后恢复：只推进 0.2×0.5=0.1（不补暂停期）：OK
+CLOCKCHECK: ST-07 jumpTo 绝对写入后推进从新值起算（不被拽回）：OK
+CLOCKCHECK: ST-08 负墙钟差被忽略（倒退只能由 jumpTo/负速率表达）：OK
+CLOCKCHECK: ST-09 EngineWallClock：锚点+2s×0.5 = 锚点+1：OK
+CLOCKCHECK: ST-10 负速率倒放：dt=1s × rate=-0.5 → -0.5：OK
+CLOCKCHECK: ST-11 负 scale 钳为 0（不允许经由 scale 表达倒放）：OK
+CLOCKCHECK: ST-12 模式切换不动 JD（真源不被切线重置）：OK
+CLOCKCHECK: VERDICT=PASS

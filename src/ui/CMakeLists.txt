@@ -124,6 +124,8 @@ set(stelQuickUI_SOURCES
     ../app/ObjectInfoModel.cpp
     ../app/SearchModelCheck.hpp
     ../app/SearchModelCheck.cpp
+    ../app/LocateCheck.hpp
+    ../app/LocateCheck.cpp
     quick/BackendInfo.hpp
     quick/BackendInfo.cpp
     quick/SkyViewport.hpp

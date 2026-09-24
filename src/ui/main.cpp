@@ -172,6 +172,8 @@ void ensureVulkanLoaderPath()
 #include "app/SearchModelCheck.hpp"
 #include "app/SearchResultsModel.hpp"
 #include "app/ObjectInfoModel.hpp"
+// T18：定位/跟踪（A4 固定流程的"定位"环）+ 自检。
+#include "app/LocateCheck.hpp"
 // T16：单一仿真时钟。控制器是 core 层的纯逻辑类（无 GL / 无 QObject），
 // 故无条件包含——STELQUICK_CLOCK_CHECK 分支在独立工程形态下同样可用。
 #include "core/StelClockController.hpp"
@@ -964,16 +966,19 @@ int main(int argc, char **argv)
     const bool actionCheck = qEnvironmentVariableIsSet("STELQUICK_ACTION_CHECK");
     // T17：搜索/选择模型自检（U-SRC-01..04 + 纵向判据，见 SearchModelCheck.hpp）
     const bool searchCheck = qEnvironmentVariableIsSet("STELQUICK_SEARCH_CHECK");
-    // 起始页：A2/DYN/长跑校验必须停在天空页；搜索自检停在搜索页（顺带验证该 QML 页面
-    // 能真正被实例化——页面有语法/引用错误时这一步就会暴露，而不是等人工点击）；
-    // 手动模式下可用 STELQUICK_PAGE 指定。
+    // T18：定位/跟踪自检（守卫/锁定角距/推进时间判别性对照，见 LocateCheck.hpp）
+    const bool locateCheck = qEnvironmentVariableIsSet("STELQUICK_LOCATE_CHECK");
+    // 起始页：A2/DYN/长跑校验必须停在天空页；搜索与定位自检停在搜索页
+    // （顺带验证该 QML 页面能真正被实例化——页面有语法/引用错误时这一步就会暴露，
+    //  而不是等人工点击）；手动模式下可用 STELQUICK_PAGE 指定。
     const QString startPage = (a2Check || dynCheck || longRun
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
-                                  : (searchCheck ? QStringLiteral("search")
-                                                 : qEnvironmentVariable("STELQUICK_PAGE",
-                                                                        QStringLiteral("diag")));
+                                  : ((searchCheck || locateCheck)
+                                         ? QStringLiteral("search")
+                                         : qEnvironmentVariable("STELQUICK_PAGE",
+                                                                QStringLiteral("diag")));
 
     // 3. 加载 QML
     // T15 命令通路装配（加载前注入，QML 命令栏/Keys 直接绑定）：
@@ -1000,6 +1005,17 @@ int main(int argc, char **argv)
                                 { [&appFacade]() { appFacade.zoomOut(); },
                                   nullptr,
                                   QStringLiteral("缩小视场") });
+    // T18：定位与跟踪。**刻意不绑键位**——引擎自己的动作表里已经有
+    // "对准选中天体"（`/`）与"开关跟踪"（空格）且经 ActionRouter 的引擎透传可用；
+    // 这里再绑一次就是双轨（T15 定下的"单点键位路由铁律"）。这两条只服务 QML 按钮。
+    actionRouter.registerAction(QStringLiteral("app.locateSelected"),
+                                { [&appFacade]() { appFacade.locateSelected(true); },
+                                  nullptr,
+                                  QStringLiteral("定位到选中天体并跟踪") });
+    actionRouter.registerAction(QStringLiteral("app.toggleTracking"),
+                                { [&appFacade]() { appFacade.toggleTracking(); },
+                                  nullptr,
+                                  QStringLiteral("开关跟踪选中天体") });
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("appFacade"), &appFacade);
     engine.rootContext()->setContextProperty(QStringLiteral("ActionRouter"), &actionRouter);
@@ -1376,6 +1392,65 @@ int main(int argc, char **argv)
                     return;
                 }
                 std::printf("SEARCHCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T18 定位/跟踪自检（STELQUICK_LOCATE_CHECK=1）：需要真实引擎（要真能搜到天体、
+    // 真跑帧泵、真推进时钟）。装配顺序与 SEARCH_CHECK 完全一致
+    // （暖机 → boot → start → attach → 判据），判据本体见 LocateCheck。
+    // 起始页已切到 "search"，故同时验证搜索页 QML 可被实例化。
+    if (locateCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("LOCATECHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "LOCATECHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("LOCATECHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "LOCATECHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("LOCATECHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::LocateCheck::run(
+            &app, &appFacade,
+            [&app](const stelapp::LocateCheck::Result &result) {
+                std::printf("LOCATECHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("LOCATECHECK: %s\n", line.toUtf8().constData());
+                std::printf("LOCATECHECK: 判据 %d/%d\n", result.passed, result.total);
+                if (!result.ran || result.unavailable) {
+                    // 环境条件，不是逻辑缺陷——照实报 UNAVAILABLE，绝不伪装成 PASS。
+                    std::printf("LOCATECHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("LOCATECHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
                 std::fflush(stdout);
                 app.exit(result.pass ? 0 : 10);
             });

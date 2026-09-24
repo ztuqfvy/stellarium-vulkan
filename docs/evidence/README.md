@@ -67,6 +67,24 @@ python -c "b=open('run_evidence_matrix.cmd','rb').read(); print(sum(1 for x in b
 | `2026-09-23-a3-host-probe/` | A3 前置探针（T11 起手前）：`QApplication` 承载 `QQuickWindow` + 引擎无头引导同进程共存。含**首发崩溃现场**（静态库 qrc 未注册 → `qFatal` → SIGABRT 134）、Metal/Vulkan 两大后端 PASS、默认形态回归、负控、`stellarium` 字节不变性复查。索引见该目录 `README.md` |
 | `2026-09-23-t11-live-runtime/` | T11 引擎共进程帧驱动 `LiveSkyRuntime`：探针 C-05/06/07（借上下文装配 / 两帧读回 1ms / 内容非空且随 JD 变化）、LIVE_ENGINE 冒烟（Metal + Vulkan，抓帧真实星空）、A2/DYN/S3 回归、默认形态隔离、`frames/*.png`。索引见该目录 `README.md` |
 | `2026-09-23-t12-dyn-engine/` | T12 DYN 判据在**真实引擎生产者**下复跑：主证据 `30-FINAL-metal-PASS.*`（7/7 PASS + 逐 250 ms 采样 CSV）、Vulkan 对照（D1-C06 SKIP）、test 基线、形态不匹配负控（rc=6）、A2/S3/独立工程回归；另留**新旧判据口径对照**（`10/11/12-OLDformula-*`、`20/21-nominal60-*`）与**双重释放崩溃现场**（`12-*-ABORT-doublefree`）。索引见该目录 `README.md` |
+| `2026-09-22-stelt9-smoke-20s.txt` | T9 一致性冒烟（20 s）。 |
+| `2026-09-22-stelt9-probe-lpm-INVALID-throttled.txt` | T9 探针首跑，因机器处于**低电量模式被降频**判为 **INVALID**（不是被测程序失败）。 |
+| `2026-09-23-consumer-dyn-bridge/` | 消费侧动态帧桥：Metal 8 s PASS、A2 回归、低帧率负控、Vulkan 6 s。 |
+| `2026-09-23-sky-longrun/` | 长跑（旧宿主形态）：`run.log` + 逐秒/逐帧 CSV + 50 s 冒烟 + 5 fps 负控。 |
+| `2026-09-23-sky-longrun-INVALID-screensaver/` | 同上前身，因**屏幕保护打断**判定 **INVALID**（留证以示不采信）。 |
+| `2026-09-23-sky-longrun-PARTIAL-session-killed/` | 会话被中断的 **PARTIAL** 记录。 |
+| `2026-09-23-t13-live-longrun/` | T13 合流形态长跑与根因定位全过程（19 份编号证据）：多次**丢设备现场**（`04/05/07/08`）、纯 QML 与纯引擎对照（`09/15`）、静默期与 DPR 实验（`10/11/12`）、**Metal 后端 11/11 PASS**（`13/14`）、两次正式跑（`17` 含 SL-C03 单个离群点、`18` 11/11 PASS）与 **MVK resume 实验无效**（`19`）。索引见该目录 `README.md` |
+| `2026-09-23-windows-stage1/` | Windows 支线阶段 1：A2 / DYN / D3D11 三后端 + `vulkaninfo` 摘要 + A2 抓帧 PNG。索引见该目录 `README.md` |
+| `2026-09-24-t14-audit/` | T14 更新循环与时钟审计的 **grep 原始记录**（结论见 `docs/T14_UPDATE_CLOCK_AUDIT.zh_CN.md`）。 |
+| `2026-09-24-t15-command-path/` | T15 命令通路：ACTIONCHECK 自检、A2/DYN/S3 回归、短冒烟（含一次**低电量模式污染**的留证）。索引见该目录 `README.md` |
+| `2026-09-24-t16-sim-clock/` | T16 单一仿真时钟：CLOCKCHECK 纯逻辑自检 + 命令通路回归 + 90 s 冒烟（含一次**电池降频**留证）。索引见该目录 `README.md` |
+| `2026-09-24-t17-models/` | T17 两个模型：SEARCHCHECK 26/26、ACTIONCHECK（含新 AC-12）、CLOCKCHECK/A2/DYN/S3 回归、三轮构建日志（`.log.gz`）。索引见该目录 `README.md` |
+| `2026-09-24-t18-locate-track/` | T18 定位与跟踪：LOCATECHECK **14/14**、SEARCHCHECK 26/26 等零退化回归，**另含 DYN 的定性 A/B 记录**（`dyn-ab-baseline-vs-t18.txt`：T17 基线 6/9 与 T18 6/9 失败率相同 ⇒ 判定既有间歇、非退化；DYN 因此改为跑 3 次报 `N/3`）。索引见该目录 `README.md` |
+| `2026-09-24-windows-stage23/` | Windows 支线阶段 2/3：合流构建与判定性实验（`r2_3a_dyn_engine.log`、`r2_3b_longrun.log`、逐秒/逐帧 CSV）。索引见该目录 `README.md` |
+| `2026-09-24-windows-30min/` | Windows **30 分钟正式长跑 ×2**：`t13-win-30min.*`（W-T13，`0f2faae`）与 `t17-win-30min.*`（**W-T17，`6bce85d`，SL-C01..C11 全绿 rc=0**），附 §3 日志编码恢复配方。索引见该目录 `README.md` |
+
+> 上表自 T13 起曾中断未补（原表只到 T12）；2026-09-24 按各目录的实际内容回填，
+> 描述只陈述文件里能直接看到的事实。
 | `../../tools/evidence/collect.ps1` | **本目录证据的唯一规范生成器**（见下） |
 
 文件格式约定：正文为未经修饰的原始捕获；仅首尾由脚本注入**出处头**（提交号、

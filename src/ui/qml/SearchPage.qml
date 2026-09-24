@@ -1,10 +1,16 @@
-// SearchPage.qml — T17：搜索 → 选择 → 信息页（纵向链路）。
+// SearchPage.qml — T17：搜索 → 选择 → 信息页（纵向链路）；T18 加定位/跟踪。
 //
 // 分工（与 docs/T17 的约定一致）：
 //   · 列表数据来自模型本体：`model: searchResults`（ListModel/QAIM 直供，不经过 AppFacade）；
-//   · 命令走 AppFacade：searchObjects / selectSearchResult / clearSelection。
+//   · 命令走 AppFacade：searchObjects / selectSearchResult / clearSelection /
+//     locateSelected / setTracking。
 //   · 本页面**不碰引擎**：没有 GL/Vulkan 调用，也不知道对象是怎么被选中的
 //     （C++ 侧把 stableId 解析成引擎对象——QML 永远只拿字符串）。
+//
+// T18 的定位/跟踪为什么不在这里自己算：
+//   "能不能定位"的判断（家园行星守卫）在 C++ 侧，QML 只显示 `lastLocateRefusal`
+//   的文案。若在 QML 复刻一份判断，就又多了一个会与引擎漂移的口径（T17 的
+//   `maxItems` 就是这么错的）。
 //
 // 禁区（docs/CODING_STANDARD.zh_CN.md 第 5 节）：本目录禁止 GL/Vulkan 特定调用。
 import QtQuick
@@ -112,8 +118,55 @@ Item {
                             // 索引交给 AppFacade：它取该行的 stableId 再让引擎解析选中。
                             appFacade.selectSearchResult(index)
                         }
+                        // T18：双击 = 选中 + 定位并跟踪（A4 固定流程"搜月球→定位"的
+                        // 最短路径）。**必须**先确认选中成功再定位——否则定位会作用在
+                        // 上一个选中对象上（那正是"命令打在了错误的靶子上"）。
+                        onDoubleClicked: {
+                            resultList.currentIndex = index
+                            if (appFacade.selectSearchResult(index))
+                                appFacade.locateSelected(true)
+                        }
                     }
                 }
+            }
+
+            // ── T18：定位 / 跟踪控制与状态 ───────────────────────────────
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 4
+
+                Button {
+                    Layout.fillWidth: true
+                    text: "定位并跟踪"
+                    enabled: objectInfo.hasSelection
+                    onClicked: appFacade.locateSelected(true)
+                }
+                Button {
+                    text: "取消跟踪"
+                    enabled: appFacade.tracking
+                    onClicked: appFacade.setTracking(false)
+                }
+            }
+
+            Label {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                font.pixelSize: 11
+                // 三档：正在跟踪 / 上一次被拒 / 什么都不说。
+                color: appFacade.tracking ? "#2e7d32" : "#c62828"
+                text: {
+                    if (appFacade.tracking)
+                        return "正在跟踪：" + appFacade.trackedName
+                    return appFacade.locateRefusalText()
+                }
+            }
+
+            Label {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                font.pixelSize: 10
+                color: "#9e9e9e"
+                text: "提示：双击结果项可直接定位并跟踪。"
             }
 
             Button {
@@ -204,6 +257,13 @@ Item {
                             Label {
                                 text: objectInfo.infoMap.dec !== undefined
                                       ? Number(objectInfo.infoMap.dec).toFixed(4) : "—"
+                            }
+                            // T18：跟踪状态挂在信息面板里——"定位"这个动作的目的是
+                            // 让**这个天体**出现在视场中心，状态跟在它旁边最不容易误读。
+                            Label { text: "跟踪"; color: "#757575" }
+                            Label {
+                                text: appFacade.tracking ? "是" : "否"
+                                color: appFacade.tracking ? "#2e7d32" : "#757575"
                             }
                         }
 

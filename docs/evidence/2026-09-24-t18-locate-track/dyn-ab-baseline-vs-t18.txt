@@ -1,0 +1,151 @@
+# DYN 判据的定性实验：T17 基线 vs T18 —— 同口径 A/B（2026-09-24）
+
+## 0. 要回答的问题
+
+T18 全量回归时 `regression-dyn-engine-metal` 出了 `rc=8`：
+
+```
+DYNCHECK: D1-C02 FAIL 显示 尾窗稳态 0.0 fps（下限 20.0）；全程推进 0 帧
+DYNCHECK: D1-C05 PASS 上传 count=2 mean=0.48ms max=0.49ms（<100ms）
+DYNCHECK: D1-C07 FAIL 降速窗内 degraded=false（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=FAIL
+```
+
+而 T15/T16/T17 三次的同一项都是 7/7 PASS。所以必须先回答：**这是 T18 引入的退化，
+还是本机既有的间歇现象？** 两种结论的处置完全不同（前者要改代码，后者要改判据协议
+并照实记档），不能靠"再跑一次看看"糊过去。
+
+## 1. 判据读的是什么
+
+- `D1-C02`：`viewport->displayedFrameNumber()` 的**尾窗稳态速率** ≥ 20 fps
+  （`SkyViewport.cpp:217-234`，每秒采样一次显示帧号增量）。
+- `D1-C05`：上传次数 > 0（`m_uploadCount`，`SkyViewport.cpp:195-201`）。
+- `D1-C07`：降速窗内 `degraded==true`、恢复后 `==false`。降级判定要求
+  `m_displayedFps > 0`（`SkyViewport.cpp:228`）——**fps==0 视为"无信号"不算降级**，
+  这就是 C07 与 C02 同源失败的原因。
+
+即：`D1-C01/C03/C04`（生产者与邮箱）与 `D1-C02/C05/C07`（QML 消费/显示）是**两条独立
+的链**。失败样本里生产者一律健康、邮箱零丢弃、帧龄个位数毫秒，**只有消费侧停摆**。
+
+## 2. 判别性实验一：换生产者（同一 T18 二进制）
+
+| 实验 | 生产者 | 结果 | 读数 |
+|---|---|---|---|
+| E1 | `test` 替身场景（**不 boot 引擎**） | **PASS rc=0** | 尾窗 28.0 fps；推进 223 帧；degraded 正确 |
+| E2 | `engine` 真实引擎 | **FAIL rc=8** | 尾窗 0.0 fps；推进 0 帧；上传 count=2 |
+
+⇒ **QML 页面、SkyViewport、场景图、上传路径本身都是好的**（同一份二进制 E1 全绿）。
+故障只出现在"真实引擎与 QML 同进程共存"这一条路上。
+
+E2 的逐 250ms CSV（`STELQUICK_DYN_CSV`）显示消费侧**从第一个采样点起就是 0**，
+全程 20 秒一帧未渲；而邮箱里 `published` 一路涨到 672、`mailboxAgeMs` 常为 0~6ms：
+
+```
+t=2.313   displayed=0  published=115  age=0    degraded=0  dispFps=0.00
+t=7.309   displayed=0  published=342  age=83   degraded=0  dispFps=0.00
+t=19.558  displayed=0  published=672  age=5    degraded=0  dispFps=0.00
+```
+
+`D1-C05` 的 `count=2` 恰好等于收尾时 `window->grabWindow()` 强制渲染的那两次
+（`DynFrameCheck.cpp:170-180`）——即**采样期内场景图一次都没自发渲染**。
+
+## 3. 判别性实验二：换二进制（同机器、同日、相邻时段、同口径）
+
+控制变量：只把 T18 的 7 个已改动文件 `git stash` 掉（工作区回到 `6bce85d` = T17
+状态），重建 `stelQuickUI`，跑 **9 次**；再 `git stash pop` 恢复 T18，重建，跑 **9 次**。
+两次重建均 `BUILD_RC=0`，`git stash pop` 后 7 个文件逐字节比对与备份一致。
+
+环境口径两组完全相同：
+`STELQUICK_GRAPHICS_API=metal` + `STELQUICK_DYN_CHECK=1` + `STELQUICK_DYN_PRODUCER=engine`。
+
+### 3.1 T17 基线（`6bce85d`，9 次）
+
+| # | VERDICT | D1-C02 尾窗稳态 | 全程推进 |
+|---|---|---|---|
+| 1 | PASS | 49.7 fps | 687 帧 |
+| 2 | PASS | 49.7 fps | 670 帧 |
+| 3 | **FAIL** | **0.0 fps** | 145 帧 |
+| 4 | PASS | 49.7 fps | 655 帧 |
+| 5 | **FAIL** | **0.0 fps** | 168 帧 |
+| 6 | PASS | 49.3 fps | 674 帧 |
+| 7 | PASS | 49.9 fps | 687 帧 |
+| 8 | PASS | 49.9 fps | 685 帧 |
+| 9 | **FAIL** | **0.0 fps** | 364 帧 |
+
+**6 PASS / 3 FAIL（失败率 33%）**
+
+### 3.2 T18（含全部改动，9 次）
+
+| # | VERDICT | D1-C02 尾窗稳态 | 全程推进 |
+|---|---|---|---|
+| 1 | **FAIL** | **0.0 fps** | 0 帧 |
+| 2 | **FAIL** | **0.0 fps** | 344 帧 |
+| 3 | **FAIL** | **0.0 fps** | 87 帧 |
+| 4 | PASS | 49.7 fps | 675 帧 |
+| 5 | PASS | 49.8 fps | 667 帧 |
+| 6 | PASS | 49.8 fps | 673 帧 |
+| 7 | PASS | 49.8 fps | 665 帧 |
+| 8 | PASS | 49.7 fps | 659 帧 |
+| 9 | PASS | 49.7 fps | 660 帧 |
+
+**6 PASS / 3 FAIL（失败率 33%）**
+
+### 3.3 对照结论
+
+两组失败率相同、失败形状相同（尾窗 0.0 fps、推进帧数在 0~364 之间随机、无丢设备日志）。
+
+**⇒ 判定：既有环境间歇缺陷，不是 T18 引入的退化。**
+
+补充机械论证（不依赖统计）：T18 对 `src/ui/main.cpp` 的全部改动只有 4 个 hunk
+（include、`startPage` 三元式、两条 ActionRouter 注册、新增 `locateCheck` 分支），
+**DYN 分支（约 1140–1284 行）逐字节未变**；`SkyViewport.*`、`DynFrameCheck.*`、
+`LiveSkyRuntime.*` 一个字节都没碰。所以统计结论与代码结论一致。
+
+## 4. 这个间歇缺陷长什么样（免费拿到的根因线索）
+
+- **静默**：失败样本里 grep 不到任何 `vkDebug` / `VK_ERROR` / `device lost` /
+  `swapchain` 行（T13 记录的 MoltenVK 丢设备是有这些日志的）。
+- **只影响消费侧**：生产者 fps 稳定 50、邮箱零丢弃、帧龄个位数毫秒。
+- **形状两种**：或从头到尾 0 帧，或先渲 87~364 帧再停。
+- **与 QML 无关**：替身生产者 100% 通过（E1）。
+- T17 基线同样复现 ⇒ 与 T18 无关。
+
+倾向：引擎的 `StelMainView`（真 NSWindow + OpenGL）与 QML 窗口同进程时的窗口/GPU
+共存问题（macOS 侧窗口遮挡→`isExposed()` 变化，或两条图形栈争用）。**这是待查项，不是
+本任务的结论**；本任务只负责把它定性成"既有、非同进程不可复现、与 T18 无关"。
+
+## 5. 判据协议的处置
+
+`D1-C02/C07` 在本机是**概率性**读数，单次运行不足以定性，因此：
+
+1. `tools/t18-verify.sh` 的 DYN 段改为跑 3 次、如实报 `N/3`，**不跑"直到绿"**；
+2. **零退化的依据是同口径 A/B 的失败率相同**（本文件），不是某一次的绿色；
+3. 失败样本一律照实归档，不丢弃、不重命名成 INVALID（它是一次真实读数）。
+
+复现本 A/B 的步骤：
+
+```sh
+cd <repo>
+export VK_DRIVER_FILES=/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json
+export QT_VULKAN_LIB=/opt/homebrew/opt/vulkan-loader/lib/libvulkan.1.dylib
+export STELQUICK_GRAPHICS_API=metal
+BIN=./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI
+
+# T18 侧
+for i in 1 2 3 4 5 6 7 8 9; do
+  STELQUICK_DYN_CHECK=1 STELQUICK_DYN_PRODUCER=engine "$BIN" 2>&1 | grep DYNCHECK
+done
+
+# T17 基线侧
+git stash push -m ab -- src/app/AppFacade.cpp src/app/AppFacade.hpp \
+  src/app/ObjectInfoModel.cpp src/ui/CMakeLists.txt src/ui/main.cpp \
+  src/ui/qml/MainWindow.qml src/ui/qml/SearchPage.qml
+cmake --build build-release --target stelQuickUI -j 8
+for i in 1 2 3 4 5 6 7 8 9; do
+  STELQUICK_DYN_CHECK=1 STELQUICK_DYN_PRODUCER=engine "$BIN" 2>&1 | grep DYNCHECK
+done
+git stash pop
+cmake --build build-release --target stelQuickUI -j 8
+```
+
+**注意**：`git stash` 前先备份这 7 个文件（本次备份在 `/tmp/t18/keep/`，`pop` 后逐字节比对过）。
