@@ -18,12 +18,13 @@ ApplicationWindow {
     title: "Stellarium Quick UI — A1/A2/A3 验证宿主"
     color: "#f5f6f8"
 
-    // 由 C++ 上下文属性注入："diag"（诊断页）| "sky"（天空视口页）| "search"（搜索/信息页）
+    // 由 C++ 上下文属性注入："diag"（诊断页）| "sky"（天空视口页）
+    // | "search"（搜索/信息页）| "time"（时间页）
     property string startPage: "diag"
 
     // 页名 → StackLayout 索引（一处定义，切换器与 C++ 的 startPage 共用，
     // 避免"加了页面忘了改另一处"这类只在运行时才暴露的错位）。
-    readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2 })
+    readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2, "time": 3 })
 
     // ── 键盘挂载点（T17 修复 T15 的缺陷）───────────────────────────────────────
     //
@@ -71,6 +72,11 @@ ApplicationWindow {
                 Button {
                     text: "搜索天体（T17）"
                     onClicked: stack.currentIndex = 2
+                }
+                // T19：时间页（"改时间"环：6 个写入路径 + 现在 + 步进）
+                Button {
+                    text: "时间（T19）"
+                    onClicked: stack.currentIndex = 3
                 }
                 Item { Layout.fillWidth: true }
                 Label {
@@ -141,6 +147,7 @@ ApplicationWindow {
                 DiagnosticPage { }
                 SkyTestPage { }
                 SearchPage { }
+                TimePage { }
             }
         }
     }

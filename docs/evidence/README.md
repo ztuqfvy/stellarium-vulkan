@@ -82,6 +82,7 @@ python -c "b=open('run_evidence_matrix.cmd','rb').read(); print(sum(1 for x in b
 | `2026-09-24-t18-locate-track/` | T18 定位与跟踪：LOCATECHECK **14/14**、**UICHECK 8/8**（UI 层端到端：objectName 锚点 + 窗口真实鼠标事件 + 负控）、SEARCHCHECK 26/26 等零退化回归，**另含 DYN 的定性记录**（`dyn-ab-baseline-vs-t18.txt`：T17 基线 6/9 与 T18 6/9 失败率相同；§6 记录同日高负载复测下**替身与引擎同时全败**——替身路径不含 T18 代码，故判定与本次改动无因果）。DYN 因此改为**跑引擎与替身两半、各报 `N/3`**，并按 `env_note` 记录环境。索引见该目录 `README.md` |
 | `2026-09-24-windows-stage23/` | Windows 支线阶段 2/3：合流构建与判定性实验（`r2_3a_dyn_engine.log`、`r2_3b_longrun.log`、逐秒/逐帧 CSV）。索引见该目录 `README.md` |
 | `2026-09-24-windows-30min/` | Windows **30 分钟正式长跑 ×2**：`t13-win-30min.*`（W-T13，`0f2faae`）与 `t17-win-30min.*`（**W-T17，`6bce85d`，SL-C01..C11 全绿 rc=0**），附 §3 日志编码恢复配方。索引见该目录 `README.md` |
+| `2026-09-24-t19-time-ring/` | T19 **改时间环**：TIMECHECK **14/14**（与旧对话框公式逐位一致、UTC 往返、星空随动成对判据）+ TIMEUICHECK **13/13**（最外层注入：6 个自旋框 ×6 写入路径 / 应用 / 重置 / 现在 / 步进透传 / 状态行绑定）+ T16/T15/T17/T18 全套零退化回归。**另含两条关键记录**：① `timeuicheck-negctrl-broken-property.txt` —— 把 `Q_PROPERTY` 临时注掉后的**反向对照**（UI-09a/09b 双双 FAIL、11/13、rc=10），证明该判据真能失败；② README §4 —— 首跑"世界没动"是**自检驱动器 `delayAfter` 挂错步骤**（写入→读取实测间隔 0ms）导致的假失败。索引见该目录 `README.md` |
 
 > 上表自 T13 起曾中断未补（原表只到 T12）；2026-09-24 按各目录的实际内容回填，
 > 描述只陈述文件里能直接看到的事实。

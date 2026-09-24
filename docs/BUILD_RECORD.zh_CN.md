@@ -1940,3 +1940,100 @@ Windows 侧同形态长跑 `SL-C09 = 1799/1799`、`SL-C10 = 0/1799` ⇒ 该现�
 - **`git stash` 做 A/B 前先备份**：本次把 7 个文件复制到 `/tmp/t18/keep/`，
   `stash pop` 后**逐字节 `cmp`** 核验一致才继续。
 
+---
+
+## 2026-09-24｜T19 改时间（A4 固定流程的"改时间环"）（**自检 14/14 + UI 端到端 13/13 PASS；9 套回归零退化；顺手修掉一条用户可见的真实缺陷**）
+
+### 1. 落地内容
+
+- `src/app/TimeCheck.{hpp,cpp}`（新）：14 条自检。判据成对（世界动了 / 对照不动 / 可逆），
+  与旧对话框公式**逐位比对**。
+- `AppFacade` 时间面：写命令 `setJulianDay`（唯一绝对写入入口）/ `setLocalDateTime`（×6 路径）/
+  `setTimeNow`；只读投影 `utcOffsetHours` / `localDateTimeText` / `utcDateTimeText` /
+  `localDateTimeField`（**刻意不做 Q_PROPERTY**：JD 每帧在变，连续量一律轮询）。
+- `src/ui/qml/TimePage.qml`（新）：6 个自旋框 + 应用 / 重置 / 现在 + 本地/UT/JD 三行投影 +
+  4 个步进按钮（走 `ActionRouter` 透传引擎既有 StelAction，**不另建键位表**）。
+  `syncing` / `dirty` 双守卫挡住"回填 → 触发 → 又写一次引擎"的反馈环。
+- `src/ui/main.cpp` 内 **`STELQUICK_TIME_UI_CHECK=1`（13 项）**：**从最外层注入**——
+  `objectName` 找真实 QML 控件 → 向 `QQuickWindow` 投递真实鼠标按下/抬起 →
+  断言引擎 JD **精确**落到公式值；反向再读 QML 真实属性（`SpinBox.value` / `Label.text`）；
+  含负控（改框不点应用 → 时钟不许动）。
+- `tools/t19-verify.sh`（新）：一键复跑；DYN 段**同时跑引擎与替身两半** + `env_note`。
+- 结清 T18 移交项：`AppFacade::julianDay()` 改读 `core->getSimClockJD()`（T16 的单一真源），
+  不再读 `getJD()`（= `JD.first`，只在 `updateTime` 里同步 ⇒ 上一帧快照）。
+
+### 2. 🔴 抓到的真实缺陷：`lastTimeRefusal` 缺 `Q_PROPERTY`
+
+修前 `AppFacade.hpp` 只有 `Q_INVOKABLE QString lastTimeRefusal() const;`，
+而 `TimePage.qml` 的状态行写的是 `appFacade.lastTimeRefusal === "ok"`。
+
+**QML 里只有 `Q_PROPERTY` 才拿到字符串**；纯 `Q_INVOKABLE` 方法读到的是**函数对象**，
+`=== "ok"` **恒为 false** ⇒ 「时间已按写入生效。」是**死代码**，而 `timeRefusalText()`
+在 token=="ok" 时**返回空串** ⇒ **写入成功反而显示"空白 + 红字"**。
+
+修法（照 T18 的 `lastLocateRefusal` 正确形态）：提升为
+`Q_PROPERTY(QString lastTimeRefusal READ lastTimeRefusal NOTIFY lastTimeRefusalChanged)`，
+并把 `setTimeRefusal()` 改成"值变化才 emit"（计数仍在早退前累加，不漏计）。
+
+**反向对照**（证据 `timeuicheck-negctrl-broken-property.txt`）：临时注掉该 `Q_PROPERTY`
+后重建重跑 ⇒ **UI-09a/09b 双双 FAIL、11/13、rc=10**，且 UI-09b 的文案**也是空串**——
+因为没有 NOTIFY 依赖，绑定**根本不重算**，停在首次求值时（token=ok ⇒ 空串）。
+一个对照同时显形两个缺陷。恢复后 3/3 稳定 13/13。
+
+> 这条正是 `TIME_UI_CHECK` 存在的理由：`TimeCheck` 全程走 C++ 公共 API，
+> **结构上测不到**这段绑定 —— 它 14/14 全绿的同时，UI 上那条状态行是坏的。
+
+### 3. ⚠️ 首跑踩到的**自己的**坑：`delayAfter` 挂错了步骤
+
+TC-09/TC-11 首跑 FAIL（AltAz 变化 0.0000°、残差 85.6289°）。根因**在自检驱动器**：
+驱动器语义是"跑完本步**之后**等 `delayAfter` 毫秒"，而我把等待挂在了**读取步**上，
+于是"写入 → 读取"的实测间隔是 **0 ms**，读到的是**上一个时刻**的星空。
+
+定位手法（可复用）：给每个探针加 `note` 打印 `stopwatch.elapsed()` + 三个时间源
+（`simClockJD` / `core->getJD()` / `facade->julianDay()`）+ 原始 AltAz 三分量。
+一眼看出"三个时间源都已同步、而 AltAz 恒为上一个 JD 的值"，再对"实测间隔 0 ms"，立刻收敛。
+
+> 附带事实：`StelCore::setJD()` **直接写 `JD.first`**（不需要帧）⇒ "时间源已跳到新值"
+> **证明不了**引擎重算过。所以修好后**在判据行里写明等了多少毫秒**，否则下次没人知道这个数怎么来的。
+
+修正后 3/3 稳定 14/14。TC-09 的 **85.6289°** 还可验算：0.25 天 = 90° 时角 ⇒
+角距 = `arccos(sin²δ)` ⇒ δ ≈ 16.0°，正是月球当时赤纬量级。
+（`LocateCheck` 同为 0.25 天却读到 127.74°，因为它**不暂停时钟**、1200 ms 里时钟又走了 0.12 天。）
+
+### 4. 顺手修掉的既有缺陷（T18 页）
+
+`SearchPage.qml` 的状态行调用 `appFacade.locateRefusalText()` 却**没读 `lastLocateRefusal`**；
+QML 只登记"绑定里**实际读过**的属性" ⇒ token 变化时那段不重算。修法：在绑定里真的读一下 token。
+`regression-locate-uicheck` 8/8 全绿证明没破坏原接线。
+
+另修 `TimeCheck.cpp` 里两处 `QString::fromLatin1`（应为 `fromUtf8`）导致的证据乱码
+（`常规日期` → `å¸¸è§æ¥æ`）—— 源码是干净 UTF-8，问题只在解码那一步。
+
+### 5. 验收数据（同一次连贯运行）
+
+| 套件 | 读数 |
+|---|---|
+| TIMECHECK | **14/14 PASS** rc=0（TC-05 与旧公式差 **0.000e+00**；TC-09 **85.6289°** / TC-10 **0.0000°** / TC-11 **0.0000°**） |
+| TIMEUICHECK | **13/13 PASS** rc=0（UI-05 JD 差 **0.00e+00**；UI-06 负控位移 **0.00e+00**；UI-11 步进位移 **0.999999960**） |
+| CLOCKCHECK（回归） | 12/12 |
+| ACTIONCHECK（回归） | VERDICT=PASS（27 判据 0 FAIL） |
+| SEARCHCHECK（回归） | 26/26 |
+| LOCATECHECK（回归） | 14/14 |
+| UICHECK（T18 回归） | 8/8 |
+| A2 / S3（回归） | PASS / 8/8 |
+| DYN（引擎 + 替身） | **3/3 + 3/3**（本轮环境好；**不改变 T18 的环境敏感定性**，见 §6） |
+
+### 6. DYN：本轮的 3/3 不是"已修好"
+
+引擎侧 49.8 fps / 670~673 帧 / 上传 579~583 次（mean 0.23 ms）；替身侧 50~52 fps / 267~291 帧。
+`D1-C02`/`D1-C07` 依赖**窗口被暴露**，本机该量**受环境支配**（同日 13:2x 替身 4/4 FAIL、
+随后两侧全程 0 帧，`caffeinate` 无效）。处置沿用 T18：跑 N 次报 `N/3`、不跑"直到绿"、
+替身也失败即记"仪器测不到"（**不改写成 INVALID**）、**不得**把任一次绿当成"零退化已证明"。
+
+### 7. 环境/工具踩坑
+
+- **`timeout` 在 macOS 上不存在**（`rc=127`），别拿它给自检加保护；自检本身会自己退出。
+- **zsh 不对未加引号的变量做分词**（承 T18）：`scp $SSH_ARGS` 会把整串当一个参数 ⇒ 用数组。
+- **`QString::fromLatin1` 用在 UTF-8 的 `const char*` 上会出 mojibake**，一律 `fromUtf8`。
+- **驱动器类自检的"等待"要按语义挂步骤**：`QTimer::singleShot` 挂在步体之后 ⇒
+  等待属于"刚跑完的那一步"，写在读步上等于没等。

@@ -15,6 +15,23 @@
  *   - T18（2026-09-24）新增定位与跟踪：locateSelected / setTracking /
  *     toggleTracking / isTracking。这是 A4 固定流程
  *     "开机→搜月球→定位→改时间→返回" 里的**定位环**。
+ *   - T19（2026-09-24）新增时间写入：setJulianDay / setLocalDateTime /
+ *     setTimeNow + 本地/UT 双日历投影。这是同一流程里的**"改时间"环**。
+ *
+ * 时间的读/写口径（T19，**先读这段再改**）：
+ *   写：全部落到 `StelCore::setJD()` —— 它是 T16 确立的**唯一**跳转入口
+ *       （内部 `simClock.jumpTo()` 重锚，所以不会被宿主帧泵拽回）。
+ *  读：`julianDay()` 读 `getSimClockJD()`（T16 的单一真源）。**不读 `getJD()`** ——
+ *      那个（`JD.first`）只在 `StelCore::updateTime()` 里从仿真时钟同步，
+ *      读它等于读"上一帧的快照"。
+ *  时区：引擎里所有 JD 都是 **UT 尺度**；"本地日历"= UT + `getUTCOffset(jd)`（小时）。
+ *      写本地字段时 `-offset`、读本地字段时 `+offset` ——**方向搞反的后果是
+ *      "输入 12:00 回显 20:00"，且只有往返比对才抓得到**。本类的往返恒等
+ *      判据（TimeCheck TC-01）就是钉这件事的。
+ *      两个方向一律复用 `StelUtils::getJDFromDate` / `getDateTimeFromJulianDay`
+ *      与 `StelCore::getUTCOffset` —— **不重新发明天文/日历算法**（A-alpha 硬要求）。
+ *  显示历法：1582-10-15 之前引擎按**儒略历**解释（`StelUtils::getJDFromDate` 内注释），
+ *      之后按格里历。本类**照抄引擎判定**，不另立一套。
  *
  * 时间语义（**T16 后已更新，勿再引用 T15 的旧说法**）：
  *   时间真源是**引擎内的 StelClockController**（docs/T16_SINGLE_SIM_CLOCK.zh_CN.md）：
@@ -85,6 +102,14 @@ class AppFacade : public QObject
     Q_PROPERTY(QString trackedName READ trackedName NOTIFY trackingChanged)
     //! 上一次定位被拒的原因（稳定 ASCII 串）。QML 侧用 `locateRefusalText()` 取文案。
     Q_PROPERTY(QString lastLocateRefusal READ lastLocateRefusal NOTIFY lastLocateRefusalChanged)
+    // T19：上一次时间写入的结果 token（"ok" / "invalid-date" / "out-of-range" …）。
+    // **必须是 Q_PROPERTY**：QML 绑定里写 `appFacade.lastTimeRefusal === "ok"` 时，
+    //   只有它是属性才会拿到**字符串**并建立依赖；若只声明成 Q_INVOKABLE 方法，
+    //   那个表达式读到的是**函数对象**，恒为 false —— TimePage 的"已生效"分支
+    //   就变成了永远走不到的死代码，而 `timeRefusalText()` 在 ok 时返回空串，
+    //   于是"写入成功"反而显示成**空白 + 红字**（T19 用最外层注入的 UI 判据抓到）。
+    //   与 T18 的 `lastLocateRefusal` 同形态。
+    Q_PROPERTY(QString lastTimeRefusal READ lastTimeRefusal NOTIFY lastTimeRefusalChanged)
 
 public:
     explicit AppFacade(QObject *parent = nullptr);
@@ -94,12 +119,64 @@ public:
 
     // ---- 时间（语义保留：JD 为 UT；速率单位 Julian day/second）----
     // THREAD: gui
-    // 当前 JD 直接读引擎（只读不写，写侧归帧泵/T16 ClockController）。
-    // 引擎不可用时返回 0.0 并置无效标记（QML 侧不应依赖此值）。
+    //! 当前仿真 JD（UT 尺度）。T19 起读 `getSimClockJD()`（T16 的单一真源），
+    //! 不再读 `getJD()`（= JD.first，只在 updateTime 里被同步，等于上一帧快照）。
+    //! 引擎不可用时返回 0.0（QML 侧用 `utcOffsetHours() < -900` 之类不可靠，
+    //! 请改用 `timeRefusalText()`/`lastTimeRefusal()` 判可用性）。
     Q_INVOKABLE double julianDay() const;
     // "60 倍速"必须换算为 60.0 Julian day/second 后传入，禁止把倍数直接当速率。
     double timeRate() const;
     void setTimeRate(double ratePerJulianDaySecond);
+
+    // ---- T19 时间只读投影（"改时间"环的**读侧**）----
+    //!
+    //! **刻意不做 Q_PROPERTY**：JD 每帧都在变（HostDriven 帧泵），挂 NOTIFY
+    //! 会让 QML 每帧重建绑定 → 刷屏。与 MainWindow.qml 里 fovLabel 的轮询读
+    //! 同惯例：**离散状态**才用属性通知（如 T18 的 tracking），**连续量**一律轮询。
+    //!
+    //! 本地/UT 双日历并排暴露，是为了让"区分 UTC、时区"可被**看见**（A-alpha 要求）。
+    //@{
+    //! 本地时区相对 UT 的偏移（**小时**，含 DST）。口径即 `StelCore::getUTCOffset(jd)`
+    //! （内部 shiftInSeconds/3600）。引擎不可用返回 0.0。
+    Q_INVOKABLE double utcOffsetHours() const;
+    //! 当前时刻的**本地**日历文本，形如 `2026-09-24 14:26:55`（引擎口径）。
+    Q_INVOKABLE QString localDateTimeText() const;
+    //! 同一时刻的 **UT** 日历文本。与上一条并排显示即"区分 UTC/时区"。
+    Q_INVOKABLE QString utcDateTimeText() const;
+    //! 本地日历的单个字段（给 QML 的 6 个自旋框回填）：0=年 1=月 2=日 3=时 4=分 5=秒。
+    //! 越界或引擎不可用 → 0（QML 侧不要用 0 当合法值判断，用 `year` 更可靠的是 >= 1）。
+    Q_INVOKABLE int localDateTimeField(int which) const;
+    //@}
+
+    // ---- T19 时间写命令（"改时间"环的**写侧**：全部是命令，无 QML 可写属性）----
+    // THREAD: gui
+    //! 绝对写入（**唯一入口**）：落到 `StelCore::setJD(jd)` → `simClock.jumpTo()`。
+    //! @param jd UT 尺度的 JD。超出引擎可表示范围（`StelCore::updateTime` 的
+    //!        钳制区间）时**拒绝**而不是"写进去然后被悄悄改掉"。
+    //! @return 是否落地；失败理由见 `lastTimeRefusal()`。
+    Q_INVOKABLE bool setJulianDay(double jd);
+
+    //! 按**本地日历**的 6 个字段写入（"改时间"对话框的 6 条写入路径）。
+    //! 内部把本地 → UT（`-getUTCOffset(cjd)/24`），再走 `setJulianDay`。
+    //! 字段范围非法（如 13 月 / 32 日 / 25 时）→ 拒绝，理由 `"invalid-date"`，
+    //! 且**不改动时钟**（拒绝必须无副作用）。
+    //! @note 范围校验用 `QDate::isValid`（与引擎 `getJDFromDate` 内部的判定同一口径），
+    //!       因为引擎那个函数在 1582 年前的分支**不做校验**，会静默给出垃圾 JD。
+    Q_INVOKABLE bool setLocalDateTime(int y, int m, int d, int h, int min, int s);
+
+    //! 跳回"现在"（`StelCore::setTimeNow`，即 `setJD(getJDFromSystem())`）。
+    //! 不加时区偏移——"现在"是绝对时刻。
+    Q_INVOKABLE void setTimeNow();
+
+    //! 上一次时间写入被拒的原因（稳定 ASCII 串）：
+    //! `"ok"` / `"engine-unavailable"` / `"invalid-date"` / `"out-of-range"`。
+    Q_INVOKABLE QString lastTimeRefusal() const { return m_timeRefusal; }
+    //! QML 侧文案（把稳定 token 翻成人话；判定逻辑永远看 token，不看文案）。
+    Q_INVOKABLE QString timeRefusalText() const;
+
+    // 观测量（自检用；不可作 UI 逻辑依据）
+    quint64 timeWriteCount() const { return m_timeWriteCount; }
+    quint64 timeRefusedCount() const { return m_timeRefusedCount; }
 
     // ---- 显示 ----
     // THREAD: gui
@@ -182,12 +259,18 @@ signals:
     void fieldOfViewChanged(double degrees);
     void trackingChanged();
     void lastLocateRefusalChanged();
+    //! T19：时间写入结果 token 变化时通知（QML 的状态行绑定靠它重算）。
+    void lastTimeRefusalChanged();
 
 private:
     //! 引擎 StelMovementMgr 是否可用（已引导且 zoom 接口可达）。
     bool movementReady() const;
     //! 记录拒绝理由（同时累加拒绝计数）。nullptr/空串 → "ok"。
     void setRefusal(const char *reason);
+    //! T19：记录时间写入拒绝理由（同时累加拒绝计数）。nullptr/空串 → "ok"。
+    void setTimeRefusal(const char *reason);
+    //! T19：把 JD 格式化为日历文本（`local` 为 true 时套 UTC 偏移）。引擎不可用 → 空串。
+    QString formatJd(double jd, bool local) const;
 
     ISimPacing *m_sim = nullptr;
     bool m_simulationPaused = false;  // 与 LiveSkyRuntime 的 scale=1 默认一致（运行态）
@@ -201,6 +284,11 @@ private:
     QString m_refusal = QStringLiteral("ok");
     quint64 m_locateCount = 0;
     quint64 m_locateRefusedCount = 0;
+
+    // T19
+    QString m_timeRefusal = QStringLiteral("ok");
+    quint64 m_timeWriteCount = 0;
+    quint64 m_timeRefusedCount = 0;
 };
 
 } // namespace stelapp

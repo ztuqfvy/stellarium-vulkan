@@ -1,0 +1,43 @@
+──────── DYN(替身) run 1/3（rc=0）────────
+DYNCHECK: 生产者=test(替身场景)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[5.3s起]稳态 52.4 fps（下限 36.0）；全程累计 341 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 52.4 fps（下限 24.0）；全程推进 288 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=341 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 207ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=333 mean=0.28ms max=1.72ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS
+──────── DYN(替身) run 2/3（rc=0）────────
+DYNCHECK: 生产者=test(替身场景)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[5.3s起]稳态 49.5 fps（下限 36.0）；全程累计 320 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 49.5 fps（下限 24.0）；全程推进 265 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=320 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 210ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=310 mean=0.28ms max=3.19ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS
+──────── DYN(替身) run 3/3（rc=0）────────
+DYNCHECK: 生产者=test(替身场景)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[5.3s起]稳态 50.2 fps（下限 36.0）；全程累计 318 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 50.2 fps（下限 24.0）；全程推进 278 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=318 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 193ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=304 mean=0.27ms max=1.39ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS
+──────── 汇总 ────────
+环境：15:31  up 9 days,  4:43, 1 user, load averages: 3.38 3.10 3.15
+环境注记：displaysleep=2 分钟（显示器空闲即休眠）
+环境注记：Spotlight 批量索引正在运行（mdbulkimport）——帧率读数可能被压低
+读数采信规则：D1-C02/D1-C07 量的是「窗口有没有在渲染」——它要求窗口被暴露。
+  若同条件的**替身对照**也失败（尤其"全程推进 0 帧"），则该读数反映的是
+  「仪器测不到」而不是「被测程序失败」，**不作为退化证据**；
+  同时也不改写成 INVALID（原始读数照实保留，只加这条定性）。
+DYN 显示/降级判据（替身生产者，不 boot 引擎）：3/3 次 PASS
+替身路径不含时间页代码（DYN 用 startPage="sky"）⇒ 它失败即与本次改动无关。

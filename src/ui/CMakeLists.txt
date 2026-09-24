@@ -126,6 +126,9 @@ set(stelQuickUI_SOURCES
     ../app/SearchModelCheck.cpp
     ../app/LocateCheck.hpp
     ../app/LocateCheck.cpp
+    # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
+    ../app/TimeCheck.hpp
+    ../app/TimeCheck.cpp
     quick/BackendInfo.hpp
     quick/BackendInfo.cpp
     quick/SkyViewport.hpp
@@ -178,6 +181,7 @@ qt_add_qml_module(stelQuickUI
         qml/DiagnosticPage.qml
         qml/SkyTestPage.qml
         qml/SearchPage.qml
+        qml/TimePage.qml
     NO_PLUGIN
 )
 

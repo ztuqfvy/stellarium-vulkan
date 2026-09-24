@@ -22,6 +22,11 @@
  *   STELQUICK_UI_CHECK=1         → T18 **UI 层端到端**自检：按 objectName 找真实
  *                                  QML 控件 + 向窗口投递真实鼠标事件，断言引擎状态
  *                                  因此改变（否则"QML 接线是死代码"测不出来）。
+ *   STELQUICK_TIME_CHECK=1       → T19「改时间」环自检（往返恒等 / 与旧对话框公式
+ *                                  逐位一致 / UTC 时区方向 / 星空随时刻变化 /
+ *                                  写入不被帧泵拽回；起始页切到 "time"）。
+ *   STELQUICK_TIME_UI_CHECK=1    → T19 **UI 层端到端**自检：6 个自旋框 + 应用/重置/
+ *                                  现在按钮的**真实点击链路**（含负控）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -49,6 +54,7 @@
 #include "StelMainView.hpp"
 #include "core/StelApp.hpp"
 #include "core/StelCore.hpp"
+#include "core/StelUtils.hpp"   // T19：getJDFromDate / getJDFromSystem（算期望 JD，不另发明天文换算）
 #include "core/StelFileMgr.hpp"
 #include "core/StelTranslator.hpp"
 #include "core/StelIniParser.hpp"
@@ -181,6 +187,8 @@ void ensureVulkanLoaderPath()
 #include "app/ObjectInfoModel.hpp"
 // T18：定位/跟踪（A4 固定流程的"定位"环）+ 自检。
 #include "app/LocateCheck.hpp"
+// T19：改时间（A4 固定流程的"改时间"环）+ 自检。
+#include "app/TimeCheck.hpp"
 // T16：单一仿真时钟。控制器是 core 层的纯逻辑类（无 GL / 无 QObject），
 // 故无条件包含——STELQUICK_CLOCK_CHECK 分支在独立工程形态下同样可用。
 #include "core/StelClockController.hpp"
@@ -753,6 +761,471 @@ int runUiLocateCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFac
     uiLocateStep(app, c);
     return 0;
 }
+// ══════════════════════════════════════════════════════════════════════════
+// T19 时间页 UI 层端到端自检：STELQUICK_TIME_UI_CHECK=1
+//
+// 与 STELQUICK_UI_CHECK（T18，搜索/定位页）**同一动机、同一手法**：
+//   TimeCheck（src/app）走的全是 AppFacade 的 C++ 公共 API —— 它证明得了"换算与
+//   写入逻辑对"，但**证明不了** TimePage.qml 里这几条接线是活的：
+//     · `onClicked: timePage.applyFields()`  ← 六个自旋框的"×6"写入路径
+//     · `onClicked: appFacade.setTimeNow()`  · `onClicked: timePage.refill()`
+//     · `onClicked: ActionRouter.trigger("actionAdd_Solar_Day")`（步进透传）
+//     · 状态行绑定 `appFacade.lastTimeRefusal === "ok"`
+//   名字写错、按钮没接上、绑定读到函数对象，C++ 侧自检照样全绿。
+//   **首跑就抓到后两条里的第三条**：`lastTimeRefusal` 当时只是 Q_INVOKABLE 方法，
+//   QML 里 `=== "ok"` 恒 false ⇒ "已生效"分支是死代码，而 timeRefusalText() 在 ok
+//   时返回空串 ⇒ 写入成功反而显示**空白 + 红字**。见 AppFacade.hpp 的 Q_PROPERTY 注。
+//
+// 手法（同 T18，不再复述理由）：objectName 找真实控件 → 向 QQuickWindow 投递
+//   真实鼠标按下/抬起 → 断言引擎状态**精确**改变 → 反向读 QML 控件真实属性。
+//
+// 本页特有的两条：
+//   ·「×6」= 六个自旋框，逐个都要能被读到。UI-02/03 用**两个不同**的本地时刻做
+//     判别性：若 QML 把某个字段写死，两组就会读出同一个值。
+//   · **天然负控**：「改了框但没点应用 ⇒ 时钟一个字节都不动」（UI-06）。这正是
+//     TimePage 头注里"改成显式应用是为了可测"所指向的那条；它同时验了 QML 的
+//     `dirty` 守卫是活的（挡住 400ms 自动回填，见 UI-04）。
+//
+// 判据 13 条：UI-01..UI-11（含 UI-09a/09b）。退出码：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+// ══════════════════════════════════════════════════════════════════════════
+
+//! 本地时刻用例（年/月/日/时/分/秒）。四组**互不相同**，用来判别"QML 有没有把值写死"。
+const int kUiTimeA[6] = {2030,  6, 15,  9, 30,  0};   // C++ 写 → 看 QML 字段跟不跟
+const int kUiTimeB[6] = {1999,  1,  1,  0,  0,  0};   // 第二组（与 A 不同 ⇒ 判别性）
+const int kUiTimeC[6] = {2011, 11, 11, 11, 11, 11};   // 在 UI 上改框后点「应用」
+const int kUiTimeD[6] = {2022,  2, 22, 22, 22, 22};   // 改了框但**不点应用**（负控）
+
+struct UiTimeCheck
+{
+    QQuickWindow *window = nullptr;
+    stelapp::AppFacade *facade = nullptr;
+    QQuickItem *fields[6] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+    QQuickItem *applyButton = nullptr;
+    QQuickItem *resetButton = nullptr;
+    QQuickItem *nowButton = nullptr;
+    QQuickItem *subDayButton = nullptr;
+    QQuickItem *addDayButton = nullptr;
+    QQuickItem *statusLabel = nullptr;
+    QQuickItem *jdLabel = nullptr;
+    QStringList details;
+    int passed = 0;
+    int total = 0;
+    int phase = 0;
+    //! 相位间留一拍。QML 里有两个 Timer（回填 400ms / 轮询 300ms），间隔必须 ≥ 它们，
+    //! 否则"回填该发生却没发生"这类否定式判据（UI-04）就没有检验力。
+    int tickMs = 500;
+
+    // 跨相位传递
+    double jdBeforeApply = 0.0;    //!< 点「应用」之前的引擎 JD
+    double jdBeforeNoop = 0.0;     //!< 负控之前的引擎 JD
+    double jdBeforeIllegal = 0.0;  //!< 非法写入之前的引擎 JD
+    double jdBeforeNow = 0.0;      //!< 点「现在」之前（已在 1900 年）的引擎 JD
+    double jdLabel0 = 0.0;         //!< UI-10a 读到的 JD Label 值
+    QString nowText;               //!< UI-09a 读到的状态文案
+};
+
+void uiTimeMark(UiTimeCheck *c, bool ok, const QString &line)
+{
+    ++c->total;
+    if (ok)
+        ++c->passed;
+    c->details.append(line + (ok ? QStringLiteral("：OK") : QStringLiteral("：FAIL")));
+}
+
+QString uiTimeFieldsText(const int *v)
+{
+    return QStringLiteral("%1-%2-%3 %4:%5:%6")
+        .arg(v[0], 4, 10, QLatin1Char('0')).arg(v[1], 2, 10, QLatin1Char('0'))
+        .arg(v[2], 2, 10, QLatin1Char('0')).arg(v[3], 2, 10, QLatin1Char('0'))
+        .arg(v[4], 2, 10, QLatin1Char('0')).arg(v[5], 2, 10, QLatin1Char('0'));
+}
+
+//! 把 6 个自旋框设成目标值。**注意**：这走 setProperty，QML 的 onValueChanged 会照常
+//! 触发（于是 `dirty` 置真）—— 这正是我们要的：判据测的是"框里的值经 onClicked 走到
+//! 引擎"，所以要像用户那样先把值放进框里，而不是绕过框直接把值传给 AppFacade。
+void uiTimeSetFields(UiTimeCheck *c, const int *v)
+{
+    for (int k = 0; k < 6; ++k)
+        c->fields[k]->setProperty("value", v[k]);
+}
+
+bool uiTimeFieldsEq(const UiTimeCheck *c, const int *v)
+{
+    for (int k = 0; k < 6; ++k)
+        if (c->fields[k]->property("value").toInt() != v[k])
+            return false;
+    return true;
+}
+
+void uiTimeReadFields(const UiTimeCheck *c, int *out)
+{
+    for (int k = 0; k < 6; ++k)
+        out[k] = c->fields[k]->property("value").toInt();
+}
+
+void uiTimeEngineFields(stelapp::AppFacade *f, int *out)
+{
+    for (int k = 0; k < 6; ++k)
+        out[k] = f->localDateTimeField(k);
+}
+
+bool uiTimeFieldsMatchEngine(const int *a, const int *b)
+{
+    for (int k = 0; k < 6; ++k)
+        if (a[k] != b[k])
+            return false;
+    return true;
+}
+
+//! 「本地日历 → 期望 UT JD」。用的就是旧 DateTimeDialog::newJd() 的口径
+//!   `getJDFromDate(本地) - getUTCOffset(校正前的 jd)/24`，与 AppFacade 的
+//!   setLocalDateTime 同一公式（TimeCheck TC-05 已把两者逐位比对过，差 0）。
+//! 这里**只**用它算期望值，不在判据里另发明一套换算。
+bool uiTimeExpectedJd(stelapp::AppFacade *f, const int *v, double *jdOut)
+{
+    Q_UNUSED(f);
+    double cjd = 0.0;
+    if (!StelUtils::getJDFromDate(&cjd, v[0], v[1], v[2], v[3], v[4],
+                                  static_cast<float>(v[5])))
+        return false;
+#if defined(STELQUICK_HAS_ENGINE)
+    StelCore *core = StelApp::isInitialized() ? StelApp::getInstance().getCore() : nullptr;
+    if (!core)
+        return false;
+    cjd -= core->getUTCOffset(cjd) / 24.0;
+#endif
+    *jdOut = cjd;
+    return true;
+}
+
+void uiTimeFinish(QGuiApplication *app, UiTimeCheck *c)
+{
+    const bool pass = c->total > 0 && c->passed == c->total;
+    for (const QString &line : c->details)
+        std::printf("TIMEUICHECK: %s\n", line.toUtf8().constData());
+    std::printf("TIMEUICHECK: 判据 %d/%d\n", c->passed, c->total);
+    std::printf("TIMEUICHECK: VERDICT=%s\n", pass ? "PASS" : "FAIL");
+    std::fflush(stdout);
+    app->exit(pass ? 0 : 10);
+}
+
+void uiTimeUnavailable(QGuiApplication *app, UiTimeCheck *c, const QString &why)
+{
+    for (const QString &line : c->details)
+        std::printf("TIMEUICHECK: %s\n", line.toUtf8().constData());
+    std::printf("TIMEUICHECK: %s\n", why.toUtf8().constData());
+    std::printf("TIMEUICHECK: VERDICT=UNAVAILABLE\n");
+    std::fflush(stdout);
+    app->exit(6);
+}
+
+void uiTimeAdvance(QGuiApplication *app, std::shared_ptr<UiTimeCheck> c);
+
+void uiTimeStep(QGuiApplication *app, std::shared_ptr<UiTimeCheck> c)
+{
+    switch (c->phase)
+    {
+    case 0: {
+        // ── UI-01：锚点可寻（找不到即接线/命名断了）──────────────────────
+        static const char *const kFieldNames[6] = {"timeYearField", "timeMonthField",
+                                                   "timeDayField", "timeHourField",
+                                                   "timeMinuteField", "timeSecondField"};
+        int found = 0;
+        for (int k = 0; k < 6; ++k)
+        {
+            c->fields[k] = c->window->findChild<QQuickItem *>(QString::fromLatin1(kFieldNames[k]));
+            if (c->fields[k])
+                ++found;
+        }
+        c->applyButton  = c->window->findChild<QQuickItem *>(QStringLiteral("timeApplyButton"));
+        c->resetButton  = c->window->findChild<QQuickItem *>(QStringLiteral("timeResetButton"));
+        c->nowButton    = c->window->findChild<QQuickItem *>(QStringLiteral("timeNowButton"));
+        c->subDayButton = c->window->findChild<QQuickItem *>(QStringLiteral("timeSubDayButton"));
+        c->addDayButton = c->window->findChild<QQuickItem *>(QStringLiteral("timeAddDayButton"));
+        c->statusLabel  = c->window->findChild<QQuickItem *>(QStringLiteral("timeStatusLabel"));
+        c->jdLabel      = c->window->findChild<QQuickItem *>(QStringLiteral("timeJdLabel"));
+        const int btns = (c->applyButton ? 1 : 0) + (c->resetButton ? 1 : 0)
+                       + (c->nowButton ? 1 : 0) + (c->subDayButton ? 1 : 0)
+                       + (c->addDayButton ? 1 : 0);
+        const bool anchors = (found == 6) && (btns == 5) && c->statusLabel && c->jdLabel;
+        uiTimeMark(c.get(), anchors && c->fields[0]->isVisible(),
+                   QStringLiteral("UI-01 时间页锚点可寻且可见（6 个自旋框找到 %1/6；"
+                                  "应用/重置/现在/−1天/+1天 找到 %2/5；状态行=%3 JD 行=%4；"
+                                  "年框 visible=%5）")
+                       .arg(found).arg(btns)
+                       .arg(c->statusLabel ? QStringLiteral("有") : QStringLiteral("无"),
+                            c->jdLabel ? QStringLiteral("有") : QStringLiteral("无"),
+                            (c->fields[0] && c->fields[0]->isVisible())
+                                ? QStringLiteral("true") : QStringLiteral("false")));
+        if (!anchors)
+        {
+            uiTimeUnavailable(app, c.get(),
+                              QStringLiteral("缺 QML 锚点：TimePage 的 objectName 至少一个"
+                                             "找不到 —— 接线或命名断了，判据无法进行"));
+            return;
+        }
+        // 暂停时钟：本检查全部是"写入后读回"的等式，时钟若在走会把 JD 比较淹掉。
+        // 也顺带让 QML 的投影 Label 稳定，UI-10 才有意义。
+        c->facade->setSimulationPaused(true);
+        c->details.append(QStringLiteral("TIMEUICHECK-note 已暂停时钟（scale=0），"
+                                         "全部 JD 断言在冻结区执行；tick=%1ms")
+                              .arg(c->tickMs));
+        break;
+    }
+    case 1: {
+        // ── 写 A（C++ 侧命令）→ 下一拍看 QML 的 6 个框有没有跟着回填 ──────
+        const bool wrote = c->facade->setLocalDateTime(kUiTimeA[0], kUiTimeA[1], kUiTimeA[2],
+                                                       kUiTimeA[3], kUiTimeA[4], kUiTimeA[5]);
+        c->details.append(QStringLiteral("UI-02-prep C++ setLocalDateTime(%1) → %2（token=%3）")
+                              .arg(uiTimeFieldsText(kUiTimeA),
+                                   wrote ? QStringLiteral("true") : QStringLiteral("false"),
+                                   c->facade->lastTimeRefusal()));
+        break;
+    }
+    case 2: {
+        // ── UI-02：C++ → QML 回填绑定是活的（读 SpinBox 真实 value）──────
+        int got[6];
+        uiTimeReadFields(c.get(), got);
+        uiTimeMark(c.get(), uiTimeFieldsEq(c.get(), kUiTimeA),
+                   QStringLiteral("UI-02 C++ 写入后 QML 自旋框跟着回填（框内=%1，目标=%2）")
+                       .arg(uiTimeFieldsText(got), uiTimeFieldsText(kUiTimeA)));
+        // 写 B（与 A 不同）—— 下一拍若还是 A，就说明某个字段是写死的
+        c->facade->setLocalDateTime(kUiTimeB[0], kUiTimeB[1], kUiTimeB[2],
+                                    kUiTimeB[3], kUiTimeB[4], kUiTimeB[5]);
+        break;
+    }
+    case 3: {
+        // ── UI-03：换一个**不同**的时刻，框必须跟着变（判别性）───────────
+        int got[6];
+        uiTimeReadFields(c.get(), got);
+        uiTimeMark(c.get(), uiTimeFieldsEq(c.get(), kUiTimeB),
+                   QStringLiteral("UI-03 判别性：换写 %1（与上组不同）后框内=%2 —— "
+                                  "排除\"某字段写死/回填只回一部分\"")
+                       .arg(uiTimeFieldsText(kUiTimeB), uiTimeFieldsText(got)));
+        break;
+    }
+    case 4: {
+        // ── 把框改成 C（像用户那样先改框），记下此刻 JD ──────────────────
+        uiTimeSetFields(c.get(), kUiTimeC);
+        c->jdBeforeApply = c->facade->julianDay();
+        int got[6];
+        uiTimeReadFields(c.get(), got);
+        c->details.append(QStringLiteral("UI-04-prep 已在 QML 里把 6 个框改成 %1，"
+                                         "此刻引擎 JD=%2（**还没点应用**）")
+                              .arg(uiTimeFieldsText(got))
+                              .arg(c->jdBeforeApply, 0, 'f', 6));
+        break;
+    }
+    case 5: {
+        // ── UI-04：改框后**自动回填被 dirty 挡住**（框内保持用户改的值）──
+        //   本页头注说"不挡就会：回填 → 触发 → 又写一次引擎"。这条判据就是要验
+        //   那个 syncing/dirty 守卫真的在起作用 —— 否则用户改的数字会被每秒覆盖。
+        int got[6];
+        uiTimeReadFields(c.get(), got);
+        uiTimeMark(c.get(), uiTimeFieldsEq(c.get(), kUiTimeC),
+                   QStringLiteral("UI-04 改框后等 %1ms（≥ 400ms 自动回填周期），框内仍=%2"
+                                  "（dirty 守卫挡住了回填）")
+                       .arg(c->tickMs).arg(uiTimeFieldsText(got)));
+        // ── 真实点击「应用」──────────────────────────────────────────────
+        const QPointF p = uiLocateCenter(c->applyButton);
+        c->details.append(QStringLiteral("UI-05-note 向窗口投递真实点击 @(%1,%2)——「应用」"
+                                         "按钮尺寸 %3×%4，窗口 %5×%6，窗口受理=%7")
+                              .arg(p.x(), 0, 'f', 1).arg(p.y(), 0, 'f', 1)
+                              .arg(c->applyButton->width(), 0, 'f', 0)
+                              .arg(c->applyButton->height(), 0, 'f', 0)
+                              .arg(c->window->width()).arg(c->window->height())
+                              .arg(uiLocateClick(c->window, p) ? QStringLiteral("true")
+                                                               : QStringLiteral("false")));
+        break;
+    }
+    case 6: {
+        // ── UI-05：点「应用」→ 引擎 JD 落到**公式算出的那个值**（精确，不是"变了就行"）
+        double want = 0.0;
+        const bool haveWant = uiTimeExpectedJd(c->facade, kUiTimeC, &want);
+        const double jd = c->facade->julianDay();
+        const double diff = haveWant ? qAbs(jd - want) : -1.0;
+        int eng[6];
+        uiTimeEngineFields(c->facade, eng);
+        uiTimeMark(c.get(), haveWant && diff < 1e-6 && uiTimeFieldsMatchEngine(eng, kUiTimeC),
+                   QStringLiteral("UI-05 真实点击「应用」→ 引擎 JD=%1，期望 %2（差 %3 天，"
+                                  "容差 1e-6；引擎本地读回=%4，目标 %5）")
+                       .arg(jd, 0, 'f', 9).arg(want, 0, 'f', 9)
+                       .arg(diff, 0, 'e', 2)
+                       .arg(uiTimeFieldsText(eng), uiTimeFieldsText(kUiTimeC)));
+        break;
+    }
+    case 7: {
+        // ── 把框改成 D（另一个值），记下此刻 JD —— 准备负控 ──────────────
+        uiTimeSetFields(c.get(), kUiTimeD);
+        c->jdBeforeNoop = c->facade->julianDay();
+        const QPointF np = uiLocateCenter(c->statusLabel);
+        c->details.append(QStringLiteral("UI-06-note 框已改成 %1；负控靶点 = 状态行中心 "
+                                         "@(%2,%3)，Label 尺寸 %4×%5（非按钮，无交互处理器）")
+                              .arg(uiTimeFieldsText(kUiTimeD))
+                              .arg(np.x(), 0, 'f', 1).arg(np.y(), 0, 'f', 1)
+                              .arg(c->statusLabel->width(), 0, 'f', 1)
+                              .arg(c->statusLabel->height(), 0, 'f', 1));
+        uiLocateClick(c->window, np);
+        break;
+    }
+    case 8: {
+        // ── UI-06：负控 —— 改了框但没点应用，时钟必须一个字节都不动 ───────
+        const double jd = c->facade->julianDay();
+        const double d = qAbs(jd - c->jdBeforeNoop);
+        int got[6];
+        uiTimeReadFields(c.get(), got);
+        uiTimeMark(c.get(), d < 1e-12 && uiTimeFieldsEq(c.get(), kUiTimeD),
+                   QStringLiteral("UI-06 负控：改了框（%1）但**不点应用**、只点非按钮控件 → "
+                                  "JD 位移 %2 天（要求 <1e-12）；框内仍=%3")
+                       .arg(uiTimeFieldsText(kUiTimeD)).arg(d, 0, 'e', 2)
+                       .arg(uiTimeFieldsText(got)));
+        break;
+    }
+    case 9: {
+        // ── 真实点击「重置」──────────────────────────────────────────────
+        uiLocateClick(c->window, uiLocateCenter(c->resetButton));
+        break;
+    }
+    case 10: {
+        // ── UI-07：重置只**回填**引擎当前值，不写时钟 ────────────────────
+        int eng[6], got[6];
+        uiTimeEngineFields(c->facade, eng);
+        uiTimeReadFields(c.get(), got);
+        const double d = qAbs(c->facade->julianDay() - c->jdBeforeNoop);
+        bool same = true;
+        for (int k = 0; k < 6; ++k)
+            same = same && (got[k] == eng[k]);
+        uiTimeMark(c.get(), same && d < 1e-12,
+                   QStringLiteral("UI-07 真实点击「重置」→ 框内=%1 回到引擎当前值=%2，"
+                                  "且 JD 位移 %3 天（<1e-12，即重置**不写时钟**）")
+                       .arg(uiTimeFieldsText(got), uiTimeFieldsText(eng))
+                       .arg(d, 0, 'e', 2));
+        // ── 先跳到 1900 年，让"现在"这条判据有判别性 ────────────────────
+        double jd1900 = 0.0;
+        StelUtils::getJDFromDate(&jd1900, 1900, 1, 1, 0, 0, 0.f);
+        c->facade->setJulianDay(jd1900);
+        c->jdBeforeNow = c->facade->julianDay();
+        c->details.append(QStringLiteral("UI-08-prep 已跳到 JD=%1（1900-01-01），"
+                                         "与系统时刻差 %2 天 —— 判别性前提")
+                              .arg(c->jdBeforeNow, 0, 'f', 4)
+                              .arg(qAbs(c->jdBeforeNow - StelUtils::getJDFromSystem()), 0, 'f', 2));
+        uiLocateClick(c->window, uiLocateCenter(c->nowButton));
+        break;
+    }
+    case 11: {
+        // ── UI-08：点「现在」→ 引擎 JD 就是系统当前时刻 ──────────────────
+        const double diff = qAbs(c->facade->julianDay() - StelUtils::getJDFromSystem());
+        const double contrast = qAbs(c->jdBeforeNow - StelUtils::getJDFromSystem());
+        uiTimeMark(c.get(), diff < 1e-3,
+                   QStringLiteral("UI-08 真实点击「现在」→ 与系统时刻差 %1 天（容差 1e-3；"
+                                  "跳转前是 %2 天，判别性成立=%3）")
+                       .arg(diff, 0, 'e', 3).arg(contrast, 0, 'f', 2)
+                       .arg(contrast > 100.0 ? QStringLiteral("true") : QStringLiteral("false")));
+        // 下一拍读状态文案（绑定靠 lastTimeRefusalChanged 重算）
+        break;
+    }
+    case 12: {
+        // ── UI-09a：成功写入后，状态行必须声称"已生效"────────────────────
+        //   这一条正是抓到 Q_PROPERTY 缺陷的那条：修前 `appFacade.lastTimeRefusal`
+        //   读到函数对象 ⇒ 恒走 else 分支 ⇒ timeRefusalText() 在 ok 时返回空串
+        //   ⇒ 文案是空串（且颜色被标红）。
+        c->nowText = c->statusLabel->property("text").toString();
+        const bool okToken = c->facade->lastTimeRefusal() == QStringLiteral("ok");
+        uiTimeMark(c.get(), okToken && !c->nowText.isEmpty()
+                                && c->nowText.contains(QStringLiteral("已按写入生效")),
+                   QStringLiteral("UI-09a 写入成功后状态行文案=\"%1\"（token=%2，"
+                                  "要求非空且声称已生效）")
+                       .arg(c->nowText, c->facade->lastTimeRefusal()));
+        // ── 做一次**非法写入**（13 月），看状态行会不会跟着改口 ──────────
+        c->jdBeforeIllegal = c->facade->julianDay();
+        const bool landed = c->facade->setLocalDateTime(2026, 13, 1, 0, 0, 0);
+        c->details.append(QStringLiteral("UI-09b-prep setLocalDateTime(2026-13-01 …) → %1"
+                                         "（token=%2）")
+                              .arg(landed ? QStringLiteral("true") : QStringLiteral("false"),
+                                   c->facade->lastTimeRefusal()));
+        break;
+    }
+    case 13: {
+        // ── UI-09b：非法写入后状态行**不再**声称生效，且时钟未动 ─────────
+        const QString text = c->statusLabel->property("text").toString();
+        const double d = qAbs(c->facade->julianDay() - c->jdBeforeIllegal);
+        const bool tokOk = c->facade->lastTimeRefusal() == QStringLiteral("invalid-date");
+        uiTimeMark(c.get(), tokOk && !text.isEmpty()
+                                && !text.contains(QStringLiteral("已按写入生效"))
+                                && d < 1e-12,
+                   QStringLiteral("UI-09b 非法写入后状态行文案=\"%1\"（token=%2，"
+                                  "不得再声称已生效）；JD 位移 %3 天（<1e-12）")
+                       .arg(text, c->facade->lastTimeRefusal()).arg(d, 0, 'e', 2));
+        break;
+    }
+    case 14: {
+        // ── UI-10a：JD 只读投影（300ms 轮询）与 C++ 侧同源、且不是"—" ────
+        const QString t = c->jdLabel->property("text").toString();
+        c->jdLabel0 = t.toDouble();
+        const double cur = c->facade->julianDay();
+        uiTimeMark(c.get(), t != QStringLiteral("—") && c->jdLabel0 > 0.0
+                                && qAbs(c->jdLabel0 - cur) < 1e-3,
+                   QStringLiteral("UI-10a JD 投影行文本=\"%1\"（解析 %2，C++ 侧 %3，"
+                                  "差 %4 天；容差 1e-3）")
+                       .arg(t).arg(c->jdLabel0, 0, 'f', 6).arg(cur, 0, 'f', 6)
+                       .arg(qAbs(c->jdLabel0 - cur), 0, 'e', 2));
+        // ── 跳 +1 年，下一拍看投影行会不会跟着变（不是常量）──────────────
+        c->facade->setJulianDay(cur + 365.25);
+        break;
+    }
+    case 15: {
+        // ── UI-10b：投影行确实跟着时钟走（排除"只画了个常量"）────────────
+        const QString t = c->jdLabel->property("text").toString();
+        const double now = t.toDouble();
+        const double want = c->jdLabel0 + 365.25;
+        uiTimeMark(c.get(), qAbs(now - want) < 0.01,
+                   QStringLiteral("UI-10b 时钟 +365.25 天后投影行=%1（期望 %2，差 %3 天）"
+                                  "—— 证明它是活的投影而不是常量")
+                       .arg(now, 0, 'f', 6).arg(want, 0, 'f', 6)
+                       .arg(qAbs(now - want), 0, 'e', 2));
+        // ── 步进按钮：真实点击「+1 天」（透传引擎 StelAction）────────────
+        c->jdBeforeNow = c->facade->julianDay();
+        const QPointF p = uiLocateCenter(c->addDayButton);
+        c->details.append(QStringLiteral("UI-11-note 向窗口投递真实点击 @(%1,%2)——「+1 天」"
+                                         "按钮尺寸 %3×%4（ActionRouter 透传 "
+                                         "actionAdd_Solar_Day）")
+                              .arg(p.x(), 0, 'f', 1).arg(p.y(), 0, 'f', 1)
+                              .arg(c->addDayButton->width(), 0, 'f', 0)
+                              .arg(c->addDayButton->height(), 0, 'f', 0));
+        uiLocateClick(c->window, p);
+        break;
+    }
+    default: {
+        // ── UI-11：步进透传链活着（QML 按钮 → ActionRouter → 引擎 StelAction）
+        const double d = c->facade->julianDay() - c->jdBeforeNow;
+        uiTimeMark(c.get(), qAbs(d - 1.0) < 1e-6,
+                   QStringLiteral("UI-11 真实点击「+1 天」→ JD 位移 %1 天（期望 1，"
+                                  "容差 1e-6）—— QML→ActionRouter→引擎 透传链是活的")
+                       .arg(d, 0, 'f', 9));
+        uiTimeFinish(app, c.get());
+        return;
+    }
+    }
+    ++c->phase;
+    uiTimeAdvance(app, c);
+}
+
+void uiTimeAdvance(QGuiApplication *app, std::shared_ptr<UiTimeCheck> c)
+{
+    QTimer::singleShot(c->tickMs, app, [app, c]() { uiTimeStep(app, c); });
+}
+
+int runUiTimeCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacade *facade)
+{
+    auto c = std::make_shared<UiTimeCheck>();
+    c->window = window;
+    c->facade = facade;
+    std::printf("TIMEUICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，"
+                "共 13 条判据，每相位 %dms）\n", c->tickMs);
+    std::fflush(stdout);
+    uiTimeStep(app, c);
+    return 0;
+}
 #endif
 
 } // namespace
@@ -1277,7 +1750,13 @@ int main(int argc, char **argv)
     const bool locateCheck = qEnvironmentVariableIsSet("STELQUICK_LOCATE_CHECK");
     // T18：UI 层端到端自检（objectName 锚点 + 窗口真实鼠标事件，见下方 uiLocate*）
     const bool uiCheck = qEnvironmentVariableIsSet("STELQUICK_UI_CHECK");
-    // 起始页：A2/DYN/长跑校验必须停在天空页；搜索与定位自检停在搜索页
+    // T19：改时间自检（往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动，见 TimeCheck.hpp）
+    const bool timeCheck = qEnvironmentVariableIsSet("STELQUICK_TIME_CHECK");
+    // T19：时间页的 **UI 层端到端**自检（见下方 uiTime*）。与 timeCheck 分开：
+    //   timeCheck 走 C++ 公共 API，timeUiCheck 走"真实控件 + 真实鼠标事件"。
+    //   两者缺一不可 —— 前者证逻辑，后者证接线（T15 的血泪教训）。
+    const bool timeUiCheck = qEnvironmentVariableIsSet("STELQUICK_TIME_UI_CHECK");
+    // 起始页：A2/DYN/长跑校验必须停在天空页；搜索/定位/时间自检停在各自页面
     // （顺带验证该 QML 页面能真正被实例化——页面有语法/引用错误时这一步就会暴露，
     //  而不是等人工点击）；手动模式下可用 STELQUICK_PAGE 指定。
     const QString startPage = (a2Check || dynCheck || longRun
@@ -1286,8 +1765,11 @@ int main(int argc, char **argv)
                                   ? QStringLiteral("sky")
                                   : ((searchCheck || locateCheck || uiCheck)
                                          ? QStringLiteral("search")
-                                         : qEnvironmentVariable("STELQUICK_PAGE",
-                                                                QStringLiteral("diag")));
+                                         : ((timeCheck || timeUiCheck)
+                                                ? QStringLiteral("time")
+                                                : qEnvironmentVariable(
+                                                      "STELQUICK_PAGE",
+                                                      QStringLiteral("diag"))));
 
     // 3. 加载 QML
     // T15 命令通路装配（加载前注入，QML 命令栏/Keys 直接绑定）：
@@ -1763,6 +2245,106 @@ int main(int argc, char **argv)
                 std::fflush(stdout);
                 app.exit(result.pass ? 0 : 10);
             });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T19 改时间自检（STELQUICK_TIME_CHECK=1）：需要真实引擎（要真能写时钟、
+    // 真跑帧泵、真量"星空随时刻变化"）。装配顺序与 LOCATE_CHECK 完全一致，
+    // 判据本体见 TimeCheck。起始页切到 "time"，故同时验证时间页 QML 可被实例化。
+    if (timeCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("TIMECHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "TIMECHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TIMECHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "TIMECHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TIMECHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::TimeCheck::run(
+            &app, &appFacade,
+            [&app](const stelapp::TimeCheck::Result &result) {
+                std::printf("TIMECHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("TIMECHECK: %s\n", line.toUtf8().constData());
+                std::printf("TIMECHECK: 判据 %d/%d\n", result.passed, result.total);
+                if (!result.ran || result.unavailable) {
+                    // 环境条件，不是逻辑缺陷——照实报 UNAVAILABLE，绝不伪装成 PASS。
+                    std::printf("TIMECHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("TIMECHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T19 时间页 UI 层端到端自检（STELQUICK_TIME_UI_CHECK=1）：**从最外层注入**。
+    // 与 TIMECHECK 的关键区别：TIMECHECK 走 AppFacade 的 C++ 公共 API，证明不了
+    // TimePage.qml 的 onClicked 接线与状态行绑定是活的；本检查按 objectName 找
+    // 真实控件、向窗口投递真实鼠标事件，并反向读 QML 控件的真实属性
+    // （SpinBox.value / Label.text）。判据见下方 uiTime*，共 13 条。
+    if (timeUiCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("TIMEUICHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "TIMEUICHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TIMEUICHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "TIMEUICHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TIMEUICHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+        runUiTimeCheck(&app, window, &appFacade);
         const int rc = app.exec();
         if (liveSkyRuntime) {
             liveSkyRuntime->stop();

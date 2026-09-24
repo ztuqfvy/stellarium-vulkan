@@ -1,0 +1,44 @@
+──────── DYN run 1/3（rc=0）────────
+DYNCHECK: 生产者=engine(真实引擎)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[13.3s起]稳态 49.9 fps（下限 30.0）；全程累计 746 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 49.9 fps（下限 20.0）；全程推进 697 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=746 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 195ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=603 mean=0.22ms max=0.55ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS
+──────── DYN run 2/3（rc=0）────────
+DYNCHECK: 生产者=engine(真实引擎)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[13.3s起]稳态 49.8 fps（下限 30.0）；全程累计 719 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 49.8 fps（下限 20.0）；全程推进 670 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=719 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 193ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=579 mean=0.22ms max=0.51ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS
+──────── DYN run 3/3（rc=0）────────
+DYNCHECK: 生产者=engine(真实引擎)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[13.3s起]稳态 49.8 fps（下限 30.0）；全程累计 734 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 49.8 fps（下限 20.0）；全程推进 686 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=734 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 194ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=591 mean=0.23ms max=0.53ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS
+──────── 汇总 ────────
+环境：15:31  up 9 days,  4:42, 1 user, load averages: 3.09 3.04 3.14
+环境注记：displaysleep=2 分钟（显示器空闲即休眠）
+环境注记：Spotlight 批量索引正在运行（mdbulkimport）——帧率读数可能被压低
+读数采信规则：D1-C02/D1-C07 量的是「窗口有没有在渲染」——它要求窗口被暴露。
+  若同条件的**替身对照**也失败（尤其"全程推进 0 帧"），则该读数反映的是
+  「仪器测不到」而不是「被测程序失败」，**不作为退化证据**；
+  同时也不改写成 INVALID（原始读数照实保留，只加这条定性）。
+DYN 显示/降级判据（真实引擎生产者）：3/3 次 PASS
+定性：本机为环境敏感/间歇（T18 的 A/B 记录见 dyn-ab-baseline-vs-t18.txt）。
+零退化的依据是同口径 A/B + 替身路径不含本任务代码，不是本行的某一次绿色。

@@ -160,11 +160,16 @@ Item {
                 wrapMode: Text.WordWrap
                 font.pixelSize: 11
                 // 三档：正在跟踪 / 上一次被拒 / 什么都不说。
+                // ⚠️ 必须**真的读一下 token**：QML 只把"绑定里实际读过的属性"登记成依赖。
+                //   `locateRefusalText()` 是一次普通函数调用，它内部读的 m_refusal 不在
+                //   依赖表里 ⇒ 少了这一行，"上一次被拒"的文案在 token 变化时不会重算
+                //   （T19 顺手发现的同族缺陷；TimePage 那条更严重，见 AppFacade.hpp）。
                 color: appFacade.tracking ? "#2e7d32" : "#c62828"
                 text: {
+                    var refusal = appFacade.lastLocateRefusal
                     if (appFacade.tracking)
                         return "正在跟踪：" + appFacade.trackedName
-                    return appFacade.locateRefusalText()
+                    return refusal === "ok" ? "" : appFacade.locateRefusalText()
                 }
             }
 
