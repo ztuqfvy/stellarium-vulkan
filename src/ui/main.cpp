@@ -57,7 +57,11 @@
 #include <QImage>
 #include <QSettings>
 #include <QThread>
+#ifdef Q_OS_WIN
+#include <io.h> //!< MSVC：unistd.h 的等价子集（isatty 等）
+#else
 #include <unistd.h>
+#endif
 #endif
 #include <QElapsedTimer>
 #include <QFileInfo>
