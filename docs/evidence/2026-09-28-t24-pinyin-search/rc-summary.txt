@@ -1,0 +1,13 @@
+searchcheck-mac rc=0
+regression-timecheck rc=0
+regression-timeuicheck rc=0
+regression-returnuicheck rc=0
+regression-replaycheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-clockcheck rc=0
+regression-actioncheck rc=0
+regression-a2-metal rc=0
+regression-dyn-engine-metal 3/3 PASS（间歇，见 dyn-ab-baseline-vs-t18.txt）
+regression-dyn-stub-metal 3/3 PASS（判别性对照：替身不含 T24 代码）
+regression-s3-stela3 rc=0

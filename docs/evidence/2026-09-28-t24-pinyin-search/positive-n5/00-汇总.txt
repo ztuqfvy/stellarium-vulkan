@@ -1,0 +1,7 @@
+# 正跑 N=5 汇总（拼音分支在位）
+
+run1  rc=0  51/51 PASS  VERDICT=PASS
+run2  rc=0  51/51 PASS  VERDICT=PASS
+run3  rc=0  51/51 PASS  VERDICT=PASS
+run4  rc=0  51/51 PASS  VERDICT=PASS
+run5  rc=0  51/51 PASS  VERDICT=PASS

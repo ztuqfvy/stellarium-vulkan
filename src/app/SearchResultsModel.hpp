@@ -135,7 +135,11 @@ public:
     quint64 searchCount() const { return m_searchCount; }
     //! 最近一次引擎取数的**原始**匹配条数（截断前）。用来证明"总量上限真的生效"：
     //! 正常环境下它应大于等于最终行数；两者相等即说明本次未触发截断。
+    //! T24 注：拼音候选**不计入**本值（引擎检索的口径不变）；拼音命中条数看
+    //! lastPinyinMatchCount()。含拼音候选时 "raw ≥ rows" 应改读 "raw+pinyin ≥ rows"。
     int lastRawMatchCount() const { return m_lastRaw; }
+    //! 最近一次拼音检索补充的候选条数（T24）。非拼音形态查询恒为 0。
+    int lastPinyinMatchCount() const { return m_lastPinyin; }
 
 signals:
     void searchingChanged(bool searching);
@@ -162,6 +166,7 @@ private:
     quint64 m_discarded = 0;
     quint64 m_searchCount = 0;
     int m_lastRaw = 0;            //!< 最近一次取数的原始匹配数（截断前）
+    int m_lastPinyin = 0;         //!< 最近一次拼音检索补充的候选数（T24）
     bool m_searching = false;
     QString m_lastQuery;
     QString m_emptyReason;

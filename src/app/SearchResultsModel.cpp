@@ -7,11 +7,14 @@
  */
 #include "app/SearchResultsModel.hpp"
 #include "app/SearchRanker.hpp"
+#include "app/PinyinIndex.hpp"
 
 #if defined(STELQUICK_HAS_ENGINE)
 #include "StelApp.hpp"
 #include "StelObject.hpp"
 #include "StelObjectMgr.hpp"
+#include "StelModuleMgr.hpp"
+#include "StelObjectModule.hpp"
 #endif
 
 #include <algorithm>
@@ -176,6 +179,7 @@ void SearchResultsModel::collect(const QString &query, int maxItems, QVector<Row
     rows.clear();
     emptyReason.clear();
     m_lastRaw = 0;
+    m_lastPinyin = 0;
 
     const QString q = query.trimmed();
     if (q.isEmpty()) {
@@ -197,6 +201,38 @@ void SearchResultsModel::collect(const QString &query, int maxItems, QVector<Row
     StelObjectMgr &mgr = StelApp::getInstance().getStelObjectMgr();
     const QVector<QPair<QString, StelObjectP>> matches = mgr.listMatchingObjects(q, cap, false);
     m_lastRaw = matches.size();
+
+    // ── ⓪ T24 拼音检索：ASCII 查询补充"中文名拼音命中"的候选 ──────────────
+    // 引擎检索对 "yueqiu" 这类拼音串必然空手而归（字面 contains 不认汉字名），
+    // 中文界面下"用键盘找天体"这条路只有这里能救——这是**召回**修复，不是排序。
+    // 候选源：各模块 listAllObjects(false)（翻译名）。只对含汉字的名字做拼音
+    // 匹配（英文名引擎那路已覆盖）；与引擎候选进入同一套 ①去重 ②排序 ③截断。
+    // m_lastRaw 语义保持"引擎检索返回条数"，拼音候选数单独记 m_lastPinyin
+    //（判据 SRC-05b 的 "raw ≥ rows" 口径在拼音分支下按 raw+pinyin 校正）。
+    QVector<QPair<QString, StelObjectP>> pinyinMatches;
+    if (PinyinIndex::isPinyinQuery(q) && PinyinIndex::available()) {
+        const QString qLower = q.toLower();
+        // 候选源 = 全部 StelObjectModule（经 StelModuleMgr 枚举后 dynamic_cast 收敛）。
+        // StelObjectMgr::objectsModules 是 private —— 不为读一个列表去动引擎，
+        // StelModuleMgr::getAllModules() 是公开接口，cast 语义与引擎聚合内部一致
+        // （StelObjectMgr::registerObject 也是把 StelObjectModule* 塞进同一张表）。
+        const auto allModules = StelApp::getInstance().getModuleMgr().getAllModules();
+        for (StelModule *m : allModules) {
+            auto *mod = dynamic_cast<StelObjectModule *>(m);
+            if (!mod)
+                continue;
+            const auto all = mod->listAllObjects(false);
+            for (const auto &pr : all) {
+                if (!pr.second || pr.first.isEmpty() || !PinyinIndex::hasCjk(pr.first))
+                    continue;
+                const MatchQuality pq = PinyinIndex::matchQuality(pr.first, qLower);
+                if (pq == MatchQuality::None)
+                    continue;
+                pinyinMatches.append(pr);
+            }
+        }
+    }
+    m_lastPinyin = pinyinMatches.size();
 
     // ── ① 去重（按 stableId）：保留**相关度最高**的那一行 ──────────────────
     // 引擎把**翻译名表**与**英文名表**各枚举一遍（StelObjectModule.cpp:52
@@ -234,6 +270,32 @@ void SearchResultsModel::collect(const QString &query, int maxItems, QVector<Row
         seenIndex.insert(r.stableId, cand.size());
         cand.append(r);
         // obj 到此为止：**不存指针**。契约"不向 QML 传悬空裸指针"就在这一行落实。
+    }
+
+    // ── ①' 拼音候选并入同一套去重（T24）：同一 stableId 若引擎检索也给了，──
+    // 保留**相关度更高**的那一行（拼音行 quality 由 PinyinIndex 判定，通常低于
+    // 字面命中——同名冲突时正确让位）。
+    for (const auto &pr : pinyinMatches) {
+        const StelObjectP &obj = pr.second;
+        if (!obj)
+            continue;
+        Row r;
+        r.name        = pr.first;
+        r.englishName = obj->getEnglishName();
+        r.objectType  = obj->getObjectTypeI18n();
+        r.typeName    = obj->getType();
+        r.stableId    = QStringLiteral("%1:%2").arg(r.typeName, obj->getID());
+        r.quality     = static_cast<int>(PinyinIndex::matchQuality(r.name, q.toLower()));
+
+        const auto it = seenIndex.constFind(r.stableId);
+        if (it != seenIndex.constEnd()) {
+            const Row &prev = cand.at(it.value());
+            if (r.quality < prev.quality)
+                cand[it.value()] = r;
+            continue;
+        }
+        seenIndex.insert(r.stableId, cand.size());
+        cand.append(r);
     }
 
     // ── ② 相关度排序（T21）：恢复被聚合层 `std::sort` 抹掉的完全匹配优先序 ──

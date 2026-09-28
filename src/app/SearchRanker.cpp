@@ -106,7 +106,9 @@ QString SearchRanker::qualityName(MatchQuality q)
     case MatchQuality::Exact:     return QStringLiteral("完全匹配");
     case MatchQuality::Prefix:    return QStringLiteral("前缀匹配");
     case MatchQuality::WordStart: return QStringLiteral("词首匹配");
+    case MatchQuality::PinyinFull:    return QStringLiteral("拼音全拼");
     case MatchQuality::Substring: return QStringLiteral("子串匹配");
+    case MatchQuality::PinyinInitial: return QStringLiteral("拼音首字母");
     case MatchQuality::None:      return QStringLiteral("不匹配");
     }
     return QStringLiteral("未知");

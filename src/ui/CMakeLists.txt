@@ -124,6 +124,10 @@ set(stelQuickUI_SOURCES
     # 它替代的是引擎聚合层被 `std::sort` 抹掉的完全匹配优先序，理由见头注。
     ../app/SearchRanker.hpp
     ../app/SearchRanker.cpp
+    # T24 拼音检索索引：纯逻辑 + 数据表（qrc）。中文界面下 "yueqiu" → "月球" 的
+    # 召回修复；不改引擎的理由与 T21 相同（共用原语 + 应用层资产）。
+    ../app/PinyinIndex.hpp
+    ../app/PinyinIndex.cpp
     ../app/ObjectInfoModel.hpp
     ../app/ObjectInfoModel.cpp
     ../app/SearchModelCheck.hpp
@@ -203,6 +207,28 @@ qt_add_resources(stelQuickUI "stelquickui_qmldir"
     BASE "${CMAKE_CURRENT_BINARY_DIR}/qmlmodule"
     FILES "${CMAKE_CURRENT_BINARY_DIR}/qmlmodule/qmldir"
 )
+
+# T24：拼音表（mozillazg/pinyin-data v0.15.0，MIT）→ 构建期已转无声调精简格式。
+# 资源路径 /StelQuickUI/pinyin-lite.txt（PinyinIndex.cpp 懒加载）。数据文件
+# 放 assets/ 而不是 qml 模块 QML_FILES——它是数据不是 QML。
+qt_add_resources(stelQuickUI "stelquickui_pinyin"
+    PREFIX "/StelQuickUI"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+    FILES assets/pinyin-lite.txt
+)
+
+# T24：引擎 StelFileMgr::getLocaleDir() 按 applicationDirPath/../translations 找
+# .qm（StelFileMgr.cpp:459-487）。合流形态 bundle 布局下三个候选路径全不命中
+# （translations 实际在 build-release/translations，而 install location="."）⇒
+# 翻译加载失败、天体名退回英文 ⇒ 拼音检索（需要中文名）整体失效。
+# 处置：POST_BUILD 把主域 zh_CN.qm 拷进 bundle 的 Contents/translations/stellarium/
+# —— 恰好命中候选 2（appDir/../translations）。Windows 无 bundle，目标与查找
+# 路径同样相对一致。只需主域：拼音判据的天体名（月球/深空名）全在 stellarium 域。
+add_custom_command(TARGET stelQuickUI POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_BINARY_DIR}/translations/stellarium/zh_CN.qm
+        $<TARGET_FILE_DIR:stelQuickUI>/../translations/stellarium/zh_CN.qm
+    COMMENT "T24: copy stellarium zh_CN.qm into bundle translations dir")
 
 # 包含路径以 src/ 为根："ui/quick/..."、"render/vulkan/..."
 target_include_directories(stelQuickUI PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)

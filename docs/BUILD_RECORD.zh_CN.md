@@ -2449,3 +2449,63 @@ DYN 引擎 2/3 + 替身 3/3（既有间歇形态，替身绿 ⇒ 非退化）。
 （含 `negctrl/`、`positive-n5/`、`history/`）；交付文档
 `docs/T23_TRACKING_LEAK_ROOTCURE.zh_CN.md`；证据总索引补 T23 行；
 计划文档 §2 / §9.1 / §9.2 / §9.4.6 移交表 / 新增 §9.4.7。
+
+## 2026-09-28｜T24 搜索排序的拼音检索（A4 加固）（**SEARCHCHECK 51/51 ×5；负控 48/51 三条全红；回归 9 项 rc=0 含 S3；DYN 3/3 + 替身 3/3**）
+
+### 问题定性：召回，不是排序
+
+中文界面下天体名是翻译名（"月球"），`matchObjectName`（StelObjectModule.cpp:32-38）
+做的是**字面** contains/startsWith ⇒ `yueqiu` 与 `月球` 永远不匹配，拼音查询在
+引擎检索这路**一条候选都拿不到**。这是 T21 头注写明的边界之外（"本层无法凭空召回"）
+——必须在检索阶段补拼音候选源。
+
+### 实现
+
+- `PinyinIndex.{hpp,cpp}`：mozillazg/pinyin-data v0.15.0（MIT）→ 构建期转无声调
+  精简格式（44435 条，544KB）→ qrc 嵌入懒加载 + 名字→拼音 memo；多音字按主读音。
+- `collect()` 拼音分支：查询纯 ASCII 时遍历全部天体模块（`StelModuleMgr::
+  getAllModules()` + `dynamic_cast`——`objectsModules` 是 private，**不为读列表
+  动引擎**）的 `listAllObjects(false)`，对含汉字的名字做拼音匹配，并入既有
+  去重/排序/截断管线。
+- `SearchRanker` 两个新档位：`PinyinFull`（WordStart 与 Substring 之间——特意
+  打的读音强于字面碰巧包含）、`PinyinInitial`（垫底——误命中率最高）。既有五档
+  相对序不变 ⇒ 旧判据零改动。
+- 类型分组（移交表另一半）：typeWeight 次序因子已覆盖；UI 分段评估后**不做**
+  （≤20 行列表分段标题挤占行高，信息密度负收益），产品决策留档交付文档 §2.4。
+
+### 🔴 顺手暴露的老病：合流形态自 T10 起从未加载过任何翻译
+
+首跑活引擎腿拼音候选恒 0，DIAG（模块 cast 数 / 名字样本）显示**名字全是英文**，
+启动日志一直有 `Couldn't load translations for language "zh_CN"`。根因：
+`StelFileMgr::getLocaleDir()`（StelFileMgr.cpp:459-487）三个候选路径在 bundle
+布局（`stelQuickUI.app/Contents/MacOS/`）下全不命中 `build-release/translations`
+（install location="."）。此前没有判据依赖翻译名 ⇒ 一直没暴露。
+处置：POST_BUILD 把主域 zh_CN.qm（718KB）拷进 `Contents/translations/stellarium/`
+（恰好命中候选 2，Windows 布局相对一致）。
+
+### 判据：两条腿 + 负控
+
+- 纯逻辑 PINY-01..05（环境无关恒可跑）：表加载 / 读音转换 4 例 / 分档 7 例 /
+  查询形态 / CJK 判定。
+- 活引擎 PINY-06..08：切 zh_CN 搜 `yueqiu` 首行 = 月球(Planet:Moon) 且
+  `lastPinyinMatchCount()>0`（**成对**——计数证明首行来自拼音分支而非字面命中）；
+  `yq` 首字母同样命中。**段内切语言、段尾必还原**（TC-18 血泪）。
+- 负控：collect 拼音分支临时 `false &&` ⇒ PINY-06/07/08 全红（rc=10），
+  其余 48 条绿 ⇒ 失败路径活的。
+- ⚠️ **SRC-05b/05c 口径校正**（raw → raw + pinyin）：拼音候选是截断前候选但
+  不计入 raw，旧口径在新能力生效后报假红——T21"判据别为上游缺陷背书"的镜像：
+  **判据也别为旧现状背书**。
+
+### 读数
+
+SEARCHCHECK 51/51 rc=0 ×5；负控 48/51 rc=10；回归 9 项 rc=0
+（timecheck 21/21、timeuicheck 19/19、returnuicheck 11/11、replaycheck 11/11、
+locatecheck 15/15、locate-uicheck 10/10、clockcheck、actioncheck、a2、S3）；
+DYN 引擎 3/3 + 替身 3/3。
+
+### 产物
+
+`tools/t24-verify.sh`；`docs/evidence/2026-09-28-t24-pinyin-search/`
+（含 negctrl/、positive-n5/、history-diag）；交付文档
+`docs/T24_PINYIN_SEARCH.zh_CN.md`；证据总索引补 T24 行；
+计划文档 §2 / §9.1 / §9.2 / §9.4.7 移交表更新。
