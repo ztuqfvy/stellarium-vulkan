@@ -58,6 +58,7 @@ public:
         QString objectType;   //!< getObjectTypeI18n()：天文类型（"行星"/"恒星"…）
         QString typeName;     //!< getType()：Stellarium 类名（回查用，见头注）
         QString stableId;     //!< "typeName:id"
+        int     quality = 4;  //!< T21：MatchQuality 的整数值（观测用；判据读它证明排序真的算过）
     };
 
     enum Roles
@@ -67,20 +68,32 @@ public:
         ObjectTypeRole,
         TypeNameRole,
         StableIdRole,
-        RankRole,             //!< 行序（0 基）。**不是相关度序**——见下方"排序口径"。
+        RankRole,             //!< 行序（0 基）。T21 起**就是相关度序**（排序已在本层生效）。
+        QualityRole,          //!< T21：本行的匹配质量分级（0=完全…3=子串，4=不匹配）
     };
     Q_ENUM(Roles)
 
-    //! 排序口径（依据引擎源码 StelObjectMgr.cpp::listMatchingObjects，非推测）：
-    //!   该方法遍历**所有**注册模块，各取至多 maxNbItem 条后 `result += ...` 拼接，
-    //!   最后 `std::sort` 按**名称字符串字典序**排。
-    //!   ⇒ ① 引擎头注写的"by order of relevance（按相关度）"对**聚合结果不成立**，
-    //!        因为拼接后又被字典序重排了；
-    //!     ② 调用方给的 maxNbItem 只是"**每模块**上限"，总量可达 模块数 × maxNbItem。
-    //!   本层因此把 maxItems 统一解释为**总量上限**（取字典序前 maxItems 条），
-    //!   使 QML 侧的"最多要 N 条"是真的 N 条；原始匹配数经 lastRawMatchCount()
-    //!   暴露出来，便于证明上限真的生效过。
-    //!   更进一步的排序策略（相关度/类型分组）留给 A4 搜索页，不在本层臆造。
+    //! 排序口径（T17 记录事实 / T21 落地修复）：
+    //!
+    //! 引擎侧的两处源码是**自相矛盾**的——
+    //!   ① 模块级 `StelObjectModule::listMatchingObjects`（StelObjectModule.cpp:45-75）
+    //!      **确实**按相关度排过：完全匹配被单独 `result.prepend()`（第 72-73 行），
+    //!      头注也承诺 "by order of relevance"（StelObjectModule.hpp:70）；
+    //!   ② 聚合级 `StelObjectMgr::listMatchingObjects`（StelObjectMgr.cpp:595-611）
+    //!      把各模块结果 `result +=` 拼接后**无条件**按名称字典序 `std::sort`（第 609 行），
+    //!      把 ① 的完全匹配优先序**整个抹掉**。
+    //! ⇒ 调用方拿到的是**纯字典序**。实测（搜 "Moon"）首行是 "Ghost of the Moon Nebula"，
+    //!   而用户输的是完整名称——见 T20 回放证据。
+    //!
+    //! 处置：本层用 `SearchRanker` 重排（不改引擎——那是共用原语，旧 SearchDialog
+    //! 也在用，见 SearchDialog.cpp:985）。分级与 tie-break 规则见 SearchRanker.hpp。
+    //!
+    //! 调用方给的 maxItems 仍解释为**总量上限**（引擎原语的 maxNbItem 是"每模块"上限），
+    //! 排序后才截断；原始匹配数经 lastRawMatchCount() 暴露，便于证明上限生效过。
+    //!
+    //! ⚠️ 边界：引擎的候选截断发生在**排序之前、按遍历顺序**（StelObjectModule.cpp:67-68
+    //! 是"累计到 maxNbItem 就 break"），所以高相关度候选可能压根没进候选集。
+    //! 本层只在**已返回候选内**重排——解决 precision@k，不解决 recall。
 
     explicit SearchResultsModel(QObject *parent = nullptr);
 

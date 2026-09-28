@@ -6,6 +6,7 @@
  * 设计与禁止事项见 SearchResultsModel.hpp 头注。
  */
 #include "app/SearchResultsModel.hpp"
+#include "app/SearchRanker.hpp"
 
 #if defined(STELQUICK_HAS_ENGINE)
 #include "StelApp.hpp"
@@ -14,7 +15,7 @@
 #endif
 
 #include <algorithm>
-#include <QSet>
+#include <QHash>
 
 namespace stelapp {
 
@@ -45,7 +46,8 @@ QVariant SearchResultsModel::data(const QModelIndex &index, int role) const
     case ObjectTypeRole:  return r.objectType;
     case TypeNameRole:    return r.typeName;
     case StableIdRole:    return r.stableId;
-    case RankRole:        return index.row();
+    case RankRole:        return index.row();   // T21 起即相关度序（排序已在本层生效）
+    case QualityRole:     return r.quality;
     default:              return QVariant();
     }
 }
@@ -60,6 +62,7 @@ QHash<int, QByteArray> SearchResultsModel::roleNames() const
         { TypeNameRole,    "typeName" },
         { StableIdRole,    "stableId" },
         { RankRole,        "rank" },
+        { QualityRole,     "quality" },
     };
     return roles;
 }
@@ -195,12 +198,20 @@ void SearchResultsModel::collect(const QString &query, int maxItems, QVector<Row
     const QVector<QPair<QString, StelObjectP>> matches = mgr.listMatchingObjects(q, cap, false);
     m_lastRaw = matches.size();
 
-    rows.reserve(std::min<int>(matches.size(), cap));
-    //! 去重键：stableId。见下方循环里的说明。
-    QSet<QString> seenIds;
+    // ── ① 去重（按 stableId）：保留**相关度最高**的那一行 ──────────────────
+    // 引擎把**翻译名表**与**英文名表**各枚举一遍（StelObjectModule.cpp:52
+    // `objs << listAllObjects(false) << listAllObjects(true)`），只要该天体有 ≥2 个
+    // 名字含查询串就**各产出一条**；`StelObjectMgr` 只做拼接 + 字典序重排，**不去重**。
+    // 实测搜 "Moon" 出 5 条，其中 2 对是同一 stableId（NGC 6781 ×2、NGC 1647 ×2）。
+    //
+    // ⚠️ T21 连带的语义改动：去重时**保留哪一行**决定用户看到的 `name`
+    //（两行的 name 可能是翻译名 vs 英文名）。T17-T20 保留的是"遍历顺序最先"那条
+    //（因聚合层排过字典序，等价于"字典序最前"）；T21 起改为**按相关度比**。
+    // 否则会出现"去重留下了低相关度的那个名字，排序再准也白搭"。
+    QVector<Row> cand;
+    QHash<QString, int> seenIndex;   //!< stableId → cand 下标
+    cand.reserve(matches.size());
     for (const QPair<QString, StelObjectP> &m : matches) {
-        if (rows.size() >= cap)          // 总量截断：取字典序前 cap 条
-            break;
         const StelObjectP &obj = m.second;
         if (!obj)                    // 引擎理论上不给空，但空指针一旦入表就是悬空隐患
             continue;                // ——此处直接丢弃该行，宁可少一行也不留隐患。
@@ -210,23 +221,34 @@ void SearchResultsModel::collect(const QString &query, int maxItems, QVector<Row
         r.objectType  = obj->getObjectTypeI18n();
         r.typeName    = obj->getType();
         r.stableId    = QStringLiteral("%1:%2").arg(r.typeName, obj->getID());
-        // ── 🔴 T20 抓到的真实缺陷：同一个天体会被引擎给两次 ────────────────
-        // `StelObjectModule::listMatchingObjects` 把**翻译名表**与**英文名表**
-        // 各枚举一遍（`objs << listAllObjects(false) << listAllObjects(true)`），
-        // 只要该天体有 ≥2 个名字里含查询串，就会**各产出一条**；`StelObjectMgr`
-        // 只做拼接 + 按名称字典序重排，**不去重**。
-        // 实测：搜 "Moon" 出 5 条，其中 2 对是同一个天体
-        //   （NGC 6781 出现 2 次、NGC 1647 出现 2 次）。
-        // 表现是用户看见重复项、且"第 N 条"这类索引对不上。
-        // 处置：本层按 stableId 去重（保留字典序最前的那一条）。
-        // 为什么不改引擎：那是上游 SearchDialog 也在用的原语，改它会牵连旧界面；
-        // 而且"同一个 object 只该有一行"本来就是**列表模型**该保证的事。
-        if (seenIds.contains(r.stableId))
+        r.quality     = static_cast<int>(SearchRanker::quality(r.name, q));
+
+        const auto it = seenIndex.constFind(r.stableId);
+        if (it != seenIndex.constEnd()) {
+            const Row &prev = cand.at(it.value());
+            if (SearchRanker::less(SearchRanker::key(r.name, r.typeName, q),
+                                   SearchRanker::key(prev.name, prev.typeName, q)))
+                cand[it.value()] = r;    // 新的这个更相关 ⇒ 换掉
             continue;
-        seenIds.insert(r.stableId);
-        rows.append(r);
+        }
+        seenIndex.insert(r.stableId, cand.size());
+        cand.append(r);
         // obj 到此为止：**不存指针**。契约"不向 QML 传悬空裸指针"就在这一行落实。
     }
+
+    // ── ② 相关度排序（T21）：恢复被聚合层 `std::sort` 抹掉的完全匹配优先序 ──
+    // 用 stable_sort：比较键里已经带了名称字典序作尾键（全序），稳定排序只是
+    // 双重保险，避免"同键元素的相对顺序未定义"这种不可复现的来源。
+    std::stable_sort(cand.begin(), cand.end(), [&q](const Row &a, const Row &b) {
+        return SearchRanker::less(SearchRanker::key(a.name, a.typeName, q),
+                                  SearchRanker::key(b.name, b.typeName, q));
+    });
+
+    // ── ③ 截断到总量上限（排序之后才截断，否则截断会先杀掉高相关度候选）──
+    const int n = std::min<int>(cand.size(), cap);
+    rows.reserve(n);
+    for (int i = 0; i < n; ++i)
+        rows.append(cand.at(i));
 
     if (rows.isEmpty())
         emptyReason = tr("未找到匹配「%1」的天体").arg(q);

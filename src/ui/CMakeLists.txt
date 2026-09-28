@@ -120,6 +120,10 @@ set(stelQuickUI_SOURCES
     #  这样 QML 侧在无引擎形态也能拿到"明确的空态理由"而不是链接失败）。
     ../app/SearchResultsModel.hpp
     ../app/SearchResultsModel.cpp
+    # T21 搜索结果相关度排序：纯逻辑（只依赖 QString），两种形态都能编、可独立自检。
+    # 它替代的是引擎聚合层被 `std::sort` 抹掉的完全匹配优先序，理由见头注。
+    ../app/SearchRanker.hpp
+    ../app/SearchRanker.cpp
     ../app/ObjectInfoModel.hpp
     ../app/ObjectInfoModel.cpp
     ../app/SearchModelCheck.hpp

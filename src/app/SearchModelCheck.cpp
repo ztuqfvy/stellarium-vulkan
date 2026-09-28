@@ -9,6 +9,7 @@
 
 #include "app/AppFacade.hpp"
 #include "app/ObjectInfoModel.hpp"
+#include "app/SearchRanker.hpp"     // T21：排序分级规则（纯逻辑，可直接穷尽覆盖）
 #include "app/SearchResultsModel.hpp"
 
 #include <QCoreApplication>
@@ -158,6 +159,132 @@ void runPhaseA(const std::shared_ptr<Ctx> &ctx)
                        : QStringLiteral("SRC-03b 非法标识「%1」未安全归零").arg(firstBad));
     }
 
+    // ── SRC-06..09：相关度排序（T21）────────────────────────────────────────
+    // 这一组是**纯逻辑**判据：只用 SearchRanker 与**手造的名字**，不触引擎、不用 fixture，
+    // 因此与阶段 A 同一纪律——恒可跑、结果与星表数据无关。
+    // 它覆盖"分级规则本身对不对"；"collect() 真的调了它"由 SRC-11（阶段 B 的真实数据
+    // 端到端）与一次性的"注掉排序 + 重建"反向对照共同证明——**两者不可互相替代**：
+    // 纯逻辑判据证明了规则，但规则再对、没人调用也是白搭。
+    {
+        // ── SRC-06 匹配分级逐条覆盖 ──────────────────────────────────────
+        struct GradeCase
+        {
+            const char *name;
+            const char *query;
+            MatchQuality want;
+        };
+        const GradeCase kCases[] = {
+            { "Moon",                     "Moon", MatchQuality::Exact     },
+            { "Moon",                     "moon", MatchQuality::Exact     },  // 大小写无关
+            { "Moonlight",                "Moon", MatchQuality::Prefix    },
+            { "Pirate Moon Cluster",      "Moon", MatchQuality::WordStart },
+            { "Ghost of the Moon Nebula", "Moon", MatchQuality::WordStart },
+            { "Honeymoon",                "Moon", MatchQuality::Substring },  // 前邻是字母 y ⇒ 不是词首
+            { "Sirius",                   "Moon", MatchQuality::None      },
+        };
+        const int kCaseCount = int(sizeof(kCases) / sizeof(kCases[0]));
+        bool allGrades = true;
+        QString gradeDetail;
+        for (const GradeCase &c : kCases) {
+            const MatchQuality got = SearchRanker::quality(QString::fromLatin1(c.name),
+                                                          QString::fromLatin1(c.query));
+            if (got != c.want) {
+                allGrades = false;
+                gradeDetail = QStringLiteral("「%1」查「%2」得 %3，期望 %4")
+                                  .arg(QString::fromLatin1(c.name),
+                                       QString::fromLatin1(c.query),
+                                       SearchRanker::qualityName(got),
+                                       SearchRanker::qualityName(c.want));
+                break;
+            }
+        }
+        ctx->check(allGrades,
+                   allGrades
+                       ? QStringLiteral("SRC-06 匹配分级逐条覆盖 %1 例全对"
+                                        "（完全/前缀/词首/子串/不匹配，且大小写无关）").arg(kCaseCount)
+                       : QStringLiteral("SRC-06 匹配分级错了一项：%1").arg(gradeDetail));
+
+        // ── SRC-07 T20 实测场景复现 ──────────────────────────────────────
+        // 名字与类型**原样照抄** T20 回放证据 `replaycheck-mac.txt` 的三条 RP-note，
+        // 这样"排序到底修好了什么"能直接拿 T20 的原始观测对照，不需要二次解释。
+        //   [0] "Ghost of the Moon Nebula" / Nebula:NGC 6781
+        //   [1] "Moon"                     / Planet:Moon
+        //   [2] "Pirate Moon Cluster"      / Nebula:NGC 1647
+        QVector<SearchResultsModel::Row> demoRaw;
+        auto addRow = [&demoRaw](const char *name, const char *typeName) {
+            SearchResultsModel::Row r;
+            r.name     = QString::fromLatin1(name);
+            r.typeName = QString::fromLatin1(typeName);
+            demoRaw.append(r);
+        };
+        addRow("Ghost of the Moon Nebula", "Nebula");
+        addRow("Moon",                     "Planet");
+        addRow("Pirate Moon Cluster",      "Nebula");
+
+        const QString demoQuery = QStringLiteral("Moon");
+        auto sortByRank = [&demoQuery](QVector<SearchResultsModel::Row> v) {
+            std::stable_sort(v.begin(), v.end(), [&demoQuery](const auto &a, const auto &b) {
+                return SearchRanker::less(SearchRanker::key(a.name, a.typeName, demoQuery),
+                                          SearchRanker::key(b.name, b.typeName, demoQuery));
+            });
+            return v;
+        };
+        auto joinNames = [](const QVector<SearchResultsModel::Row> &v) {
+            QString s;
+            for (const auto &r : v)
+                s += (s.isEmpty() ? QString() : QStringLiteral(" > ")) + r.name;
+            return s;
+        };
+
+        const QVector<SearchResultsModel::Row> demo = sortByRank(demoRaw);
+        const QString wantOrder = QStringLiteral("Moon > Pirate Moon Cluster > Ghost of the Moon Nebula");
+        const QString gotOrder  = joinNames(demo);
+
+        ctx->check(!demo.isEmpty() && demo.at(0).name == QStringLiteral("Moon"),
+                   QStringLiteral("SRC-07 实测场景复现：搜「Moon」首行 = Moon"
+                                  "（修复前是 Ghost of the Moon Nebula）；完整顺序 [%1]").arg(gotOrder));
+        // 07b 考的是"同分之后"的第二、三级比较（类型权重 → 名字长度）也真的生效：
+        // 两条 Nebula 同为词首匹配，短的 "Pirate Moon Cluster"(18) 应排在 (25) 之前。
+        ctx->check(gotOrder == wantOrder,
+                   QStringLiteral("SRC-07b 同分次序 = %1（两条 Nebula 都是词首匹配，"
+                                  "再按名字长度定序）").arg(wantOrder));
+
+        // ── SRC-08 稳定可复现（全序）────────────────────────────────────
+        QVector<SearchResultsModel::Row> shuffled = demoRaw;
+        std::reverse(shuffled.begin(), shuffled.end());     // 打乱输入顺序
+        const QVector<SearchResultsModel::Row> resorted = sortByRank(shuffled);
+        ctx->check(joinNames(resorted) == gotOrder,
+                   QStringLiteral("SRC-08 打乱输入顺序后排序结果不变（全序、可复现）——"
+                                  "否则「同一查询搜两次顺序不一样」会成为神出鬼没的 bug"));
+
+        // 08b 比较器自洽：std::sort 拿到非严格弱序是 UB（可能越界写，不只是排错）。
+        bool comparatorOk = true;
+        for (const auto &a : demoRaw)
+            for (const auto &b : demoRaw) {
+                const RankKey ka = SearchRanker::key(a.name, a.typeName, demoQuery);
+                const RankKey kb = SearchRanker::key(b.name, b.typeName, demoQuery);
+                if (SearchRanker::less(ka, ka))
+                    comparatorOk = false;                                    // 非自反
+                if (SearchRanker::less(ka, kb) && SearchRanker::less(kb, ka))
+                    comparatorOk = false;                                    // 不对称
+            }
+        ctx->check(comparatorOk,
+                   QStringLiteral("SRC-08b 比较器自洽（非自反 + 不对称）—— 传非法比较器给 std::sort 是 UB"));
+
+        // ── SRC-09 内建判别性对照：证明这组判据**有检验力** ─────────────
+        // 把同一批候选按**纯字典序**排一遍——那正是修复前 `StelObjectMgr::listMatchingObjects`
+        // 的排法（StelObjectMgr.cpp:609）。若这样排首行也恰好是 Moon，说明这个场景
+        // 两种排法给同样结果，SRC-07 就**测不出任何东西**（假绿）。
+        QVector<SearchResultsModel::Row> lex = demoRaw;
+        std::stable_sort(lex.begin(), lex.end(),
+                         [](const auto &a, const auto &b) { return a.name < b.name; });
+        const QString lexFirst = lex.isEmpty() ? QStringLiteral("(空)") : lex.at(0).name;
+        ctx->check(lexFirst != QStringLiteral("Moon"),
+                   QStringLiteral("SRC-09 内建判别性对照：同批候选按纯字典序排（= 修复前引擎的排法）"
+                                  "首行是「%1」而不是 Moon ⇒ 本组判据确实能区分两种排序，SRC-07 有检验力。"
+                                  "若这条 FAIL，说明场景选错了，得换数据而不是改判据").arg(lexFirst));
+    }
+
     ctx->phaseAPassed = ctx->passed;
     ctx->phaseATotal = ctx->total;
 }
@@ -296,6 +423,32 @@ void runPhaseB(const std::shared_ptr<Ctx> &ctx)
                QStringLiteral("T17-V7 infoMap 非空（%1 项）").arg(int(info->infoMap().size())));
     ctx->check(info->stableId().contains(QLatin1Char(':')),
                QStringLiteral("T17-V8 stableId 形如 type:id（%1）").arg(info->stableId()));
+
+    // ── SRC-11：活引擎端到端（T21）──────────────────────────────────────
+    // SRC-06..09 是纯逻辑判据，证明"规则本身对"；但**规则再对，没人调用也是白搭**。
+    // 这条走真实引擎，验证 `collect()` 里那次 stable_sort 真的被执行了。
+    // 放在阶段 B 的最后：它会把模型的结果集换成"Moon 的结果"，
+    // 而前面 V1/V2/SRC-04c 都依赖 fixture（别的天体），顺序不能颠倒。
+    {
+        const int n = ctx->facade->searchObjects(QStringLiteral("Moon"), 10);
+        if (n <= 0) {
+            // 环境条件（SolarSystem 数据未载入）不是模型缺陷——照实说明，不判 FAIL。
+            ctx->details << QStringLiteral("INFO SRC-11 跳过：本环境搜「Moon」无结果"
+                                           "（SolarSystem 数据未载入）—— 环境条件，不判 FAIL");
+        } else {
+            const QString firstSid = m->stableIdAt(0);
+            const int q0 = m->data(m->index(0, 0), SearchResultsModel::QualityRole).toInt();
+            QString allNames;
+            for (int r = 0; r < n; ++r)
+                allNames += (allNames.isEmpty() ? QString() : QStringLiteral(" > ")) + m->nameAt(r);
+            ctx->check(firstSid == QStringLiteral("Planet:Moon"),
+                       QStringLiteral("SRC-11 活引擎端到端：搜「Moon」首行 = Planet:Moon"
+                                      "（实得 %1，匹配质量 %2）；完整顺序 [%3]")
+                           .arg(firstSid,
+                                SearchRanker::qualityName(static_cast<MatchQuality>(q0)),
+                                allNames));
+        }
+    }
 }
 
 void finish(const std::shared_ptr<Ctx> &ctx, bool fixtureMissing)

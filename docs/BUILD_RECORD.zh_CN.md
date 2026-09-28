@@ -2118,3 +2118,94 @@ SEARCHCHECK **26/26 → 27/27**。T17 交付文档 §4.1 已加修正说明。
   `main.cpp` 属同一目标，看清 `Building CXX … / Linking` 两行再下结论。
 - **改了共享模型（`SearchResultsModel`）必须整套回归**：T20 只改了一处去重，
   `SEARCHCHECK` 立刻从 26/26 变红（见 §3）—— 这就是为什么要跑整套而不是只跑新判据。
+
+---
+
+## 2026-09-28｜T21 搜索结果相关度排序（A4 正题）（**SEARCHCHECK 27 → 34 全绿；反向对照 SRC-11 FAIL / rc=10；9 套回归零退化；判据分"纯逻辑腿 + 活引擎腿"两条互补的腿**）
+
+### 1. 任务与背景
+
+把搜索结果从"引擎给什么顺序就是什么顺序"改成**按相关度排序**。这是 T17 就登记、
+A4 反复列为待办的项（`SearchResultsModel.hpp` 当时写的是"留给 A4 搜索页，不在本层臆造"）。
+
+**为什么现在做**：T20 的回放实测把它从"体验优化"变成了"实测缺陷"——
+搜 `Moon` 的结果首行是 `Ghost of the Moon Nebula`（`Nebula:NGC 6781`），月球在第 1 行。
+T20 当时的处置只能是"按名字定位月球那一行"（**绕过问题**）。
+
+### 2. 关键发现：引擎上游**自相矛盾**（有行号，非推测）
+
+| 层 | 源码 | 行为 |
+|---|---|---|
+| 模块级 | `StelObjectModule::listMatchingObjects`（`StelObjectModule.cpp:45-75`） | **确实**按相关度排过：完全匹配 `result.prepend()`（第 72-73 行）；头注承诺 `by order of relevance`（`StelObjectModule.hpp:70`） |
+| 聚合级 | `StelObjectMgr::listMatchingObjects`（`StelObjectMgr.cpp:595-611`） | 拼接后**无条件**按名称字典序 `std::sort`（第 609 行） |
+
+⇒ **模块级的 `prepend` 被聚合级的 `sort` 整个抹掉**。这就是首行是星云的根因。
+
+**不改引擎**：`StelObjectMgr::listMatchingObjects` 是共用原语，旧 GUI 搜索框也在用
+（`SearchDialog.cpp:985`）；且"结果该怎么排"本就该由列表模型决定。
+
+### 3. 改动面
+
+| 文件 | 改动 |
+|---|---|
+| `src/app/SearchRanker.hpp` / `.cpp` | **新增**。纯逻辑（只依赖 `QString`）：分级 `Exact/Prefix/WordStart/Substring`；tie-break `quality → typeWeight → nameLength → name`（尾键保证全序） |
+| `src/app/SearchResultsModel.{hpp,cpp}` | `Row` 加 `quality`；新增 `QualityRole`；`collect()` 重构为 ①去重（**保留相关度最高**）→ ②排序 → ③截断 |
+| `src/app/SearchModelCheck.{hpp,cpp}` | 新增 SRC-06..09（纯逻辑，阶段 A）+ SRC-11（活引擎，阶段 B 末尾） |
+| `src/ui/main.cpp` | REPLAYCHECK：RP-04 拆为 **RP-04a（首行即月球，断言）** + 原点击/选中断言；判据数 10 → 11 |
+| `src/ui/CMakeLists.txt` | 登记 `SearchRanker.hpp/.cpp` |
+| `tools/t21-verify.sh` | 新增（SEARCHCHECK 提到 core 段首位） |
+
+**刻意没改** `SearchPage.qml`：delegate 只读 `model.name/objectType/englishName`，顺序自动生效；
+**并刻意不动 delegate 的 46px 行高**——回放判据按行高算场景坐标投递鼠标事件，改高度会静默点偏。
+
+### 4. 判据：两条腿，**互补且不可互相替代**
+
+| 腿 | 判据 | 覆盖 | 覆盖**不了** |
+|---|---|---|---|
+| 纯逻辑 | SRC-06..09 | 分级规则、同分次序、稳定性、比较器自洽 | **证明不了 `collect()` 调了它** |
+| 活引擎 | SRC-11 | `collect()` 真的执行了排序 | 证明不了规则细节 |
+
+缺任何一条都有假绿空间。**SRC-09 是内建判别性对照**：把同批候选按纯字典序排（= 修复前引擎的排法），
+首行必须**不是** `Moon`——把"判别性对照"从"跑一次 A/B"变成**每次运行都验一遍**的属性。
+
+### 5. 反向对照（注掉排序 ⇒ 判据必须红）
+
+`collect()` 里的 `std::stable_sort` 包进 `#if 0` 重建重跑：
+
+```
+SEARCHCHECK: 33/34 PASS
+SEARCHCHECK: FAIL SRC-11 …（实得 Nebula:NGC 6781，匹配质量 词首匹配）；
+             完整顺序 [Ghost of the Moon Nebula > Moon > Pirate Moon Cluster]
+rc=10
+```
+
+**两点值得单独记**：① 实得顺序与 T20 的原始观测**逐字一致** ⇒ 对照跑回了修复前的世界；
+② **SRC-06..09 仍全绿** ⇒ 只有活引擎腿能抓到"没被调用"；若当初只写纯逻辑判据，
+这个缺陷会以"34/34 全绿"的形式溜过去。证据 `searchcheck-negctrl-noranking.txt`；
+恢复后反查 `grep -rn "临时反向对照\|#if 0" src/` 为空、与备份 `cmp` 一致。
+
+### 6. 验收读数（2026-09-28 单次连贯运行）
+
+| 套件 | 读数 |
+|---|---|
+| **SEARCHCHECK（T21 正题）** | **34/34 PASS** rc=0（SRC-06..11） |
+| **反向对照** | 33/34、**SRC-11 FAIL**、**rc=10** |
+| REPLAYCHECK（含 RP-04a） | **11/11 PASS** rc=0 |
+| RETURNUICHECK | **11/11 PASS** rc=0 |
+| TIMECHECK / TIMEUICHECK | **14/14 / 13/13** |
+| CLOCKCHECK / ACTIONCHECK | **PASS / PASS（0 FAIL）** |
+| LOCATECHECK / UICHECK | **14/14 / 8/8** |
+| A2 / S3 | **PASS / 8/8** |
+| DYN（引擎 + 替身） | **3/3 + 3/3**（load avg 3.54、`displaysleep=2`、`mdbulkimport` 在索引 ⇒ 不改 T18 的环境敏感定性） |
+
+### 7. 环境/工具踩坑
+
+- **构建目录选错会浪费一整轮**：`build-ui` 是**独立工程形态**（`CMAKE_HOME_DIRECTORY = …/src/ui`，
+  无 `STELQUICK_HAS_ENGINE` 宏，`AppFacadeCheck.cpp.o` 从未编过）⇒ 编它必然失败在
+  "`no member named 'isInitialized' in namespace 'stelapp'`"。**T17 起的实际构建目录是
+  `build-release`（根构建）**，二进制在 `build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI`。
+  判断方法：`grep CMAKE_HOME_DIRECTORY <dir>/CMakeCache.txt` + `grep STELQUICK_HAS_ENGINE <dir>/CMakeFiles/stelQuickUI.dir/flags.make`。
+- **`cmake` 不在沙箱 PATH 里**，要用绝对路径 `/opt/homebrew/bin/cmake`（Homebrew 只在交互 shell 的 PATH 中）。
+- **`grep -c` 匹配 0 行时返回退出码 1**，会静默截断 `&&` 链——把它接在构建后面（如 `build && grep -c error`）
+  会让"构建成功"变成"后面的步骤没跑"。用 `|| true` 或分开写。
+

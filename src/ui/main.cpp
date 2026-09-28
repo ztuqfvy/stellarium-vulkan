@@ -1651,7 +1651,9 @@ int runUiReturnCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFac
 //   · 仍在跟踪月球（定位环 + 返回不是清选中）
 //   · 星空位置真的变了（I-DYN-02 的内核：改日期后星空位置变化**可验证**）
 //
-// 判据 10 条：RP-01..RP-09 含 RP-04b。退出码同前：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+// 判据 11 条：RP-01..RP-09 含 RP-04a（首行即月球，T21 相关度排序的端到端见证）
+// 与 RP-04b（结果无重复天体，T20 补的回归护栏）。
+// 退出码同前：0=PASS / 10=FAIL / 6=UNAVAILABLE。
 // ══════════════════════════════════════════════════════════════════════════
 
 struct UiReplayCheck
@@ -1808,30 +1810,24 @@ void uiReplayStep(QGuiApplication *app, std::shared_ptr<UiReplayCheck> c)
                      QStringLiteral("RP-04b 结果列表无重复天体（%1 行 → %2 个不同 stableId，"
                                     "重复 %3 条）").arg(rows).arg(uniq.size()).arg(dupCount));
 
-        // 找"月球那一行"。I-REP-02 说的是「搜月球→定位」，**不是**"盲点第一条"：
-        // 首行是谁取决于引擎的**名称字典序**（"Ghost of the Moon Nebula" 排在 "Moon"
-        // 前面），而"按相关度排序"是 A4 里**已登记但尚未做**的一项（见计划文档的
-        // 「排序策略（相关度/类型分组/拼音）」）。所以这里按名字定位月球行，
-        // 并把"首行并非月球"照实打进证据，不粉饰成"排序已经没问题"。
-        int moonRow = -1;
-        for (int r = 0; r < rows && moonRow < 0; ++r)
-            if (c->facade->searchResults()->englishNameAt(r).compare(QStringLiteral("Moon"),
-                                                                    Qt::CaseInsensitive) == 0)
-                moonRow = r;
-        c->details.append(QStringLiteral("RP-note 月球在第 %1 行（0 基）；首行是 \"%2\"。"
-                                         "「首行=月球」需要按相关度排序 —— A4 未做的项，"
-                                         "本判据不据此判红")
-                              .arg(moonRow)
-                              .arg(c->facade->searchResults()->nameAt(0)));
-        if (moonRow < 0)
-        {
-            uiReplayUnavailable(app, c.get(),
-                                QStringLiteral("结果里没有月球（Planet:Moon）—— 环境条件"
-                                               "（引擎数据/语言），非接线缺陷"));
-            return;
-        }
-        // 真实点击**月球那一行**：按 ListView 的行高算场景坐标（行高取自 contentHeight，
-        // 不去硬编码 delegate 的 46px）。
+        // ── RP-04a：首行**必须**就是月球（T21 起）──────────────────────────
+        // T20 时这里只能"按名字定位月球那一行"，并把"首行并非月球"照实打进证据——
+        // 因为引擎聚合层把模块级的完全匹配优先序抹掉了（`StelObjectMgr::listMatchingObjects`
+        // 在 StelObjectMgr.cpp:609 无条件按名称字典序 std::sort），实测首行是
+        // "Ghost of the Moon Nebula"。T21 在模型层用 SearchRanker 重排之后，首行**必须**
+        // 是月球。⇒ 这条判据从"绕过已知问题"升级成"断言问题已解决"，**判据强度是提高的**：
+        // 把 T21 的排序改坏，它立刻红。
+        const int moonRow = 0;
+        const QString firstSid = c->facade->searchResults()->stableIdAt(0);
+        c->details.append(QStringLiteral("RP-note 首行 = \"%1\"（%2）—— T21 相关度排序已生效，"
+                                         "「首行 = 月球」现在是**断言**，不再是期望")
+                              .arg(c->facade->searchResults()->nameAt(0), firstSid));
+        uiReplayMark(c.get(), firstSid == QStringLiteral("Planet:Moon"),
+                     QStringLiteral("RP-04a 首行即月球 Planet:Moon（相关度排序生效）—— 实得 %1")
+                         .arg(firstSid));
+
+        // 真实点击**首行**：按 ListView 的行高算场景坐标（行高取自 contentHeight，
+        // 不去硬编码 delegate 的 46px —— delegate 一改高度，硬编码就会静默点偏）。
         const double rowH = rows > 0
                                 ? c->resultList->property("contentHeight").toDouble() / rows
                                 : 46.0;
@@ -1946,7 +1942,7 @@ int runUiReplayCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFac
     c->window = window;
     c->facade = facade;
     std::printf("REPLAYCHECK: 开始（I-REP-02 全流程回放：开机→搜月球→定位→改时间→返回，"
-                "全程只投递真实鼠标事件，共 10 条判据）\n");
+                "全程只投递真实鼠标事件，共 11 条判据）\n");
     std::fflush(stdout);
     uiReplayStep(app, c);
     return 0;
