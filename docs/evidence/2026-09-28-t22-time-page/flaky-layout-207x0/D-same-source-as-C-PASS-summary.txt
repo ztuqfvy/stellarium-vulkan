@@ -1,0 +1,9 @@
+# D 组：与 C 组**逐字节同源**（TimePage.qml = HEAD、C++ = T22），重建后二进制 38577576 B（与 C 那次失败时同尺寸）
+# 结论：同一源码 / 同一二进制、两种结果 ⇒ 间歇，不是本轮引入的退化
+
+D run1  列表 934×341 判据 11/11 VERDICT=PASS 
+D run2  列表 934×341 判据 11/11 VERDICT=PASS 
+D run3  列表 934×341 判据 11/11 VERDICT=PASS 
+D run4  列表 934×341 判据 11/11 VERDICT=PASS 
+D run5  列表 934×341 判据 11/11 VERDICT=PASS 
+D run6  列表 934×341 判据 11/11 VERDICT=PASS 

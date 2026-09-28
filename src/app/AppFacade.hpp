@@ -178,6 +178,103 @@ public:
     quint64 timeWriteCount() const { return m_timeWriteCount; }
     quint64 timeRefusedCount() const { return m_timeRefusedCount; }
 
+    // ---- T22 时间页收尾（MJD / 显示历法 / 时区 / 速率真源）----
+    //!
+    //! 这一节把计划文档里挂着的那四项补齐。**全部是转发或照抄**，没有一行新算法：
+    //!   MJD   → 加减 2400000.5（引擎 `StelCore::setMJDay` 的定义，`StelCore.cpp:1275`）
+    //!   历法   → 照抄旧界面判定（`DateTimeDialog.cpp:251`）
+    //!   时区   → 照抄旧 `LocationDialog` 的口径（`QTimeZone` + `setCurrentTimeZone`）
+    //!   速率   → 照抄旧状态栏的换算（`StelGuiItems.cpp:885-907`）
+    //!
+    //! @name MJD（Modified Julian Day，**UT 尺度**）
+    //@{
+    //! 当前 MJD = `julianDay() - 2400000.5`。
+    //!
+    //! ⚠️ **刻意不用 `StelCore::getMJDay()`**：它返回 `JD.first - 2400000.5`
+    //! （`StelCore.cpp:1280`），而 `JD.first` 只在 `updateFrame`/`updateTime` 里
+    //! 从仿真时钟同步 = **上一帧快照**。T19 已经因为同一理由把读侧从 `getJD()`
+    //! 改成 `getSimClockJD()`；这里若图省事调 `getMJDay()`，就把那个坑从 JD 挪到
+    //! MJD 上，而且**更隐蔽**（数值只差几毫秒，肉眼与单次断言都抓不到）。
+    //! 本方法从**同一个真源**导出 ⇒ "MJD ≡ JD − 2400000.5" 是一条可断言的恒等式。
+    Q_INVOKABLE double modifiedJulianDay() const;
+
+    //! 以 MJD 写入（UT 尺度）：内部 `+2400000.5` 后走**同一个** `setJulianDay()`。
+    //! 复用它的范围校验与 token 语义（越界 → `"out-of-range"` 且**无副作用**）。
+    //! 旧界面 `DateTimeDialog::mjdChanged` 是增量写法（`applyJD(jd + delta)`），
+    //! 与绝对写法等价（MJD↔JD 只差常数）；这里取绝对写法，好让判据断言"位移精确"。
+    Q_INVOKABLE bool setModifiedJulianDay(double mjd);
+    //@}
+
+    //! @name 显示历法
+    //@{
+    //! 当前日期所属历法的**稳定 token**：`"julian"` / `"gregorian"` / `"unknown"`。
+    //!
+    //! 判定**照抄**旧界面（`DateTimeDialog.cpp:251`：`if (jd < 2299161) → 儒略历`），
+    //! 该字面量即 `StelUtils.cpp:848` 的 `JD_GREG_CAL`（1582-10-15 换历）。
+    //! 这是"照抄引擎判定"，不是"自己发明规则"——引擎的日期换算内部就用它：
+    //! `getDateFromJulianDay` 在 `julian >= JD_GREG_CAL` 走格里历分支，否则走儒略历。
+    //! ⚠️ 判定用 **`julianDay()`（真源）**，不用 `getJD()`（快照）—— 否则换历那一刻
+    //! 会晚一帧才显示出来。
+    Q_INVOKABLE QString dateCalendarToken() const;
+    //! QML 文案（token → 人话；判定永远看 token，不看文案）。
+    Q_INVOKABLE QString dateCalendarText() const;
+    //@}
+
+    //! @name 时区（照抄旧 `LocationDialog` 的口径）
+    //@{
+    //! 引擎当前的 IANA 时区 id（如 `"Asia/Shanghai"`）。引擎不可用 → 空串。
+    Q_INVOKABLE QString timeZoneId() const;
+    //! 是否**自定义**时区（关 = 跟随观察地点自带的时区）。对应引擎 `flagUseCTZ`。
+    Q_INVOKABLE bool useCustomTimeZone() const;
+    //! 是否启用夏令时修正（对应引擎 `flagUseDST`）。
+    Q_INVOKABLE bool useDST() const;
+    //! 可用 IANA 时区 id 列表（照抄 `LocationDialog::populateTimeZonesList` 的
+    //! `QTimeZone::availableTimeZoneIds()`，排序后返回）。**只构建一次并缓存** ——
+    //! 这个列表有 600+ 项，每次调用都重排会拖慢 QML 的组合框。
+    Q_INVOKABLE QStringList availableTimeZoneIds() const;
+
+    //! 写入时区 id。**只写时区，不动 `flagUseCTZ`** —— 旧 `LocationDialog` 里
+    //! 两者也是分开的（CheckBox 单独控制）。QML 侧要让"选了就生效"，就显式再调
+    //! 一次 `setUseCustomTimeZone(true)`（两条路径分开 ⇒ 判据可分别验）。
+    //! @return 是否落地（引擎不可用 / id 不能被 `QTimeZone` 解析 → false）。
+    Q_INVOKABLE bool setTimeZoneId(const QString &tz);
+    Q_INVOKABLE void setUseCustomTimeZone(bool on);
+    Q_INVOKABLE void setUseDST(bool on);
+
+    // 观测量（自检用）
+    quint64 timeZoneWriteCount() const { return m_timeZoneWriteCount; }
+    //@}
+
+    //! @name 速率（**引擎 timeSpeed 的投影**，不是本地缓存）
+    //@{
+    //! 当前仿真速率（**Julian day / second**）。
+    //!
+    //! 🔴 T22 修正的真实缺陷：原实现直接返回本地缓存 `m_timeRate`，而它只在
+    //! `setTimeRate()` 里被更新。引擎的六个速率动作
+    //! （`actionIncrease_Time_Speed` / `...Decrease` / `..._Less` /
+    //! `actionSet_Real_Time_Speed` / `actionSet_Time_Rate_Zero` /
+    //! `actionToggle_Time_Rate_Zero` / `actionSet_Time_Reverse`）
+    //! 走的是 `StelCore::increaseTimeSpeed()` 之类，**完全不经过本类**
+    //! ⇒ 用户按一次 `L` 键，引擎真的加速了，而 QML 读到的数纹丝不动。
+    //! 这正是本仓库反复复发的"仪表没接在实况上"（T14/T15 血泪第 3 条）。
+    //!
+    //! 现在读 `ISimPacing::simRate()`（其实现即 `core->getTimeRate()`，见
+    //! `LiveSkyRuntime.cpp:302-305`）；无引擎/未挂 ISimPacing 时才回退缓存。
+    //!
+    //! ⚠️ QML 侧**必须轮询**这个值（与 JD 同惯例），不要指望 NOTIFY：
+    //! 引擎动作改速率时本类并不知道，`timeRateChanged` 不会发。
+    //! （声明见上方的 `Q_PROPERTY(double timeRate ...)`；此处只补语义。）
+
+    //! 人类可读速率文本，形如 `x3600 (1.00 hr/s)`。换算口径**照抄**
+    //! `StelGuiItems.cpp:885-907`：`|rate| / JD_SECOND` → 秒/秒，
+    //! 再 ≥60 → 分/秒，≥60 → 时/秒，≥24 → 天/秒，≥365.25 → 年/秒。
+    //! （照抄不"改进"：旧界面的单位跳档阈值就是这四档。）
+    Q_INVOKABLE QString timeRateText() const;
+    //! 时间方向 token：`"forward"` / `"backward"` / `"stopped"`。
+    //! 引擎 `actionSet_Time_Reverse` 会让速率变号，零速率时显示"停"。
+    Q_INVOKABLE QString timeDirection() const;
+    //@}
+
     // ---- 显示 ----
     // THREAD: gui
     double fieldOfView() const;
@@ -289,6 +386,11 @@ private:
     QString m_timeRefusal = QStringLiteral("ok");
     quint64 m_timeWriteCount = 0;
     quint64 m_timeRefusedCount = 0;
+
+    // T22
+    quint64 m_timeZoneWriteCount = 0;
+    //! 时区 id 列表缓存（600+ 项，构建一次）。
+    mutable QStringList m_tzCache;
 };
 
 } // namespace stelapp

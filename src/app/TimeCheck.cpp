@@ -24,8 +24,10 @@
 #include "app/AppFacade.hpp"
 
 #include <QCoreApplication>
+#include <QDateTime>   // T22：按偏移挑时区候选（与"跑在哪一天"解耦）
 #include <QElapsedTimer>
 #include <QTimer>
+#include <QTimeZone>   // T22
 #include <QVector>
 
 #include <cmath>
@@ -552,6 +554,200 @@ void TimeCheck::run(QCoreApplication *app,
                                                        : QStringLiteral("FAIL")));
         // 收尾：把暂停恢复回去，免得后续（若有）误读"时钟还在跑"。
         c->facade->setSimulationPaused(true);
+    }});
+
+    // ── 步骤 12：T22 时间页收尾四项（MJD / 显示历法 / 时区 / 速率）──────────
+    //    全部是**同步**操作（改引擎字段、写时钟），没有"等引擎重算"的需求
+    //    ⇒ delayAfter=0。
+    //    **必须排在 TC-13 之后**：那一条要在运行态量"有没有被拽回"，
+    //    而这里会把速率改来改去。
+    steps->append({0, [](Ctx *c) {
+        StelCore *core = c->core();
+
+        // ══ ① MJD ═══════════════════════════════════════════════════════════
+        //  判据只断言**恒等式**与写入残差。刻意**不**硬造一条"必须用
+        //  getSimClockJD 而不是 getJD"的判据：`setJD` 会同步写 `JD.first`
+        //  （StelCore.cpp:1245），帧末 `updateTime` 也会同步，所以正常帧序下
+        //  两者相等 —— 造出来的差异不可复现，那样的判据是摆设。
+        //  "为什么不读 getMJDay()"的论证留在实现注释里（有据可查），
+        //  这里只把引擎快照值照实记下来备查。
+        const double jdTrue = core->getSimClockJD();
+        const double mjdExpect = jdTrue - 2400000.5;
+        const double mjdGot = c->facade->modifiedJulianDay();
+        const bool ident = std::fabs(mjdGot - mjdExpect) < 1e-12;
+
+        //  ⚠️ 快照要在**写入之前**读 —— 写入之后它就是新值了（`setJD` 会同步写
+        //  `JD.first`），那时"快照 vs 真源"的对比退化成"写入位移"。
+        const double snapshot = core->getMJDay();
+        c->note(QStringLiteral("TC-15-note 同一时刻引擎快照 core->getMJDay()=%1 vs 本层读数 %2"
+                               "（差 %3 天）—— 若某天 `setJD` 不再同步 `JD.first`，这里会先"
+                               "显形；此刻两者一致，故不判红")
+                    .arg(snapshot, 0, 'f', 6).arg(mjdGot, 0, 'f', 6)
+                    .arg(std::fabs(snapshot - mjdGot), 0, 'e', 2));
+        const double mjdTarget = std::floor(mjdExpect) + 0.25;
+        const bool wrote = c->facade->setModifiedJulianDay(mjdTarget);
+        const double resid = c->facade->julianDay() - (mjdTarget + 2400000.5);
+        c->mark(QStringLiteral("TC-15 MJD 与 JD 同源：恒等式残差 %1 天（<1e-12）；"
+                               "写 MJD=%2 落地=%3，JD 残差 %4 天（<1e-9）：%5")
+                    .arg(std::fabs(mjdGot - mjdExpect), 0, 'e', 2)
+                    .arg(mjdTarget, 0, 'f', 6)
+                    .arg(wrote ? QStringLiteral("true") : QStringLiteral("false"))
+                    .arg(std::fabs(resid), 0, 'e', 2)
+                    .arg((ident && wrote && std::fabs(resid) < 1e-9) ? QStringLiteral("OK")
+                                                                     : QStringLiteral("FAIL")));
+
+        // ══ ② 显示历法：换历边界**成对** ═══════════════════════════════════
+        //  JD 2299161 = 1582-10-15 00:00 UT（DateTimeDialog.cpp:251、StelUtils.cpp:848）。
+        //  边界两侧各取一点，必须给出**不同** token：若实现把阈值写错（例如拿本地
+        //  日历去比），第二条会红；若实现返回常量，第一条也会红。
+        c->facade->setJulianDay(2299160.5);      // 边界前：1582-10-04 12:00 UT
+        const QString calBefore = c->facade->dateCalendarToken();
+        c->facade->setJulianDay(2299161.0);      // 边界：1582-10-15 00:00 UT
+        const QString calAfter = c->facade->dateCalendarToken();
+        c->mark(QStringLiteral("TC-16 显示历法换历边界（JD 2299160.5 → %1；JD 2299161.0 → %2；"
+                               "要求 julian/gregorian 成对）：%3")
+                    .arg(calBefore, calAfter)
+                    .arg((calBefore == QStringLiteral("julian")
+                          && calAfter == QStringLiteral("gregorian")) ? QStringLiteral("OK")
+                                                                     : QStringLiteral("FAIL")));
+
+        //  ⚠️ **必须**立刻把时钟还原到现代 —— 这是 T22 首跑（TC-18 FAIL）的根因。
+        //  引擎的 `getUTCOffset` 里有一道 `JD >= TZ_ERA_BEGINNING`（1847-12-01，
+        //  StelCore.cpp:1655）：不成立时它**完全不看时区名**，改按观察地点的经度
+        //  算地方平太阳时（LMST）。于是"切换时区"在那个语境下偏移纹丝不动 ——
+        //  首跑读到的恒是 6.9789 h（= 经度 104.7° 的 LMST），看起来像"时区写入没生效"。
+        //  这不是缺陷，是引擎的既定语义（标准时区 1847-12-01 才启用）；
+        //  但也正因为如此，上一步**不能**把 1582 年的时钟留给下一步。
+        c->facade->setJulianDay(StelUtils::getJDFromSystem());
+        c->note(QStringLiteral("TC-16-note 时钟已还原到现代时刻 —— 引擎在 JD < "
+                               "TZ_ERA_BEGINNING（1847-12-01）时 `getUTCOffset` 按经度算 "
+                               "LMST 而不看时区名，不还原会让下面 ③ 假红"));
+
+        // ══ ③ 时区：非法被拒 + 写入生效 + 偏移**成对** ═════════════════════
+        const QString tzOrig = c->facade->timeZoneId();
+        const double offOrig = c->facade->utcOffsetHours();
+
+        const bool badRejected = !c->facade->setTimeZoneId(QStringLiteral("No/Such_Zone_xyz"));
+        c->mark(QStringLiteral("TC-17 时区非法 id 被拒（No/Such_Zone_xyz 落地=%1，要求 false）：%2")
+                    .arg(badRejected ? QStringLiteral("false") : QStringLiteral("true"))
+                    .arg(badRejected ? QStringLiteral("OK") : QStringLiteral("FAIL")));
+
+        //  候选从**引擎接受的名单**里挑，不硬编码 "UTC"/"Asia/Shanghai"：硬编码的 id
+        //  未必在地点库名单里，而 `setCurrentTimeZone` 对名单外的名字是**静默拒绝**
+        //  （StelCore.cpp:1717），那样这条判据会因为环境而假红。
+        //  挑"偏移 0"与"偏移 +8h"（两处都不实行夏令时）⇒ 与"跑在哪一天"无关。
+        const QStringList avail = c->facade->availableTimeZoneIds();
+        const QDateTime nowUtc = QDateTime::currentDateTimeUtc();
+        QString tzZero, tzEight;
+        for (const QString &id : avail)
+        {
+            const QTimeZone z(id.toUtf8());
+            if (!z.isValid())
+                continue;
+            const qint64 off = z.offsetFromUtc(nowUtc);
+            if (tzZero.isEmpty() && off == 0)
+                tzZero = id;
+            if (tzEight.isEmpty() && off == 8 * 3600)
+                tzEight = id;
+            if (!tzZero.isEmpty() && !tzEight.isEmpty())
+                break;
+        }
+        if (tzZero.isEmpty() || tzEight.isEmpty())
+        {
+            c->note(QStringLiteral("TC-18 SKIP：名单（%1 项）里找不到偏移 0 与偏移 +8h 的两个"
+                                   "时区 —— 环境条件，非接线缺陷").arg(avail.size()));
+        }
+        else
+        {
+            const bool ok0 = c->facade->setTimeZoneId(tzZero);
+            const double off0 = c->facade->utcOffsetHours();
+            const bool ok8 = c->facade->setTimeZoneId(tzEight);
+            const double off8 = c->facade->utcOffsetHours();
+            c->mark(QStringLiteral("TC-18 时区写入生效且偏移成对（%1 → %2 h；%3 → %4 h；"
+                                   "落地 %5/%6）—— 两者必须相差 8 小时：%7")
+                        .arg(tzZero).arg(off0, 0, 'f', 4)
+                        .arg(tzEight).arg(off8, 0, 'f', 4)
+                        .arg(ok0 ? QStringLiteral("true") : QStringLiteral("false"))
+                        .arg(ok8 ? QStringLiteral("true") : QStringLiteral("false"))
+                        .arg((ok0 && ok8 && std::fabs(off0) < 1e-9
+                              && std::fabs(off8 - 8.0) < 1e-9) ? QStringLiteral("OK")
+                                                                : QStringLiteral("FAIL")));
+        }
+        const bool tzRestored = c->facade->setTimeZoneId(tzOrig);
+        c->note(QStringLiteral("TC-18-note 时区复原为 %1（落地=%2；原偏移 %3 h）")
+                    .arg(tzOrig)
+                    .arg(tzRestored ? QStringLiteral("true") : QStringLiteral("false"))
+                    .arg(offOrig, 0, 'f', 4));
+
+        // ══ ④ 速率：读**引擎**而不是本地缓存（本轮的核心修正）══════════════
+        const double rateSave = core->getTimeRate();
+        const bool same0 = std::fabs(c->facade->timeRate() - rateSave)
+                           <= std::fabs(rateSave) * 1e-9 + 1e-15;
+
+        //  (a) 直接在**引擎侧**设一个已知值（不经 facade）→ 读数必须立刻跟上。
+        const double probe = 3600.0 * StelCore::JD_SECOND;   // 3600 倍速 = 1 秒/秒
+        core->setTimeRate(probe);
+        const double r1 = c->facade->timeRate();
+        const bool followsSet = std::fabs(r1 - probe) <= probe * 1e-9;
+
+        //  (b) 走引擎的**动作语义**（等价于用户按下 `L`）→ 读数同样必须跟上。
+        //      这才是真正要防的场景：动作处理器不经过 AppFacade。
+        core->increaseTimeSpeed();
+        const double e2 = core->getTimeRate();
+        const double r2 = c->facade->timeRate();
+        const bool engineMoved = std::fabs(e2 - probe) > probe * 1e-6;
+        const bool followsAction = std::fabs(r2 - e2) <= std::fabs(e2) * 1e-9 + 1e-15;
+
+        //  成对：`engineMoved` 断言"世界确实动了"，`followsAction` 断言"仪表跟着动了"。
+        //  只有后者 ⇒ "读数恒为 0"也能绿；只有前者 ⇒ 就回到原缺陷（按 L 键 UI 不动）。
+        c->mark(QStringLiteral("TC-19 速率仪表接在实况上（成对）：引擎设 %1 → facade %2"
+                               "（一致=%3）；引擎动作后引擎 %4 / facade %5"
+                               "（引擎确实变了=%6，读数跟上=%7）：%8")
+                    .arg(probe, 0, 'e', 8).arg(r1, 0, 'e', 8)
+                    .arg(followsSet ? QStringLiteral("true") : QStringLiteral("false"))
+                    .arg(e2, 0, 'e', 8).arg(r2, 0, 'e', 8)
+                    .arg(engineMoved ? QStringLiteral("true") : QStringLiteral("false"))
+                    .arg(followsAction ? QStringLiteral("true") : QStringLiteral("false"))
+                    .arg((same0 && followsSet && engineMoved && followsAction)
+                             ? QStringLiteral("OK") : QStringLiteral("FAIL")));
+
+        // ══ ⑤ 速率文本换算 / 时间方向 token ════════════════════════════════
+        //  换算口径照抄 StelGuiItems.cpp:885-907。三组**可手算**的输入：
+        //    1×JD_SECOND        = 1 秒/秒      → "x1.0"（倍数 ≤60 不带括号）
+        //    3600×JD_SECOND     = 1 小时/秒    → 含 "x3600" 且单位跳档到"时/秒"
+        //    86400×JD_SECOND    = 1 天/秒      → 单位跳档到"天/秒"
+        core->setTimeRate(1.0 * StelCore::JD_SECOND);
+        const QString t1 = c->facade->timeRateText();
+        const QString d1 = c->facade->timeDirection();
+        core->setTimeRate(3600.0 * StelCore::JD_SECOND);
+        const QString t2 = c->facade->timeRateText();
+        core->setTimeRate(86400.0 * StelCore::JD_SECOND);
+        const QString t3 = c->facade->timeRateText();
+        core->setTimeRate(0.0);
+        const QString dZero = c->facade->timeDirection();
+        core->setTimeRate(-60.0 * StelCore::JD_SECOND);
+        const QString dBack = c->facade->timeDirection();
+
+        const bool textOk = t1.contains(QStringLiteral("x1.0"))
+                            && t2.contains(QStringLiteral("x3600"))
+                            && t2.contains(QStringLiteral("时/秒"))
+                            && t3.contains(QStringLiteral("天/秒"));
+        const bool dirOk = (d1 == QStringLiteral("forward"))
+                           && (dZero == QStringLiteral("stopped"))
+                           && (dBack == QStringLiteral("backward"));
+        c->mark(QStringLiteral("TC-20 速率文本换算（1×→\"%1\"；3600×→\"%2\"；86400×→\"%3\"；"
+                               "要求按旧口径四档跳档）：%4")
+                    .arg(t1, t2, t3)
+                    .arg(textOk ? QStringLiteral("OK") : QStringLiteral("FAIL")));
+        c->mark(QStringLiteral("TC-21 时间方向 token（正 %1 / 零 %2 / 负 %3；"
+                               "要求 forward/stopped/backward）：%4")
+                    .arg(d1, dZero, dBack)
+                    .arg(dirOk ? QStringLiteral("OK") : QStringLiteral("FAIL")));
+
+        // ══ ⑥ 恢复 ═════════════════════════════════════════════════════════
+        core->setTimeRate(rateSave);
+        c->note(QStringLiteral("TC-21-note 速率已复原为 %1（facade 读数 %2）")
+                    .arg(rateSave, 0, 'e', 8).arg(c->facade->timeRate(), 0, 'e', 8));
     }});
 #endif  // STELQUICK_HAS_ENGINE
 

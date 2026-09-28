@@ -9,15 +9,21 @@
 
 #include <QDebug>
 
+#include <algorithm>
+#include <cmath>
+
 #if defined(STELQUICK_HAS_ENGINE)
 #include "StelApp.hpp"
 #include "StelCore.hpp"
+#include "StelLocationMgr.hpp"   // T22：getAllTimezoneNames()（引擎真正接受的时区名单）
 #include "StelMovementMgr.hpp"
 #include "StelObject.hpp"
 #include "StelObjectMgr.hpp"
 #include "StelUtils.hpp"
 
 #include <QDate>
+#include <QStringList>
+#include <QTimeZone>   // T22 时区选择器
 #endif
 
 namespace stelapp {
@@ -59,6 +65,17 @@ double AppFacade::julianDay() const
 
 double AppFacade::timeRate() const
 {
+    // 🔴 T22：读数必须来自**引擎**，不能用本地缓存。
+    //
+    // 缓存的问题（原实现 `return m_timeRate;`）：它只在 `setTimeRate()` 里更新，
+    // 而引擎的速率动作走 `StelCore::increaseTimeSpeed()` 等，**不经过本类**
+    // ⇒ 用户按 `L` 加速，引擎变了、UI 不动。这是"仪表没接在实况上"。
+    //
+    // ISimPacing::simRate() 的实现就是 `core->getTimeRate()`（LiveSkyRuntime.cpp:302），
+    // 所以走它就是走引擎的 timeSpeed（T16 定案的"速率留在引擎"）。
+    // 无 ISimPacing（无引擎形态）才回退缓存值。
+    if (m_sim)
+        return m_sim->simRate();
     return m_timeRate;
 }
 
@@ -295,6 +312,216 @@ QString AppFacade::timeRefusalText() const
     if (m_timeRefusal == QStringLiteral("out-of-range"))
         return QStringLiteral("该时刻超出引擎可表示范围——已忽略。");
     return QStringLiteral("时间写入失败（%1）。").arg(m_timeRefusal);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// T22 时间页收尾：MJD / 显示历法 / 时区 / 速率
+//
+// 与 T19 同一纪律：**只转发与照抄，不新发明天文/日历算法**。
+// 每一条都在注释里给出旧界面的出处行号，便于回头核对。
+// ══════════════════════════════════════════════════════════════════════════
+
+double AppFacade::modifiedJulianDay() const
+{
+    // 从**真源**导出。禁用 `core->getMJDay()` 的理由见头注：
+    // 它读 `JD.first`（上一帧快照），会把 T19 已经修掉的坑从 JD 挪到 MJD 上。
+    return julianDay() - 2400000.5;
+}
+
+bool AppFacade::setModifiedJulianDay(double mjd)
+{
+    // 绝对写法。MJD 与 JD 只差常数 2400000.5（StelCore.cpp:1275/1280），
+    // 所以**复用** setJulianDay 的范围校验与 token —— 写入路径仍然只有一条。
+    // （旧界面 DateTimeDialog::mjdChanged 是增量写法 `applyJD(jd + delta)`，
+    //   与绝对写法等价；这里取绝对写法是为了让判据能断言"位移精确等于 Δ"。）
+    return setJulianDay(mjd + 2400000.5);
+}
+
+QString AppFacade::dateCalendarToken() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return QStringLiteral("unknown");
+    // 照抄 DateTimeDialog.cpp:251（`if (jd < 2299161) → 儒略历`），
+    // 该字面量即 StelUtils.cpp:848 的 JD_GREG_CAL —— 引擎的日期换算内部就用它。
+    // 判据用真源 julianDay()，不用 getJD()（快照），否则换历那一刻会晚一帧显示。
+    return julianDay() < 2299161.0 ? QStringLiteral("julian")
+                                   : QStringLiteral("gregorian");
+#else
+    return QStringLiteral("unknown");
+#endif
+}
+
+QString AppFacade::dateCalendarText() const
+{
+    const QString t = dateCalendarToken();
+    if (t == QStringLiteral("julian"))
+        return QStringLiteral("儒略历");
+    if (t == QStringLiteral("gregorian"))
+        return QStringLiteral("格里高利历");
+    return QStringLiteral("—");
+}
+
+QString AppFacade::timeZoneId() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return QString();
+    StelCore *core = StelApp::getInstance().getCore();
+    return core ? core->getCurrentTimeZone() : QString();
+#else
+    return QString();
+#endif
+}
+
+bool AppFacade::useCustomTimeZone() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return false;
+    StelCore *core = StelApp::getInstance().getCore();
+    return core ? core->getUseCustomTimeZone() : false;
+#else
+    return false;
+#endif
+}
+
+bool AppFacade::useDST() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return false;
+    StelCore *core = StelApp::getInstance().getCore();
+    return core ? core->getUseDST() : false;
+#else
+    return false;
+#endif
+}
+
+QStringList AppFacade::availableTimeZoneIds() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    // ⚠️ 这里刻意**不是**简单照抄 `LocationDialog::populateTimeZonesList`
+    // （它用 `QTimeZone::availableTimeZoneIds()` 一把梭）。原因是引擎侧有两个
+    // 静默失败在等着：
+    //   ① `StelCore::setCurrentTimeZone()` 只接受
+    //      `StelLocationMgr::getAllTimezoneNames()` 里的名字（StelCore.cpp:1717），
+    //      不在名单里的**只打一条 qWarning 就不设置**（StelCore.cpp:1724）——
+    //      "选了没用"。
+    //   ② 名字若不能被 `QTimeZone` 解析，`getUTCOffset` 会**悄悄落回系统本地时区**
+    //      （StelCore.cpp:1637 的 `!tzValid` 分支），连警告都不一定显眼 ——
+    //      "选了个偏 8 小时的时区，结果一直是本机时区"。
+    // 所以取**交集**：引擎接受的 ∩ Qt 能算的。两个坑都堵死。
+    if (m_tzCache.isEmpty())
+    {
+        const QStringList engineNames =
+            StelApp::isInitialized()
+                ? StelApp::getInstance().getLocationMgr().getAllTimezoneNames()
+                : QStringList();
+        for (const QString &tz : engineNames)
+        {
+            if (QTimeZone(tz.toUtf8()).isValid())
+                m_tzCache.append(tz);
+        }
+        // 无引擎/名单为空时退回 Qt 全集（至少控件可用；写入侧仍有回读验证兜底）。
+        if (m_tzCache.isEmpty())
+        {
+            const QList<QByteArray> ids = QTimeZone::availableTimeZoneIds();
+            for (const QByteArray &b : ids)
+                m_tzCache.append(QString::fromLatin1(b));
+        }
+        std::sort(m_tzCache.begin(), m_tzCache.end());
+    }
+    return m_tzCache;
+#else
+    return QStringList();
+#endif
+}
+
+bool AppFacade::setTimeZoneId(const QString &tz)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return false;
+    StelCore *core = StelApp::getInstance().getCore();
+    if (!core)
+        return false;
+    // 第一道：Qt 能不能解析（不能的话 getUTCOffset 会落回系统时区）。
+    if (!QTimeZone(tz.toUtf8()).isValid())
+        return false;
+    const QString before = core->getCurrentTimeZone();
+    core->setCurrentTimeZone(tz);
+    // 第二道（关键）：**回读验证**。引擎对不在 `getAllTimezoneNames()` 里的名字
+    // 是"打印警告 + 什么都不做"（StelCore.cpp:1717-1725），而它的名单来自地点库
+    // 且经过 sanitize，与 Qt 的 id 集未必逐字一致。只看 QTimeZone::isValid() 就
+    // 返回 true，等于向 UI 谎报"已切换"——比不切换更坏。
+    if (core->getCurrentTimeZone() != tz)
+    {
+        Q_UNUSED(before);
+        return false;
+    }
+    ++m_timeZoneWriteCount;
+    return true;
+#else
+    Q_UNUSED(tz);
+    return false;
+#endif
+}
+
+void AppFacade::setUseCustomTimeZone(bool on)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return;
+    if (StelCore *core = StelApp::getInstance().getCore())
+        core->setUseCustomTimeZone(on);
+#else
+    Q_UNUSED(on);
+#endif
+}
+
+void AppFacade::setUseDST(bool on)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return;
+    if (StelCore *core = StelApp::getInstance().getCore())
+        core->setUseDST(on);
+#else
+    Q_UNUSED(on);
+#endif
+}
+
+QString AppFacade::timeRateText() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    // 换算与单位跳档**照抄** StelGuiItems.cpp:885-907，一档不改：
+    //   factor = |rate| / JD_SECOND           → 速率倍数（秒/秒）
+    //   初始单位 min/s，value = factor/60；≥60 → hr/s；再 ≥24 → d/s；再 ≥365.25 → yr/s
+    //   倍数 ≤60 时旧界面只显示 `x<倍数>`，>60 才带括号里的换算值。
+    const double factor = std::abs(timeRate()) / StelCore::JD_SECOND;
+    double value = factor / 60.0;
+    QString unit = QStringLiteral("分/秒");
+    if (value >= 60.0)   { value /= 60.0;     unit = QStringLiteral("时/秒"); }
+    if (value >= 24.0)   { value /= 24.0;     unit = QStringLiteral("天/秒"); }
+    if (value >= 365.25) { value /= 365.25;   unit = QStringLiteral("年/秒"); }
+
+    if (factor <= 60.0)
+        return QStringLiteral("x%1").arg(QString::number(factor, 'f', 1));
+    return QStringLiteral("x%1（%2 %3）")
+        .arg(QString::number(factor, 'f', 0),
+             QString::number(value, 'f', 2), unit);
+#else
+    return QStringLiteral("—");
+#endif
+}
+
+QString AppFacade::timeDirection() const
+{
+    const double r = timeRate();
+    if (r == 0.0)
+        return QStringLiteral("stopped");
+    return r < 0.0 ? QStringLiteral("backward") : QStringLiteral("forward");
 }
 
 double AppFacade::fieldOfView() const

@@ -67,6 +67,8 @@
 #include "core/StelObjectMgr.hpp"
 #include "core/VecMath.hpp"
 #include <QKeyEvent>            // T20：Esc 判据要投递**真实**键盘事件（先例见 AppFacadeCheck AC-12）
+#include <QDateTime>            // T22：按偏移挑时区候选（与"跑在哪一天"解耦）
+#include <QTimeZone>            // T22
 #include "core/StelFileMgr.hpp"
 #include "core/StelTranslator.hpp"
 #include "core/StelIniParser.hpp"
@@ -535,6 +537,24 @@ QPointF uiLocateCenter(QQuickItem *item)
     return item->mapToScene(QPointF(item->width() / 2.0, item->height() / 2.0));
 }
 
+// ── 布局就绪门（T22 新增）─────────────────────────────────────────────────────
+//! 有界等待上限：25 × 100ms = 2.5s。超过就**明确判红**，不静默放行。
+constexpr int kUiLayoutWaitTries = 25;
+
+//! 该控件是否"已经完成布局"：有正尺寸、且在场景里可见。
+//! **为什么需要这个门**：Qt Quick 的布局/polish 由**渲染循环**驱动。`StackLayout`
+//! 刚切页时，新页里的控件先以"布局前尺寸"存在，要等下一次 polish 才拿到真实几何。
+//! 本机在 Spotlight `mdbulkindex` 重压（实测 load average 6.0→11.5）时，这个 polish
+//! 会被拖到相位定时器之后 —— 于是判据读到 `resultList` = **207×0**，并照这个坐标投递
+//! 真实点击 ⇒ 点击落空 ⇒ 连带整串判据红。这是本仓库反复复发的
+//! "**仪器没接在实况上**"（T14/T15 血泪第 3 条），不是被测行为。
+//! 处置沿 T18/T19 的 DYN 先例：**改判据协议、不改判据** —— 点击前有界等待就绪；
+//! 等不到就判红并写明"仪器没接上"，**绝不洗成 PASS**。
+bool uiLayoutReady(QQuickItem *item)
+{
+    return item && item->width() > 1.0 && item->height() > 1.0 && item->isVisible();
+}
+
 //! 向窗口投递一次真实鼠标点击（按下 + 同点抬起）。返回事件是否被窗口受理。
 //! 不用 QtTest：本项目未引入该依赖，且 AC-12 已确立"从窗口投递真实事件"的先例。
 bool uiLocateClick(QQuickWindow *window, const QPointF &scenePos)
@@ -799,7 +819,10 @@ int runUiLocateCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFac
 //     TimePage 头注里"改成显式应用是为了可测"所指向的那条；它同时验了 QML 的
 //     `dirty` 守卫是活的（挡住 400ms 自动回填，见 UI-04）。
 //
-// 判据 13 条：UI-01..UI-11（含 UI-09a/09b）。退出码：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+// 判据 19 条：UI-01..UI-16（含 UI-09a/09b、UI-14a/14b）。退出码：0=PASS / 10=FAIL /
+// 6=UNAVAILABLE。
+// T22（2026-09-28）追加 UI-12..UI-16：新控件锚点、MJD 投影行、历法行**成对**、
+// 速率**成对**（真实点击「+」→ 引擎变了 ∧ 仪表跟着变）、时区组合框回填。
 // ══════════════════════════════════════════════════════════════════════════
 
 //! 本地时刻用例（年/月/日/时/分/秒）。四组**互不相同**，用来判别"QML 有没有把值写死"。
@@ -820,6 +843,14 @@ struct UiTimeCheck
     QQuickItem *addDayButton = nullptr;
     QQuickItem *statusLabel = nullptr;
     QQuickItem *jdLabel = nullptr;
+    // ── T22 新增锚点 ─────────────────────────────────────────────────────────
+    QQuickItem *mjdLabel = nullptr;
+    QQuickItem *calendarLabel = nullptr;
+    QQuickItem *rateLabel = nullptr;
+    QQuickItem *dirLabel = nullptr;
+    QQuickItem *tzCombo = nullptr;
+    QQuickItem *customTzCheck = nullptr;
+    QQuickItem *speedUpButton = nullptr;
     QStringList details;
     int passed = 0;
     int total = 0;
@@ -835,6 +866,10 @@ struct UiTimeCheck
     double jdBeforeNow = 0.0;      //!< 点「现在」之前（已在 1900 年）的引擎 JD
     double jdLabel0 = 0.0;         //!< UI-10a 读到的 JD Label 值
     QString nowText;               //!< UI-09a 读到的状态文案
+    // T22
+    double rateBeforeClick = 0.0;  //!< UI-15 点击「+」之前的引擎速率
+    QString rateTextBefore;        //!< UI-15 点击之前的速率行文本
+    QString tzTargetId;            //!< UI-16 要切入的时区 id（UI-15 相位里挑好）
 };
 
 void uiTimeMark(UiTimeCheck *c, bool ok, const QString &line)
@@ -957,6 +992,14 @@ void uiTimeStep(QGuiApplication *app, std::shared_ptr<UiTimeCheck> c)
         c->addDayButton = c->window->findChild<QQuickItem *>(QStringLiteral("timeAddDayButton"));
         c->statusLabel  = c->window->findChild<QQuickItem *>(QStringLiteral("timeStatusLabel"));
         c->jdLabel      = c->window->findChild<QQuickItem *>(QStringLiteral("timeJdLabel"));
+        // T22 新增锚点（时间页收尾四项的观测面）
+        c->mjdLabel      = c->window->findChild<QQuickItem *>(QStringLiteral("timeMjdLabel"));
+        c->calendarLabel = c->window->findChild<QQuickItem *>(QStringLiteral("timeCalendarLabel"));
+        c->rateLabel     = c->window->findChild<QQuickItem *>(QStringLiteral("timeRateLabel"));
+        c->dirLabel      = c->window->findChild<QQuickItem *>(QStringLiteral("timeDirectionLabel"));
+        c->tzCombo       = c->window->findChild<QQuickItem *>(QStringLiteral("timeTimeZoneCombo"));
+        c->customTzCheck = c->window->findChild<QQuickItem *>(QStringLiteral("timeCustomTzCheck"));
+        c->speedUpButton = c->window->findChild<QQuickItem *>(QStringLiteral("timeSpeedUpButton"));
         const int btns = (c->applyButton ? 1 : 0) + (c->resetButton ? 1 : 0)
                        + (c->nowButton ? 1 : 0) + (c->subDayButton ? 1 : 0)
                        + (c->addDayButton ? 1 : 0);
@@ -977,6 +1020,20 @@ void uiTimeStep(QGuiApplication *app, std::shared_ptr<UiTimeCheck> c)
                                              "找不到 —— 接线或命名断了，判据无法进行"));
             return;
         }
+        // ── UI-12：T22 新控件锚点可寻（单列一条，不混进 UI-01 的口径）────────
+        const int t22Anchors = (c->mjdLabel ? 1 : 0) + (c->calendarLabel ? 1 : 0)
+                             + (c->rateLabel ? 1 : 0) + (c->dirLabel ? 1 : 0)
+                             + (c->tzCombo ? 1 : 0) + (c->customTzCheck ? 1 : 0)
+                             + (c->speedUpButton ? 1 : 0);
+        uiTimeMark(c.get(), t22Anchors == 7,
+                   QStringLiteral("UI-12 T22 新控件锚点可寻（MJD 行/历法行/速率行/方向行/"
+                                  "时区组合框/自定义时区勾选/速率「+」按钮）找到 %1/7；"
+                                  "MJD 行可见=%2、组合框可见=%3")
+                       .arg(t22Anchors)
+                       .arg((c->mjdLabel && c->mjdLabel->isVisible()) ? QStringLiteral("true")
+                                                                      : QStringLiteral("false"),
+                            (c->tzCombo && c->tzCombo->isVisible()) ? QStringLiteral("true")
+                                                                    : QStringLiteral("false")));
         // 暂停时钟：本检查全部是"写入后读回"的等式，时钟若在走会把 JD 比较淹掉。
         // 也顺带让 QML 的投影 Label 稳定，UI-10 才有意义。
         c->facade->setSimulationPaused(true);
@@ -1208,13 +1265,128 @@ void uiTimeStep(QGuiApplication *app, std::shared_ptr<UiTimeCheck> c)
         uiLocateClick(c->window, p);
         break;
     }
-    default: {
+    case 16: {
         // ── UI-11：步进透传链活着（QML 按钮 → ActionRouter → 引擎 StelAction）
         const double d = c->facade->julianDay() - c->jdBeforeNow;
         uiTimeMark(c.get(), qAbs(d - 1.0) < 1e-6,
                    QStringLiteral("UI-11 真实点击「+1 天」→ JD 位移 %1 天（期望 1，"
                                   "容差 1e-6）—— QML→ActionRouter→引擎 透传链是活的")
                        .arg(d, 0, 'f', 9));
+        break;
+    }
+    // ══ T22（2026-09-28）时间页收尾四项的 UI 判据 ═════════════════════════
+    //  与 T19 的 UI-01..11 同一手法：**从最外层注入真实事件**、读 QML 真实属性。
+    //  新增的读数全部走 300 ms 轮询（见 TimePage 头注 ③：那批读接口是
+    //  Q_INVOKABLE 不是属性，不能建绑定），所以每条"读 Label"的判据前面都有一拍
+    //  （tickMs = 500 ms > 300 ms）的等待 —— 由相位划分天然提供。
+    case 17: {
+        // ── UI-13：MJD 投影行与 C++ 侧同源 ─────────────────────────────
+        const QString t = c->mjdLabel->property("text").toString();
+        const double shown = t.toDouble();
+        const double cpp = c->facade->modifiedJulianDay();
+        uiTimeMark(c.get(), t != QStringLiteral("—") && shown > 0.0
+                                && qAbs(shown - cpp) < 1e-6,
+                   QStringLiteral("UI-13 MJD 投影行=\"%1\"（解析 %2；C++ 侧 %3；差 %4 天，"
+                                  "容差 1e-6）—— 且它与 JD 行同源（JD=%5）")
+                       .arg(t).arg(shown, 0, 'f', 6).arg(cpp, 0, 'f', 6)
+                       .arg(qAbs(shown - cpp), 0, 'e', 2)
+                       .arg(c->facade->julianDay(), 0, 'f', 6));
+        // 准备 UI-14a：跳进 1582 换历边界**之前**（历法行必须自报儒略历）
+        c->facade->setJulianDay(2299160.5);
+        c->details.append(QStringLiteral("UI-14a-prep 时钟跳到 JD=2299160.5"
+                                         "（1582-10-04，儒略历区间）"));
+        break;
+    }
+    case 18: {
+        // ── UI-14a：历法行跟着实况走（1582 → 儒略历）────────────────────
+        const QString t = c->calendarLabel->property("text").toString();
+        const QString tok = c->facade->dateCalendarToken();
+        uiTimeMark(c.get(), t.contains(QStringLiteral("儒略"))
+                                && tok == QStringLiteral("julian"),
+                   QStringLiteral("UI-14a 历法行=\"%1\"（token=%2）—— 跳进 1582 年区间后"
+                                  "必须自报儒略历").arg(t, tok));
+        // 准备 UI-14b：跳回现代（同一控件必须改口）—— 与上一条**成对**
+        c->facade->setJulianDay(StelUtils::getJDFromSystem());
+        break;
+    }
+    case 19: {
+        // ── UI-14b：判别性 —— 同一控件在两条判据里给出**不同**文案 ──────
+        const QString t = c->calendarLabel->property("text").toString();
+        const QString tok = c->facade->dateCalendarToken();
+        uiTimeMark(c.get(), t.contains(QStringLiteral("格里高利"))
+                                && tok == QStringLiteral("gregorian"),
+                   QStringLiteral("UI-14b 历法行=\"%1\"（token=%2）—— 与 UI-14a 的文案不同"
+                                  "⇒ 它是活的投影，不是常量").arg(t, tok));
+        // 准备 UI-15：记下点击前的引擎速率与速率行文本，然后**真实点击**「+」
+        c->rateBeforeClick = c->facade->timeRate();
+        c->rateTextBefore = c->rateLabel->property("text").toString();
+        const QPointF p = uiLocateCenter(c->speedUpButton);
+        c->details.append(QStringLiteral("UI-15-note 向窗口投递真实点击 @(%1,%2)——速率「+」"
+                                         "按钮（ActionRouter 透传 actionIncrease_Time_Speed）；"
+                                         "点击前引擎速率 %3、速率行=\"%4\"")
+                              .arg(p.x(), 0, 'f', 1).arg(p.y(), 0, 'f', 1)
+                              .arg(c->rateBeforeClick, 0, 'e', 6).arg(c->rateTextBefore));
+        uiLocateClick(c->window, p);
+        break;
+    }
+    case 20: {
+        // ── UI-15：速率**成对** ——「世界确实动了」∧「仪表跟着动了」────────
+        //  这是本轮的靶心判据。只测后者，"Label 恒为常量"也能绿；只测前者，
+        //  就漏掉"按了 L 键 UI 纹丝不动"这个原缺陷（T22 修的就是它）。
+        const double after = c->facade->timeRate();
+        const QString rateTextAfter = c->rateLabel->property("text").toString();
+        const bool engineMoved = qAbs(after - c->rateBeforeClick)
+                                 > qAbs(c->rateBeforeClick) * 1e-6 + 1e-18;
+        const bool labelMoved = (rateTextAfter != c->rateTextBefore);
+        uiTimeMark(c.get(), engineMoved && labelMoved,
+                   QStringLiteral("UI-15 真实点击「+」→ 引擎速率 %1 → %2（确实变了=%3）；"
+                                  "速率行 \"%4\" → \"%5\"（跟着变了=%6）")
+                       .arg(c->rateBeforeClick, 0, 'e', 6).arg(after, 0, 'e', 6)
+                       .arg(engineMoved ? QStringLiteral("true") : QStringLiteral("false"))
+                       .arg(c->rateTextBefore, rateTextAfter)
+                       .arg(labelMoved ? QStringLiteral("true") : QStringLiteral("false")));
+        // 准备 UI-16：从**引擎接受的名单**里挑一个"偏移 0"的时区（与跑在哪天无关）
+        const QStringList avail = c->facade->availableTimeZoneIds();
+        const QDateTime nowUtc = QDateTime::currentDateTimeUtc();
+        for (const QString &id : avail)
+        {
+            const QTimeZone z(id.toUtf8());
+            if (z.isValid() && z.offsetFromUtc(nowUtc) == 0
+                && id != c->facade->timeZoneId())
+            {
+                c->tzTargetId = id;
+                break;
+            }
+        }
+        if (c->tzTargetId.isEmpty())
+        {
+            c->details.append(QStringLiteral("UI-16 SKIP：名单（%1 项）里找不到偏移 0 且"
+                                             "不同于当前值的时区 —— 环境条件")
+                                  .arg(avail.size()));
+        }
+        else
+        {
+            const bool ok = c->facade->setTimeZoneId(c->tzTargetId);
+            c->details.append(QStringLiteral("UI-16-prep setTimeZoneId(\"%1\") → %2"
+                                             "（当前 %3）")
+                                  .arg(c->tzTargetId,
+                                       ok ? QStringLiteral("true") : QStringLiteral("false"),
+                                       c->facade->timeZoneId()));
+        }
+        break;
+    }
+    default: {
+        // ── UI-16：时区组合框跟着**实况**回填（C++ 写入 → 300 ms 轮询 → ComboBox）──
+        //  这条测的是"程序赋值 currentIndex"这条回填路 —— 它**不会**触发 activated
+        //  （只有用户交互才触发），所以回填不会反过来再写一次引擎。
+        if (!c->tzTargetId.isEmpty())
+        {
+            const QString shown = c->tzCombo->property("currentText").toString();
+            uiTimeMark(c.get(), shown == c->tzTargetId,
+                       QStringLiteral("UI-16 组合框当前项=\"%1\"（目标=\"%2\"，C++ 侧 "
+                                      "timeZoneId=\"%3\"）—— 命令写入后轮询把控件带回实况")
+                           .arg(shown, c->tzTargetId, c->facade->timeZoneId()));
+        }
         uiTimeFinish(app, c.get());
         return;
     }
@@ -1234,7 +1406,7 @@ int runUiTimeCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacad
     c->window = window;
     c->facade = facade;
     std::printf("TIMEUICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，"
-                "共 13 条判据，每相位 %dms）\n", c->tickMs);
+                "共 19 条判据，每相位 %dms）\n", c->tickMs);
     std::fflush(stdout);
     uiTimeStep(app, c);
     return 0;
@@ -1365,6 +1537,7 @@ struct UiReturnCheck
     QString sidBefore;
     Vec3d altAzRoundTripRef = Vec3d(0.);
     Vec3d altAzBeforeHour = Vec3d(0.);
+    int layoutWait = 0;   //!< T22 布局就绪门的重试计数（见 uiLayoutReady 注释）
 };
 
 void uiReturnMark(UiReturnCheck *c, bool ok, const QString &line)
@@ -1543,6 +1716,40 @@ void uiReturnStep(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
     case 5: {
         // ── 写入步：真实点击「+1 时」（走 ActionRouter 透传引擎 StelAction）──
         // ⚠️ 等待挂在**本步**（nextDelayMs = 世界结算时间），不是下一步 —— T19 的坑。
+        // ── T22：布局就绪门。时间页是**刚切过来**的，重压下页内控件还停留在
+        //    "布局前尺寸"（实测 0 高），照这个坐标点就是空点 ⇒ RT-08 假红。
+        //    理由与处置见 uiLayoutReady() 注释（改协议、不改判据、不洗 PASS）。
+        if (uiCurrentPageIndex(c->pageStack) != c->idxTime || !uiLayoutReady(c->addHour)) {
+            if (c->layoutWait < kUiLayoutWaitTries) {
+                if (c->layoutWait == 0)
+                    c->details.append(QStringLiteral(
+                        "RT-note 时间页/「+1 时」按钮尚未就绪（页面=%1，期望 %2；按钮 %3×%4）"
+                        "—— 有界等待（≤%5×100ms）")
+                        .arg(uiCurrentPageIndex(c->pageStack)).arg(c->idxTime)
+                        .arg(c->addHour->width(), 0, 'f', 0)
+                        .arg(c->addHour->height(), 0, 'f', 0)
+                        .arg(kUiLayoutWaitTries));
+                ++c->layoutWait;
+                if (uiCurrentPageIndex(c->pageStack) != c->idxTime)
+                    uiReturnClick(c->window, c->navTime);   // 切页没生效就再点一次
+                c->nextDelayMs = 100;
+                uiReturnAdvance(app, c);   // ⚠️ 停在本相位：**不** ++phase
+                return;
+            }
+            c->details.append(QStringLiteral(
+                "RT-note 等待 %1ms 后时间页仍未就绪（页面=%2；按钮 %3×%4）⇒ 判红，"
+                "**不洗成 PASS**")
+                .arg(kUiLayoutWaitTries * 100).arg(uiCurrentPageIndex(c->pageStack))
+                .arg(c->addHour->width(), 0, 'f', 0).arg(c->addHour->height(), 0, 'f', 0));
+            uiReturnMark(c.get(), false,
+                         QStringLiteral("RT-08 时间页未就绪（页面=%1/%2，按钮 %3×%4）—— "
+                                        "仪器没接上：既不作退化证据，也**不作 PASS**")
+                             .arg(uiCurrentPageIndex(c->pageStack)).arg(c->idxTime)
+                             .arg(c->addHour->width(), 0, 'f', 0)
+                             .arg(c->addHour->height(), 0, 'f', 0));
+            uiReturnFinish(app, c.get());
+            return;
+        }
         uiReturnClick(c->window, c->addHour);
         c->nextDelayMs = kUiReturnWorldSettleMs;
         c->details.append(QStringLiteral("RT-note 已在时间页真实点击「+1 时」，等 %1ms 让引擎"
@@ -1682,6 +1889,7 @@ struct UiReplayCheck
     double jdBeforeTime = 0.0;
     QString sidExpected;
     Vec3d altAzBeforeTime = Vec3d(0.);
+    int layoutWait = 0;   //!< T22 布局就绪门的重试计数（见 uiLayoutReady 注释）
 };
 
 void uiReplayMark(UiReplayCheck *c, bool ok, const QString &line)
@@ -1772,6 +1980,39 @@ void uiReplayStep(QGuiApplication *app, std::shared_ptr<UiReplayCheck> c)
         break;
     }
     case 2: {
+        // ── T22：本相位开头的**布局就绪门**（有界；理由见 uiLayoutReady 注释）──
+        // ⚠️ 必须放在本相位**所有 `uiReplayMark` 之前**：门的做法是"停在本相位重试"，
+        //    若放在判据之后，每次重试都会把前面的判据重跑一遍、计数虚高
+        //    （负控实测出现过 `判据 80/81` 这种虚高读数）。
+        if (!uiLayoutReady(c->resultList)) {
+            if (c->layoutWait < kUiLayoutWaitTries) {
+                if (c->layoutWait == 0)
+                    c->details.append(QStringLiteral(
+                        "RP-note 结果列表尚未完成布局（%1×%2）—— 有界等待就绪（≤%3×100ms）。"
+                        "Qt Quick 的布局由渲染/polish 驱动，重压下读几何会早于 polish"
+                        "（实测 207×0）；这是**仪器没接上**，按 DYN 先例只改判据协议，"
+                        "判据本身不动。")
+                        .arg(c->resultList->width(), 0, 'f', 0)
+                        .arg(c->resultList->height(), 0, 'f', 0)
+                        .arg(kUiLayoutWaitTries));
+                ++c->layoutWait;
+                c->nextDelayMs = 100;
+                uiReplayAdvance(app, c);   // ⚠️ 停在本相位：**不** ++phase
+                return;
+            }
+            c->details.append(QStringLiteral(
+                "RP-note 等待 %1ms 后结果列表仍未完成布局（%2×%3）⇒ 判红，**不洗成 PASS**")
+                .arg(kUiLayoutWaitTries * 100)
+                .arg(c->resultList->width(), 0, 'f', 0)
+                .arg(c->resultList->height(), 0, 'f', 0));
+            uiReplayMark(c.get(), false,
+                         QStringLiteral("RP-04 结果列表未完成布局（控件 %1×%2）—— "
+                                        "仪器没接上：既不作退化证据，也**不作 PASS**")
+                             .arg(c->resultList->width(), 0, 'f', 0)
+                             .arg(c->resultList->height(), 0, 'f', 0));
+            uiReplayFinish(app, c.get());
+            return;
+        }
         // ── RP-03：搜月球 —— 结果非空 ─────────────────────────────────────
         const int rows = c->resultList->property("count").toInt();
         uiReplayMark(c.get(), rows > 0,
@@ -3047,7 +3288,7 @@ int main(int argc, char **argv)
     // 与 TIMECHECK 的关键区别：TIMECHECK 走 AppFacade 的 C++ 公共 API，证明不了
     // TimePage.qml 的 onClicked 接线与状态行绑定是活的；本检查按 objectName 找
     // 真实控件、向窗口投递真实鼠标事件，并反向读 QML 控件的真实属性
-    // （SpinBox.value / Label.text）。判据见下方 uiTime*，共 13 条。
+    // （SpinBox.value / Label.text）。判据见下方 uiTime*，共 19 条（T22 追加 6 条）。
     if (timeUiCheck) {
 #if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
         std::printf("TIMEUICHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");

@@ -1,0 +1,11 @@
+# 各样本读数（判据 / 结果列表几何 / VERDICT）
+# A = 全 HEAD 源码；B = T22 全量；C = T22 的 C++ + HEAD 的 TimePage.qml；D = 与 C 同源重建后
+
+A-HEAD-source-green-replay.txt             列表 934×341 判据 11/11 VERDICT=PASS 
+A-HEAD-source-green-return.txt             判据 11/11 VERDICT=PASS 
+B-t22-source-FAIL-run1.txt                 列表 207×0 判据 6/11 VERDICT=FAIL 
+B-t22-source-FAIL-run2.txt                 列表 207×0 判据 6/11 VERDICT=FAIL 
+B-t22-source-FAIL-run3.txt                 列表 207×0 判据 6/11 VERDICT=FAIL 
+C-timepage-head-FAIL-run1.txt              列表 207×0 判据 7/11 VERDICT=FAIL 
+C-timepage-head-FAIL-run2.txt              列表 207×0 判据 7/11 VERDICT=FAIL 
+C-timepage-head-FAIL-run3.txt              列表 207×0 判据 7/11 VERDICT=FAIL 

@@ -1,0 +1,10 @@
+# 就绪门正跑（健康环境）
+
+return run1  判据 11/11 VERDICT=PASS  门触发=0
+return run2  判据 11/11 VERDICT=PASS  门触发=0
+return run3  判据 11/11 VERDICT=PASS  门触发=0
+return run4  判据 11/11 VERDICT=PASS  门触发=0
+return run5  判据 11/11 VERDICT=PASS  门触发=0
+return run6  判据 11/11 VERDICT=PASS  门触发=0
+return run7  判据 11/11 VERDICT=PASS  门触发=0
+return run8  判据 11/11 VERDICT=PASS  门触发=0

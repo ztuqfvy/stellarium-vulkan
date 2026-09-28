@@ -1,0 +1,10 @@
+# 就绪门正跑（健康环境）：每次都必须 PASS，且 '门触发=0'（门不改变正常路径）
+
+replay run1  判据 11/11 VERDICT=PASS  门触发=0
+replay run2  判据 11/11 VERDICT=PASS  门触发=0
+replay run3  判据 11/11 VERDICT=PASS  门触发=0
+replay run4  判据 11/11 VERDICT=PASS  门触发=0
+replay run5  判据 11/11 VERDICT=PASS  门触发=0
+replay run6  判据 11/11 VERDICT=PASS  门触发=0
+replay run7  判据 11/11 VERDICT=PASS  门触发=0
+replay run8  判据 11/11 VERDICT=PASS  门触发=0

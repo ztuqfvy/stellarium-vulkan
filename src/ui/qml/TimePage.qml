@@ -21,6 +21,23 @@
 //   若不挡就会"回填 → 触发 → 又写一次引擎"。旧对话框用 disconnectSpinnerEvents
 //   解决，QML 侧没有 disconnect，等价手段就是这个布尔守卫。
 //   没有它的话，`dirty` 会永远为真，用户改的框会被自己的回填吃掉。
+//   T22 起这个守卫还兼管时区的两个 CheckBox —— 它们的 `toggled` 在**程序赋值时
+//   也会发**（与 SpinBox 的 valueChanged 同类性质），不挡就是同一个反馈环。
+//
+// ── T22（2026-09-28）：时间页收尾四项 ────────────────────────────────────────
+//   把计划里挂着的「显示历法 / MJD / 速率 GUI / 时区选择器」补齐。三条纪律：
+//   ① **照抄旧界面口径**，不发明：MJD = JD − 2400000.5（StelCore.cpp:1275）；
+//      历法判定 = `jd < 2299161`（DateTimeDialog.cpp:251、StelUtils.cpp:848）；
+//      时区取数/写入 = `QTimeZone` + `setCurrentTimeZone`（LocationDialog.cpp:490/292）；
+//      速率换算 = `StelGuiItems.cpp:885-907` 的四档单位跳档。
+//   ② **速率控制全部透传引擎既有动作**（`ActionRouter.trigger`），不新建速率表、
+//      不直接写 `timeRate` —— 与"单点键位路由"同一条理由：另开一条写路径就会
+//      与快捷键双轨，两边的状态迟早对不上。
+//   ③ **回填一律轮询**（页尾 300 ms Timer），不建绑定。原因很硬：那批读接口是
+//      `Q_INVOKABLE`，**不是属性** —— 写在绑定里读到的是**函数对象**（恒 false），
+//      而且没有 NOTIFY 就没有依赖、永不重算。离散量本想用 Q_PROPERTY，但它们的
+//      变化源在引擎（用户在旧界面/快捷键改时区、加速度），本类并不知情，
+//      转发信号要额外接线；300 ms 轮询读的只是一个字符串，成本可忽略。
 //
 // 禁区（docs/CODING_STANDARD.zh_CN.md 第 5 节）：本目录禁止 GL/Vulkan 特定调用。
 import QtQuick
@@ -55,7 +72,23 @@ Item {
         dirty = false
     }
 
-    Component.onCompleted: refill()
+    //! T22：IANA 时区 id 列表。**只在完成时取一次** —— 这个列表有 600+ 项，
+    //! 放进 300 ms 轮询会把组合框拖慢（C++ 侧也做了缓存，但 QML 侧不必反复要）。
+    property var tzIds: []
+
+    //! 找 id 的下标。不直接用 `tzIds.indexOf()`：QStringList 过 QML 边界后的
+    //! JS 表示在不同 Qt 版本上未必是纯 Array，手写循环最稳（600 次比较，一次性）。
+    function tzIndexOf(id) {
+        for (var i = 0; i < tzIds.length; ++i)
+            if (tzIds[i] === id)
+                return i
+        return -1
+    }
+
+    Component.onCompleted: {
+        refill()
+        timePage.tzIds = appFacade.availableTimeZoneIds()
+    }
 
     // 自动回填：时钟在走，本地日历每秒都在变。dirty 时让位给用户。
     Timer {
@@ -87,6 +120,51 @@ Item {
                           + timePage.offsetHours.toFixed(1) + "）"
                     font.bold: true
                 }
+
+                // ── T22 时区选择器（照抄旧 LocationDialog 的口径）────────────────
+                // 取数 = `QTimeZone::availableTimeZoneIds()`（LocationDialog.cpp:490），
+                // 写入 = `core->setCurrentTimeZone()`。旧界面把「使用自定义时区」开关
+                // 与列表**分开**（LocationDialog.cpp:187-191），这里照抄这个分工，
+                // 只是在列表里选一下时**显式**再打开开关（否则"选了没生效"）。
+                //
+                // ⚠️ 刻意**不写 `checked: appFacade.useCustomTimeZone()` 这样的绑定**：
+                //   那三个是 Q_INVOKABLE **不是属性**，绑定里读到的是**函数对象**
+                //   （恒为 false），而且没有 NOTIFY 就没有依赖、永不重算。
+                //   回填一律走页尾的 300 ms 轮询 + `syncing` 守卫挡反馈环。
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    CheckBox {
+                        id: customTzCheck
+                        objectName: "timeCustomTzCheck"
+                        text: "使用自定义时区"
+                        // 守卫：轮询回填时不许反过来再写一次引擎（与 SpinBox 同一手法）。
+                        onToggled: { if (!timePage.syncing) appFacade.setUseCustomTimeZone(checked) }
+                    }
+                    CheckBox {
+                        id: dstCheck
+                        objectName: "timeDstCheck"
+                        text: "夏令时"
+                        onToggled: { if (!timePage.syncing) appFacade.setUseDST(checked) }
+                    }
+                    Item { Layout.fillWidth: true }
+                }
+
+                ComboBox {
+                    id: tzCombo
+                    objectName: "timeTimeZoneCombo"
+                    Layout.fillWidth: true
+                    model: timePage.tzIds
+                    // 程序赋值 currentIndex **不会**发 activated（只有用户交互才发），
+                    // 所以轮询回填不会误触发这里。
+                    onActivated: (index) => {
+                        appFacade.setTimeZoneId(timePage.tzIds[index])
+                        appFacade.setUseCustomTimeZone(true)
+                    }
+                }
+
+                Rectangle { Layout.fillWidth: true; height: 1; color: "#eeeeee" }
 
                 GridLayout {
                     columns: 4
@@ -233,8 +311,38 @@ Item {
                         text: timePage.jdText
                         font.family: "monospace"
                     }
+                    // ── T22 新增：MJD 与显示历法 ──────────────────────────────
+                    // MJD = JD − 2400000.5（UT 尺度）。**只读**：写入路径仍是
+                    // 左侧本地日历 ×6 与「现在」——多一个写入面就多一个口径，
+                    // 而旧界面那个 MJD 自旋框（DateTimeDialog 的 spinner_mjd）
+                    // 与 JD 自旋框是同一件事的两种表示，本页已有 JD 行可核对。
+                    Label { text: "MJD（UT）"; color: "#757575" }
+                    Label {
+                        id: mjdLabel
+                        objectName: "timeMjdLabel"
+                        text: "—"
+                        font.family: "monospace"
+                    }
+                    Label { text: "显示历法"; color: "#757575" }
+                    Label {
+                        id: calendarLabel
+                        objectName: "timeCalendarLabel"
+                        text: "—"
+                        color: "#6a1b9a"
+                    }
                     Label { text: "推进速率"; color: "#757575" }
-                    Label { text: appFacade.simulationPaused ? "已暂停" : "运行中"; }
+                    Label {
+                        id: rateLabel
+                        objectName: "timeRateLabel"
+                        text: "—"
+                        font.family: "monospace"
+                    }
+                    Label { text: "时间方向"; color: "#757575" }
+                    Label {
+                        id: dirLabel
+                        objectName: "timeDirectionLabel"
+                        text: "—"
+                    }
                 }
 
                 Rectangle { Layout.fillWidth: true; height: 1; color: "#eeeeee" }
@@ -276,6 +384,50 @@ Item {
                     }
                 }
 
+                RowLayout {
+                    spacing: 4
+                    // ── T22 速率控制：**全部透传引擎既有动作**（StelCore.cpp:314-321 注册），
+                    //    与上面那排步进按钮同一纪律 —— 不新建速率表、不直接写 timeRate。
+                    //    这样"按按钮"与"按快捷键"走的是同一条通路，QML 侧读到的
+                    //    `appFacade.timeRateText()` 也必然跟着变（它是引擎投影）。
+                    Label { text: "速率"; color: "#757575" }
+                    Button {
+                        objectName: "timeSpeedDownButton"
+                        text: "−"
+                        onClicked: ActionRouter.trigger("actionDecrease_Time_Speed")
+                    }
+                    Button {
+                        objectName: "timeSpeedDownLessButton"
+                        text: "−少"
+                        onClicked: ActionRouter.trigger("actionDecrease_Time_Speed_Less")
+                    }
+                    Button {
+                        objectName: "timeRealTimeSpeedButton"
+                        text: "实时"
+                        onClicked: ActionRouter.trigger("actionSet_Real_Time_Speed")
+                    }
+                    Button {
+                        objectName: "timeZeroRateButton"
+                        text: "零"
+                        onClicked: ActionRouter.trigger("actionSet_Time_Rate_Zero")
+                    }
+                    Button {
+                        objectName: "timeReverseButton"
+                        text: "反向"
+                        onClicked: ActionRouter.trigger("actionSet_Time_Reverse")
+                    }
+                    Button {
+                        objectName: "timeSpeedUpLessButton"
+                        text: "+少"
+                        onClicked: ActionRouter.trigger("actionIncrease_Time_Speed_Less")
+                    }
+                    Button {
+                        objectName: "timeSpeedUpButton"
+                        text: "+"
+                        onClicked: ActionRouter.trigger("actionIncrease_Time_Speed")
+                    }
+                }
+
                 Item { Layout.fillHeight: true }
             }
         }
@@ -296,6 +448,35 @@ Item {
             timePage.localText = appFacade.localDateTimeText()
             timePage.utcText = appFacade.utcDateTimeText()
             timePage.jdText = appFacade.julianDay().toFixed(6)
+
+            // ── T22 新增读数（同样轮询，理由见头注）─────────────────────────
+            mjdLabel.text = appFacade.modifiedJulianDay().toFixed(6)
+            calendarLabel.text = appFacade.dateCalendarText()
+            // 速率**必须**轮询：引擎的速率动作（L/J/K/7/9/0）不经过 AppFacade，
+            // `timeRateChanged` 不会发。这个值现在是引擎 timeSpeed 的投影。
+            rateLabel.text = appFacade.timeRateText()
+            var dir = appFacade.timeDirection()
+            dirLabel.text = dir === "forward" ? "前进"
+                          : dir === "backward" ? "反向"
+                          : dir === "stopped" ? "停（零速率）" : "—"
+            dirLabel.color = dir === "backward" ? "#c62828"
+                           : dir === "stopped" ? "#757575" : "#2e7d32"
+
+            // ── T22 时区回填：走"命令 + 轮询"，不建绑定 ────────────────────
+            // ① 回填期间开 syncing，挡掉 CheckBox 的 toggled 反馈环（否则
+            //    "回填 → 又写一次引擎"，与 6 个 SpinBox 的问题同源）。
+            timePage.syncing = true
+            var ct = appFacade.useCustomTimeZone()
+            if (customTzCheck.checked !== ct)
+                customTzCheck.checked = ct
+            var dst = appFacade.useDST()
+            if (dstCheck.checked !== dst)
+                dstCheck.checked = dst
+            timePage.syncing = false
+            // ② 组合框：程序赋值 currentIndex 不发 activated，安全。
+            var idx = timePage.tzIndexOf(appFacade.timeZoneId())
+            if (idx >= 0 && tzCombo.currentIndex !== idx)
+                tzCombo.currentIndex = idx
         }
     }
 }

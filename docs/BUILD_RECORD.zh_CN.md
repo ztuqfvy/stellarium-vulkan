@@ -2209,3 +2209,163 @@ rc=10
 - **`grep -c` 匹配 0 行时返回退出码 1**，会静默截断 `&&` 链——把它接在构建后面（如 `build && grep -c error`）
   会让"构建成功"变成"后面的步骤没跑"。用 `|| true` 或分开写。
 
+## 2026-09-28｜T22 时间页收尾：显示历法 / MJD / 速率 GUI / 时区选择器（**TIMECHECK 21/21 + TIMEUICHECK 19/19 PASS；反向对照 18/21 + 18/19 rc=10；14 项回归零退化、DYN 3/3 + 替身 3/3；顺手修掉"仪表没接在实况上"并给一条间歇假红加了有界就绪门**）
+
+**任务**：A4（A-alpha）最后的**功能缺口**收口。计划文档从 T19 起就登记着
+"本层只做格里高利 ×6 写入 + 只读 UT 投影 + JD 行，还差历法显示与速率可视化"。
+四项全部落在 `TimePage.qml` + `AppFacade`，与 T19 写入链路同源，一次收尾最省。
+交付文档 `docs/T22_TIME_PAGE_COMPLETE.zh_CN.md`；证据 `docs/evidence/2026-09-28-t22-time-page/`；
+一键复跑 `tools/t22-verify.sh`。**本轮没有动 `src/core/`**（全是 `src/app` + `src/ui`）。
+
+### 1. 口径来源（**照抄，不发明**）
+
+| 项 | 引擎/旧界面来源 | 落点 |
+|---|---|---|
+| MJD | `StelCore.cpp:1275`（`setJD(MJD+2400000.5)`） | 读 = `julianDay() − 2400000.5`；写 = `setJulianDay(mjd + 2400000.5)` |
+| 显示历法 | `DateTimeDialog.cpp:251`（`jd < 2299161` ⇒ 儒略历）= `StelUtils.cpp:848` 的 `JD_GREG_CAL` | `dateCalendarToken()` → `julian` / `gregorian` |
+| 时区 | `LocationDialog.cpp:490` 取数 + `StelCore.cpp:1715` 写入 | `availableTimeZoneIds()` / `setTimeZoneId()` |
+| 速率文本 | `StelGuiItems.cpp:885-907` 四档跳档 | `timeRateText()` |
+
+⚠️ MJD **刻意不用 `StelCore::getMJDay()`** —— 它读 `JD.first`（上一帧快照）；
+T19 已因同一理由把 JD 读侧改成 `getSimClockJD()`。从同一真源导出 ⇒
+"MJD ≡ JD − 2400000.5" 成了一条**可断言的恒等式**（实测残差 `0.00e+00 天`）。
+
+### 2. 🔴 修掉的真实缺陷：速率读数与引擎漂移（"仪器没接在实况上"）
+
+`AppFacade::timeRate()` 改前读**本地缓存** `m_timeRate`，只在 `setTimeRate()` 里更新；
+而引擎的**六个**速率动作（`actionIncrease_Time_Speed` / `...Decrease` / `..._Less` /
+`actionSet_Real_Time_Speed` / `actionSet_Time_Rate_Zero` / `actionSet_Time_Reverse`，
+`StelCore.cpp:314-321`）走 `StelCore::increaseTimeSpeed()` 一类，**完全不经过 `AppFacade`**
+⇒ 用户按一次 `L`，引擎真的加速了，UI 读数纹丝不动。
+
+这是本仓库反复复发的同一类病（T14/T15 血泪第 3 条）。改法：读
+`ISimPacing::simRate()`（实现即 `core->getTimeRate()`，`LiveSkyRuntime.cpp:302-305`）。
+**连带**：`timeRateText()` / `timeDirection()` 都建在它之上 ⇒ 一处修正让
+**TC-19/TC-20/TC-21 三条判据联动红**。
+
+### 3. 判据：成对 + 反向对照
+
+- **纯逻辑腿** `TC-19`：引擎 `setTimeRate(probe)` → facade 读数必须等于 probe；
+  再走引擎**动作**（不经 `AppFacade`）→ 引擎值确实变了 **∧** 读数跟着变。
+  **缺哪半都有假绿空间**：只测后者，"读数恒为 0"也能绿；只测前者，就漏掉原缺陷。
+- **活引擎腿** `UI-15`：**真实点击**「+」按钮（不是直接调函数）。
+- **反向对照**（把 `timeRate()` 改回读缓存、重建、跑同一批）：
+
+| 套件 | 读数 |
+|---|---|
+| `timecheck-negctrl-cachedrate.txt` | **18/21**、**rc=10**、TC-19/20/21 三条红 |
+| `timeuicheck-negctrl-cachedrate.txt` | **18/19**、**rc=10**、UI-15 红 |
+
+`TC-19` 原样读数：引擎 `4.16666667e-02 → 4.16666667e-01`（**变了 10 倍**），
+facade 读数**恒为 1.0**；`UI-15` 更彻底 —— 读缓存时连"引擎变了"都看不到
+（判据读的 `after` 就是那个瞎了的仪表）。恢复后反查无残留。
+
+### 4. ⚠️ 首跑 `TC-18` 假红：判据自己把环境改坏了
+
+`TC-18` 首跑 FAIL，两个时区给出**同一个偏移 `6.9789 h`**，看着像"时区写入没生效"。
+**根因是判据顺序**：`getUTCOffset` 里有一道 `JD >= TZ_ERA_BEGINNING`（1847-12-01，
+`StelCore.cpp:1655`）—— 不成立时它**完全不看时区名**、改按经度算 LMST，
+而 `TC-16` 刚把时钟挪到 **1582 年**测历法、没挪回来（`6.9789 h` = 经度 104.7° 的 LMST）。
+修法：`TC-16` 测完**立刻还原现代时刻**。修后 `0.0000 h` / `8.0000 h`，差正好 8 小时。
+
+**通用教训**：判据若自己改了环境（时钟/时区/速率），必须**在同一步内恢复**；
+否则后面测出的是**假红**。定位手法：问"这个 FAIL 的数值从哪来的？"。
+
+### 5. ⚠️⚠️ 全量首跑两套红：**间歇**，不是本轮退化（`flaky-layout-207x0/`）
+
+首跑 `returnuicheck-mac rc=10`（`RT-08`）与 `replaycheck-mac rc=10`（`RP-04/05/06/08/09`）。
+定性**没有**"跑直到绿"：
+
+1. **换生产者对照**：`RP-03` 结果 3 条、`RP-04b` 无重复、`RP-04a` 首行即 `Planet:Moon`
+   ⇒ **数据层全绿**，红的只在"几何/点击"层；
+2. **同口径 A/B**：全 HEAD 源码重建 → `934×341`、11/11 PASS ⇒ 一度判"本轮引入"；
+3. **二分**：只回退 `TimePage.qml` → **仍 `207×0`** ⇒ **TimePage 排除**；
+   剩下三者都不动布局（`TimeCheck.*` 只有 `STELQUICK_TIME_CHECK` 用；`main.cpp` 改动
+   全在 `UiTimeCheck` 内；`AppFacade.*` 是 **227 增 / 0 删**的纯追加）；
+4. **一次性探针**（打完即撤）：打印 `resultList` **祖先链**。健康时完整：
+   `ListView[934x341] ← ColumnLayout[934x536] ← RowLayout[944x536] ←
+   SearchPage[960x552] ← StackLayout[960x552@0,88]`（窗口 `960×640`）；
+   失败时**同一条代码路径**读到 `207×0`；
+5. **决定性对照**：恢复到与第 3 步**逐字节同源**的状态、重建后二进制
+   **38 577 576 B（与失败那次同尺寸）**，再跑 **6/6 PASS**
+   ⇒ **同一份源码、同一个二进制、两种结果 ⇒ 间歇。**
+
+**根因（仪器侧）**：Qt Quick 的布局/polish 由**渲染循环**驱动。`StackLayout` 刚切页时，
+新页控件先以"布局前尺寸"存在，要等下一次 polish 才有真实几何；当时本机被 Spotlight
+批量索引重压（DYN 归档记 `load averages: 6.02 → 11.55`），polish 被拖到相位定时器之后
+⇒ 读几何得到 `207×0`，并照这个坐标投递**真实点击** ⇒ 点击落空 ⇒ 连带整串红。
+同一时段 DYN 是 `真实引擎 0/3` **且 `替身对照 0/3`** ⇒ 按既有规则即"**仪器测不到**"。
+
+### 6. 处置：改判据**协议**、不改判据（有界"布局就绪门"）
+
+`src/ui/main.cpp` 新增：
+
+```cpp
+constexpr int kUiLayoutWaitTries = 25;      // 25 × 100ms = 2.5s 上限
+bool uiLayoutReady(QQuickItem *item);       // 有正尺寸且可见
+```
+
+接在 `REPLAYCHECK` **case 2 开头**（点 `searchResultList` 第 0 行前）与
+`RETURNUICHECK` **case 5 开头**（点时间页 `timeAddHourButton` 前）。
+
+- **位置必须在相位开头（所有 `uiReplayMark` 之前）**：门用"停在本相位重试"
+  （`uiReplayAdvance` + `return`，不 `++phase`）实现，放在判据之后会让重试
+  **重跑前面的判据**、计数虚高 —— 负控第一次就这么暴露的：`判据 80/81`，
+  上移后变成正常的 `判据 2/3`；
+- 超时**明确判红**并写明"仪器没接上：既不作退化证据，也**不作 PASS**"；
+- **负控**（临时把 `uiLayoutReady` 强制恒 `false`）：两套都按预期 `rc=10`
+  且报文明说"仪器没接上" ⇒ 失败路径**不是死代码**；
+- 健康环境下 **8 + 8 次全程 `门触发=0`** ⇒ 门不改变正常路径的任何行为。
+
+**给后续任务的护栏**：凡"切页/切换后立刻点新页面里的控件"的判据，都要先过这道门。
+
+### 7. 验收读数（2026-09-28 单次连贯运行）
+
+| 套件 | 读数 |
+|---|---|
+| **TIMECHECK（T22 正题）** | **21/21 PASS** rc=0 |
+| **TIMEUICHECK（T22 正题）** | **19/19 PASS** rc=0 |
+| **反向对照（读缓存）** | **18/21** + TC-19/20/21 红、**18/19** + UI-15 红（各 rc=10） |
+| RETURNUICHECK / REPLAYCHECK | **11/11 / 11/11 PASS**（就绪门 0 触发） |
+| SEARCHCHECK（core / 全量） | rc=0 / rc=0 |
+| LOCATECHECK / UICHECK | rc=0 / rc=0 |
+| CLOCKCHECK / ACTIONCHECK | rc=0 / rc=0 |
+| A2 / S3 | rc=0 / rc=0 |
+| DYN（引擎 + 替身） | **3/3 + 3/3**（`load avg 4.50`、`displaysleep=2`、`mdbulkimport` 在索引；对比劣化窗口的 0/3 + 0/3） |
+
+关键读数：`TC-15` 恒等式残差 `0.00e+00 天`；`TC-16` `julian`/`gregorian` 成对；
+`TC-18` `0.0000 h`/`8.0000 h`；`TC-19` 引擎 `4.16666667e-02 → 4.16666667e-01` 且 facade 跟上；
+`TC-20` `x1.0`/`x3600（1.00 时/秒）`/`x86400（1.00 天/秒）`；`TC-21` forward/stopped/backward；
+`UI-13` 差 `6.87e-08 天`；`UI-15` 真实点击「+」→ 引擎 `1.000000e-01 → 1.000000e+00`、
+速率行 `x8640（2.40 时/秒）→ x86400（1.00 天/秒）`；`UI-16` 组合框 = `Africa/Abidjan`。
+
+### 8. 改动清单
+
+| 文件 | 改动 |
+|---|---|
+| `src/app/AppFacade.hpp` / `.cpp` | T22 段：MJD / 历法 / 时区 / 速率的声明与实现（12 个方法）；🔴 `timeRate()` 改读引擎 |
+| `src/app/TimeCheck.hpp` / `.cpp` | 判据清单 + 新增步骤 12（TC-15..TC-21 七条 + 两条 note） |
+| `src/ui/qml/TimePage.qml` | 时区选择器（ComboBox + 两个 CheckBox）、MJD 行、历法行、速率行 + 方向行、七个速率按钮；300ms 轮询扩展（`syncing` 守卫兼管两个 CheckBox） |
+| `src/ui/main.cpp` | `UiTimeCheck` 新锚点与跨相位变量；UI-12..UI-16（判据数 13 → 19）；**新增布局就绪门**并接进 `REPLAYCHECK` case 2 / `RETURNUICHECK` case 5 |
+| `tools/t22-verify.sh` | 新建（从 t21 派生，正题换成 T22 两套） |
+| `docs/T22_TIME_PAGE_COMPLETE.zh_CN.md` | 交付文档（新建） |
+| `docs/evidence/2026-09-28-t22-time-page/` | 证据（含 `flaky-layout-207x0/` 与 `layout-gate/`） |
+
+### 9. 环境/工具踩坑（本轮新增）
+
+- **`diff` 的 PATH 污染**：本机 PATH 里 `diff` 指向 DevEco Studio 的
+  `/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/diff`，
+  它**不认 `-u` / `-r` / `-q`**，而且 `diff a b` 在文件不同时会**静默返回 0 且无输出**
+  ⇒ 差点据此得出"两份日志完全相同"的错误结论。做证据比对一律用 `/usr/bin/diff`，
+  或改用 `md5 -q` / `cmp`。
+- **判"两版二进制是否同源"用字节数 + `md5`**：本轮靠"失败与通过两次重建
+  都是 `38577576 B`"锁定了"同一二进制、两种结果"这个决定性事实。
+- **qrc 里的 QML 是 zlib 压缩的**：`strings` / `grep -a` 在二进制里搜 QML 里的
+  `objectName` **搜不到**（连 HEAD 就有的也搜不到）⇒ 别用这个办法判断"QML 有没有更新"。
+  可靠办法：看 `build-release/src/ui/qmlmodule/qml/<Page>.qml` 的**字节数/mtime**
+  （它是 rcc 的输入拷贝）。
+- **QML 运行时走 `qrc:/StelQuickUI/…`**，而该 qrc 的 alias 指向
+  `build-release/src/ui/qmlmodule`（`stelQuickUI_qml_module_dir_map.qrc`）⇒
+  **改 `.qml` 必须重建**（`rcc` 重新打包），不能只改源码就期望生效。
+
+
