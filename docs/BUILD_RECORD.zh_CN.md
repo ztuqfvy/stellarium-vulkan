@@ -2037,3 +2037,84 @@ QML 只登记"绑定里**实际读过**的属性" ⇒ token 变化时那段不�
 - **`QString::fromLatin1` 用在 UTF-8 的 `const char*` 上会出 mojibake**，一律 `fromUtf8`。
 - **驱动器类自检的"等待"要按语义挂步骤**：`QTimer::singleShot` 挂在步体之后 ⇒
   等待属于"刚跑完的那一步"，写在读步上等于没等。
+
+---
+
+## 2026-09-28｜T20 返回环 + I-REP-02 全流程回放（A-alpha 出口测试）（**返回环 UI 11/11 + 全流程回放 10/10 PASS；9 套回归零退化；顺手修掉一条用户可见的真实缺陷，并纠正一条"为缺陷背书"的旧判据**）
+
+### 1. 落地内容
+
+| 项 | 内容 |
+|---|---|
+| 返回语义（定案） | **返回 = 切回天空视口页 + 状态全保留**（不是撤销）。2026-09-27 用户拍板；理由见 `docs/T20_RETURN_RING.zh_CN.md` §2.1 |
+| 唯一实现点 | `MainWindow.returnToSky()`：`stack.currentIndex = pageIndex["sky"]`。「返回天空」按钮与 `Esc` **共用**它 |
+| Esc 拦截 | 挂在 `keySink`（T17 修好的可聚焦 Item）：**非天空页**拦下并返回；**天空页不拦**，照旧透传 ActionRouter（全 `src/` 无 `Key_Escape` 字面量 ⇒ 引擎侧空闲） |
+| 为什么只切 StackLayout | "页"是纯 UI 概念，引擎不知道有页。塞进 ActionRouter 只会给"单点键位路由"铁律添一个假动作。**状态之所以全保留，正因为这条路径没碰引擎** |
+| 新锚点 | `skyReturnButton` / `pageStack` / 四个页导航按钮 + `SearchPage` 的 `searchQueryField` / `searchGoButton` / `searchResultList` |
+| 自检 ① | `RETURN_UI_CHECK=1`，**11/11**：成对判据 + 前置非平凡 + 两条负控 + **判别性对照 RT-08「返回 ≠ 撤销」** |
+| 自检 ② | `REPLAY_CHECK=1`，**10/10**：I-REP-02「开机→搜月球→定位→改时间→返回」**全程只投递真实鼠标事件**，末态四连断言（页面/时间/跟踪/星空） |
+| 逐相位等待 | `nextDelayMs` 逐相位显式给：纯 UI 400ms / 写引擎 1200ms / 定位 1800ms。T19 教训的直接落地（等待必须挂在**写入步**） |
+| 验证脚本 | `tools/t20-verify.sh`（`core` / `regress` / `dyn N`） |
+
+### 2. 🔴 抓到的真实缺陷：搜索结果**重复行**
+
+搜 "Moon" 出 5 条，其中 **2 对是同一个天体**（NGC 6781 两次、NGC 1647 两次）。
+
+**根因**：`StelObjectModule::listMatchingObjects` 把**翻译名表**与**英文名表**各枚举一遍
+（`objs << listAllObjects(false) << listAllObjects(true)`），该天体只要 ≥2 个名字含查询串
+就各出一条；`StelObjectMgr` 只做拼接 + 按名称字典序重排，**不去重**。
+Sirius 更极端：原始 4 条全是同一个 `Star:HIP 32349 A`。
+
+**修法**：`SearchResultsModel` 按 `stableId` 去重（保留字典序最前的一条）。
+**不改引擎**：那是上游 `SearchDialog` 同在用的原语；"同一个 object 只该有一行"本就是
+列表模型的职责。
+
+**反向对照**：注掉去重 → 重建重跑 ⇒ `RP-04b` FAIL（5 行 → 3 个不同 stableId）、
+**9/10**、**rc=10**（`replaycheck-negctrl-nodedupe.txt`）。恢复后 10/10。
+
+### 3. ⚠️ 连带纠正：T17 的 `SRC-05c` **原口径在为该缺陷背书**
+
+原判据 `exactRows == min(exactRaw, 10)` 把"引擎原始条数"当成了"唯一行数"。
+去重后 `exactRows=1`、`exactRaw=4` ⇒ **正确值被判红**（`rc=10`）。
+⇒ 26 条全绿也抓不到重复行，因为**有一条判据在要求重复行存在**。
+
+修正：SRC-05c 改为"cap 不截断时与不限量查询给同样行数"，并新增 **SRC-05d 结果内无重复天体**。
+SEARCHCHECK **26/26 → 27/27**。T17 交付文档 §4.1 已加修正说明。
+
+### 4. ⚠️ 记录在案（**不是**本次判红）：首行不是月球 = 排序策略缺口
+
+搜 "Moon" 首行是 `Ghost of the Moon Nebula`（NGC 6781），月球在第 1 行 —— 引擎按
+**名称字典序**排。I-REP-02 说的是"**搜月球**→定位"而非"盲点第一条"，所以回放
+**按名字定位月球行**，并把"首行是 NGC 6781"照实打进证据。
+"按相关度排序"是 A4 已登记未做的项，不据此洗红/洗绿。
+
+### 5. 验收数据（同一次连贯运行）
+
+| 套件 | 读数 |
+|---|---|
+| RETURNUICHECK | **11/11 PASS** rc=0（RT-05 JD 位移 **0.000e+00**；RT-07 负控 **0.0000°**；**RT-08 判别性对照 13.9181°**） |
+| REPLAYCHECK | **10/10 PASS** rc=0（RP-06 位移 **0.041667** 天 = 1/24；RP-08 未撤销；**RP-09 星空变化 13.9173°**） |
+| TIMECHECK（回归） | 14/14 |
+| TIMEUICHECK（回归） | 13/13 |
+| CLOCKCHECK（回归） | VERDICT=PASS |
+| ACTIONCHECK（回归） | VERDICT=PASS（0 FAIL） |
+| **SEARCHCHECK（回归）** | **27/27**（+SRC-05d；SRC-05c 口径已修正） |
+| LOCATECHECK / UICHECK（回归） | 14/14 / 8/8 |
+| A2 / S3（回归） | PASS / 8/8 |
+| DYN（引擎 + 替身） | **3/3 + 3/3**（跑时 load avg 10.66、mdbulkimport 在索引；**不改变 T18 的环境敏感定性**，见 §6） |
+
+### 6. DYN：本轮的 3/3 同样不是"已修好"
+
+`D1-C02`/`D1-C07` 量"窗口有没有在渲染"，**要求窗口被暴露**，该量在本机受环境支配。
+处置沿用 T18/T19：跑 N 次报 `N/3`、不跑"直到绿"、替身对照也失败即记"仪器测不到"，
+**不作退化证据也不改写成 INVALID**。零退化的依据是同口径 A/B + **替身路径不含 T20 代码**
+（DYN 用 `startPage="sky"` 且不点任何按钮）。
+
+### 7. 环境/工具踩坑
+
+- **`Vec3d::length()` 被显式 `= delete`**（`VecMath.hpp:252`），要范数用 `norm()`；
+  编译报 "attempt to use a deleted function" 就是这条。
+- **后台构建的短耗时（6s）不等于"没编"**：`src/app/SearchResultsModel.cpp` 与
+  `main.cpp` 属同一目标，看清 `Building CXX … / Linking` 两行再下结论。
+- **改了共享模型（`SearchResultsModel`）必须整套回归**：T20 只改了一处去重，
+  `SEARCHCHECK` 立刻从 26/26 变红（见 §3）—— 这就是为什么要跑整套而不是只跑新判据。

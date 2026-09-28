@@ -4,6 +4,9 @@
 // T15：新增命令栏（暂停/继续 + 视场缩放）——全部经 ActionRouter 单点分发，
 //   QML 不直接触碰引擎。
 // T17：新增搜索/信息页；**并修复 T15 遗留的键盘挂载缺陷**（见下方 keySink 注释）。
+// T20：新增「返回天空」——I-REP-02 固定流程「开机→搜月球→定位→改时间→**返回**」
+//   的最后一环。语义已定案（2026-09-27）：**返回 = 切回天空视口页 + 状态全保留**，
+//   不是撤销。详见 docs/T20_RETURN_RING.zh_CN.md 与 root.returnToSky() 的注释。
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -26,6 +29,25 @@ ApplicationWindow {
     // 避免"加了页面忘了改另一处"这类只在运行时才暴露的错位）。
     readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2, "time": 3 })
 
+    // ── T20「返回」环的唯一实现点 ─────────────────────────────────────────────
+    //
+    // 语义（2026-09-27 定案，用户拍板）：
+    //   **返回 = 切回天空视口页 + 状态全保留**。不改时间、不取消选中、不解除跟踪
+    //   —— "返回"不是撤销。理由：I-REP-02 是"改完时间**回来看**"的用户旅程，
+    //   而 I-DYN-02 的判据（改日期后星空位置变化可验证）恰好落在返回后的天空页上；
+    //   旧版工具窗（DateTimeDialog 等）本来就是瞬态的，关掉即回到天空。
+    //
+    // 为什么**只**切 StackLayout、不走 ActionRouter/AppFacade：
+    //   "页"是纯 UI 概念，引擎不知道有页这回事。把它塞进命令层只会给
+    //   ActionRouter 添一条与引擎无关的假动作，还会让"单点键位路由"多出一个
+    //   需要维护的例外。状态之所以"全保留"，正是因为**这条路径根本没碰引擎**。
+    //
+    // ⚠️ 注意：这是**唯一**的返回实现点。按钮与 Esc 都调它 —— 两个入口一条路径，
+    //   否则"按钮返回"与"Esc 返回"迟早会漂移成两套语义。
+    function returnToSky() {
+        stack.currentIndex = root.pageIndex["sky"]
+    }
+
     // ── 键盘挂载点（T17 修复 T15 的缺陷）───────────────────────────────────────
     //
     // 背景：T15 把 `Keys.onPressed` 直接写在 **ApplicationWindow** 上，但 `Keys` 是
@@ -46,6 +68,21 @@ ApplicationWindow {
         focus: true
 
         Keys.onPressed: (event) => {
+            // T20「返回」环：Esc 在**非天空页** = 返回天空（走 root.returnToSky，
+            // 与「返回天空」按钮**同一条路径**，见该函数的注释）。
+            //
+            // 为什么在这里拦而不是在 ActionRouter 里加一条动作：
+            //   Esc 关掉当前工具页是**纯 UI 习惯**（旧版 Qt 工具窗即如此），
+            //   不是引擎动作。全 `src/` 无 `Key_Escape` 字面量、无 .ui 快捷键
+            //   声明 ⇒ 实测 Esc 在引擎侧空闲，在 QML 层拦掉不会造成双轨。
+            //
+            // 天空页上的 Esc **不拦**：照旧透传 ActionRouter（当前无绑定 ⇒
+            //   routeKey 返回 false，无副作用；但保留给后续引擎动作，不抢）。
+            if (event.key === Qt.Key_Escape && stack.currentIndex !== root.pageIndex["sky"]) {
+                root.returnToSky()
+                event.accepted = true
+                return
+            }
             if (ActionRouter.routeKey(event.key, event.modifiers))
                 event.accepted = true
         }
@@ -60,21 +97,36 @@ ApplicationWindow {
                 Layout.margins: 6
                 spacing: 6
 
+                // T20：I-REP-02 的「返回」环入口。objectName 是"最外层注入"判据的锚点。
+                //   **始终可用**（即使已在天空页）——这样"在天空页点它必须什么都不发生"
+                //   才是一条有检验力的负控；若此处绑 `enabled: !onSky`，负控就退化成
+                //   "点了一个禁用按钮"，测不到 no-op 路径。
                 Button {
+                    objectName: "skyReturnButton"
+                    text: "🏠 返回天空"
+                    onClicked: root.returnToSky()
+                }
+                Rectangle { width: 1; height: 20; color: "#d0d0d0" }
+
+                Button {
+                    objectName: "navDiagButton"
                     text: "诊断页（A1）"
                     onClicked: stack.currentIndex = 0
                 }
                 Button {
+                    objectName: "navSkyButton"
                     text: "天空视口（A2 静态图）"
                     onClicked: stack.currentIndex = 1
                 }
                 // T17：搜索 / 信息页（搜索 → 选择 → 信息页纵向链路）
                 Button {
+                    objectName: "navSearchButton"
                     text: "搜索天体（T17）"
                     onClicked: stack.currentIndex = 2
                 }
                 // T19：时间页（"改时间"环：6 个写入路径 + 现在 + 步进）
                 Button {
+                    objectName: "navTimeButton"
                     text: "时间（T19）"
                     onClicked: stack.currentIndex = 3
                 }
@@ -138,6 +190,9 @@ ApplicationWindow {
 
             StackLayout {
                 id: stack
+                // T20：给"最外层注入"判据当锚点 —— 返回环的判据①就是读它的
+                // currentIndex（页面到底切没切回去，只能从外部观测这个量）。
+                objectName: "pageStack"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 // 未知页名回落到诊断页（0），不静默停在错误的页上。

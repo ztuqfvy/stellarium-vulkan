@@ -45,6 +45,9 @@ Item {
 
                 TextField {
                     id: queryField
+                    // T20：I-REP-02 回放判据要像用户那样"输入 → 点搜索"，必须能定位到
+                    // 真实控件（否则回放只能绕过 UI 直接调 AppFacade，就测不到接线）。
+                    objectName: "searchQueryField"
                     Layout.fillWidth: true
                     placeholderText: "如 Sirius / Mars / Polaris"
                     selectByMouse: true
@@ -53,6 +56,7 @@ Item {
                     onAccepted: appFacade.searchObjects(queryField.text)
                 }
                 Button {
+                    objectName: "searchGoButton"
                     text: "搜索"
                     enabled: queryField.text.trim().length > 0
                     onClicked: appFacade.searchObjects(queryField.text)
@@ -77,6 +81,10 @@ Item {
 
             ListView {
                 id: resultList
+                // T20：I-REP-02 回放要真的点中"第一条结果"——判据按它算第一行的
+                // 场景坐标再投递鼠标事件（与 T18/T19 同一手法）。锚点缺失时回放
+                // 只能退化成直接调 AppFacade，那就测不到 resultList 的点击接线。
+                objectName: "searchResultList"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true

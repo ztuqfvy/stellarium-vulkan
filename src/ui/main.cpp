@@ -27,6 +27,12 @@
  *                                  写入不被帧泵拽回；起始页切到 "time"）。
  *   STELQUICK_TIME_UI_CHECK=1    → T19 **UI 层端到端**自检：6 个自旋框 + 应用/重置/
  *                                  现在按钮的**真实点击链路**（含负控）。
+ *   STELQUICK_RETURN_UI_CHECK=1  → T20「返回」环的 **UI 层端到端**自检：返回语义
+ *                                  （切回天空页 + 状态全保留，**不是撤销**）+ Esc
+ *                                  返回 + 两条负控。语义定案见 MainWindow.returnToSky。
+ *   STELQUICK_REPLAY_CHECK=1     → T20 **I-REP-02 全流程回放**（A-alpha 出口测试）：
+ *                                  开机→搜月球→定位→改时间→返回，全程只投递真实
+ *                                  鼠标事件；末态四连断言（页面/时间/跟踪/星空）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -55,6 +61,12 @@
 #include "core/StelApp.hpp"
 #include "core/StelCore.hpp"
 #include "core/StelUtils.hpp"   // T19：getJDFromDate / getJDFromSystem（算期望 JD，不另发明天文换算）
+// T20：返回环与 I-REP-02 回放要量"星空动了多少"——判据必须用**可验算的观测量**
+// （目标的天平坐标），而不是"时间源已被写入"这种自证。与 TimeCheck 用同一口径。
+#include "core/StelObject.hpp"
+#include "core/StelObjectMgr.hpp"
+#include "core/VecMath.hpp"
+#include <QKeyEvent>            // T20：Esc 判据要投递**真实**键盘事件（先例见 AppFacadeCheck AC-12）
 #include "core/StelFileMgr.hpp"
 #include "core/StelTranslator.hpp"
 #include "core/StelIniParser.hpp"
@@ -75,6 +87,7 @@
 #endif
 #endif
 #include <QElapsedTimer>
+#include <QSet>                 // T20：RP-04b 的结果去重检查
 #include <QFileInfo>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -1226,6 +1239,718 @@ int runUiTimeCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacad
     uiTimeStep(app, c);
     return 0;
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// T20「返回」环 UI 层端到端自检：STELQUICK_RETURN_UI_CHECK=1
+//
+// I-REP-02 固定流程「开机→搜月球→定位→改时间→**返回**」的最后一环。
+// 语义定案（2026-09-27，见 MainWindow.returnToSky 的注释）：
+//   **返回 = 切回天空视口页 + 状态全保留**（不是撤销）。
+//
+// 为什么这一环**只能**做 UI 端到端判据：
+//   "返回"的整个实现就是一句 QML（切 StackLayout）。C++ 侧没有任何可断言的
+//   对象 —— 没有引擎命令、没有 AppFacade 方法。唯一的观测面是
+//   **真实控件 + 真实事件 + pageStack.currentIndex**。这正是 T15/T18/T19
+//   反复踩的那条线：不接线就测不到。
+//
+// 判据设计的核心是**成对 + 一条判别性对照**：
+//   · 配对①「页面确实切回去了」         RT-04（读 currentIndex）
+//   · 配对②「状态纹丝不动」             RT-05/RT-06（JD / 跟踪 / 选中）
+//   · 前置「状态非平凡」                 RT-03 —— 没有它，配对②就是空转
+//     （"什么都没保住"与"本来就什么都没有"都会让 RT-05/06 PASS）
+//   · 负控「切页往返本身不许动世界」      RT-07（不碰时间，往返一次，AltAz 必须 < 0.05°）
+//   · **判别性对照「返回 ≠ 撤销」**       RT-08（改 1 小时 → 返回 → AltAz 必须 > 5°）
+//     ↑ 这是唯一能把"返回"与"撤销"分开的判据：若有人把返回实现成恢复快照，
+//       RT-04/05/06/07 全绿而 RT-08 会红。
+//
+// 判据 11 条：RT-01..RT-11（含负控 RT-07 与判别性对照 RT-08）。
+// 退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+// ══════════════════════════════════════════════════════════════════════════
+
+//! 相位之间的等待。**必须逐相位显式给出**，不许统一设一个"够大"的数：
+//! 驱动器的语义是"跑完本步**之后**等 nextDelayMs 毫秒"（T19 的血泪教训——把等待
+//! 挂在读取步上 ⇒ 写入→读取实测间隔 0 ms，判据读到的是上一个 JD 的观测量）。
+//!   · 纯 UI 相位（点按钮、读 currentIndex）→ tick 就够；
+//!   · **写完引擎的相位**（+1 小时）→ 必须等世界真算完才能进下一拍。
+const int kUiReturnTickMs = 400;
+const int kUiReturnWorldSettleMs = 1200;  //!< 与 TimeCheck 的 kWorldSettleMs 同量级、同理由
+
+//! 页名 → 索引。**只在 QML 里定义一处**（MainWindow.pageIndex），C++ 不复制一份——
+//! 否则"加了页面忘了改另一处"会退化成只在运行时才暴露的错位。
+int uiPageIndexOf(QQuickWindow *w, const char *page)
+{
+    return w->property("pageIndex").toMap()
+        .value(QString::fromLatin1(page), -1).toInt();
+}
+
+int uiCurrentPageIndex(QQuickItem *pageStack)
+{
+    return pageStack ? pageStack->property("currentIndex").toInt() : -1;
+}
+
+bool uiReturnClick(QQuickWindow *window, QQuickItem *item)
+{
+    return item ? uiLocateClick(window, uiLocateCenter(item)) : false;
+}
+
+int uiReturnSendKey(QQuickWindow *window, QQuickItem *keySink, int key)
+{
+    // ⚠️ 键盘事件要有 activeFocusItem 才会被派发到 QML 的 Keys 处理器。显式把焦点
+    // 交给 skyKeySink（等价于用户先点一下窗口）——这不是"自己构造输入"：断言的对象
+    // 仍是"经窗口投递的**真实事件**有没有走通那条接线"。返回是否拿到了焦点。
+    if (keySink)
+        keySink->forceActiveFocus();
+    QKeyEvent press(QEvent::KeyPress, key, Qt::NoModifier);
+    QKeyEvent release(QEvent::KeyRelease, key, Qt::NoModifier);
+    QCoreApplication::sendEvent(window, &press);
+    QCoreApplication::sendEvent(window, &release);
+    return (press.isAccepted() || release.isAccepted()) ? 1 : 0;
+}
+
+//! 被选中目标当前的地平坐标单位向量 = "星空动了多少"的观测量。
+//! 与 TimeCheck::objAltAz 同一口径（`getAltAzPosAuto` 依赖 `getJD()` ⇒ 必须让帧
+//! 跑过一轮才看得到新值，所以等待要挂在**写入步**上，见 nextDelayMs）。
+//! 零向量（没选中）也能算 angle，会静默变成"变化 0°" ⇒ 调用点必须先查长度。
+Vec3d uiReturnAltAz()
+{
+    StelObjectMgr *m = StelApp::isInitialized() ? &StelApp::getInstance().getStelObjectMgr()
+                                                : nullptr;
+    if (!m)
+        return Vec3d(0.);
+    const QList<StelObjectP> &sel = m->getSelectedObject();
+    if (sel.isEmpty() || !sel.first())
+        return Vec3d(0.);
+    StelCore *core = StelApp::getInstance().getCore();
+    if (!core)
+        return Vec3d(0.);
+    Vec3d v = sel.first()->getAltAzPosAuto(core);
+    v.normalize();
+    return v;
+}
+
+bool uiReturnAltAzValid(const Vec3d &v)
+{
+    return v.norm() > 0.5;   //!< 归一化向量范数≈1；零向量 = 没有可测的目标
+                             //!< （VecMath 刻意 delete 了 length()，用 norm()）
+}
+
+double uiReturnAngleDeg(const Vec3d &a, const Vec3d &b)
+{
+    return a.angle(b) * 180.0 / M_PI;
+}
+
+struct UiReturnCheck
+{
+    QQuickWindow *window = nullptr;
+    stelapp::AppFacade *facade = nullptr;
+    QQuickItem *returnButton = nullptr;
+    QQuickItem *pageStack = nullptr;
+    QQuickItem *navSearch = nullptr;
+    QQuickItem *navTime = nullptr;
+    QQuickItem *addHour = nullptr;
+    QQuickItem *keySink = nullptr;
+    QStringList details;
+    int passed = 0;
+    int total = 0;
+    int phase = 0;
+    int nextDelayMs = kUiReturnTickMs;
+
+    int idxSky = -1;
+    int idxSearch = -1;
+    int idxTime = -1;
+
+    // 跨相位快照
+    double jdBefore = 0.0;
+    QString trackedBefore;
+    QString sidBefore;
+    Vec3d altAzRoundTripRef = Vec3d(0.);
+    Vec3d altAzBeforeHour = Vec3d(0.);
+};
+
+void uiReturnMark(UiReturnCheck *c, bool ok, const QString &line)
+{
+    ++c->total;
+    if (ok)
+        ++c->passed;
+    c->details.append(line + (ok ? QStringLiteral("：OK") : QStringLiteral("：FAIL")));
+}
+
+void uiReturnFinish(QGuiApplication *app, UiReturnCheck *c)
+{
+    const bool pass = c->total > 0 && c->passed == c->total;
+    for (const QString &line : c->details)
+        std::printf("RETURNUICHECK: %s\n", line.toUtf8().constData());
+    std::printf("RETURNUICHECK: 判据 %d/%d\n", c->passed, c->total);
+    std::printf("RETURNUICHECK: VERDICT=%s\n", pass ? "PASS" : "FAIL");
+    std::fflush(stdout);
+    app->exit(pass ? 0 : 10);
+}
+
+void uiReturnUnavailable(QGuiApplication *app, UiReturnCheck *c, const QString &why)
+{
+    for (const QString &line : c->details)
+        std::printf("RETURNUICHECK: %s\n", line.toUtf8().constData());
+    std::printf("RETURNUICHECK: %s\n", why.toUtf8().constData());
+    std::printf("RETURNUICHECK: VERDICT=UNAVAILABLE\n");
+    std::fflush(stdout);
+    app->exit(6);
+}
+
+void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c);
+
+void uiReturnStep(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
+{
+    switch (c->phase)
+    {
+    case 0: {
+        // ── 锚点 + 前置状态 ────────────────────────────────────────────────
+        c->returnButton = c->window->findChild<QQuickItem *>(QStringLiteral("skyReturnButton"));
+        c->pageStack    = c->window->findChild<QQuickItem *>(QStringLiteral("pageStack"));
+        c->navSearch    = c->window->findChild<QQuickItem *>(QStringLiteral("navSearchButton"));
+        c->navTime      = c->window->findChild<QQuickItem *>(QStringLiteral("navTimeButton"));
+        c->addHour      = c->window->findChild<QQuickItem *>(QStringLiteral("timeAddHourButton"));
+        c->keySink      = c->window->findChild<QQuickItem *>(QStringLiteral("skyKeySink"));
+
+        c->idxSky    = uiPageIndexOf(c->window, "sky");
+        c->idxSearch = uiPageIndexOf(c->window, "search");
+        c->idxTime   = uiPageIndexOf(c->window, "time");
+
+        const int have = (c->returnButton ? 1 : 0) + (c->pageStack ? 1 : 0)
+                       + (c->navSearch ? 1 : 0) + (c->navTime ? 1 : 0)
+                       + (c->addHour ? 1 : 0) + (c->keySink ? 1 : 0);
+        const bool idxOk = c->idxSky >= 0 && c->idxSearch >= 0 && c->idxTime >= 0;
+        uiReturnMark(c.get(), have == 6 && idxOk && c->returnButton->isVisible(),
+                     QStringLiteral("RT-01 返回环锚点可寻且可见（skyReturnButton/pageStack/"
+                                    "navSearchButton/navTimeButton/timeAddHourButton/skyKeySink "
+                                    "找到 %1/6；页索引 sky=%2 search=%3 time=%4；"
+                                    "返回按钮 visible=%5）")
+                         .arg(have).arg(c->idxSky).arg(c->idxSearch).arg(c->idxTime)
+                         .arg((c->returnButton && c->returnButton->isVisible())
+                                  ? QStringLiteral("true") : QStringLiteral("false")));
+        if (have != 6 || !idxOk || !c->returnButton->isVisible())
+        {
+            uiReturnUnavailable(app, c.get(),
+                                QStringLiteral("缺 QML 锚点或页索引：返回环的全部判据都建立在"
+                                               "「真实控件 + pageStack.currentIndex」上，"
+                                               "缺一个即无法进行 —— 接线或命名断了"));
+            return;
+        }
+
+        // 冻结时钟：本检查全部是"切页前后状态有没有变"的比较，时钟若在走会把
+        // JD 位移比较淹掉，也会让 AltAz 自己漂。
+        c->facade->setSimulationPaused(true);
+
+        // 摆出**非平凡**的前置状态：选中一个天体并锁定跟踪。
+        // 这一步是 RT-05/RT-06 有检验力的前提（见文件头 PK 说明）。
+        QString fixture;
+        if (!uiLocatePickFixture(c->facade, &fixture))
+        {
+            uiReturnUnavailable(app, c.get(),
+                                QStringLiteral("无可用 fixture（Moon/Jupiter/Sirius/Vega/"
+                                               "Polaris 全搜不到）—— 环境条件，非接线缺陷"));
+            return;
+        }
+        c->facade->locateSelected(true);
+        c->details.append(QStringLiteral("RT-fixture 已选中并锁定 %1（stableId=%2），"
+                                         "时钟已暂停；页索引 sky=%3 search=%4 time=%5")
+                              .arg(fixture, c->facade->objectInfo()->stableId())
+                              .arg(c->idxSky).arg(c->idxSearch).arg(c->idxTime));
+
+        // 切到时间页（真实点击）。下一拍才能读到 currentIndex 已变。
+        uiReturnClick(c->window, c->navTime);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 1: {
+        // ── RT-02：页面确实切到工具页（返回的起点成立）───────────────────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        uiReturnMark(c.get(), cur == c->idxTime,
+                     QStringLiteral("RT-02 真实点击「时间（T19）」→ pageStack.currentIndex=%1"
+                                    "（期望 %2）").arg(cur).arg(c->idxTime));
+        // ── RT-03：前置状态**非平凡**（否则后面的"状态全保留"是空转）──────
+        c->jdBefore      = c->facade->julianDay();
+        c->trackedBefore = c->facade->trackedName();
+        c->sidBefore     = c->facade->objectInfo()->stableId();
+        const bool nontrivial = c->facade->isTracking()
+                             && !c->sidBefore.isEmpty()
+                             && c->facade->objectInfo()->hasSelection();
+        uiReturnMark(c.get(), nontrivial,
+                     QStringLiteral("RT-03 前置状态非平凡（跟踪=%1 选中=%2 stableId=\"%3\"）"
+                                    "—— 没有这条，RT-05/06 的 PASS 可能只是"
+                                    "\"本来就什么都没有\"")
+                         .arg(c->facade->isTracking() ? QStringLiteral("true")
+                                                      : QStringLiteral("false"),
+                              c->facade->objectInfo()->hasSelection() ? QStringLiteral("true")
+                                                                     : QStringLiteral("false"),
+                              c->sidBefore));
+        // 真实点击「返回天空」
+        uiReturnClick(c->window, c->returnButton);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 2: {
+        // ── RT-04：配对①——页面确实切回天空页 ─────────────────────────────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        uiReturnMark(c.get(), cur == c->idxSky,
+                     QStringLiteral("RT-04 真实点击「返回天空」→ pageStack.currentIndex=%1"
+                                    "（期望 %2）—— 配对①：页面确实切回去了")
+                         .arg(cur).arg(c->idxSky));
+        // ── RT-05：配对②——时间源纹丝不动（"返回"没有偷偷改时间）──────────
+        const double d = std::fabs(c->facade->julianDay() - c->jdBefore);
+        uiReturnMark(c.get(), d < 1e-12,
+                     QStringLiteral("RT-05 返回后引擎 JD 位移 %1 天（要求 <1e-12）"
+                                    "—— 配对②：返回不是撤销，也不是"
+                                    "\"顺手重置一下\"")
+                         .arg(d, 0, 'e', 3));
+        // ── RT-06：配对②——选中与跟踪一并保留 ─────────────────────────────
+        const bool keep = c->facade->isTracking()
+                       && c->facade->trackedName() == c->trackedBefore
+                       && c->facade->objectInfo()->stableId() == c->sidBefore;
+        uiReturnMark(c.get(), keep,
+                     QStringLiteral("RT-06 返回后跟踪/选中保留（tracking=%1 trackedName=\"%2\""
+                                    "（此前 \"%3\"）stableId=\"%4\"（此前 \"%5\"））")
+                         .arg(c->facade->isTracking() ? QStringLiteral("true")
+                                                      : QStringLiteral("false"),
+                              c->facade->trackedName(), c->trackedBefore,
+                              c->facade->objectInfo()->stableId(), c->sidBefore));
+        // 负控准备：记录当前 AltAz，然后**不碰时间**只做一次切页往返
+        c->altAzRoundTripRef = uiReturnAltAz();
+        uiReturnClick(c->window, c->navTime);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 3: {
+        // 负控：立刻返回，中间什么都不做
+        uiReturnClick(c->window, c->returnButton);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 4: {
+        // ── RT-07：负控——"切页往返"本身不许动世界 ───────────────────────
+        const Vec3d now = uiReturnAltAz();
+        const bool valid = uiReturnAltAzValid(c->altAzRoundTripRef) && uiReturnAltAzValid(now);
+        const double d = valid ? uiReturnAngleDeg(c->altAzRoundTripRef, now) : -1.0;
+        uiReturnMark(c.get(), valid && d < 0.05,
+                     QStringLiteral("RT-07 负控：不碰时间只做一次切页往返 → 目标 AltAz 变化 "
+                                    "%1°（上限 <0.05）—— 排除\"切页本身就在动世界\"")
+                         .arg(d, 0, 'f', 4));
+        // 判别性对照准备：记录改时间前的 AltAz，切到时间页
+        c->altAzBeforeHour = uiReturnAltAz();
+        uiReturnClick(c->window, c->navTime);
+        c->nextDelayMs = kUiReturnTickMs;
+    }
+        break;
+    case 5: {
+        // ── 写入步：真实点击「+1 时」（走 ActionRouter 透传引擎 StelAction）──
+        // ⚠️ 等待挂在**本步**（nextDelayMs = 世界结算时间），不是下一步 —— T19 的坑。
+        uiReturnClick(c->window, c->addHour);
+        c->nextDelayMs = kUiReturnWorldSettleMs;
+        c->details.append(QStringLiteral("RT-note 已在时间页真实点击「+1 时」，等 %1ms 让引擎"
+                                         "把新时刻算进位置，再返回")
+                              .arg(kUiReturnWorldSettleMs));
+        break;
+    }
+    case 6: {
+        uiReturnClick(c->window, c->returnButton);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 7: {
+        // ── RT-08：**判别性对照**——"返回 ≠ 撤销" ──────────────────────────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        const Vec3d now = uiReturnAltAz();
+        const bool valid = uiReturnAltAzValid(c->altAzBeforeHour) && uiReturnAltAzValid(now);
+        const double moved = valid ? uiReturnAngleDeg(c->altAzBeforeHour, now) : -1.0;
+        uiReturnMark(c.get(), valid && cur == c->idxSky && moved > 5.0,
+                     QStringLiteral("RT-08 判别性对照（返回≠撤销）：改 1 小时后返回 → "
+                                    "页面=%1（期望 %2）且目标 AltAz 变化 %3°（门槛 >5.0）"
+                                    "—— 若把返回实现成恢复快照，这条会红")
+                         .arg(cur).arg(c->idxSky).arg(moved, 0, 'f', 4));
+        // Esc 判据准备：切到搜索页
+        uiReturnClick(c->window, c->navSearch);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 8: {
+        // ── RT-09：起点确认（Esc 前确实在非天空页）──────────────────────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        uiReturnMark(c.get(), cur == c->idxSearch,
+                     QStringLiteral("RT-09 Esc 起点：真实点击「搜索天体」→ currentIndex=%1"
+                                    "（期望 %2）").arg(cur).arg(c->idxSearch));
+        // 投递真实 Esc 键（先例：AC-12 从窗口投递 Q 键）
+        const int accepted = uiReturnSendKey(c->window, c->keySink, Qt::Key_Escape);
+        c->details.append(QStringLiteral("RT-note 已向窗口投递真实 Esc（是否被受理=%1）")
+                              .arg(accepted ? QStringLiteral("true") : QStringLiteral("false")));
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 9: {
+        // ── RT-10：Esc 返回链路是活的 ─────────────────────────────────────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        uiReturnMark(c.get(), cur == c->idxSky,
+                     QStringLiteral("RT-10 非天空页投递真实 Esc → currentIndex=%1"
+                                    "（期望 %2）—— 键盘返回与按钮返回"
+                                    "**走同一条路径**").arg(cur).arg(c->idxSky));
+        // 负控：在天空页再按一次 Esc（页已在该页 → 必须什么都不发生）
+        c->jdBefore = c->facade->julianDay();
+        uiReturnSendKey(c->window, c->keySink, Qt::Key_Escape);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    default: {
+        // ── RT-11：负控——天空页上的 Esc 无副作用 ─────────────────────────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        const double d = std::fabs(c->facade->julianDay() - c->jdBefore);
+        uiReturnMark(c.get(), cur == c->idxSky && d < 1e-12,
+                     QStringLiteral("RT-11 负控：天空页上按 Esc → currentIndex=%1（不变）"
+                                    "且 JD 位移 %2 天（<1e-12）—— Esc 在天空页不被拦、"
+                                    "也不产生副作用").arg(cur).arg(d, 0, 'e', 3));
+        uiReturnFinish(app, c.get());
+        return;
+    }
+    }
+    ++c->phase;
+    uiReturnAdvance(app, c);
+}
+
+void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
+{
+    const int d = c->nextDelayMs;
+    c->nextDelayMs = kUiReturnTickMs;   // 复位默认值，相位各自按需覆盖
+    QTimer::singleShot(d, app, [app, c]() { uiReturnStep(app, c); });
+}
+
+int runUiReturnCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacade *facade)
+{
+    auto c = std::make_shared<UiReturnCheck>();
+    c->window = window;
+    c->facade = facade;
+    std::printf("RETURNUICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标/键盘"
+                "事件，共 11 条判据；纯 UI 相位 %dms，写引擎的相位 %dms）\n",
+                kUiReturnTickMs, kUiReturnWorldSettleMs);
+    std::fflush(stdout);
+    uiReturnStep(app, c);
+    return 0;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// I-REP-02 全流程回放自检：STELQUICK_REPLAY_CHECK=1
+//
+// 软件测试文档 §5.3 的出口用例：「固定流程 开机→搜月球→定位→改时间→返回，
+// 全流程自动回放通过（A-alpha 出口测试）」。本检查就是它的自动化实现 ——
+// **全程只投递真实鼠标事件**，不绕过任何一层：
+//
+//   开机(停在天空页) → 点「搜索天体」→ 在搜索框输入 Moon → 点「搜索」
+//   → 点第一条结果（选中月球）→ 点「定位并跟踪」→ 点「时间（T19）」
+//   → 点「+1 时」（改时间）→ 点「返回天空」→ 断言末态
+//
+// 末态断言刻意覆盖四条互相独立的量（页面 / 时间 / 跟踪 / 星空），因为"流程跑完
+// 了"这件事**不能**由"最后一屏看着对"来证明：
+//   · 页面在天空页（返回环）
+//   · JD 确实被改了且保留（改时间环 + 返回不是撤销）
+//   · 仍在跟踪月球（定位环 + 返回不是清选中）
+//   · 星空位置真的变了（I-DYN-02 的内核：改日期后星空位置变化**可验证**）
+//
+// 判据 10 条：RP-01..RP-09 含 RP-04b。退出码同前：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+// ══════════════════════════════════════════════════════════════════════════
+
+struct UiReplayCheck
+{
+    QQuickWindow *window = nullptr;
+    stelapp::AppFacade *facade = nullptr;
+    QQuickItem *pageStack = nullptr;
+    QQuickItem *navSearch = nullptr;
+    QQuickItem *navTime = nullptr;
+    QQuickItem *queryField = nullptr;
+    QQuickItem *goButton = nullptr;
+    QQuickItem *resultList = nullptr;
+    QQuickItem *locateButton = nullptr;
+    QQuickItem *addHour = nullptr;
+    QQuickItem *returnButton = nullptr;
+    QStringList details;
+    int passed = 0;
+    int total = 0;
+    int phase = 0;
+    int nextDelayMs = kUiReturnTickMs;
+
+    int idxSky = -1;
+    int idxTime = -1;
+
+    double jdAtBoot = 0.0;
+    double jdBeforeTime = 0.0;
+    QString sidExpected;
+    Vec3d altAzBeforeTime = Vec3d(0.);
+};
+
+void uiReplayMark(UiReplayCheck *c, bool ok, const QString &line)
+{
+    ++c->total;
+    if (ok)
+        ++c->passed;
+    c->details.append(line + (ok ? QStringLiteral("：OK") : QStringLiteral("：FAIL")));
+}
+
+void uiReplayFinish(QGuiApplication *app, UiReplayCheck *c)
+{
+    const bool pass = c->total > 0 && c->passed == c->total;
+    for (const QString &line : c->details)
+        std::printf("REPLAYCHECK: %s\n", line.toUtf8().constData());
+    std::printf("REPLAYCHECK: 判据 %d/%d\n", c->passed, c->total);
+    std::printf("REPLAYCHECK: VERDICT=%s\n", pass ? "PASS" : "FAIL");
+    std::fflush(stdout);
+    app->exit(pass ? 0 : 10);
+}
+
+void uiReplayUnavailable(QGuiApplication *app, UiReplayCheck *c, const QString &why)
+{
+    for (const QString &line : c->details)
+        std::printf("REPLAYCHECK: %s\n", line.toUtf8().constData());
+    std::printf("REPLAYCHECK: %s\n", why.toUtf8().constData());
+    std::printf("REPLAYCHECK: VERDICT=UNAVAILABLE\n");
+    std::fflush(stdout);
+    app->exit(6);
+}
+
+void uiReplayAdvance(QGuiApplication *app, std::shared_ptr<UiReplayCheck> c);
+
+void uiReplayStep(QGuiApplication *app, std::shared_ptr<UiReplayCheck> c)
+{
+    switch (c->phase)
+    {
+    case 0: {
+        c->pageStack    = c->window->findChild<QQuickItem *>(QStringLiteral("pageStack"));
+        c->navSearch    = c->window->findChild<QQuickItem *>(QStringLiteral("navSearchButton"));
+        c->navTime      = c->window->findChild<QQuickItem *>(QStringLiteral("navTimeButton"));
+        c->queryField   = c->window->findChild<QQuickItem *>(QStringLiteral("searchQueryField"));
+        c->goButton     = c->window->findChild<QQuickItem *>(QStringLiteral("searchGoButton"));
+        c->resultList   = c->window->findChild<QQuickItem *>(QStringLiteral("searchResultList"));
+        c->locateButton = c->window->findChild<QQuickItem *>(QStringLiteral("locateButton"));
+        c->addHour      = c->window->findChild<QQuickItem *>(QStringLiteral("timeAddHourButton"));
+        c->returnButton = c->window->findChild<QQuickItem *>(QStringLiteral("skyReturnButton"));
+        c->idxSky       = uiPageIndexOf(c->window, "sky");
+        c->idxTime      = uiPageIndexOf(c->window, "time");
+
+        const int have = (c->pageStack ? 1 : 0) + (c->navSearch ? 1 : 0) + (c->navTime ? 1 : 0)
+                       + (c->queryField ? 1 : 0) + (c->goButton ? 1 : 0) + (c->resultList ? 1 : 0)
+                       + (c->locateButton ? 1 : 0) + (c->addHour ? 1 : 0)
+                       + (c->returnButton ? 1 : 0);
+        uiReplayMark(c.get(), have == 9,
+                     QStringLiteral("RP-01 全流程锚点可寻（9 个控件找到 %1/9：pageStack/"
+                                    "navSearch/navTime/searchQueryField/searchGoButton/"
+                                    "searchResultList/locateButton/timeAddHourButton/"
+                                    "skyReturnButton）").arg(have));
+        if (have != 9)
+        {
+            uiReplayUnavailable(app, c.get(),
+                                QStringLiteral("缺 QML 锚点：I-REP-02 回放要求全程走真实控件，"
+                                               "缺一个就无法诚实回放"));
+            return;
+        }
+        // ── RP-02：开机态停在天空页 ───────────────────────────────────────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        uiReplayMark(c.get(), cur == c->idxSky,
+                     QStringLiteral("RP-02 开机态（startPage=sky）→ currentIndex=%1"
+                                    "（期望 %2）").arg(cur).arg(c->idxSky));
+        c->facade->setSimulationPaused(true);
+        c->jdAtBoot = c->facade->julianDay();
+        c->details.append(QStringLiteral("RP-note 时钟已暂停（scale=0），开机 JD=%1；"
+                                         "全程只投递真实鼠标事件")
+                              .arg(c->jdAtBoot, 0, 'f', 6));
+        uiReturnClick(c->window, c->navSearch);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 1: {
+        // 输入查询词：走 TextField 的真实 text 属性（等价用户键入），再真实点击「搜索」
+        c->queryField->setProperty("text", QStringLiteral("Moon"));
+        c->details.append(QStringLiteral("RP-note 已在搜索框写入 \"Moon\"（框内=%1）")
+                              .arg(c->queryField->property("text").toString()));
+        uiReturnClick(c->window, c->goButton);
+        c->nextDelayMs = 600;   // 搜索经模型走一趟，给一拍
+        break;
+    }
+    case 2: {
+        // ── RP-03：搜月球 —— 结果非空 ─────────────────────────────────────
+        const int rows = c->resultList->property("count").toInt();
+        uiReplayMark(c.get(), rows > 0,
+                     QStringLiteral("RP-03 「搜月球」：真实输入 + 点「搜索」→ 结果 %1 条"
+                                    "（要求 >0）").arg(rows));
+        if (rows <= 0)
+        {
+            uiReplayUnavailable(app, c.get(),
+                                QStringLiteral("搜 \"Moon\" 零结果 —— 环境条件（引擎数据/语言），"
+                                               "非接线缺陷，无法继续回放"));
+            return;
+        }
+        // 把前几行**照实打进证据**：RP-04 若判"第一条结果不是月球"，必须能从日志直接
+        // 看出它到底是什么 —— 否则失败信息无法定性（是引擎排序？是我们的截断？）。
+        for (int r = 0; r < qMin(rows, 5); ++r)
+            c->details.append(QStringLiteral("RP-note 结果[%1] \"%2\" / english=\"%3\" / %4")
+                                  .arg(r)
+                                  .arg(c->facade->searchResults()->nameAt(r),
+                                       c->facade->searchResults()->englishNameAt(r),
+                                       c->facade->searchResults()->stableIdAt(r)));
+        // ── RP-04b：结果列表**不许有重复天体** ─────────────────────────────
+        // 这条是 T20 回放**首跑即抓到真实缺陷**后补上的回归护栏：引擎的
+        // `listMatchingObjects` 会把翻译名表与英文名表各枚举一遍且不去重，同一个天体
+        // 只要有两个名字含查询串就会各出一条（实测搜 "Moon" 5 条里 2 对是重复的）。
+        // 修法在 SearchResultsModel（按 stableId 去重）。没有这条判据，那个缺陷
+        // 只能靠人眼看列表才发现 —— T17 的 26 条 SRC 判据全绿也没抓到它。
+        QSet<QString> uniq;
+        int dupCount = 0;
+        for (int r = 0; r < rows; ++r) {
+            const QString sid = c->facade->searchResults()->stableIdAt(r);
+            if (uniq.contains(sid))
+                ++dupCount;
+            uniq.insert(sid);
+        }
+        uiReplayMark(c.get(), dupCount == 0 && uniq.size() == rows,
+                     QStringLiteral("RP-04b 结果列表无重复天体（%1 行 → %2 个不同 stableId，"
+                                    "重复 %3 条）").arg(rows).arg(uniq.size()).arg(dupCount));
+
+        // 找"月球那一行"。I-REP-02 说的是「搜月球→定位」，**不是**"盲点第一条"：
+        // 首行是谁取决于引擎的**名称字典序**（"Ghost of the Moon Nebula" 排在 "Moon"
+        // 前面），而"按相关度排序"是 A4 里**已登记但尚未做**的一项（见计划文档的
+        // 「排序策略（相关度/类型分组/拼音）」）。所以这里按名字定位月球行，
+        // 并把"首行并非月球"照实打进证据，不粉饰成"排序已经没问题"。
+        int moonRow = -1;
+        for (int r = 0; r < rows && moonRow < 0; ++r)
+            if (c->facade->searchResults()->englishNameAt(r).compare(QStringLiteral("Moon"),
+                                                                    Qt::CaseInsensitive) == 0)
+                moonRow = r;
+        c->details.append(QStringLiteral("RP-note 月球在第 %1 行（0 基）；首行是 \"%2\"。"
+                                         "「首行=月球」需要按相关度排序 —— A4 未做的项，"
+                                         "本判据不据此判红")
+                              .arg(moonRow)
+                              .arg(c->facade->searchResults()->nameAt(0)));
+        if (moonRow < 0)
+        {
+            uiReplayUnavailable(app, c.get(),
+                                QStringLiteral("结果里没有月球（Planet:Moon）—— 环境条件"
+                                               "（引擎数据/语言），非接线缺陷"));
+            return;
+        }
+        // 真实点击**月球那一行**：按 ListView 的行高算场景坐标（行高取自 contentHeight，
+        // 不去硬编码 delegate 的 46px）。
+        const double rowH = rows > 0
+                                ? c->resultList->property("contentHeight").toDouble() / rows
+                                : 46.0;
+        const QPointF rowCenter = c->resultList->mapToScene(
+            QPointF(c->resultList->width() / 2.0, rowH * moonRow + rowH / 2.0));
+        c->details.append(QStringLiteral("RP-note 向窗口投递真实点击 @(%1,%2) —— 结果列表第 %3 行"
+                                         "（列表 %4×%5，行高 %6）")
+                              .arg(rowCenter.x(), 0, 'f', 1).arg(rowCenter.y(), 0, 'f', 1)
+                              .arg(moonRow)
+                              .arg(c->resultList->width(), 0, 'f', 0)
+                              .arg(c->resultList->height(), 0, 'f', 0)
+                              .arg(rowH, 0, 'f', 1));
+        uiLocateClick(c->window, rowCenter);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 3: {
+        // ── RP-04：点结果行 → 引擎里真的选中了（且是月球）────────────────
+        const QString en = c->facade->objectInfo()->englishName();
+        const QString dn = c->facade->objectInfo()->displayName();
+        const bool isMoon = c->facade->objectInfo()->hasSelection()
+                         && (en.contains(QStringLiteral("Moon"), Qt::CaseInsensitive)
+                             || dn.contains(QStringLiteral("Moon"), Qt::CaseInsensitive));
+        uiReplayMark(c.get(), isMoon,
+                     QStringLiteral("RP-04 真实点击「月球」那一行 → 选中=%1 displayName=\"%2\" "
+                                    "englishName=\"%3\" stableId=\"%4\"（期望命中 Moon）")
+                         .arg(c->facade->objectInfo()->hasSelection() ? QStringLiteral("true")
+                                                                     : QStringLiteral("false"),
+                              dn, en, c->facade->objectInfo()->stableId()));
+        c->sidExpected = c->facade->objectInfo()->stableId();
+        uiReturnClick(c->window, c->locateButton);
+        // 定位是 1.5s 平滑移动（autoMoveDuration 默认）：等待挂在**本步**上，
+        // 让"定位"真的走完，下一拍才读跟踪状态。
+        c->nextDelayMs = 1800;
+        break;
+    }
+    case 4: {
+        // ── RP-05：定位 —— 视向锁定到月球 ─────────────────────────────────
+        uiReplayMark(c.get(), c->facade->isTracking()
+                                  && c->facade->objectInfo()->stableId() == c->sidExpected,
+                     QStringLiteral("RP-05 「定位」：真实点击后 tracking=%1 stableId=\"%2\""
+                                    "（期望 %3）")
+                         .arg(c->facade->isTracking() ? QStringLiteral("true")
+                                                      : QStringLiteral("false"),
+                              c->facade->objectInfo()->stableId(), c->sidExpected));
+        c->altAzBeforeTime = uiReturnAltAz();
+        c->jdBeforeTime    = c->facade->julianDay();
+        uiReturnClick(c->window, c->navTime);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    case 5: {
+        // ── 改时间：真实点击「+1 时」；等待挂在**写入步**（T19 的教训）─────
+        uiReturnClick(c->window, c->addHour);
+        c->nextDelayMs = kUiReturnWorldSettleMs;
+        break;
+    }
+    case 6: {
+        // ── RP-06：时间确实被改了（这一步是"改时间"环的独立读数）──────────
+        const double d = c->facade->julianDay() - c->jdBeforeTime;
+        uiReplayMark(c.get(), d > 0.03 && d < 0.06,
+                     QStringLiteral("RP-06 「改时间」：真实点击「+1 时」→ JD 位移 %1 天"
+                                    "（期望 ≈1/24=%2 天，±30%）")
+                         .arg(d, 0, 'f', 6).arg(1.0 / 24.0, 0, 'f', 6));
+        uiReturnClick(c->window, c->returnButton);
+        c->nextDelayMs = kUiReturnTickMs;
+        break;
+    }
+    default: {
+        // ── 末态四连断言 ─────────────────────────────────────────────────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        // RP-07 页面在天空页
+        uiReplayMark(c.get(), cur == c->idxSky,
+                     QStringLiteral("RP-07 末态·页面：真实点击「返回天空」→ currentIndex=%1"
+                                    "（期望 %2）").arg(cur).arg(c->idxSky));
+        // RP-08 时间改动保留 + 仍在跟踪月球
+        const double dKeep = c->facade->julianDay() - c->jdBeforeTime;
+        const bool keepTrack = c->facade->isTracking()
+                            && c->facade->objectInfo()->stableId() == c->sidExpected;
+        uiReplayMark(c.get(), dKeep > 0.03 && keepTrack,
+                     QStringLiteral("RP-08 末态·状态保留：时间位移 %1 天（未被撤销）、"
+                                    "tracking=%2 stableId=\"%3\"（期望 %4）")
+                         .arg(dKeep, 0, 'f', 6)
+                         .arg(c->facade->isTracking() ? QStringLiteral("true")
+                                                      : QStringLiteral("false"),
+                              c->facade->objectInfo()->stableId(), c->sidExpected));
+        // RP-09 星空位置真的变了（I-DYN-02 的内核）
+        const Vec3d now = uiReturnAltAz();
+        const bool valid = uiReturnAltAzValid(c->altAzBeforeTime) && uiReturnAltAzValid(now);
+        const double moved = valid ? uiReturnAngleDeg(c->altAzBeforeTime, now) : -1.0;
+        uiReplayMark(c.get(), valid && moved > 5.0,
+                     QStringLiteral("RP-09 末态·星空（I-DYN-02 内核）：改 1 小时后，月球 "
+                                    "AltAz 相对改前变化 %1°（门槛 >5.0）").arg(moved, 0, 'f', 4));
+        uiReplayFinish(app, c.get());
+        return;
+    }
+    }
+    ++c->phase;
+    uiReplayAdvance(app, c);
+}
+
+void uiReplayAdvance(QGuiApplication *app, std::shared_ptr<UiReplayCheck> c)
+{
+    const int d = c->nextDelayMs;
+    c->nextDelayMs = kUiReturnTickMs;
+    QTimer::singleShot(d, app, [app, c]() { uiReplayStep(app, c); });
+}
+
+int runUiReplayCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacade *facade)
+{
+    auto c = std::make_shared<UiReplayCheck>();
+    c->window = window;
+    c->facade = facade;
+    std::printf("REPLAYCHECK: 开始（I-REP-02 全流程回放：开机→搜月球→定位→改时间→返回，"
+                "全程只投递真实鼠标事件，共 10 条判据）\n");
+    std::fflush(stdout);
+    uiReplayStep(app, c);
+    return 0;
+}
 #endif
 
 } // namespace
@@ -1756,10 +2481,19 @@ int main(int argc, char **argv)
     //   timeCheck 走 C++ 公共 API，timeUiCheck 走"真实控件 + 真实鼠标事件"。
     //   两者缺一不可 —— 前者证逻辑，后者证接线（T15 的血泪教训）。
     const bool timeUiCheck = qEnvironmentVariableIsSet("STELQUICK_TIME_UI_CHECK");
+    // T20：**返回环**的 UI 层端到端自检（见下方 uiReturn*）。语义=切回天空页+状态全保留，
+    // 实现全在 MainWindow.returnToSky()，只有"真实控件 + 真实事件 + pageStack.currentIndex"
+    // 这一个观测面 ⇒ 它**只能**做成 UI 层判据（没有可断言的 C++ 对象）。
+    const bool returnUiCheck = qEnvironmentVariableIsSet("STELQUICK_RETURN_UI_CHECK");
+    // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
+    // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
+    const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
     // 起始页：A2/DYN/长跑校验必须停在天空页；搜索/定位/时间自检停在各自页面
     // （顺带验证该 QML 页面能真正被实例化——页面有语法/引用错误时这一步就会暴露，
     //  而不是等人工点击）；手动模式下可用 STELQUICK_PAGE 指定。
-    const QString startPage = (a2Check || dynCheck || longRun
+    // T20：返回环与 I-REP-02 回放都从**天空页**起步（前者要先从它切走再切回来，
+    //   后者直接断言"开机态=天空页"）。
+    const QString startPage = (a2Check || dynCheck || longRun || returnUiCheck || replayCheck
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
@@ -2345,6 +3079,84 @@ int main(int argc, char **argv)
         }
         appFacade.attachSimControl(liveSkyRuntime.get());
         runUiTimeCheck(&app, window, &appFacade);
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T20 返回环 UI 层端到端自检（STELQUICK_RETURN_UI_CHECK=1）：**从最外层注入**。
+    // 装配与 T18/T19 的 UI 检查完全一致（暖机 → boot → start → attach → 判据），
+    // 因为"返回"要保住的那三样东西（时间、选中、跟踪）都得先在真实引擎里成立。
+    if (returnUiCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("RETURNUICHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "RETURNUICHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("RETURNUICHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "RETURNUICHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("RETURNUICHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+        runUiReturnCheck(&app, window, &appFacade);
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T20 I-REP-02 全流程回放（STELQUICK_REPLAY_CHECK=1）：A-alpha 的出口测试。
+    if (replayCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("REPLAYCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "REPLAYCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("REPLAYCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "REPLAYCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("REPLAYCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+        runUiReplayCheck(&app, window, &appFacade);
         const int rc = app.exec();
         if (liveSkyRuntime) {
             liveSkyRuntime->stop();

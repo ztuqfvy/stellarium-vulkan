@@ -14,6 +14,7 @@
 #endif
 
 #include <algorithm>
+#include <QSet>
 
 namespace stelapp {
 
@@ -195,6 +196,8 @@ void SearchResultsModel::collect(const QString &query, int maxItems, QVector<Row
     m_lastRaw = matches.size();
 
     rows.reserve(std::min<int>(matches.size(), cap));
+    //! 去重键：stableId。见下方循环里的说明。
+    QSet<QString> seenIds;
     for (const QPair<QString, StelObjectP> &m : matches) {
         if (rows.size() >= cap)          // 总量截断：取字典序前 cap 条
             break;
@@ -207,6 +210,20 @@ void SearchResultsModel::collect(const QString &query, int maxItems, QVector<Row
         r.objectType  = obj->getObjectTypeI18n();
         r.typeName    = obj->getType();
         r.stableId    = QStringLiteral("%1:%2").arg(r.typeName, obj->getID());
+        // ── 🔴 T20 抓到的真实缺陷：同一个天体会被引擎给两次 ────────────────
+        // `StelObjectModule::listMatchingObjects` 把**翻译名表**与**英文名表**
+        // 各枚举一遍（`objs << listAllObjects(false) << listAllObjects(true)`），
+        // 只要该天体有 ≥2 个名字里含查询串，就会**各产出一条**；`StelObjectMgr`
+        // 只做拼接 + 按名称字典序重排，**不去重**。
+        // 实测：搜 "Moon" 出 5 条，其中 2 对是同一个天体
+        //   （NGC 6781 出现 2 次、NGC 1647 出现 2 次）。
+        // 表现是用户看见重复项、且"第 N 条"这类索引对不上。
+        // 处置：本层按 stableId 去重（保留字典序最前的那一条）。
+        // 为什么不改引擎：那是上游 SearchDialog 也在用的原语，改它会牵连旧界面；
+        // 而且"同一个 object 只该有一行"本来就是**列表模型**该保证的事。
+        if (seenIds.contains(r.stableId))
+            continue;
+        seenIds.insert(r.stableId);
         rows.append(r);
         // obj 到此为止：**不存指针**。契约"不向 QML 传悬空裸指针"就在这一行落实。
     }

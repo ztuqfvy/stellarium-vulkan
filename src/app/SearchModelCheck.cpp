@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <QSet>     // T20：SRC-05d 的结果去重检查
 
 namespace stelapp {
 namespace {
@@ -224,12 +225,42 @@ void runPhaseB(const std::shared_ptr<Ctx> &ctx)
                    QStringLiteral("SRC-05b 原始匹配数 ≥ 截断后行数（raw=%1 ≥ %2）")
                        .arg(probeRaw).arg(probeRows));
 
-        // ② 未超限时行数应恰等于原始匹配数（即上限不是"顺手砍了一刀"）。
+        // ② 未超限时行数应恰等于**去重后**的原始匹配数（即上限不是"顺手砍了一刀"）。
+        //
+        // ⚠️ T20 修正（2026-09-28）：原判据写的是 `exactRows == min(exactRaw, 10)`，
+        //   把引擎的**原始条数**当成了唯一行的条数。而 `StelObjectModule::
+        //   listMatchingObjects` 会把翻译名表与英文名表各枚举一遍且**不去重**
+        //   —— 同一个天体有几个名字含查询串就出几条（实测 Sirius → 原始 4 条，
+        //   全是同一个 Star:HIP 32349 A）。于是这条判据实际上在**为缺陷背书**：
+        //   行数=1（去重后的正确值）反而被判红。T20 在模型层按 stableId 去重后
+        //   它立刻暴露。现在的口径 = "cap 不截断时与不限量查询给同样行数"，
+        //   既不放弃原意（上限不许顺手砍），也不再要求行数等于原始条数。
         const int exactRows = ctx->facade->searchObjects(ctx->fixture, 10);
         const int exactRaw = m->lastRawMatchCount();
-        ctx->check(exactRows == std::min(exactRaw, 10),
-                   QStringLiteral("SRC-05c 未超限时行数 = min(原始, 上限)（%1 = min(%2, 10)）")
-                       .arg(exactRows).arg(exactRaw));
+        int dupCount = 0;
+        {
+            QSet<QString> seen;
+            for (int r = 0; r < exactRows; ++r) {
+                const QString sid = m->stableIdAt(r);
+                if (seen.contains(sid))
+                    ++dupCount;
+                seen.insert(sid);
+            }
+        }
+        // 同一查询、上限放到"不截断"处，行数必须与 cap=10 时一致。
+        const int fullRows = ctx->facade->searchObjects(ctx->fixture, std::max(1, exactRaw));
+        const bool notTruncated = exactRaw <= 10;
+        ctx->check((!notTruncated || fullRows == exactRows)
+                       && exactRows <= std::min(exactRaw, 10) && exactRows > 0,
+                   QStringLiteral("SRC-05c 未超限时行数 = 去重后条数，上限不再额外截断"
+                                  "（cap=10 → %1 行；cap=%2（不截断）→ %3 行；"
+                                  "引擎原始 %4 条 ⇒ 去重掉 %5 条）")
+                       .arg(exactRows).arg(exactRaw).arg(fullRows).arg(exactRaw)
+                       .arg(exactRaw - exactRows));
+        ctx->check(dupCount == 0,
+                   QStringLiteral("SRC-05d 结果内无重复天体（%1 行 → %2 个不同 stableId）"
+                                  "—— T20 补的回归护栏，原 26 条判据全绿也没抓到重复行")
+                       .arg(exactRows).arg(exactRows - dupCount));
     }
 
     // ── 纵向 V1/V2：搜索 → 选择 ─────────────────────────────────────────
