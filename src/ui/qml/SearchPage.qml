@@ -190,6 +190,7 @@ Item {
             }
 
             Button {
+                objectName: "clearSelectionButton"   // T23：UI 腿判据的锚点（真实点击走 unSelect）
                 Layout.fillWidth: true
                 text: "清除选中"
                 enabled: objectInfo.hasSelection

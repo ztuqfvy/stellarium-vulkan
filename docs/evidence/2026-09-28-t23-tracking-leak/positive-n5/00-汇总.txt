@@ -1,0 +1,12 @@
+# 正跑 N=5 汇总（修复在位）
+
+locatecheck run1  rc=0  判据 15/15
+uicheck     run1  rc=0  判据 10/10
+locatecheck run2  rc=0  判据 15/15
+uicheck     run2  rc=0  判据 10/10
+locatecheck run3  rc=0  判据 15/15
+uicheck     run3  rc=0  判据 10/10
+locatecheck run4  rc=0  判据 15/15
+uicheck     run4  rc=0  判据 10/10
+locatecheck run5  rc=0  判据 15/15
+uicheck     run5  rc=0  判据 10/10

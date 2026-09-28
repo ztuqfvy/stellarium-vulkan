@@ -2369,3 +2369,83 @@ bool uiLayoutReady(QQuickItem *item);       // 有正尺寸且可见
   **改 `.qml` 必须重建**（`rcc` 重新打包），不能只改源码就期望生效。
 
 
+
+## 2026-09-28｜T23 跟踪标志泄漏根治（引擎侧）（**LOCATECHECK 15/15 + UICHECK 10/10 PASS；负控回退修复两套必须红且全红；11 项回归 rc=0 含 S3 旧宿主；DYN 2/3 + 替身 3/3 为既有间歇**）
+
+### 背景：一条挂账四环的引擎缺陷
+
+上游 vintage `22c8f8ed` 原样带入：`StelObjectMgr::unSelect()` **先** clear 掉
+`lastSelectedObjects` **再** emit（StelObjectMgr.cpp:537-544），而
+`StelMovementMgr::selectedObjectChange()`（757-766）整段包在 `getWasSelected()`
+里 ⇒ 取消选中时槽看到"没有选中"，`setFlagTracking(false)` **永不执行**
+⇒ `flagTracking` 泄漏为 true —— "无目标的跟踪"谎言状态。
+T18 的应对是 `AppFacade::isTracking()` 读**合取真值**（引擎标志 ∧ 确有选中），
+把缺陷掩盖在 UI 层。T23 根治：引擎状态干净，UI 不必再打补丁。
+
+### 修复（三处，引擎唯一一处对上游的行为偏离）
+
+1. **引擎**：槽签名里的 `StelModule::StelModuleSelectAction action`
+   **本来就带到了槽里却从未被读过**。加 RemoveFromSelection 分支：
+   取消选中 ⇒ 无物可跟踪 ⇒ `setFlagTracking(false)`。其余 6 个监听
+   `selectedObjectChanged` 的模块不受影响（只动了 MovementMgr 自己的槽）。
+2. **AppFacade 合取退役**：`isTracking()` 直接读 `getFlagTracking()`。
+   根治后 `flagTracking==true` 蕴含有选中（引擎 `setFlagTracking(true)`
+   分支本就要求 `getWasSelected()`，StelMovementMgr.cpp:1388）。
+3. **引擎信号转发**（`ensureTrackingForwarding`，懒连接一次）：负控第二轮
+   抓到的**第二个缺口**——引擎标志归零了，但 QML 状态文案残留
+   "正在跟踪：Moon"。原因：AppFacade 从不连接引擎信号，`trackingChanged`
+   只在自己的命令路径上手动 emit；引擎侧状态变化（unSelect / 换选 /
+   旧键位）QML 永远收不到通知。
+
+### 判据：三代读数对照（同一判据 LOC-08b）
+
+| 版本 | 清后 合取/引擎原始 | 判定 |
+|---|---|---|
+| T18（缺陷在，判据弱） | false / **true** | OK（只断言合取——泄漏躺在证据里） |
+| **T23 修复** | **false / false** | OK（加严：两者都断言） |
+| **T23 负控**（回退修复） | **true / true** | FAIL ✓ |
+
+- LOC-08b **加严**：`entered && trackBefore && rawBefore && !trackAfter && !rawAfter`。
+  落实"判据别为上游缺陷背书"（血泪第 7 条）——T18 只敢断言合取，
+  根治后断言升级为正确性。
+- LOC-09 **换选对照腿**（新增）：跟踪 → 直接走引擎 ReplaceSelection 换选
+  另一天体 → 原始标志归零。**负控下它仍绿**（换选路径旧代码本来就对）——
+  证明修复把"取消选中"拉齐到"换选"早已正确的行为，而非改坏后者。
+- UI-09/UI-10 **活引擎腿**（新增）：重进跟踪（前提腿，不成立照实判红）
+  → **真实点击「清除选中」**（unSelect 的 UI 路径）→ `isTracking=false ∧
+  trackedName 空`。SearchPage「清除选中」按钮补 `objectName`。
+
+### 负控读数（失败路径是活的）
+
+```
+LOCATECHECK 14/15 rc=10：LOC-08b FAIL；LOC-09 OK（对照腿）
+UICHECK      8/10 rc=10：UI-08 FAIL（文案="正在跟踪：Moon"）、UI-10 FAIL（isTracking=true）
+```
+
+负控同时证明 `isTracking()` 简化是**加严**：泄漏不再被合取藏住
+（T18 时代合取 false 会把 `引擎原始=true` 掩盖）。
+
+### 正跑
+
+LOCATECHECK **15/15** rc=0 ×5；UICHECK **10/10** rc=0 ×5；
+回归 11 项 rc=0（timecheck / timeuicheck / searchcheck / returnuicheck /
+replaycheck / clockcheck / actioncheck / a2 / **s3-stela3**）；
+DYN 引擎 2/3 + 替身 3/3（既有间歇形态，替身绿 ⇒ 非退化）。
+**动了 src/core/ ⇒ S3 旧宿主回归是硬要求**（引擎行为变化必须对两种宿主零退化）。
+
+### 过程里踩的两个新坑（记入技能 §28）
+
+1. **环境变量名乌龙**：两次"挂死"（10 分钟无输出 + `A2: 视口仍无效 0x0`）
+   是把 `STELQUICK_UI_CHECK` 敲成 `STELQUICK_LOCATE_UI_CHECK`——等于没设
+   模式，程序进默认手动查看模式等人操作。教训：跑套件前 grep 变量名，
+   别凭记忆。
+2. **相位重构丢判据**：新相位 case 8 提前 finish，把原 default 里的 UI-08
+   跳过——首跑 9/9 PASS **看似全绿实丢一条**。修法：UI-08 合并进 case 8。
+   敥训：改相位结构后核对判据总数（8 → 10，不是 9）。
+
+### 产物
+
+`tools/t23-verify.sh`；`docs/evidence/2026-09-28-t23-tracking-leak/`
+（含 `negctrl/`、`positive-n5/`、`history/`）；交付文档
+`docs/T23_TRACKING_LEAK_ROOTCURE.zh_CN.md`；证据总索引补 T23 行；
+计划文档 §2 / §9.1 / §9.2 / §9.4.6 移交表 / 新增 §9.4.7。

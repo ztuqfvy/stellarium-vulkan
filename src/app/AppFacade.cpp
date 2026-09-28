@@ -608,7 +608,26 @@ bool AppFacade::selectByStableId(const QString &stableId)
 
 void AppFacade::clearSelection()
 {
+    // T23：unSelect 引起的跟踪状态变化在**引擎侧**（selectedObjectChange 槽 →
+    // setFlagTracking(false)）。不转发的话 QML 绑定收不到 trackingChanged，
+    // 状态文案会残留"正在跟踪：×"（UI-08 在 T23 新相位里实测抓到）。
+    ensureTrackingForwarding();
     m_info.clearSelection();
+}
+
+void AppFacade::ensureTrackingForwarding()
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (m_trackingForwarded || !StelApp::isInitialized())
+        return;
+    StelCore *core = StelApp::getInstance().getCore();
+    StelMovementMgr *mv = core ? core->getMovementMgr() : nullptr;
+    if (!mv)
+        return;
+    QObject::connect(mv, &StelMovementMgr::flagTrackingChanged,
+                     this, [this]() { emit trackingChanged(); });
+    m_trackingForwarded = true;
+#endif
 }
 
 // ── T18：定位 / 跟踪 ─────────────────────────────────────────────────────────
@@ -655,18 +674,14 @@ bool AppFacade::isTracking() const
     StelCore *core = StelApp::getInstance().getCore();
     if (!core || !core->getMovementMgr())
         return false;
-    // 合取真值，两个都与不得：
-    //   ① 引擎标志 —— 但它在 unSelect() 之后**不会被清**。原因在引擎自己身上：
-    //      StelMovementMgr::selectedObjectChange()（StelMovementMgr.cpp:757-766）
-    //      整段包在 `if (objectMgr->getWasSelected())` 里，而 StelObjectMgr::unSelect()
-    //      是**先** clear 掉 lastSelectedObjects **再** emit
-    //      → 槽里看到的就是"没有选中"，于是那条 `setFlagTracking(false)` 永不执行。
-    //   ② 确有选中 —— 因为 updateVisionVector() 的跟踪分支同样要求 getWasSelected()，
-    //      没有选中时锁定根本不发生。
-    // 只读其中一个都会谎报：读①会在取消选中后显示"跟踪中"，读②会把
-    // "用户想要的跟踪"当成"已经跟踪"。UI 与自检都用这个合取值。
-    return core->getMovementMgr()->getFlagTracking()
-           && StelApp::getInstance().getStelObjectMgr().getWasSelected();
+    // T23 之前这里读**合取真值**（引擎标志 ∧ 确有选中）：引擎 unSelect() 先清
+    // 选中再发信号，selectedObjectChange 槽里的 setFlagTracking(false) 永不执行
+    // ⇒ 单读引擎标志会在取消选中后谎报"跟踪中"。T23 已在引擎侧根治
+    // （StelMovementMgr::selectedObjectChange 现在处理 RemoveFromSelection），
+    // 且引擎 setFlagTracking(true) 本就要求有选中 ⇒ flagTracking==true 蕴含
+    // 有选中，合取的第二因子成了死代码。直接读引擎标志 —— 引擎不再撒谎，
+    // UI 也不必再打补丁。LOC-08b/LOC-09 的加严判据守着这条不变量。
+    return core->getMovementMgr()->getFlagTracking();
 #else
     return false;
 #endif
@@ -695,6 +710,7 @@ bool AppFacade::locateSelected(bool track)
         ++m_locateRefusedCount;
         return false;
     }
+    ensureTrackingForwarding();   // T23：引擎侧状态变化也要能推到 QML
     StelCore *core = StelApp::getInstance().getCore();
     StelObjectMgr &objMgr = StelApp::getInstance().getStelObjectMgr();
     StelMovementMgr *mv = core ? core->getMovementMgr() : nullptr;
@@ -756,6 +772,7 @@ bool AppFacade::setTracking(bool on)
         setRefusal("engine-unavailable");
         return false;
     }
+    ensureTrackingForwarding();   // T23：同 locateSelected
     StelCore *core = StelApp::getInstance().getCore();
     StelMovementMgr *mv = core ? core->getMovementMgr() : nullptr;
     if (!mv) {

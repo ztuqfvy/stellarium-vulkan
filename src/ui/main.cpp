@@ -501,7 +501,8 @@ void runInteractionTest(QGuiApplication *app, QQuickWindow *window, int baseW, i
 // 负控（UI-06）：往一个**非按钮**控件（状态 Label）中心点一下，tracking 必须纹丝不动。
 //   没有这一条，UI-04 的 PASS 也可能只是"点哪都算"。
 //
-// 判据 8 条：UI-01..08。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE
+// 判据 10 条：UI-01..10（T23 新增 UI-09/UI-10：「清除选中」unSelect 路径的
+// 活引擎腿）。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE
 //   （无可用 fixture —— 环境条件，不是接线缺陷，照实报而不伪装通过）。
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -512,6 +513,7 @@ struct UiLocateCheck
     QQuickItem *locateButton = nullptr;
     QQuickItem *untrackButton = nullptr;
     QQuickItem *statusLabel = nullptr;
+    QQuickItem *clearSelButton = nullptr;   // T23：「清除选中」（走 unSelect 的真实 UI 路径）
     QStringList details;
     int passed = 0;
     int total = 0;
@@ -630,7 +632,9 @@ void uiLocateStep(QGuiApplication *app, std::shared_ptr<UiLocateCheck> c)
         c->locateButton = c->window->findChild<QQuickItem *>(QStringLiteral("locateButton"));
         c->untrackButton = c->window->findChild<QQuickItem *>(QStringLiteral("untrackButton"));
         c->statusLabel = c->window->findChild<QQuickItem *>(QStringLiteral("locateStatusLabel"));
-        const bool anchors = c->locateButton && c->untrackButton && c->statusLabel;
+        c->clearSelButton = c->window->findChild<QQuickItem *>(QStringLiteral("clearSelectionButton"));
+        const bool anchors = c->locateButton && c->untrackButton && c->statusLabel
+                             && c->clearSelButton;
         uiLocateMark(c.get(), anchors && c->locateButton->isVisible(),
                      QStringLiteral("UI-01 搜索页控件锚点可寻且可见（locateButton=%1 "
                                     "untrackButton=%2 statusLabel=%3，visible=%4）")
@@ -762,6 +766,52 @@ void uiLocateStep(QGuiApplication *app, std::shared_ptr<UiLocateCheck> c)
                          .arg(c->facade->isTracking() ? QStringLiteral("true")
                                                       : QStringLiteral("false")));
         break;
+    }
+    case 7: {
+        // ── UI-09（T23）：重进跟踪 → 真实点击「清除选中」（unSelect 路径）──
+        // 这是根治路径的**活引擎腿**：T18 的 UI 腿只盖了「取消跟踪」按钮
+        // （setTracking(false)），没盖「清除选中」（ObjectInfoModel::clearSelection
+        // → StelObjectMgr::unSelect）。修复前这条会红：unSelect 先清选中再发信号，
+        // 引擎原始标志泄漏为 true。前提腿：这里必须真的进过跟踪。
+        // UI-07（取消跟踪）不清选中 ⇒ 这里直接重进跟踪即可（不必也不应重选：
+        // 幂等闸会拦截同 id 重选，发了也白发）。
+        const bool entered = c->facade->locateSelected(true);
+        uiLocateMark(c.get(), entered && c->facade->isTracking(),
+                     QStringLiteral("UI-09-prep 重进跟踪（locateSelected=%1，"
+                                    "isTracking=%2）—— 前提不成立则下一条无效")
+                         .arg(entered ? QStringLiteral("true") : QStringLiteral("false"),
+                              c->facade->isTracking() ? QStringLiteral("true")
+                                                      : QStringLiteral("false")));
+        if (!(entered && c->facade->isTracking()))
+        {
+            // 前提没立起来：照实判红，别让 UI-10 在无效前提下假绿。
+            uiLocateMark(c.get(), false,
+                         QStringLiteral("UI-09 前提失败：无法重进跟踪，UI-10 无效"));
+            uiLocateFinish(app, c.get());
+            return;
+        }
+        uiLocateClick(c->window, uiLocateCenter(c->clearSelButton));
+        break;
+    }
+    case 8: {
+        // ── UI-08：文案档（原 default，不得丢——曾因 case 8 提前 finish 短路）──
+        const QString text = c->statusLabel->property("text").toString();
+        uiLocateMark(c.get(), !text.startsWith(QStringLiteral("正在跟踪")),
+                     QStringLiteral("UI-08 清除选中后文案=\"%1\"（不得再声称正在跟踪）")
+                         .arg(text));
+        // ── UI-10（T23）：unSelect 之后跟踪必须**彻底**归零 ──────────────
+        // 引擎原始标志（isTracking 现在就是原始标志，见 AppFacade::isTracking）
+        // 与 trackedName 双断言。
+        const bool off = !c->facade->isTracking()
+                      && c->facade->trackedName().isEmpty();
+        uiLocateMark(c.get(), off,
+                     QStringLiteral("UI-10 真实点击「清除选中」→ isTracking=%1 "
+                                    "trackedName=\"%2\"（T23 根治断言：unSelect 必须关跟踪）")
+                         .arg(c->facade->isTracking() ? QStringLiteral("true")
+                                                      : QStringLiteral("false"),
+                              c->facade->trackedName()));
+        uiLocateFinish(app, c.get());
+        return;
     }
     default: {
         // ── UI-08：取消后文案回到不声称跟踪的档（三档文案的第三档）───────

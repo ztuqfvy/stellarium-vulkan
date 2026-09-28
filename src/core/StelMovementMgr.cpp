@@ -754,8 +754,21 @@ void StelMovementMgr::setInitViewDirectionToCurrent()
 /*************************************************************************
  The selected objects changed, follow it if we were already following another one
 *************************************************************************/
-void StelMovementMgr::selectedObjectChange(StelModule::StelModuleSelectAction)
+void StelMovementMgr::selectedObjectChange(StelModule::StelModuleSelectAction action)
 {
+	if (action == StelModule::RemoveFromSelection)
+	{
+		// T23 跟踪标志泄漏根治（对上游 vintage 22c8f8ed 的偏离，唯一一处）：
+		// 上游把整段只包在 getWasSelected() 里，而 StelObjectMgr::unSelect() 是
+		// **先** clear 掉 lastSelectedObjects **再** emit（StelObjectMgr.cpp:537-544）
+		// ⇒ 走到这里 getWasSelected() 恒为 false，下游那条 setFlagTracking(false)
+		// **永不执行** ⇒ 取消选中后 flagTracking 泄漏为 true —— 一个"无目标的
+		// 跟踪"谎言状态（updateVisionVector 靠 flagTracking && getWasSelected()
+		// 的合取侥幸没把它变成行为）。信号本来就把 action 带到了槽签名里，
+		// 却从未被读过 —— 取消选中时无物可跟踪，直接关。
+		setFlagTracking(false);
+		return;
+	}
 	// If an object was selected keep the earth following
 	if (objectMgr->getWasSelected())
 	{

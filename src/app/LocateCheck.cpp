@@ -20,7 +20,8 @@
  *   9  ∪0      LOC-06 关跟踪
  *   10 ∪2500   LOC-07a locateSelected(true)
  *   11 ∪0      LOC-07b 幂等重选同一 stableId，跟踪必须不断
- *   12 ∪0      LOC-08 家园行星端到端 + 收尾清选中
+ *   12 ∪0      LOC-08 家园行星端到端 + LOC-08b 收尾清选中（T23 加严：引擎原始标志也必须归零）
+ *   13 ∪0      LOC-09 换选路径对照（T23）：跟踪 → 换选另一天体 → 引擎原始标志归零
  */
 #include "app/LocateCheck.hpp"
 
@@ -525,14 +526,15 @@ void LocateCheck::run(QCoreApplication *app,
 
         // 收尾：清选中后必须**同时**看到跟踪归零。
         //
-        // 这条判据测的是 `isTracking()` 的"合取真值"下界，而不是一句废话：
-        // 引擎的 `flagTracking` 在 unSelect() 之后**不会被清**——原因是
-        // StelMovementMgr::selectedObjectChange()（StelMovementMgr.cpp:757-766）
-        // 整段包在 `if (objectMgr->getWasSelected())` 里，而 StelObjectMgr::unSelect()
-        // 是**先** clear 掉 lastSelectedObjects **再** emit（StelObjectMgr.cpp:537-544）
-        // ⇒ 槽里看到的就是"没有选中"，那条 `setFlagTracking(false)` 永不执行。
-        // 所以这里必须：先真的进入跟踪（否则判据空洞），清选中，再读**原始标志**
-        // 与**合取值**各一次——把两个值的分歧摆在证据里。
+        // T18 时这条只敢断言合取值：引擎的 `flagTracking` 在 unSelect() 之后
+        // 不会被清——StelMovementMgr::selectedObjectChange() 整段包在
+        // `if (objectMgr->getWasSelected())` 里，而 StelObjectMgr::unSelect()
+        // 是**先** clear 掉 lastSelectedObjects **再** emit
+        // ⇒ 槽里看到"没有选中"，`setFlagTracking(false)` 永不执行。
+        // 当时把两个值的分歧摆在证据里（rawAfter 恒 true）。
+        // **T23 已根治**（槽现在处理 RemoveFromSelection）⇒ 按血泪第 7 条
+        // （判据别为上游缺陷背书）**加严**：引擎原始标志也必须归零。
+        // 若哪天有人回退引擎修复，这条会立刻红 —— rawAfter 的读数就是证据。
         c->facade->selectByStableId(c->fixtureSid);   // LOC-08 可能把选中换成了家园行星
         const bool entered = c->facade->locateSelected(true);
         const bool trackBefore = c->facade->isTracking();
@@ -540,15 +542,58 @@ void LocateCheck::run(QCoreApplication *app,
         c->facade->clearSelection();
         const bool trackAfter = c->facade->isTracking();
         const bool rawAfter = c->mv() ? c->mv()->getFlagTracking() : false;
-        c->mark(QStringLiteral("LOC-08b 清选中后 isTracking 归零（进入跟踪 %1；"
+        c->mark(QStringLiteral("LOC-08b 清选中后跟踪彻底归零（进入跟踪 %1；"
                                "清前 合取=%2/引擎原始=%3 → 清后 合取=%4/引擎原始=%5）：%6")
                     .arg(entered ? QStringLiteral("true") : QStringLiteral("false"),
                          trackBefore ? QStringLiteral("true") : QStringLiteral("false"),
                          rawBefore ? QStringLiteral("true") : QStringLiteral("false"),
                          trackAfter ? QStringLiteral("true") : QStringLiteral("false"),
                          rawAfter ? QStringLiteral("true") : QStringLiteral("false"),
-                         (entered && trackBefore && !trackAfter)
+                         (entered && trackBefore && rawBefore && !trackAfter && !rawAfter)
                              ? QStringLiteral("OK") : QStringLiteral("FAIL")));
+    }});
+
+    // ── 步骤 13：LOC-09 换选路径对照（T23）──────────────────────────────────
+    // 跟踪 → 换选**另一**天体 → 引擎原始标志必须归零。
+    // 这条在 T18 的引擎代码下也绿（换选时 getWasSelected()=true，槽正常执行），
+    // 作用是**对照腿**：证明 T23 修复把"取消选中"的行为拉齐到"换选"早已正确
+    // 的行为，而不是顺手改坏了后者。前提腿：raw 确实进过跟踪（rawBefore），
+    // 否则"归零"是废话。
+    steps->append({0, [](Ctx *c) {
+        StelMovementMgr *mv = c->mv();
+        StelObjectMgr *mgr = c->objMgr();
+        if (!mv || !mgr || !c->haveFixture)
+            return;
+        // 选一个与 fixture 不同的天体（按候选优先级取第一个不同的）。
+        QString otherName;
+        for (const char *cand : kFixtureCandidates) {
+            if (QString::fromLatin1(cand) != c->fixtureName
+                && mgr->searchByName(QString::fromLatin1(cand))) {
+                otherName = QString::fromLatin1(cand);
+                break;
+            }
+        }
+        if (otherName.isEmpty()) {
+            c->note(QStringLiteral("LOC-09 换选对照：SKIP（找不到第二个可用天体）"));
+            return;
+        }
+        c->facade->selectByStableId(c->fixtureSid);
+        const bool entered = c->facade->locateSelected(true);
+        const bool rawBefore = mv->getFlagTracking();
+        // 直接走引擎换选（ReplaceSelection）—— 幂等闸属 UI 层（ObjectInfoModel），
+        // 挡的是"同一对象"，这里要测的就是引擎信号路径本身。
+        mgr->setSelectedObject(mgr->searchByName(otherName));
+        const bool rawAfter = mv->getFlagTracking();
+        c->mark(QStringLiteral("LOC-09 换选归零对照（进入跟踪 %1，rawBefore=%2 → "
+                               "换选「%3」后 rawAfter=%4）：%5")
+                    .arg(entered ? QStringLiteral("true") : QStringLiteral("false"),
+                         rawBefore ? QStringLiteral("true") : QStringLiteral("false"),
+                         otherName,
+                         rawAfter ? QStringLiteral("true") : QStringLiteral("false"),
+                         (entered && rawBefore && !rawAfter)
+                             ? QStringLiteral("OK") : QStringLiteral("FAIL")));
+        // 收尾归零：别把状态留给后续套件。
+        c->facade->clearSelection();
     }});
 #endif  // STELQUICK_HAS_ENGINE
 

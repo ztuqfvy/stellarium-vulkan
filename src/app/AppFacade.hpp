@@ -56,8 +56,10 @@
  *      不能把视线对准"自己脚下"——旧 GUI 在多处都做了这条判断
  *      （`SearchDialog.cpp:1468-1484` 等）。本类复用同一条判据，拒绝理由
  *      经 `lastLocateRefusal()` 报 `"home-planet"`。
- *   3. `isTracking()` 读的是**合取真值**：引擎 `getFlagTracking()`
- *      **∧** 当前确有选中。原因见 .cpp 里的长注释（引擎在 unSelect 后不清标志）。
+ *   3. `isTracking()` 直接读引擎 `getFlagTracking()`。T23 之前这里读**合取
+ *      真值**（引擎标志 ∧ 确有选中）——引擎 unSelect 后不清标志，单读会谎报。
+ *      T23 在引擎侧根治（selectedObjectChange 处理 RemoveFromSelection）后，
+ *      flagTracking==true 蕴含有选中，合取退役。不变量由 LOC-08b/LOC-09 守着。
  *
  * 纪律：
  *   1. 所有方法只允许 GUI 线程调用（引擎对象全为 GUI 线程亲和，本类不设锁）。
@@ -368,10 +370,14 @@ private:
     void setTimeRefusal(const char *reason);
     //! T19：把 JD 格式化为日历文本（`local` 为 true 时套 UTC 偏移）。引擎不可用 → 空串。
     QString formatJd(double jd, bool local) const;
+    //! T23：懒连接引擎 flagTrackingChanged → 本类 trackingChanged（只连一次）。
+    //! 引擎侧自行改变跟踪状态（unSelect、Esc、旧 GUI 键位）时 QML 绑定才能收到通知。
+    void ensureTrackingForwarding();
 
     ISimPacing *m_sim = nullptr;
     bool m_simulationPaused = false;  // 与 LiveSkyRuntime 的 scale=1 默认一致（运行态）
     double m_timeRate = 1.0;          // Julian day / second（镜像值，真源在引擎时钟）
+    bool m_trackingForwarded = false; // T23：引擎跟踪信号转发是否已连接
 
     // T17：值成员（QObject 子对象随本类生命周期；父指针保证 QML 侧不会被提前回收）。
     SearchResultsModel m_search{this};
