@@ -23,6 +23,27 @@ Item {
         id: viewport
         objectName: "skyViewport"   // C++ 装配点按此名查找到本项
         anchors.fill: parent
+
+        // T25：滚轮 → 引擎缩放（修复自 T10 起合流形态滚轮死路）。
+        //
+        // 背景：旧宿主的滚轮链路是 StelMainView::wheelEvent → StelApp::handleWheel，
+        // 合流形态一直没接 —— QML 里此前没有任何 WheelHandler/onWheel，
+        // 用户在天空页滚动滚轮，引擎纹丝不动。T15 的键盘死代码是同款缺陷
+        // （键盘已在 T17 修复），滚轮是这条交互面剩下的另一半。
+        //
+        // 语义边界：这里**只转发**窗口真实 angleDelta/modifiers，交给
+        // AppFacade::wheelZoom → StelApp::handleWheel；缩放倍率、Ctrl+滚轮改
+        // 时间等 modifiers 语义全在引擎侧，QML 侧复刻任何一条都是双轨。
+        //
+        // 页守卫天然成立：本 Handler 挂在 SkyViewport（只在天空页可见）上，
+        // StackLayout 切页后事件落不到这里 ⇒ 时间页/搜索页滚轮不缩放天空
+        // （INTERACTCHECK IT-04 就是这条负控）。
+        // 本页硬约束（页头注释 1/2 条）不受影响：WheelHandler 不渲染任何内容。
+        WheelHandler {
+            onWheel: (wheel) => appFacade.wheelZoom(wheel.angleDelta.x,
+                                                    wheel.angleDelta.y,
+                                                    wheel.modifiers)
+        }
     }
 
     // P-BRG-04：进入降级预览（显示帧率低于阈值）时必须明确告警。

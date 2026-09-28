@@ -38,6 +38,8 @@ class StelObjectMgr;
 class StelLocaleMgr;
 class StelModuleMgr;
 class StelMainView;
+//! T25：合流形态滚轮入口（AppFacade::wheelZoom 调 handleWheel，见 friend 声明处）。
+namespace stelapp { class AppFacade; }
 class StelSkyCultureMgr;
 class StelViewportEffect;
 class QOpenGLFramebufferObject;
@@ -100,6 +102,10 @@ public:
 	friend class StelAppGraphicsWidget;
 	friend class StelMainView;
 	friend class StelRootItem;
+	//! T25：合流形态（stelQuickUI）的滚轮入口。旧宿主的滚轮走 StelMainView::
+	//! wheelEvent → handleWheel；合流形态由 QML WheelHandler → AppFacade::wheelZoom
+	//! 走同一条 handleWheel 保真转发（不做 friend 就只能复刻分发循环 = 双轨）。
+	friend class stelapp::AppFacade;
 
 	//! Create and initialize the main Stellarium application.
 	//! @param parent the QObject parent

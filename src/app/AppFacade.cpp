@@ -24,6 +24,7 @@
 #include <QDate>
 #include <QStringList>
 #include <QTimeZone>   // T22 时区选择器
+#include <QWheelEvent> // T25 滚轮保真转发（wheelZoom 合成事件）
 #endif
 
 namespace stelapp {
@@ -571,6 +572,25 @@ void AppFacade::zoomIn()
     if (fov <= 0.0)
         return;   // 引擎不可用或视场异常，安全 no-op
     setFieldOfView(fov * 0.8);
+}
+
+void AppFacade::wheelZoom(int dx, int dy, int modifiers)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    // T25：保真转发（语义见头注）。旧宿主（StelMainView::wheelEvent）就是这么干的：
+    // 合成 QWheelEvent 直接交 StelApp::handleWheel，缩放/Ctrl+滚轮改时间等全部
+    // modifiers 语义都由引擎各模块自己判定——本方法一行语义都不复刻。
+    if (!StelApp::isInitialized())
+        return;
+    // 位置：视口中心。实测 StelMovementMgr::handleMouseWheel 只消费 angleDelta 与
+    // modifiers、不消费坐标（缩放无平移耦合），中心点是安全的占位；保真转发
+    // 保留的是 angleDelta/modifiers/buttons 语义。
+    const QPointF center(640.0, 360.0);
+    QWheelEvent wheel(center, center, QPoint(0, 0), QPoint(dx, dy),
+                      Qt::NoButton, Qt::KeyboardModifiers(modifiers),
+                      Qt::ScrollUpdate, false);
+    StelApp::getInstance().handleWheel(&wheel);
+#endif
 }
 
 void AppFacade::zoomOut()

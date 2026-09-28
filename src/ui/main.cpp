@@ -33,6 +33,9 @@
  *   STELQUICK_REPLAY_CHECK=1     → T20 **I-REP-02 全流程回放**（A-alpha 出口测试）：
  *                                  开机→搜月球→定位→改时间→返回，全程只投递真实
  *                                  鼠标事件；末态四连断言（页面/时间/跟踪/星空）。
+ *   STELQUICK_INTERACT_UI_CHECK=1 → T25 **交互级（键盘/滚轮）**自检：窗口真实滚轮
+ *                                  （滚轮缩放活链 + 页守卫负控 + 方向对照）与真实
+ *                                  L 键（routeKey QML 活链 + 焦点守卫 U-ACT-03）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -1877,6 +1880,312 @@ void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
     QTimer::singleShot(d, app, [app, c]() { uiReturnStep(app, c); });
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// T25 交互级（键盘/滚轮）UI 层端到端自检：STELQUICK_INTERACT_UI_CHECK=1
+//
+// 覆盖两条此前只有"C++ 直调"证据、没有"最外层注入"证据的交互面：
+//   · **滚轮**：旧宿主链路 StelMainView::wheelEvent → StelApp::handleWheel 在合流
+//     形态从未接过（QML 此前无任何 WheelHandler ⇒ 滚轮死路，T15 键盘死代码的
+//     同款缺陷）。T25 修复 = SkyTestPage 挂 WheelHandler → AppFacade::wheelZoom
+//     → handleWheel 保真转发。本套件从窗口投递真实 QWheelEvent 验证 FOV 真的动。
+//   · **键盘活链**：routeKey 的 C++ 直调判据（ActionCheck/AC-12）证明不了
+//     QKeyEvent 经窗口 → keySink 的 Keys.onPressed → routeKey 这条 QML 链是活的
+//     （T15 死代码事故正是"直调全绿、接线全断"）。本套件注入真实 L 键
+//     （引擎 actionIncrease_Time_Speed），断言 timeRate 变化 + dispatched 信号。
+//
+// 判据设计的成对与对照：
+//   · IT-02/03 成对（FOV before>0 + after 变小）+ IT-03 方向对照（反向滚变大，
+//     只会"缩放"不会"平移"才可能绿）
+//   · IT-04 负控：时间页滚轮必须不动 FOV（页守卫；SkyViewport 只在天空页可见）
+//   · IT-05 成对（dispatched 收到 actionIncrease_Time_Speed + timeRate 真变了）
+//   · IT-06 焦点守卫活链（U-ACT-03 的 QML 端到端腿）：真实点击搜索框聚焦后
+//     注入同键必须被拦（timeRate 不变 + dispatched 不发）
+//
+// 判据 6 条：IT-01..IT-06。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+// ══════════════════════════════════════════════════════════════════════════
+
+const int kUiInteractTickMs = 400;
+
+struct UiInteractCheck
+{
+    QQuickWindow *window = nullptr;
+    stelapp::AppFacade *facade = nullptr;
+    QTimer *timer = nullptr;
+    int phase = 0;
+    int nextDelayMs = kUiInteractTickMs;
+    int passed = 0;
+    int total = 0;
+    QStringList details;
+
+    QQuickItem *keySink = nullptr;
+    QQuickItem *pageStack = nullptr;
+    QQuickItem *viewport = nullptr;
+    QQuickItem *navSky = nullptr;
+    QQuickItem *navTime = nullptr;
+    QQuickItem *navSearch = nullptr;
+    QQuickItem *queryField = nullptr;
+    int idxSky = -1;
+    int idxTime = -1;
+    int idxSearch = -1;
+
+    double fovBefore = 0.0;      //!< IT-02 的写入步读数
+    double fovAfterZoomIn = 0.0; //!< IT-02 断言后的读数（IT-03 的基线）
+    double rateBefore = 0.0;     //!< IT-05 写入步读数
+    double rateBefore2 = 0.0;    //!< IT-06 写入步读数
+    int dispatchBase = 0;        //!< IT-05 写入步时的 dispatched 计数
+    int dispatchBase2 = 0;       //!< IT-06 写入步时的 dispatched 计数
+    int dispatchedCount = 0;     //!< 信号累计（连接在 run() 里）
+    QString lastDispatchedId;
+};
+
+void uiInteractMark(UiInteractCheck *c, bool ok, const QString &line)
+{
+    ++c->total;
+    if (ok)
+        ++c->passed;
+    c->details.append(QStringLiteral("%1 %2").arg(ok ? "✓" : "✗", line));
+}
+
+void uiInteractFinish(QGuiApplication *app, UiInteractCheck *c)
+{
+    c->timer->stop();
+    const bool pass = c->total > 0 && c->passed == c->total;
+    for (const QString &line : c->details)
+        std::printf("INTERACTCHECK: %s\n", line.toUtf8().constData());
+    std::printf("INTERACTCHECK: 判据 %d/%d\n", c->passed, c->total);
+    std::printf("INTERACTCHECK: VERDICT=%s\n", pass ? "PASS" : "FAIL");
+    std::fflush(stdout);
+    app->exit(pass ? 0 : 10);
+}
+
+//! 向窗口投递一次真实滚轮事件。返回事件是否被接受（诊断用，不作判据）。
+int uiInteractSendWheel(QQuickWindow *window, const QPointF &scenePos, int dx, int dy)
+{
+    const QPointF global = window->mapToGlobal(scenePos.toPoint());
+    QWheelEvent wheel(scenePos, global, QPoint(0, 0), QPoint(dx, dy),
+                      Qt::NoButton, Qt::NoModifier, Qt::ScrollUpdate, false);
+    QCoreApplication::sendEvent(window, &wheel);
+    return wheel.isAccepted() ? 1 : 0;
+}
+
+//! 与 uiReturnSendKey 的唯一差别：**不 forceActiveFocus**。
+//! IT-06（焦点守卫）的前提是"焦点真的在搜索框里"——uiReturnSendKey 会把焦点
+//! 强行交给 keySink（T20 Esc 场景的兜底），那等于仪器亲手拆掉守卫前提，
+//! IT-06 永远测不到真东西（首跑实测踩中）。真实用户场景本来就是：
+//! 焦点在输入框 → 字母键进输入框 → 沿父链冒泡到 keySink → routeKey 被守卫拦。
+int uiInteractSendKeyNoFocusGrab(QQuickWindow *window, int key)
+{
+    QKeyEvent press(QEvent::KeyPress, key, Qt::NoModifier);
+    QKeyEvent release(QEvent::KeyRelease, key, Qt::NoModifier);
+    QCoreApplication::sendEvent(window, &press);
+    QCoreApplication::sendEvent(window, &release);
+    return (press.isAccepted() || release.isAccepted()) ? 1 : 0;
+}
+
+void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
+{
+    switch (c->phase)
+    {
+    case 0: {
+        // ── IT-01：锚点存在 + 真实点击切到天空页 ─────────────────────────
+        c->keySink = c->window->findChild<QQuickItem *>(QStringLiteral("skyKeySink"));
+        c->pageStack = c->window->findChild<QQuickItem *>(QStringLiteral("pageStack"));
+        c->viewport = c->window->findChild<QQuickItem *>(QStringLiteral("skyViewport"));
+        c->navSky = c->window->findChild<QQuickItem *>(QStringLiteral("navSkyButton"));
+        c->navTime = c->window->findChild<QQuickItem *>(QStringLiteral("navTimeButton"));
+        c->navSearch = c->window->findChild<QQuickItem *>(QStringLiteral("navSearchButton"));
+        c->queryField = c->window->findChild<QQuickItem *>(QStringLiteral("searchQueryField"));
+        c->idxSky = uiPageIndexOf(c->window, "sky");
+        c->idxTime = uiPageIndexOf(c->window, "time");
+        c->idxSearch = uiPageIndexOf(c->window, "search");
+        const bool anchors = c->keySink && c->pageStack && c->viewport && c->navSky
+                             && c->navTime && c->navSearch && c->queryField
+                             && c->idxSky >= 0 && c->idxTime >= 0 && c->idxSearch >= 0;
+        uiInteractMark(c.get(), anchors,
+                       QStringLiteral("IT-01 交互锚点齐备（keySink=%1 pageStack=%2 "
+                                      "viewport=%3 navSky/Time/Search=%4/%5/%6 "
+                                      "queryField=%7 页索引=%8/%9/%10）")
+                           .arg(c->keySink ? "有" : "无", c->pageStack ? "有" : "无",
+                                c->viewport ? "有" : "无", c->navSky ? "有" : "无",
+                                c->navTime ? "有" : "无", c->navSearch ? "有" : "无",
+                                c->queryField ? "有" : "无")
+                           .arg(c->idxSky).arg(c->idxTime).arg(c->idxSearch));
+        if (!anchors)
+        {
+            std::printf("INTERACTCHECK: 缺锚点 —— 接线断了\nINTERACTCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            app->exit(6);
+            return;
+        }
+        uiReturnClick(c->window, c->navSky);
+        break;
+    }
+    case 1: {
+        // ── IT-02 写入步：天空页投递真实滚轮（向前，10 格）─────────────────
+        if (uiCurrentPageIndex(c->pageStack) != c->idxSky)
+        {
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-02 前提失败：切天空页后 currentIndex=%1 "
+                                          "（期望 %2）—— 天空页滚轮判据无效")
+                               .arg(uiCurrentPageIndex(c->pageStack)).arg(c->idxSky));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        c->fovBefore = c->facade->fieldOfView();
+        const QPointF p = uiLocateCenter(c->viewport);
+        const int acc = uiInteractSendWheel(c->window, p, 0, 1200);
+        c->details.append(QStringLiteral("IT-note 天空页视口中心 @(%1,%2) 投递滚轮"
+                                         " dy=+1200（10 格），事件受理=%3，FOV before=%4")
+                              .arg(p.x(), 0, 'f', 1).arg(p.y(), 0, 'f', 1).arg(acc)
+                              .arg(c->fovBefore, 0, 'f', 3));
+        break;
+    }
+    case 2: {
+        // ── IT-02：滚轮向前 → FOV 真的变小（成对：before>0 且严格变小）────
+        const double after = c->facade->fieldOfView();
+        c->fovAfterZoomIn = after;
+        uiInteractMark(c.get(), c->fovBefore > 0.0 && after > 0.0 && after < c->fovBefore,
+                       QStringLiteral("IT-02 天空页滚轮向前 → FOV %1 → %2（应严格变小；"
+                                      "不动即滚轮链路死，T10 起 T25 前的老病）")
+                           .arg(c->fovBefore, 0, 'f', 4).arg(after, 0, 'f', 4));
+        // 写入步：反向滚（向后，10 格）—— IT-03 的方向对照
+        uiInteractSendWheel(c->window, uiLocateCenter(c->viewport), 0, -1200);
+        break;
+    }
+    case 3: {
+        // ── IT-03：方向对照——滚轮向后 → FOV 必须回升（只会单向缩放的假链会红）──
+        const double after = c->facade->fieldOfView();
+        uiInteractMark(c.get(), after > c->fovAfterZoomIn,
+                       QStringLiteral("IT-03 方向对照：滚轮向后 → FOV %1 → %2（应回升，"
+                                      "且回到接近 %3）")
+                           .arg(c->fovAfterZoomIn, 0, 'f', 4).arg(after, 0, 'f', 4)
+                           .arg(c->fovBefore, 0, 'f', 4));
+        // 写入步：切到时间页（IT-04 负控的舞台）
+        uiReturnClick(c->window, c->navTime);
+        break;
+    }
+    case 4: {
+        // ── IT-04 写入步：时间页投递同一次滚轮（负控：页守卫必须拦住）──────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        if (cur != c->idxTime)
+        {
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-04 前提失败：切时间页后 currentIndex=%1 "
+                                          "（期望 %2）—— 负控无效")
+                               .arg(cur).arg(c->idxTime));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        c->fovBefore = c->facade->fieldOfView();   // 复用成员当"负控基线"
+        uiInteractSendWheel(c->window, uiLocateCenter(c->pageStack), 0, 1200);
+        break;
+    }
+    case 5: {
+        // ── IT-05：负控——时间页滚轮后 FOV 纹丝不动 ───────────────────────
+        const double after = c->facade->fieldOfView();
+        uiInteractMark(c.get(), after == c->fovBefore,
+                       QStringLiteral("IT-04 负控：时间页滚轮 dy=+1200 → FOV %1 → %2"
+                                      "（应不变：WheelHandler 只挂天空页，引擎没收到就是"
+                                      "没收到）").arg(c->fovBefore, 0, 'f', 4)
+                           .arg(after, 0, 'f', 4));
+        // 写入步：切回天空页 + 焦点交给 keySink + 注入真实 L 键
+        uiReturnClick(c->window, c->navSky);
+        c->rateBefore = c->facade->timeRate();
+        c->dispatchBase = c->dispatchedCount;
+        uiReturnSendKey(c->window, c->keySink, Qt::Key_L);
+        c->details.append(QStringLiteral("IT-note 已投递真实 L 键（引擎 actionIncrease_"
+                                         "Time_Speed），timeRate before=%1，dispatched "
+                                         "基线=%2").arg(c->rateBefore).arg(c->dispatchBase));
+        break;
+    }
+    case 6: {
+        // ── IT-05：键盘活链——timeRate 真变了 + dispatched 信号真来了 ──────
+        const double rate = c->facade->timeRate();
+        const bool fired = c->dispatchedCount > c->dispatchBase;
+        uiInteractMark(c.get(), rate != c->rateBefore && fired
+                                    && c->lastDispatchedId == QStringLiteral("actionIncrease_Time_Speed"),
+                       QStringLiteral("IT-05 天空页注入 L 键 → timeRate %1 → %2（应变），"
+                                      "dispatched 累计=%3（应>基线 %4），"
+                                      "lastActionId=\"%5\"（应=actionIncrease_Time_Speed）"
+                                      "—— QKeyEvent→keySink→routeKey 的 QML 链是活的")
+                           .arg(c->rateBefore).arg(rate)
+                           .arg(c->dispatchedCount).arg(c->dispatchBase)
+                           .arg(c->lastDispatchedId));
+        // 写入步：切到搜索页，准备焦点守卫判据
+        uiReturnClick(c->window, c->navSearch);
+        break;
+    }
+    case 7: {
+        // ── IT-06 写入步：真实点击搜索框聚焦 → 再注入同键（守卫必须拦）────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        if (cur != c->idxSearch)
+        {
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-06 前提失败：切搜索页后 currentIndex=%1 "
+                                          "（期望 %2）—— 守卫判据无效")
+                               .arg(cur).arg(c->idxSearch));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        // 真实点击搜索框：TextInput 获得焦点 ⇒ canDispatchToSky() 应判 false。
+        // （不 forceActiveFocus 到 keySink —— 这正是要测的守卫前提。）
+        uiReturnClick(c->window, c->queryField);
+        c->rateBefore2 = c->facade->timeRate();
+        c->dispatchBase2 = c->dispatchedCount;
+        const int acc = uiInteractSendKeyNoFocusGrab(c->window, Qt::Key_L);
+        c->details.append(QStringLiteral("IT-note 已真实点击搜索框并再次投递 L 键"
+                                         "（不抢焦点变体），timeRate before=%1，"
+                                         "dispatched 基线=%2，事件受理=%3")
+                              .arg(c->rateBefore2).arg(c->dispatchBase2).arg(acc));
+        break;
+    }
+    case 8: {
+        // ── IT-06：焦点守卫活链——输入框持焦时天空快捷键必须被拦 ──────────
+        const double rate = c->facade->timeRate();
+        const bool fired = c->dispatchedCount > c->dispatchBase2;
+        uiInteractMark(c.get(), rate == c->rateBefore2 && !fired,
+                       QStringLiteral("IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate "
+                                      "%1 → %2（应不变），dispatched=%3（应=基线 %4）"
+                                      "—— U-ACT-03 的 QML 端到端腿")
+                           .arg(c->rateBefore2).arg(rate)
+                           .arg(c->dispatchedCount).arg(c->dispatchBase2));
+        uiInteractFinish(app, c.get());
+        return;
+    }
+    default:
+        uiInteractFinish(app, c.get());
+        return;
+    }
+    ++c->phase;
+    const int d = c->nextDelayMs;
+    c->nextDelayMs = kUiInteractTickMs;
+    QTimer::singleShot(d, app, [app, c]() { uiInteractStep(app, c); });
+}
+
+int runUiInteractCheck(QGuiApplication *app, QQuickWindow *window,
+                       stelapp::AppFacade *facade, stelapp::ActionRouter *router)
+{
+    auto c = std::make_shared<UiInteractCheck>();
+    c->window = window;
+    c->facade = facade;
+    // dispatched 信号 = 键盘链"routeKey 真的把动作发给引擎"的直接观测点。
+    // 计数 + lastId 双记录：IT-05 断言"发过且发的是对的动作"，IT-06 断言"守卫时没发"。
+    QObject::connect(router, &stelapp::ActionRouter::dispatched, app,
+                     [c](const QString &actionId, bool executed) {
+                         if (executed)
+                         {
+                             ++c->dispatchedCount;
+                             c->lastDispatchedId = actionId;
+                         }
+                     });
+    c->timer = new QTimer(app);
+    std::printf("INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/键盘事件，共 6 条判据，"
+                "每相位 %dms）\n", kUiInteractTickMs);
+    std::fflush(stdout);
+    uiInteractStep(app, c);
+    return 0;
+}
+
 int runUiReturnCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacade *facade)
 {
     auto c = std::make_shared<UiReturnCheck>();
@@ -2772,6 +3081,10 @@ int main(int argc, char **argv)
     // 实现全在 MainWindow.returnToSky()，只有"真实控件 + 真实事件 + pageStack.currentIndex"
     // 这一个观测面 ⇒ 它**只能**做成 UI 层判据（没有可断言的 C++ 对象）。
     const bool returnUiCheck = qEnvironmentVariableIsSet("STELQUICK_RETURN_UI_CHECK");
+    // T25：**交互级（键盘/滚轮）**UI 层端到端自检（见下方 uiInteract*）。滚轮链路
+    // （旧宿主 StelMainView → handleWheel）在合流形态 T25 前从未接过；键盘活链此前
+    // 只有 C++ 直调证据。两者都需要"窗口真实事件"这一个观测面。
+    const bool interactUiCheck = qEnvironmentVariableIsSet("STELQUICK_INTERACT_UI_CHECK");
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
     const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
@@ -2781,6 +3094,7 @@ int main(int argc, char **argv)
     // T20：返回环与 I-REP-02 回放都从**天空页**起步（前者要先从它切走再切回来，
     //   后者直接断言"开机态=天空页"）。
     const QString startPage = (a2Check || dynCheck || longRun || returnUiCheck || replayCheck
+                               || interactUiCheck
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
@@ -3406,6 +3720,46 @@ int main(int argc, char **argv)
         }
         appFacade.attachSimControl(liveSkyRuntime.get());
         runUiReturnCheck(&app, window, &appFacade);
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T25 交互级自检（STELQUICK_INTERACT_UI_CHECK=1）：滚轮/键盘的最外层注入。
+    // 装配与 returnUiCheck 同构；额外传 &actionRouter —— INTERACTCHECK 要订阅
+    // dispatched 信号当"routeKey 真的把动作发给引擎"的观测点。
+    if (interactUiCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("INTERACTCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "INTERACTCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("INTERACTCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "INTERACTCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("INTERACTCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+        runUiInteractCheck(&app, window, &appFacade, &actionRouter);
         const int rc = app.exec();
         if (liveSkyRuntime) {
             liveSkyRuntime->stop();

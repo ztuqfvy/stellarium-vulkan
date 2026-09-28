@@ -114,11 +114,16 @@ bool ActionRouter::canDispatchToSky() const
     // U-ACT-03：焦点在 QML 可编辑输入控件（或原生 QLineEdit）时不触发天空快捷键。
     // QML 的 TextInput/TextArea 不是 QWidget，经 QGuiApplication::focusObject 呈现；
     // QWidget 形态的 QLineEdit 经 focusWidget 呈现。两者都查。
+    //
+    // T25 教训（INTERACTCHECK IT-06 首跑实抓）：这里**禁止用 className() 精确比较**
+    // —— Qt Quick Controls 的 TextField/TextArea 的最派生类名是 QQuickTextField /
+    // QQuickTextArea，精确匹配 "QQuickTextInput" 不命中 ⇒ 守卫在真实搜索框上是
+    // 死代码（用户在搜索框里打字会触发天空快捷键）。而 U-ACT-03 的 C++ 直调判据
+    // 构造的是 TextInput 原语，className 恰好等于 "QQuickTextInput"，假绿了 15 个任务。
+    // 用 inherits()：子类命中、基类也命中（QQuickTextInput 自身 inherits 自身）。
     if (QObject *focus = QGuiApplication::focusObject())
     {
-        const QString className = focus->metaObject()->className();
-        if (className == QLatin1String("QQuickTextInput")          // TextInput
-            || className == QLatin1String("QQuickTextArea"))       // TextArea
+        if (focus->inherits("QQuickTextInput") || focus->inherits("QQuickTextArea"))
             return false;
     }
 #ifdef QT_WIDGETS_LIB

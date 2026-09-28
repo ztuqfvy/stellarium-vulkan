@@ -292,6 +292,17 @@ public:
     Q_INVOKABLE void zoomOut();   //!< 视场 ×1.25
     Q_INVOKABLE void togglePause() { setSimulationPaused(!m_simulationPaused); }
 
+    //! T25：滚轮 → 引擎的**保真转发**入口（QML WheelHandler 调用）。
+    //! 旧宿主链路是 StelMainView::wheelEvent → StelApp::handleWheel（引擎自己把
+    //! 事件分发给各模块：缩放走 StelMovementMgr，Ctrl+滚轮改时间等 modifiers 语义
+    //! 全在引擎侧）。本方法只负责用窗口真实 angleDelta 合成 QWheelEvent 并原样
+    //! 交给 handleWheel —— **不在此复刻任何缩放语义**（复刻=双轨）。
+    //! @param dx dy 窗口真实 angleDelta（QML wheel.angleDelta）；
+    //!        modifiers 修饰键掩码（Qt::KeyboardModifiers 的 int 值）。
+    //! 无引擎形态：安全 no-op。
+    //! THREAD: gui
+    Q_INVOKABLE void wheelZoom(int dx, int dy, int modifiers);
+
     // ---- T17 搜索 / 选择（模型持有 + 命令协调）----
     //! 本类持有的两个模型（main.cpp 以 context property 注入 QML，见头注"分工"）。
     //! 刻意不写成 Q_PROPERTY：QML 侧用 `model: searchResults` 直接消费模型本体，

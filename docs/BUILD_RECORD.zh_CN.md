@@ -2509,3 +2509,69 @@ DYN 引擎 3/3 + 替身 3/3。
 （含 negctrl/、positive-n5/、history-diag）；交付文档
 `docs/T24_PINYIN_SEARCH.zh_CN.md`；证据总索引补 T24 行；
 计划文档 §2 / §9.1 / §9.2 / §9.4.7 移交表更新。
+
+## 2026-09-28｜T25 交互级（键盘/滚轮）UI 层端到端（A4 加固）（**INTERACTCHECK 6/6 ×5；首跑实抓两个真缺陷——滚轮死路 + 焦点守卫失效——判据先行各修；两轮负控各命中预期红；回归 10 项 rc=0 含 S3 旧宿主与 A2 逐像素**）
+
+### 任务定性
+
+A4 加固项"QML 交互级测试补键盘/滚轮"。探查即发现两条交互面各潜伏一个真缺陷：
+判据先行的正确性在本任务再次被验证——先写判据，首跑红在真缺陷上，修完转绿，
+判据的检验力用两轮代码级负控单独证明。
+
+### 缺陷一：合流形态滚轮缩放死路（修复）
+
+- 现象：stelQuickUI 里滚轮不动 FOV，T10 合流以来一直如此，无判据依赖滚轮 ⇒
+  潜伏 15 个任务。
+- 根因：旧宿主链路 `StelMainView::wheelEvent → StelApp::handleWheel` 从未在
+  合流形态接过；QML 全目录无任何 WheelHandler/onWheel；`handleWheel` 又是
+  private ⇒ 三重死锁。与 T15 键盘死代码同款——键盘 T17 修了，滚轮是同一
+  交互面剩下的另一半。
+- 修法（语义零复刻）：SkyTestPage 挂 WheelHandler → `AppFacade::wheelZoom(dx,dy,mod)`
+  （新增 Q_INVOKABLE，合成 QWheelEvent）→ `StelApp::handleWheel()` 保真转发。
+  缩放倍率、Ctrl+滚轮改时间等 modifiers 语义全在引擎侧。`StelApp.hpp` 加
+  `friend class stelapp::AppFacade`（唯一上游改动，行为零变化；不做 friend
+  就只能复刻 handleWheel 的模块分发循环 = 双轨）。
+- 页守卫天然成立：WheelHandler 挂在只在天空页可见的 SkyViewport 上。
+
+### 缺陷二：焦点守卫在真实搜索框上是死代码（修复）
+
+- 现象：INTERACTCHECK 首跑 IT-06 红——搜索框聚焦后注入 L 键，timeRate 1→10
+  （引擎动作穿透）。
+- 根因：`canDispatchToSky()`（U-ACT-03）用 className **精确比较** "QQuickTextInput"；
+  真实搜索框是 Qt Quick Controls 的 TextField（最派生类名 QQuickTextField，
+  QQuickTextInput 的子类），不命中 ⇒ 守卫对真实输入框失效。而 U-ACT-03 的
+  C++ 直调判据构造 TextInput 原语（className 恰好等于该串）⇒ 假绿 15 个任务。
+  "判据输入理想化，测不到真实控件形态"——血泪第 4/8 条的又一实例。
+- 修法：`inherits("QQuickTextInput") || inherits("QQuickTextArea")`（子类、
+  原语都命中；actioncheck 回归 rc=0 佐证旧判据不受影响）。
+
+### 仪器陷阱（首跑踩中）
+
+IT-06 复用 T20 的 `uiReturnSendKey`，其内部 `keySink->forceActiveFocus()` 会把
+焦点从搜索框抢走 = 仪器亲手拆掉守卫前提 ⇒ 修完守卫 IT-06 仍红。加
+`uiInteractSendKeyNoFocusGrab`（不抢焦点变体）。定性：血泪第 3 条"仪器没接在
+实况上"的变体——这次是仪器**主动破坏**被测前提。规则：注入函数的隐式副作用
+必须与判据前提对齐。
+
+### 判据：INTERACTCHECK（STELQUICK_INTERACT_UI_CHECK=1，6 条）
+
+IT-01 锚点 / IT-02 滚轮向前 FOV 严格变小（成对：before=60>0 → 11.33）/
+IT-03 反向滚方向对照（回升到 60）/ IT-04 时间页滚轮负控 / IT-05 真实 L 键
+→ timeRate 0.1→1 ∧ dispatched=actionIncrease_Time_Speed（成对：信号 + 引擎
+状态）/ IT-06 焦点守卫（U-ACT-03 端到端腿）。键位选 L：副作用可从 timeRate
+直接观测。
+
+### 读数
+
+INTERACTCHECK 6/6 rc=0 ×5；负控①滚轮断开 IT-02/03 红 rc=10；负控②守卫失效
+IT-06 红（IT-05 不受伤）rc=10；首跑（守卫缺陷在）5/6 存档。回归 10 项 rc=0
+（actioncheck、locatecheck、locate-uicheck、timecheck、timeuicheck、
+returnuicheck、replaycheck、searchcheck、clockcheck、**a2-metal**——动过
+SkyTestPage.qml 逐像素必查）；DYN 引擎 3/3 + 替身 3/3；**S3 旧宿主 rc=0**
+（动了 src/core/StelApp.hpp 的硬要求）。
+
+### 产物
+
+`tools/t25-verify.sh`；`docs/evidence/2026-09-28-t25-interact/`（含 negctrl/
+三组）；交付文档 `docs/T25_INTERACT_UI_CHECK.zh_CN.md`；证据总索引补 T25 行；
+计划文档 §2 / §9.1 / §9.2 / §9.4.8 移交表更新。
