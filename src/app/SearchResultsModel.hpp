@@ -88,12 +88,15 @@ public:
     //! 处置：本层用 `SearchRanker` 重排（不改引擎——那是共用原语，旧 SearchDialog
     //! 也在用，见 SearchDialog.cpp:985）。分级与 tie-break 规则见 SearchRanker.hpp。
     //!
-    //! 调用方给的 maxItems 仍解释为**总量上限**（引擎原语的 maxNbItem 是"每模块"上限），
-    //! 排序后才截断；原始匹配数经 lastRawMatchCount() 暴露，便于证明上限生效过。
+    //! 调用方给的 maxItems 解释为**总量上限**，排序后才截断；原始匹配数经
+    //! lastRawMatchCount() 暴露，便于证明上限生效过。
     //!
-    //! ⚠️ 边界：引擎的候选截断发生在**排序之前、按遍历顺序**（StelObjectModule.cpp:67-68
-    //! 是"累计到 maxNbItem 就 break"），所以高相关度候选可能压根没进候选集。
-    //! 本层只在**已返回候选内**重排——解决 precision@k，不解决 recall。
+    //! ✅ 边界已闭环（T26）：引擎的候选截断曾发生在**排序之前、按遍历顺序**
+    //! （StelObjectModule 的"累计到 maxNbItem 就 break"），高相关度候选可能
+    //! 压根没进候选集——本层只能重排已返回候选，解决 precision@k 不解决
+    //! recall。T26 新增引擎无截断原语 `listAllMatchingObjects`（语义零复刻：
+    //! 以不可能触顶的预算复用各模块自有匹配逻辑），本层改调它，截断移到
+    //! 排序之后——recall 与 precision@k 现在都在闭环内。
 
     explicit SearchResultsModel(QObject *parent = nullptr);
 
@@ -104,8 +107,8 @@ public:
 
     //! THREAD: gui
     //! 发起搜索：递增请求编号 → 取结果 → 经 applyResults 门投递。
-    //! @param maxItems 结果**总条数**上限（注意：引擎原语是"每模块"上限，
-    //!                 本层已把语义统一为总量，理由见"排序口径"注释）
+    //! @param maxItems 结果**总条数**上限（T26 起引擎候选池为全量，本层排序后
+    //!                 按此值截断；此前引擎原语是"每模块"上限，语义已随 T26 统一）
     //! @return 本次请求编号（恒 > 0；前端无需关心，供自检对账）
     Q_INVOKABLE quint32 search(const QString &query, int maxItems = 20);
 

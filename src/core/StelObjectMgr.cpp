@@ -610,6 +610,19 @@ QVector<QPair<QString,StelObjectP>> StelObjectMgr::listMatchingObjects(const QSt
 	return result;
 }
 
+// T26：聚合的"无截断"版——与上面的 listMatchingObjects 同构，逐模块调用
+// listAllMatchingObjects（默认透传各模块自己的匹配逻辑，只去预算）。不去重：
+// 翻译名/英文名双表枚举的既有行为保持不变，由调用方（模型层）按 stableId 去重。
+QVector<QPair<QString,StelObjectP>> StelObjectMgr::listAllMatchingObjects(const QString& objPrefix, bool useStartOfWords) const
+{
+	QVector<QPair<QString,StelObjectP>> result;
+	for (const auto* m : objectsModules)
+		result += m->listAllMatchingObjects(objPrefix, useStartOfWords);
+
+	std::sort(result.begin(), result.end(), [](auto& a, auto& b){ return a.first < b.first; });
+	return result;
+}
+
 QVector<QPair<QString,StelObjectP>> StelObjectMgr::listAllModuleObjects(const QString &moduleId, bool inEnglish) const
 {
 	// search for module

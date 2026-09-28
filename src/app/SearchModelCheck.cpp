@@ -16,6 +16,7 @@
 #include "StelApp.hpp"              // T24：活引擎腿切语言（拼音判据需要 zh 名字）
 #include "StelLocaleMgr.hpp"
 #include "StelModuleMgr.hpp"        // T24：getAllModules() 枚举天体模块（诊断段）
+#include "StelObjectMgr.hpp"        // T26：无截断原语的引擎侧读数（SRC-12 判别对照）
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -602,6 +603,63 @@ void runPhaseB(const std::shared_ptr<Ctx> &ctx)
         StelApp::getInstance().getLocaleMgr().setAppLanguage(langBefore);
         ctx->details << QStringLiteral("INFO 语言环境已还原为 %1（拼音判据只在自己段内改环境）")
                             .arg(langBefore);
+    }
+
+    // ── T26 召回闭环：候选池全量化（活引擎腿）────────────────────────────
+    // T21/T24 时代本层只能重排"引擎已返回的候选"；引擎候选集截断发生在枚举序
+    // 里（每模块 maxNbItem 先到先得，StelObjectModule::listMatchingObjects 的
+    // break），高相关度候选可能压根没进池。T26 引擎新增**无截断原语**
+    // listAllMatchingObjects（默认实现以不可能触顶的预算复用各模块自有匹配
+    // 逻辑，语义零复刻），collect() 改调它、截断移到排序之后。
+    // 本组判据证明三件事：① 新原语真的比旧截断调用拿到更多（判别对照）；
+    // ② 模型真的换了原语（raw == 引擎全量数）；③ 排序层在全量池上把词首
+    // 候选顶到最前（recall 的收益落到 precision@1）。
+    // 查询用 "al"：星名以 Al 开头的恒星很多（Alcor/Albireo/Alcyone/Altair…），
+    // 星名表是 core 自带（fixture 已保证载入），不依赖 SolarSystem 插件；
+    // 且此段在 PINY 语言还原之后执行，名字处于默认应用语言下。
+    {
+        StelObjectMgr &objMgr = StelApp::getInstance().getStelObjectMgr();
+        const QString satQ = QStringLiteral("al");
+
+        // SRC-12 判别对照：无截断原语 > 每模块 cap=3 的旧调用，且词首候选在池内。
+        const auto fullPool = objMgr.listAllMatchingObjects(satQ, false);
+        const auto cappedPool = objMgr.listMatchingObjects(satQ, 3, false);
+        bool hasWordStart = false;
+        for (const auto &pr : fullPool) {
+            if (pr.first.startsWith(satQ, Qt::CaseInsensitive)) {
+                hasWordStart = true;
+                break;
+            }
+        }
+        ctx->check(int(fullPool.size()) > int(cappedPool.size()) && hasWordStart,
+                   QStringLiteral("SRC-12 无截断原语全量 %1 条 > 旧每模块cap=3 调用 %2 条"
+                                  "（证明截断真的丢过候选），词首候选在池内=%3")
+                       .arg(fullPool.size()).arg(cappedPool.size()).arg(hasWordStart));
+
+        // SRC-13 模型接线：collect() 走无截断原语 ⇒ lastRawMatchCount == 引擎全量数。
+        // 孤立断言"行数=cap"证明不了来源（旧调用也能凑出 3 行）——raw 计数与
+        // 引擎侧读数**成对**才判别（负控：回退模型调用 → raw 掉回截断数 → 红）。
+        const int rows3 = ctx->facade->searchObjects(satQ, 3);
+        const int raw3 = m->lastRawMatchCount();
+        ctx->check(rows3 == 3 && raw3 == int(fullPool.size()),
+                   QStringLiteral("SRC-13 模型走无截断原语：cap=3 → %1 行，"
+                                  "raw=%2 == 引擎全量 %3")
+                       .arg(rows3).arg(raw3).arg(int(fullPool.size())));
+
+        // SRC-14 端到端：全量池上排序层必须把高相关档（完全/前缀/词首）顶到
+        // 最前——recall 的收益落到 precision@1。全序已由 SRC-08 保证 ⇒ 首行可
+        // 确定断言。（"al" 对 "Albireo" 等是前缀档，比词首档更优，一并接受。）
+        const int rows5 = ctx->facade->searchObjects(satQ, 5);
+        const int q0 = rows5 > 0
+                           ? m->data(m->index(0, 0), SearchResultsModel::QualityRole).toInt()
+                           : -1;
+        ctx->check(rows5 == 5 && q0 >= 0 && q0 <= int(MatchQuality::WordStart),
+                   QStringLiteral("SRC-14 全量池上首行 = 高相关档（%1，行数 %2）"
+                                  "—— 候选池全量化后，排序最优档确实可达")
+                       .arg(rows5 > 0 ? SearchRanker::qualityName(
+                                            static_cast<MatchQuality>(q0))
+                                      : QString(QStringLiteral("(无)")))
+                       .arg(rows5));
     }
 }
 

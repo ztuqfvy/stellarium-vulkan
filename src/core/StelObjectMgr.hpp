@@ -104,6 +104,12 @@ public:
 	//! @return a list of matching object names by order of relevance, or an empty list if nothing match
 	QVector<QPair<QString,StelObjectP>> listMatchingObjects(const QString& objPrefix, int maxNbItem=5, bool useStartOfWords=false) const;
 
+	//! T26：无截断聚合检索——与 listMatchingObjects 同构（逐模块 + 字典序），
+	//! 但逐模块调用 listAllMatchingObjects，不做任何每模块预算截断。
+	//! @param objPrefix the case insensitive first letters of the searched object
+	//! @param useStartOfWords the autofill mode for returned objects names
+	QVector<QPair<QString,StelObjectP>> listAllMatchingObjects(const QString& objPrefix, bool useStartOfWords=false) const;
+
 	QVector<QPair<QString,StelObjectP>> listAllModuleObjects(const QString& moduleId, bool inEnglish) const;
 	QMap<QString, QString> objectModulesMap() const;
 

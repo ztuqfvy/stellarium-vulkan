@@ -193,13 +193,13 @@ void SearchResultsModel::collect(const QString &query, int maxItems, QVector<Row
         return;
     }
 
-    // 总量上限（见头注"排序口径"）：引擎原语的 maxNbItem 是**每模块**上限，
-    // 它在 StelObjectMgr.cpp 里把各模块结果 `result +=` 拼接后再按名称字典序重排，
-    // 因此调用方拿到的是"至多 模块数 × maxNbItem"条。本层统一为总量上限。
+    // 总量上限（见头注"排序口径"）：引擎候选池 T26 起为**全量**（新原语
+    // listAllMatchingObjects，逐模块不再做枚举序截断），本层在**排序后**统一
+    // 按 cap 截断——这正是 T21 留下的"截断在排序之前"边界的闭环。
     const int cap = std::max(1, maxItems);
 
     StelObjectMgr &mgr = StelApp::getInstance().getStelObjectMgr();
-    const QVector<QPair<QString, StelObjectP>> matches = mgr.listMatchingObjects(q, cap, false);
+    const QVector<QPair<QString, StelObjectP>> matches = mgr.listAllMatchingObjects(q, false);
     m_lastRaw = matches.size();
 
     // ── ⓪ T24 拼音检索：ASCII 查询补充"中文名拼音命中"的候选 ──────────────

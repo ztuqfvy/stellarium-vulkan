@@ -70,6 +70,16 @@ public:
 	//! @return a list of matching object name by order of relevance, or an empty list if nothing matches
 	virtual QVector<QPair<QString,StelObjectP>> listMatchingObjects(const QString& objPrefix, int maxNbItem=5, bool useStartOfWords=false) const;
 
+	//! T26：无截断检索——返回**全部**名字匹配的对象，不做枚举序截断。
+	//! 默认实现 = 以不可能触顶的预算调用本模块的 listMatchingObjects，因此
+	//! 各模块自定义的匹配逻辑（StarMgr 专名表 / NebulaMgr 编号表等）全部复用，
+	//! 语义零复刻；唯一行为差异是去掉了"凑够 maxNbItem 就 break"的枚举序截断。
+	//! 调用方（如 QML 搜索模型）在排序后再自行截断，保证排序层看得到全量候选。
+	//! @param objPrefix the first letters of the searched object
+	//! @param useStartOfWords decide if start of word is searched
+	//! @return a list of matching object name by order of relevance, or an empty list if nothing matches
+	virtual QVector<QPair<QString,StelObjectP>> listAllMatchingObjects(const QString& objPrefix, bool useStartOfWords=false) const;
+
 	//! List all StelObjects.
 	//! @param inEnglish list names in English (true) or translated (false)
 	//! @return a list of matching object name by order of relevance, or an empty list if nothing matches

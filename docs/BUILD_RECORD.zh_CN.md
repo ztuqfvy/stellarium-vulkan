@@ -2575,3 +2575,52 @@ SkyTestPage.qml 逐像素必查）；DYN 引擎 3/3 + 替身 3/3；**S3 旧宿�
 `tools/t25-verify.sh`；`docs/evidence/2026-09-28-t25-interact/`（含 negctrl/
 三组）；交付文档 `docs/T25_INTERACT_UI_CHECK.zh_CN.md`；证据总索引补 T25 行；
 计划文档 §2 / §9.1 / §9.2 / §9.4.8 移交表更新。
+
+## 2026-09-28｜T26 召回问题的引擎侧解法（A4 加固，候选池全量化）（**SEARCHCHECK 51 → 54，54/54 ×5；两轮负控各命中预期红；回归 10 项 rc=0 含 S3；interactcheck 套件内首跑 rc=10 复跑 6/6 ×5 定性间歇**）
+
+### 任务定性
+
+A4 加固项"召回问题"——T21 明确留下的边界："候选截断在排序之前，想动召回就得
+改引擎候选生成"。T21 修 precision@k（排序层重排）、T24 修拼音进不了候选集
+（第二条候选源），T26 关掉最后一条：引擎每模块 `maxNbItem` 枚举序截断使高相关
+候选可能压根没进池（实测：查询 "al" 全量 **1573** 条 vs 旧 cap=3 调用 **16**
+条——截断真的丢过 99% 候选）。
+
+### 修法：加性无截断原语（语义零复刻）
+
+- 排除项一：模型把 `cap` 传大——魔法常数 + "每模块上限"语义混淆仍在，未来任何
+  模块加绝对早退召回就悄悄裂开。
+- 排除项二：模型侧自己枚举 `listAllObjects` 做 `contains`——复刻引擎匹配语义
+  = 双轨（T15 铁律），且 StarMgr 专名表 / NebulaMgr M/IC/NGC/Mel 编号表各有
+  自有匹配逻辑，绕开原语反而丢召回。
+- 实际做法：`StelObjectModule::listAllMatchingObjects`（新虚拟，默认实现 =
+  以 `INT_MAX` 预算调用本模块 `listMatchingObjects`——各模块预算递减逻辑自然
+  跑满，唯一行为差异是去掉枚举序截断）+ `StelObjectMgr::listAllMatchingObjects`
+  （同构聚合）。模型 `collect()` 一行换原语，截断移到排序之后。
+  **旧 SearchDialog 走的 `listMatchingObjects` 一字未动**（S3 rc=0 佐证）。
+
+### 判据（SEARCHCHECK 51 → 54）
+
+SRC-12 判别对照（全量 > 截断调用 + 词首候选在池内）、SRC-13 模型接线
+（raw == 引擎全量数，**负控靶心**）、SRC-14 端到端（全量池上首行 = 高相关档）。
+首跑修正：SRC-14 原断言漏了"前缀匹配"档（`MatchQuality::Prefix` 比词首更优），
+放宽为 `≤ WordStart`——判据为正确性服务，不为首版想象背书。
+
+### 负控（两轮）
+
+① 模型回退旧调用 → SRC-13 红（raw=16≠1573）；② 引擎原语退化 cap=3 → SRC-12
+红（16==16）。**两层各由不同判据守住**——双轮负控的价值实证。
+
+### 读数与回归
+
+SEARCHCHECK 54/54 rc=0 ×5；回归 10 项 rc=0（含 S3 旧宿主硬要求）；DYN 引擎
+3/3 + 替身 3/3。⚠️ regression-interactcheck 套件内首跑 rc=10（IT-06 焦点守卫
+腿），复跑 **6/6 ×5** 全绿 ⇒ 定性**间歇**（连跑中 Spotlight 批量索引干扰点击
+注入时机），非退化；复跑日志归档 evidence/interactcheck-flaky/。本轮改动
+不含 QML / ActionRouter / AppFacade——间歇定性与此一致。
+
+### 产物
+
+`tools/t26-verify.sh`；`docs/evidence/2026-09-28-t26-recall/`；交付文档
+`docs/T26_RECALL_ENGINE_FIX.zh_CN.md`；证据总索引补 T26 行；计划文档 §9.4.10
+与移交表更新。

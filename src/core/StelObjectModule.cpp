@@ -74,6 +74,14 @@ QVector<QPair<QString,StelObjectP>> StelObjectModule::listMatchingObjects(const 
 	return result;
 }
 
+// T26：默认实现复用本模块（或子类覆写）的 listMatchingObjects，预算给到不可能
+// 触顶的值——各模块内部的"每命中一条递减预算、耗尽即 break"逻辑自然永不触发，
+// 枚举跑满全程。不复制任何匹配语义。
+QVector<QPair<QString,StelObjectP>> StelObjectModule::listAllMatchingObjects(const QString &objPrefix, bool useStartOfWords) const
+{
+	return listMatchingObjects(objPrefix, std::numeric_limits<int>::max(), useStartOfWords);
+}
+
 QVector<QPair<QString,StelObjectP>> StelObjectModule::listAllObjectsByType(const QString &objType, bool inEnglish) const
 {
 	Q_UNUSED(objType)
