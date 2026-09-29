@@ -13,5 +13,5 @@ regression-clockcheck rc=0
 regression-timeuicheck rc=0
 regression-a2-metal rc=0
 regression-dyn-engine-metal 5/5 PASS
-regression-dyn-test-metal 5/5 PASS
+regression-dyn-test-metal 4/5 PASS
 producer-readback OK

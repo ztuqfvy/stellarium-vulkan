@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 85 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 84 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
@@ -152,9 +152,9 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.90038"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.92227"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.90038，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.92227，时钟=HostDriven）
 RETURNUICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标/键盘事件，共 11 条判据；纯 UI 相位 400ms，写引擎的相位 1200ms）
 LIVESKY: simScale -> 0.000（引擎仿真时钟）
 AppFacade: simulationPaused = true 
@@ -168,7 +168,7 @@ RETURNUICHECK: RT-05 返回后引擎 JD 位移 0.000e+00 天（要求 <1e-12）�
 RETURNUICHECK: RT-06 返回后跟踪/选中保留（tracking=true trackedName="月球"（此前 "月球"）stableId="Planet:Moon"（此前 "Planet:Moon"））：OK
 RETURNUICHECK: RT-07 负控：不碰时间只做一次切页往返 → 目标 AltAz 变化 0.0000°（上限 <0.05）—— 排除"切页本身就在动世界"：OK
 RETURNUICHECK: RT-note 已在时间页真实点击「+1 时」，等 1200ms 让引擎把新时刻算进位置，再返回
-RETURNUICHECK: RT-08 判别性对照（返回≠撤销）：改 1 小时后返回 → 页面=1（期望 1）且目标 AltAz 变化 13.4972°（门槛 >5.0）—— 若把返回实现成恢复快照，这条会红：OK
+RETURNUICHECK: RT-08 判别性对照（返回≠撤销）：改 1 小时后返回 → 页面=1（期望 1）且目标 AltAz 变化 13.5062°（门槛 >5.0）—— 若把返回实现成恢复快照，这条会红：OK
 RETURNUICHECK: RT-09 Esc 起点：真实点击「搜索天体」→ currentIndex=2（期望 2）：OK
 RETURNUICHECK: RT-note 已向窗口投递真实 Esc（是否被受理=true）
 RETURNUICHECK: RT-note Esc 派发后焦点快照：windowActive=true keySinkHasActiveFocus=true activeFocusItem=skyKeySink focusObject=QQuickItem canDispatchToSky=true

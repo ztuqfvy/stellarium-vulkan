@@ -2,6 +2,7 @@
   期望：判据 13/16，红项**恰好** IT-06 / IT-13 / IT-14（rc=10 是期望，非回归）
   实测：INTERACTCHECK: 判据 13/16   红项=[IT-06,IT-13,IT-14,]
 INTERACTCHECK: PROBE-note 已置 Qt::WindowDoesNotAcceptFocus（失活探针；isActive 现在应为 false）
+INTERACTCHECK: PROBE-note 前导门超时（前导窗口激活门超时：3 次 requestActivate 后窗口仍未激活（isActive=false）），探针模式下**照跑**，用来测各判据的激活依赖
 INTERACTCHECK: PROBE-note 失活探针：窗口 4 次 requestActivate 后仍失活，探针模式下**照跑**（测量各判据的激活依赖）
 INTERACTCHECK: ✗ IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate 0 → 1（应不变），dispatched=1（应=基线 0）—— U-ACT-03 的 QML 端到端腿
 INTERACTCHECK: PROBE-note 失活探针：窗口 5 次 requestActivate 后仍失活，探针模式下**照跑**

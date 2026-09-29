@@ -40,6 +40,11 @@
 #    强制 `Qt::WindowDoesNotAcceptFocus`（窗口仍可见/仍渲染）+ 门失败后**照跑**
 #    ⇒ 一趟拿到全部 16 条的激活依赖边界。期望 `判据 13/16`，红项**恰好**
 #    IT-06 / IT-13 / IT-14。
+#    ⚠️ **边界是平台相关的**（本轮 W-T31 实证）：Windows 上同一探针给 `12/16`、
+#    红项 = IT-05 / IT-06 / IT-13 / IT-16 —— 因为 Windows 窗口失活时
+#    `forceActiveFocus()` 拿不到 active focus ⇒ **注入的键根本进不了 keySink**，
+#    于是 IT-05（第一次键注入）和 IT-16（靠键的 Esc 对照）在那边也是激活依赖的。
+#    出厂表 = **两平台并集** {IT-05, IT-06, IT-13..16}；本平台边界是它的子集。
 #    ⚠️ 探针的 rc 是 **10**（有真红项，这是**期望**）—— 它**不是**回归项。
 set -u
 cd /Users/ztuqfvy/qt_demo/stellarium_vulkan
@@ -194,7 +199,7 @@ if [[ "$TARGET" == "all" || "$TARGET" == "core" ]]; then
   reds=$(/usr/bin/grep -E "INTERACTCHECK: ✗" "$OUT/probe-inactive-mac.txt" | sed -E 's/^INTERACTCHECK: ✗ (IT-[0-9]+) .*/\1/' | sort | tr '\n' ',')
   probe_verdict="probe-BAD"
   if [[ "$pline" == *"判据 13/16"* && "$reds" == "IT-06,IT-13,IT-14," ]]; then
-    probe_verdict="probe-OK（边界与 kFocusGatedIds 一致）"
+    probe_verdict="probe-OK（本平台边界 = IT-06/13/14，是 kFocusGatedIds 两平台并集的子集）"
   else
     FAILED=1
   fi

@@ -117,6 +117,25 @@ function Run-Suite {
     return $rc
 }
 
+# Start-Process -Wait returns when the process exits, but the redirected output
+# file can still lag a few milliseconds behind. Observed 2026-09-29: 2 of the 3
+# negative-control runs read a snapshot in which the INTERACT-INTEGRITY line was
+# not visible yet, while re-reading the very same file afterwards did contain
+# it -> a scrape flake that looked like a product defect. Re-read with a bounded
+# retry until the anchor line shows up. A genuinely missing anchor still ends up
+# BAD, because every retry fails too. The anchor must be ASCII.
+function Read-Lines {
+    param([string]$File, [string]$Anchor = "*VERDICT=*", [int]$Tries = 3)
+    $lines = @()
+    for ($t = 1; $t -le $Tries; $t++) {
+        $lines = @(Get-Content $File -Encoding UTF8)
+        if ($Anchor -eq "") { return ,$lines }
+        if (@($lines | Where-Object { $_ -like $Anchor }).Count -gt 0) { return ,$lines }
+        Start-Sleep -Milliseconds 400
+    }
+    return ,$lines
+}
+
 # Count criteria lines carrying the cross prefix. The prefix is built from its
 # code point so this file stays ASCII-only.
 function Count-Cross {
@@ -162,7 +181,7 @@ for ($i = 1; $i -le $PosRuns; $i++) {
                     -Extra @{ "STELQUICK_INTERACT_REQUEST_ACTIVATE" = "1" }
     $so = Join-Path $dir "interactcheck-run$i.out.txt"
     $crosses = Count-Cross -File $so
-    $txt = Get-Content $so -Encoding UTF8
+    $txt = @(Read-Lines -File $so)
     $armed = @($txt | Where-Object { $_ -like "*act-note*" }).Count
     $full = [bool]($txt | Where-Object { $_ -like "*16/16*" } | Select-Object -First 1)
     $degr = [bool]($txt | Where-Object { $_ -like "*12/12*" } | Select-Object -First 1)
@@ -196,7 +215,7 @@ for ($i = 1; $i -le $NegRuns; $i++) {
                     -OutName "negctl-run$i" `
                     -Extra @{ "STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL" = "1" }
     $so = Join-Path $dir "negctl-run$i.out.txt"
-    $txt = Get-Content $so -Encoding UTF8
+    $txt = @(Read-Lines -File $so)
     $crosses = Count-Cross -File $so
     # The emitted line reads  "INTERACTCHECK: <circled-slash> IT-06 UNAVAILABLE:<why>"
     # -- id FIRST, then the keyword. Anchor on that exact ASCII order; anchoring
@@ -226,7 +245,18 @@ for ($i = 1; $i -le $NegRuns; $i++) {
 # ---- T31 probe: the measured basis for the dependency table ---------------
 # FORCE_INACTIVE + PROBE_ACTIVATION = real inactive window, gate failure but
 # EVERY criterion still runs -> one pass yields the whole activation-dependency
-# boundary. Expectation: "13/16", crosses exactly IT-06 / IT-13 / IT-14.
+# boundary.
+#
+# !!! THE BOUNDARY IS PLATFORM-SPECIFIC -- this is the whole point of running
+#     the probe on Windows. Measured: macOS "13/16" with crosses IT-06/IT-13/
+#     IT-14, but Windows "12/16" with crosses IT-05/IT-06/IT-13/IT-16.
+#     IT-05 (and IT-16) are activation-DEPENDENT here although they are not on
+#     macOS: with the window inactive, forceActiveFocus() cannot give keySink
+#     active focus, so the injected key never reaches the QML chain
+#     (dispatched=0, lastActionId=""). IT-14 stays green here for the same
+#     reason it does on macOS -- its premise (focus inside the text field) is
+#     absent, so it passes by accident. The shipped table is the UNION of both
+#     platforms: {IT-05, IT-06, IT-13, IT-14, IT-15, IT-16}.
 # rc=10 here is EXPECTED (there are cross lines); this is a probe, not a
 # regression suite.
 if (-not $DynOnly -and -not $NegOnly) {
@@ -235,7 +265,7 @@ $rc = Run-Suite -Name "PROBE" -Var "STELQUICK_INTERACT_UI_CHECK" `
                 -Extra @{ "STELQUICK_INTERACT_FORCE_INACTIVE" = "1";
                           "STELQUICK_INTERACT_PROBE_ACTIVATION" = "1" }
 $so = Join-Path $dir "probe-inactive.out.txt"
-$txt = Get-Content $so -Encoding UTF8
+$txt = @(Read-Lines -File $so)
 $ids = @()
 foreach ($l in $txt) {
     if ($l -like "INTERACTCHECK: $BADM IT-*") {
@@ -244,11 +274,11 @@ foreach ($l in $txt) {
     }
 }
 $ids = @($ids | Sort-Object -Unique)
-$judge = [bool]($txt | Where-Object { $_ -like "*13/16*" } | Select-Object -First 1)
-$expect = @("IT-06","IT-13","IT-14")
-$ok = $judge -and ($ids.Count -eq 3) -and (-not (Compare-Object $ids $expect))
+$judge = [bool]($txt | Where-Object { $_ -like "*12/16*" } | Select-Object -First 1)
+$expect = @("IT-05","IT-06","IT-13","IT-16")
+$ok = $judge -and ($ids.Count -eq 4) -and (-not (Compare-Object $ids $expect))
 if (-not $ok) { $script:bad++ }
-"  PROBE: rc=$rc  judge13of16=$judge  crosses=[$($ids -join ',')] expect=[IT-06,IT-13,IT-14]  -> " +
+"  PROBE: rc=$rc  judge12of16=$judge  crosses=[$($ids -join ',')] expect=[IT-05,IT-06,IT-13,IT-16]  -> " +
 $(if ($ok) { "OK" } else { "BAD" }) | Out-File -Encoding ascii -Append $sum
 }
 

@@ -2662,13 +2662,21 @@ void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
 //     ⇒ 脚本层能区分"产品坏了(10)"与"仪器不可用(6)"，且**绝不洗成 PASS**；
 //   · **相位编号一处未动**（靠 `focusGateFailed` 标志在相位内部跳过）—— 这正是当初
 //     留待后续的顾虑（相位编号多任务共用，跳号的风险 > 收益）。
+// **门在哪里判**：两处，都在**判据之前** ——
+//   · **前导（相位 0）**：`uiWindowActivationGate` 超时 ⇒ 置标志（**这是主力路径**）。
+//     ⚠️ 必须在 **IT-05（相位 6）之前**：Windows 实测窗口失活时键进不了 `keySink`
+//     ⇒ IT-05 在 Windows 上也是激活依赖的（见 `kFocusGatedIds`）。
+//   · **相位 7**：IT-06 自己的有界激活门（≤3 次）失败 ⇒ 置标志。
+//   两处都只**置标志**（`uiInteractSetFocusGateFailed`）或就地记 IT-06
+//   （`uiInteractEnterFocusUnavailable`）；记账规则见两个 helper 的注释。
 // 负控：`STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1` 在相位 7 入口强制置标志
-//   ⇒ 期望读数 = `IT-07..IT-12 全绿` + `UNAVAILABLE 恰好 IT-06,13,14,15,16` + `rc=6`。
+//   ⇒ 期望读数 = `IT-07..IT-12 全绿` + `UNAVAILABLE 恰好 IT-06,13,14,15,16` + `rc=6`
+//   （前导门在负控里是**成功**的，所以 IT-05 照跑、不在跳过集合里）。
 // 收尾另有 `INTERACT-INTEGRITY` 纯逻辑腿：实际跳过序列必须等于分类表的**后缀**。
 // ⚠️ 本降级**只针对环境门**；"切页后页码不对""视线基线无效"这类**真前提失败**仍旧
 // 立即 `exit(10)`（那是套件布场坏了，继续跑没有意义）。
 //
-// 三个环境变量（全部**只在置位时有作用**，正题不设任何一个）：
+// 四个环境变量（全部**只在置位时有作用**，正题不设任何一个）：
 //   · `STELQUICK_INTERACT_FORCE_INACTIVE=1`     —— 探针：强制窗口"不接受焦点"；
 //   · `STELQUICK_INTERACT_PROBE_ACTIVATION=1`   —— 探针：门失败后**照跑**（测边界）；
 //   · `STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1` —— 负控：相位 7 入口强制置失败标志；
@@ -2755,18 +2763,35 @@ struct UiInteractCheck
 //! `STELQUICK_INTERACT_PROBE_ACTIVATION=1`**：强制 `Qt::WindowDoesNotAcceptFocus`
 //! 且门失败后**照跑**，一趟就把边界全量取到（不必逐条重编）。
 //!
-//! 探针读数（2026-09-29，`判据 13/16`）：红的是 **IT-06 / IT-13 / IT-14**。
-//!   · 激活**无关**（失活下仍绿）：IT-01..IT-05（锚点 / 滚轮 / 键）与 **IT-07..IT-12**
-//!     （鼠标拖拽 / 点击 / 右键反选 / 捏合缩放 —— `sendEvent` 直达窗口，确实不看
-//!     `isActive`）；⇒ 门失败时它们**必须继续跑**（这正是本降级的收益）；
-//!   · 激活**依赖**：IT-06（焦点守卫）、IT-13（IME preedit 要 `focusObject()` 落在
-//!     TextInput 上）、IT-14（同上）；
-//!   · **IT-15 / IT-16 探针下是绿的，但仍归入依赖**：IT-15 的前提（"组合前 text"）由
-//!     IT-13 建立，失活时它把空串当基线 ⇒ 那是**偶然通过**、成对腿根本没成立；IT-16 是
-//!     IT-14 的**判别性对照**，对照的另一半不可判时它单独绿没有意义（血泪第 20 条：
-//!     "否定式判据单独绿没有意义"）。⇒ 两者随 IT-13/IT-14 一并记 UNAVAILABLE。
-//! 表**必须按相位序**书写 —— 收尾自检按"从失败点起的后缀"比对（见 uiInteractFinish）。
-const char *const kFocusGatedIds[] = { "IT-06", "IT-13", "IT-14", "IT-15", "IT-16" };
+//! 探针读数 —— ⚠️ **这是平台相关的，必须两个平台各测一遍**（本轮 W-T31 的实证收获）：
+//!
+//!   macOS（Metal，`判据 13/16`）：红 = **IT-06 / IT-13 / IT-14**
+//!     · 激活**无关**（失活下仍绿）：IT-01..IT-05（锚点 / 滚轮 / **键**）与
+//!       **IT-07..IT-12**（鼠标拖拽 / 点击 / 右键反选 / 捏合 —— `sendEvent` 直达窗口，
+//!       确实不看 `isActive`）；
+//!   Windows（原生 Vulkan，`判据 12/16`）：红 = **IT-05 / IT-06 / IT-13 / IT-16**
+//!     · 🔴 **IT-05 在 Windows 上依赖激活**、在 macOS 上不依赖。原因就是 T29-W 那条：
+//!       Windows 窗口未激活时 `forceActiveFocus()` 拿不到 active focus ⇒ 注入的键
+//!       **根本进不了 `keySink`**（实测读数 `dispatched=0`、`lastActionId=""`）；
+//!       macOS 的 `activeFocusItem` 在失活时仍被设置，所以键照样到。
+//!     · 同理 IT-16（"焦点移开后 Esc 该返回天空页"）在 Windows 上红 —— 键也是靠激活才到。
+//!
+//! ⇒ **表取两平台的并集**（保守）：不是"依赖的判据都要跳"，而是"**跳掉可能报假红的**"。
+//!   少判一条只是覆盖率损失；把"仪器测不到"报成 FAIL 才是语义错误。
+//!
+//! 表成员与理由：
+//!   · **IT-05**：Windows 依赖（见上）；
+//!   · **IT-06**：焦点守卫（`focusObject()`）；
+//!   · **IT-13 / IT-14**：IME preedit / 组合态 Esc 都要 `focusObject()` 落在 TextInput 上；
+//!   · **IT-15 / IT-16 探针下是绿的，仍归入依赖**：IT-15 的前提（"组合前 text"）由 IT-13
+//!     建立，失活时它把空串当基线 ⇒ **偶然通过**、成对腿根本没成立；IT-16 是 IT-14 的
+//!     **判别性对照**，对照的另一半不可判时它单独绿没有意义（血泪第 20 条）。
+//!
+//! ⚠️ **顺序要求**：表按**相位序**书写（IT-05 在相位 6、IT-06 在相位 7、其余 17+），
+//! 收尾自检按"**从失败点起的后缀**"比对（见 uiInteractFinish）。因此**前导门的超时
+//! 必须在 IT-05 之前就置标志**（见 `uiInteractStep` 顶部）—— 把门只放在相位 7 会让
+//! IT-05 以 FAIL 的形式漏出去，那正是本任务要消灭的"幽灵产品缺陷"。
+const char *const kFocusGatedIds[] = { "IT-05", "IT-06", "IT-13", "IT-14", "IT-15", "IT-16" };
 const int kFocusGatedCount = int(sizeof(kFocusGatedIds) / sizeof(kFocusGatedIds[0]));
 
 //! T31 **探针**：门失败时是否**照跑**（用来测量每条判据的窗口激活依赖边界）。
@@ -2815,6 +2840,18 @@ void uiInteractEnterFocusUnavailable(UiInteractCheck *c, const char *id, const Q
     uiInteractUnavailable(c, id, why);
 }
 
+//! T31：**只置标志、不记账** —— 供"标志先于该判据的相位被置"的路径使用
+//! （① 前导激活门超时；② IT-06 相位自身那轮激活门失败）。
+//! 为什么不在这里记账：这两条路径都会**重入或后续才走到**对应判据的相位，记账统一由
+//! **该判据自己的相位开头**做 ⇒ 每个 ID **恰好记一次**。
+//! ⚠️ 重复记账会让收尾的"跳过集合 == 分类表后缀"自检**假红**（集合里同一 ID 出现两次），
+//! 所以"谁记账"必须只有一个地方。
+void uiInteractSetFocusGateFailed(UiInteractCheck *c, const QString &why)
+{
+    c->focusGateFailed = true;
+    c->focusGateWhy = why;
+}
+
 void uiInteractFinish(QGuiApplication *app, UiInteractCheck *c)
 {
     c->timer->stop();
@@ -2841,7 +2878,8 @@ void uiInteractFinish(QGuiApplication *app, UiInteractCheck *c)
             want << QString::fromLatin1(kFocusGatedIds[i]);
         uiInteractMark(c, !want.isEmpty() && c->unavailIds == want,
                        QStringLiteral("INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [%1] "
-                                      "↔ 期望后缀 [%2]（分类表 IT-06..IT-16，须逐项相等）")
+                                      "↔ 期望后缀 [%2]（分类表取两平台并集 IT-05..IT-16，"
+                                      "须逐项相等）")
                            .arg(c->unavailIds.join(QStringLiteral(",")),
                                 want.join(QStringLiteral(","))));
     }
@@ -3013,6 +3051,28 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
         QTimer::singleShot(kUiActivationGateMs, app, [app, c]() { uiInteractStep(app, c); });
         return;   // 不 ++phase：重入本相位
     }
+    // ── T31：前导激活门**超时** ⇒ 在这里就把降级标志置上 ────────────────────────
+    // ⚠️ 位置是关键：它必须在 **IT-05（相位 6）之前**。Windows 实测（W-T31 探针）表明
+    // "窗口失活时键根本进不了 keySink" ⇒ **IT-05 在 Windows 上是激活依赖的**。
+    // 若只把门放在相位 7（IT-06），IT-05 会以 **FAIL** 的形式漏出去 —— 那正是 T31 要
+    // 消灭的"把仪器问题记成产品缺陷"。
+    // 只在相位 0（尚未开始任何判据）判断一次；探针模式下只记 note（探针要照跑才测得到边界）。
+    if (c->phase == 0 && !c->focusGateFailed && c->prologueDone && c->window
+        && !c->window->isActive())
+    {
+        const QString why = QStringLiteral("前导窗口激活门超时：%1 次 requestActivate 后窗口"
+                                           "仍未激活（isActive=false）")
+                                .arg(c->prologueRetry);
+        if (uiInteractProbeActivation())
+        {
+            c->details.append(QStringLiteral("PROBE-note 前导门超时（%1），探针模式下**照跑**，"
+                                             "用来测各判据的激活依赖").arg(why));
+        }
+        else
+        {
+            uiInteractSetFocusGateFailed(c.get(), why);
+        }
+    }
     switch (c->phase)
     {
     case 0: {
@@ -3136,6 +3196,17 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
         break;
     }
     case 6: {
+        // ── T31：门已失败（前导激活门超时）⇒ 本判据的前提同样不成立，记 UNAVAILABLE。
+        //    ⚠️ **只在 Windows 上**它真的依赖激活（Mac 上键照样到，见 kFocusGatedIds 注释）；
+        //    表取并集是"宁可少判一条，也不报幽灵 FAIL"。
+        //    ⚠️ **写入步照做**（切搜索页）——"与判据分开"是本任务的硬纪律（首版整相位
+        //    break 导致级联假红的教训）。
+        if (c->focusGateFailed)
+        {
+            uiInteractUnavailable(c.get(), "IT-05", c->focusGateWhy);
+            uiReturnClick(c->window, c->navSearch);
+            break;
+        }
         // ── IT-05：键盘活链——timeRate 真变了 + dispatched 信号真来了 ──────
         const double rate = c->facade->timeRate();
         const bool fired = c->dispatchedCount > c->dispatchBase;
@@ -3153,10 +3224,16 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
         break;
     }
     case 7: {
-        // ── T31：焦点门降级的**唯一入口**，置于本相位最前 —— 门一旦失败，本相位
-        //    余下的写入步与 case 8 的判据都不该跑（标志由 case 8 读取）。─────────
+        // ── T31：门降级：**标志可能来自两个地方** —— ① 前导激活门超时（相位 0 置的，
+        //    那时还没轮到 IT-06 记账）；② 本相位上一轮的激活门失败（重入）。
+        //    两者都在这里**统一记一次** IT-06，然后跳过本相位的写入步与 case 8 的判据。
+        //    ⚠️ 两条"置标志"的路径都**不记账**（uiInteractSetFocusGateFailed）—— 记账
+        //    只发生在这里，保证每个 ID 恰好一次（重复记账会让收尾自检假红）。─────────
         if (c->focusGateFailed)
+        {
+            uiInteractUnavailable(c.get(), "IT-06", c->focusGateWhy);
             break;
+        }
         if (qEnvironmentVariableIsSet("STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL"))
         {
             uiInteractEnterFocusUnavailable(
@@ -3196,9 +3273,10 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
                 QTimer::singleShot(400, app, [app, c]() { uiInteractStep(app, c); });
                 return;   // 不 ++phase：重入本相位
             }
-            // T31：**不再 exit** —— 记 UNAVAILABLE 后继续跑到收尾（激活无关的
-            // IT-01..IT-05 早已跑完；其余 11 条见 kFocusGatedIds 一并记 UNAVAILABLE）。
-            // "不洗成 PASS"由 `UNAVAILABLE ≠ PASS 且 VERDICT=UNAVAILABLE / rc=6` 体现。
+            // T31：**不再 exit** —— 记 UNAVAILABLE 后继续跑到收尾。此时激活无关的
+            // IT-01..IT-04 与 **IT-07..IT-12** 早已/仍将跑完，只有 kFocusGatedIds 里那几条
+            // 记为 UNAVAILABLE。"不洗成 PASS"由 `UNAVAILABLE ≠ PASS 且
+            // VERDICT=UNAVAILABLE / rc=6` 体现。
             if (uiInteractProbeActivation())
             {
                 c->details.append(QStringLiteral("PROBE-note 失活探针：窗口 %1 次 "
@@ -3207,6 +3285,9 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
                                       .arg(c->activeRetry));
                 break;
             }
+            // ⚠️ 这里**必须自己记账**：下面 `break` 会让相位号 +1（走到 case 8），
+            // 不会再回到本相位开头那一段。相位开头那段只负责"标志由**前导门**置上"
+            // 的情形（那时本相位的激活门根本没跑）。
             uiInteractEnterFocusUnavailable(
                 c.get(), "IT-06",
                 QStringLiteral("窗口 %1 次 requestActivate 后仍未获得系统焦点"

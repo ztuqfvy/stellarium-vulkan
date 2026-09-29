@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 85 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 87 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
@@ -152,9 +152,9 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.89973"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.92164"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.89973，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.92164，时钟=HostDriven）
 INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合/输入法事件，共 16 条判据，每相位 400ms）
 LIVESKY: simScale -> 0.000（引擎仿真时钟）
 AppFacade: simulationPaused = true 
@@ -184,6 +184,6 @@ INTERACTCHECK: ⊘ IT-13 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_F
 INTERACTCHECK: ⊘ IT-14 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
 INTERACTCHECK: ⊘ IT-15 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
 INTERACTCHECK: ⊘ IT-16 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
-INTERACTCHECK: ✓ INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [IT-06,IT-13,IT-14,IT-15,IT-16] ↔ 期望后缀 [IT-06,IT-13,IT-14,IT-15,IT-16]（分类表 IT-06..IT-16，须逐项相等）
+INTERACTCHECK: ✓ INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [IT-06,IT-13,IT-14,IT-15,IT-16] ↔ 期望后缀 [IT-06,IT-13,IT-14,IT-15,IT-16]（分类表取两平台并集 IT-05..IT-16，须逐项相等）
 INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
 INTERACTCHECK: VERDICT=UNAVAILABLE
