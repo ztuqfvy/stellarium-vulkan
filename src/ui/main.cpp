@@ -68,6 +68,8 @@
 // （目标的天平坐标），而不是"时间源已被写入"这种自证。与 TimeCheck 用同一口径。
 #include "core/StelObject.hpp"
 #include "core/StelObjectMgr.hpp"
+#include "core/StelMovementMgr.hpp" // T27：IT-07 拖拽判据读 getViewDirectionJ2000
+#include "core/StelProjector.hpp"  // T27：DIAG 投影视口尺寸与月球星下点像素
 #include "core/VecMath.hpp"
 #include <QKeyEvent>            // T20：Esc 判据要投递**真实**键盘事件（先例见 AppFacadeCheck AC-12）
 #include <QDateTime>            // T22：按偏移挑时区候选（与"跑在哪一天"解耦）
@@ -1901,7 +1903,8 @@ void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
 //   · IT-06 焦点守卫活链（U-ACT-03 的 QML 端到端腿）：真实点击搜索框聚焦后
 //     注入同键必须被拦（timeRate 不变 + dispatched 不发）
 //
-// 判据 6 条：IT-01..IT-06。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+// 判据 9 条：IT-01..IT-09（T27 追加 IT-07 拖拽平移 / IT-08 点击选中 / IT-09 右键
+// 反选）。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
 // ══════════════════════════════════════════════════════════════════════════
 
 const int kUiInteractTickMs = 400;
@@ -1936,6 +1939,13 @@ struct UiInteractCheck
     int dispatchBase2 = 0;       //!< IT-06 写入步时的 dispatched 计数
     int dispatchedCount = 0;     //!< 信号累计（连接在 run() 里）
     QString lastDispatchedId;
+    // T27（IT-07..09）
+    Vec3d dirBefore = Vec3d(0., 0., 0.);      //!< IT-07 冻结窗口的视线基线
+    Vec3d dirAfterLeft = Vec3d(0., 0., 0.);   //!< IT-07 向左拖后
+    Vec3d dirAfterRight = Vec3d(0., 0., 0.);  //!< IT-07 再向右拖后（反向对照）
+    bool selBefore8 = false;              //!< IT-08 前提腿：点击前确无选中
+    bool selAfter8 = false;               //!< IT-09 前提腿：点击后确有选中
+    int activeRetry = 0;                  //!< IT-06 窗口激活门重试计数（有界 3 次）
 };
 
 void uiInteractMark(UiInteractCheck *c, bool ok, const QString &line)
@@ -1966,6 +1976,48 @@ int uiInteractSendWheel(QQuickWindow *window, const QPointF &scenePos, int dx, i
                       Qt::NoButton, Qt::NoModifier, Qt::ScrollUpdate, false);
     QCoreApplication::sendEvent(window, &wheel);
     return wheel.isAccepted() ? 1 : 0;
+}
+
+//! T27：向窗口投递一次完整拖拽（press → N 步 move → release），全部真实事件。
+//! move 带 LeftButton 按键态 ⇒ MouseArea onPositionChanged → skyMouseMove 链
+//! 与真实拖拽一致。返回事件是否被受理（诊断用）。
+int uiInteractSendDrag(QQuickWindow *window, const QPointF &from, const QPointF &to)
+{
+    const auto sendMove = [&](const QPointF &p) {
+        const QPointF global = window->mapToGlobal(p.toPoint());
+        QMouseEvent move(QEvent::MouseMove, p, p, QPointF(global),
+                         Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(window, &move);
+        return move.isAccepted() ? 1 : 0;
+    };
+    const QPointF globalFrom = window->mapToGlobal(from.toPoint());
+    QMouseEvent press(QEvent::MouseButtonPress, from, from, QPointF(globalFrom),
+                      Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(window, &press);
+    int acc = press.isAccepted() ? 1 : 0;
+    const int steps = 5;
+    for (int i = 1; i <= steps; ++i)
+        acc += sendMove(from + (to - from) * (double(i) / steps));
+    const QPointF globalTo = window->mapToGlobal(to.toPoint());
+    QMouseEvent release(QEvent::MouseButtonRelease, to, to, QPointF(globalTo),
+                        Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(window, &release);
+    return acc + (release.isAccepted() ? 1 : 0);
+}
+
+//! T27：向窗口投递一次完整右键点击（press + release）。引擎 release 分支 =
+//! 反选 deselect。QML MouseArea 必须先收到 press 才会 grab 并触发 onReleased
+//! （只投 release 是死事件——与 IT-06"注入器隐式副作用"同族的教训）。
+int uiInteractSendRightRelease(QQuickWindow *window, const QPointF &scenePos)
+{
+    const QPointF global = window->mapToGlobal(scenePos.toPoint());
+    QMouseEvent press(QEvent::MouseButtonPress, scenePos, scenePos,
+                      QPointF(global), Qt::RightButton, Qt::RightButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(window, &press);
+    QMouseEvent release(QEvent::MouseButtonRelease, scenePos, scenePos,
+                        QPointF(global), Qt::RightButton, Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(window, &release);
+    return (press.isAccepted() || release.isAccepted()) ? 1 : 0;
 }
 
 //! 与 uiReturnSendKey 的唯一差别：**不 forceActiveFocus**。
@@ -2127,16 +2179,71 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
             uiInteractFinish(app, c.get());
             return;
         }
+        // 🔴 窗口激活门（T27 加固，实测本判据偶发假红）：守卫用
+        // QGuiApplication::focusObject() 判焦点，而**窗口未获得系统焦点时
+        // focusObject() 恒为 nullptr**，点击搜索框也给不了焦点 ⇒ 前提不成立
+        // （判据注入的按键是 sendEvent 直达窗口，绕过系统焦点，所以引擎照样
+        // 收到 L 键 ⇒ 假红）。有界重试激活（3 次）；仍失活则**明确判红并标注
+        // 仪器不可用**，绝不洗成 PASS。
+        if (!c->window->isActive())
+        {
+            ++c->activeRetry;
+            if (c->activeRetry <= 3)
+            {
+                c->window->requestActivate();
+                c->details.append(QStringLiteral("IT-note 窗口未激活（尝试 %1/3），"
+                                                 "requestActivate 后重试本相位")
+                                      .arg(c->activeRetry));
+                c->nextDelayMs = 400;
+                QTimer::singleShot(400, app, [app, c]() { uiInteractStep(app, c); });
+                return;   // 不 ++phase：重入本相位
+            }
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-06 仪器不可用：窗口 %1 次 requestActivate "
+                                          "后仍未获得系统焦点（isActive=false）⇒ 焦点"
+                                          "守卫前提无法成立。本判据**不洗成 PASS**；"
+                                          "重跑或让窗口保持前台后复测")
+                               .arg(c->activeRetry));
+            uiInteractFinish(app, c.get());
+            return;
+        }
         // 真实点击搜索框：TextInput 获得焦点 ⇒ canDispatchToSky() 应判 false。
         // （不 forceActiveFocus 到 keySink —— 这正是要测的守卫前提。）
+        // 🔴 有界焦点就绪门（T27 加固，实测本判据偶发假红）：点击注入偶尔因环境
+        // 干扰（Spotlight 批量索引/显示器状态）未能把焦点交给搜索框，于是守卫
+        // 前提不成立 ⇒ IT-06 红而代码无辜。处置沿 T22「有界就绪门」先例：
+        // 最多重试 2 次，**门超时则明确判红且不洗成 PASS**（判据本身不放宽）。
+        auto focusIsTextField = []() {
+            QObject *f = QGuiApplication::focusObject();
+            return f && f->inherits("QQuickTextInput");
+        };
+        int focusTries = 0;
         uiReturnClick(c->window, c->queryField);
+        while (!focusIsTextField() && focusTries < 2)
+        {
+            ++focusTries;
+            uiReturnClick(c->window, c->queryField);
+        }
+        if (!focusIsTextField())
+        {
+            QObject *f = QGuiApplication::focusObject();
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-06 前提失败：点击搜索框 %1 次后焦点仍"
+                                          "不是 QQuickTextInput（当前=%2）——守卫判据"
+                                          "无效，不得洗成 PASS")
+                               .arg(focusTries + 1)
+                               .arg(f ? f->metaObject()->className() : "(null)"));
+            uiInteractFinish(app, c.get());
+            return;
+        }
         c->rateBefore2 = c->facade->timeRate();
         c->dispatchBase2 = c->dispatchedCount;
         const int acc = uiInteractSendKeyNoFocusGrab(c->window, Qt::Key_L);
         c->details.append(QStringLiteral("IT-note 已真实点击搜索框并再次投递 L 键"
-                                         "（不抢焦点变体），timeRate before=%1，"
-                                         "dispatched 基线=%2，事件受理=%3")
-                              .arg(c->rateBefore2).arg(c->dispatchBase2).arg(acc));
+                                         "（不抢焦点变体；焦点门重试 %1 次），timeRate "
+                                         "before=%2，dispatched 基线=%3，事件受理=%4")
+                              .arg(focusTries).arg(c->rateBefore2).arg(c->dispatchBase2)
+                              .arg(acc));
         break;
     }
     case 8: {
@@ -2149,6 +2256,174 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
                                       "—— U-ACT-03 的 QML 端到端腿")
                            .arg(c->rateBefore2).arg(rate)
                            .arg(c->dispatchedCount).arg(c->dispatchBase2));
+        // 写入步（T27）：切回天空页（后续 IT-07 需要天空页可见才有点击目标）
+        uiReturnClick(c->window, c->navSky);
+        break;
+    }
+    case 9: {
+        // ── IT-07 写入步：冻结时间 → 双向拖拽（真实 press→5×move→release）──
+        // 🔴 关键前提（首跑实测）：合流形态 HostDriven 帧泵在 400ms 内推进仿真
+        // 时间 **0.61 天**（≈1.5 天/秒，与 rate 读数脱钩；DIAG 读数 engineRate=10
+        // 而 simJD 差 0.61 天）。视线锁定地平坐标时，J2000 视线随 JD 转 ⇒ 400ms
+        // 自然漂移 **80°**，把拖拽效果淹掉 ⇒ 旧口径"视线转过 >0.2°"**无判别力**
+        // （负控下仍绿，实测 46°）。处置：①段内冻结仿真时间（simScale=0，段尾
+        // 还原）；②同相位内做**反向**拖拽对照——共模漂移在两次增量中同向叠加，
+        // 反向断言抵抗残余漂移。这是血泪第 4 条（孤立断言可假绿）的又一实例。
+        auto viewNow = []() {
+            if (!StelApp::isInitialized() || !StelApp::getInstance().getCore()->getMovementMgr())
+                return Vec3d(0., 0., 0.);
+            return StelApp::getInstance().getCore()->getMovementMgr()->getViewDirectionJ2000();
+        };
+        const double simJdBefore = StelApp::isInitialized()
+                                       ? StelApp::getInstance().getCore()->getSimClockJD() : 0.0;
+        c->facade->setSimulationPaused(true);
+        c->dirBefore = viewNow();
+        if (c->dirBefore.norm() < 0.5)
+        {
+            c->facade->setSimulationPaused(false);
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-07 前提失败：视线基线无效（norm=%1）")
+                               .arg(c->dirBefore.norm()));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        const QPointF vp = c->viewport->mapToScene(QPointF(0, 0));
+        const double w = c->viewport->width(), h = c->viewport->height();
+        const QPointF center(vp.x() + w / 2, vp.y() + h / 2);
+        // 中央区域横向拖 160px：避开屏幕边缘（flagEnableMoveAtScreenEdge 默认关，
+        // 但保持不贴边更稳）。
+        const int accLeft = uiInteractSendDrag(c->window,
+                                               center + QPointF(80, 0),
+                                               center - QPointF(80, 0));
+        c->dirAfterLeft = viewNow();
+        const int accRight = uiInteractSendDrag(c->window,
+                                                center - QPointF(80, 0),
+                                                center + QPointF(80, 0));
+        c->dirAfterRight = viewNow();
+        c->facade->setSimulationPaused(false);   // 段内还原（血泪第 9 条）
+        {
+            const double simJdAfter = StelApp::isInitialized()
+                                          ? StelApp::getInstance().getCore()->getSimClockJD() : 0.0;
+            std::printf("INTERACTCHECK: IT-note DIAG9 冻结窗口内 simJD 推进=%.9f 天"
+                        "（应≈0；冻结前 engineRate=%g）拖拽受理=%d/%d\n",
+                        simJdAfter - simJdBefore,
+                        StelApp::isInitialized()
+                            ? StelApp::getInstance().getCore()->getTimeRate() : 0.0,
+                        accLeft, accRight);
+            std::fflush(stdout);
+        }
+        break;
+    }
+    case 10: {
+        // ── IT-07：拖拽平移——正向转过阈值 ∧ 反向对照（两次增量方向相反）──
+        const Vec3d d0 = c->dirBefore, d1 = c->dirAfterLeft, d2 = c->dirAfterRight;
+        const double aLeft = (d0.norm() > 0.5 && d1.norm() > 0.5)
+                                 ? d0.angle(d1) * 180.0 / M_PI : -1.0;
+        const Vec3d v1 = d1 - d0, v2 = d2 - d1;
+        Vec3d e1 = v1, e2 = v2;                 // Vec3d 只有 in-place normalize()
+        if (e1.norm() > 1e-9) e1.normalize();
+        if (e2.norm() > 1e-9) e2.normalize();
+        const double dot12 = (v1.norm() > 1e-9 && v2.norm() > 1e-9) ? e1.dot(e2) : 9.99;
+        const bool reverse = dot12 < 0.0;
+        uiInteractMark(c.get(), aLeft > 0.2 && reverse,
+                       QStringLiteral("IT-07 冻结时间后向左拖 160px → 视线转过 %1°"
+                                      "（应>0.2°），再向右拖 → 两次增量点积 %2（应<0，"
+                                      "反向）—— QML MouseArea→skyMouse*→handleClick/"
+                                      "handleMove→dragView 的平移链是活的")
+                           .arg(aLeft, 0, 'f', 4).arg(dot12, 0, 'f', 4));
+        // 写入步（T27）：选中月球并定位跟踪（1.5s 动画）⇒ 下一相位月球居中，
+        // IT-08 的"点击中心"才可判别（拖拽后的中心星野不可控，不能直接点）。
+        const bool picked = c->facade->selectByStableId(QStringLiteral("Planet:Moon"))
+                            && c->facade->locateSelected(true);
+        if (!picked)
+        {
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-08 前提失败：selectByStableId/"
+                                          "locateSelected(Planet:Moon) 未成功"));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        c->nextDelayMs = 4000;   // 覆盖默认 tick：autoMoveDuration=1.5s 动画 + 跟踪收敛
+                                 // （2.4s 实测残差 0.7°——从 35° 外起步不够收敛）
+        break;
+    }
+    case 11: {
+        // ── IT-08 写入步：月球应已居中（前提腿）→ 清选中 → 真实点击中心 ──
+        const auto &objMgr = StelApp::getInstance().getStelObjectMgr();
+        StelCore *core = StelApp::getInstance().getCore();
+        Vec3d moonDir(0., 0., 0.), viewDir(0., 0., 0.);
+        double centeredDeg = -1.0;
+        if (objMgr.getWasSelected() && core->getMovementMgr())
+        {
+            // getJ2000EquatorialPos 返回**有量纲**位置向量（月球 norm≈0.0026 AU），
+            // 必须归一化后再做方向角距（首跑踩中：norm>0.5 的卫兵恒假 ⇒ -1°）。
+            moonDir = objMgr.getSelectedObject()[0]->getJ2000EquatorialPos(core);
+            moonDir.normalize();
+            viewDir = core->getMovementMgr()->getViewDirectionJ2000();
+            viewDir.normalize();
+            centeredDeg = moonDir.angle(viewDir) * 180.0 / M_PI;
+        }
+        // 前提腿：定位动画后月球居中（<0.5°，跟踪锁定后应≈0；旧值 3° 太宽——
+        // 6 个月球直径，点击中心可能落在 findAndSelect 搜索半径外的月面旁）。
+        // 居中后清选中（T23：跟踪随反选断开，月球 400ms 内仅漂移 ~0.03°，仍居中）
+        // → 点击中心 → findAndSelect 必中月球。
+        if (centeredDeg < 0.0 || centeredDeg > 0.5)
+        {
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-08 前提失败：定位后月球未居中"
+                                          "（视线-月球角距=%1°，应<0.5）")
+                               .arg(centeredDeg, 0, 'f', 4));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        // T27-DIAG：打印引擎投影视口尺寸 + 月球投影像素 + 本次点击坐标——
+        // 排查"点击选不中"的坐标系错位（逻辑 px vs 引擎 px）。
+        {
+            const StelProjectorP prj = core->getProjection(StelCore::FrameJ2000);
+            Vec3d win(0., 0., 0.);
+            prj->project(objMgr.getSelectedObject()[0]->getJ2000EquatorialPos(core), win);
+            std::printf("INTERACTCHECK: IT-note DIAG 引擎投影视口 %dx%d dppp=%g "
+                        "月球投影=(%.1f,%.1f) 点击=(%.1f,%.1f) 居中角距=%.4f°\n",
+                        prj->getViewportWidth(), prj->getViewportHeight(),
+                        StelApp::getInstance().getDevicePixelsPerPixel(),
+                        win.v[0], win.v[1],
+                        c->viewport->mapToScene(QPointF(c->viewport->width() / 2.0,
+                                                        c->viewport->height() / 2.0)).x(),
+                        c->viewport->mapToScene(QPointF(c->viewport->width() / 2.0,
+                                                        c->viewport->height() / 2.0)).y(),
+                        centeredDeg);
+            std::fflush(stdout);
+        }
+        c->facade->clearSelection();
+        c->selBefore8 = objMgr.getWasSelected();
+        uiLocateClick(c->window, c->viewport->mapToScene(
+                                     QPointF(c->viewport->width() / 2.0,
+                                             c->viewport->height() / 2.0)));
+        const bool sel = objMgr.getWasSelected();
+        QString name;
+        if (sel && !objMgr.getSelectedObject().empty())
+            name = objMgr.getSelectedObject()[0]->getEnglishName();
+        c->selAfter8 = sel;
+        uiInteractMark(c.get(), !c->selBefore8 && sel && name == QStringLiteral("Moon"),
+                       QStringLiteral("IT-08 月球居中后：清选中（前=%1，应 false）→ 真实"
+                                      "点击视口中心 → 选中=\"%2\"（应 Moon）—— 引擎 "
+                                      "findAndSelect 经 QML MouseArea→skyMouse*→"
+                                      "handleClick 链是活的")
+                           .arg(c->selBefore8 ? "true" : "false").arg(name));
+        break;
+    }
+    case 12: {
+        // ── IT-09：右键释放反选——同一次真实投递必须把选中清掉（对照腿）──
+        uiInteractSendRightRelease(c->window, c->viewport->mapToScene(
+                                                  QPointF(c->viewport->width() / 2.0,
+                                                          c->viewport->height() / 2.0)));
+        const bool sel = StelApp::getInstance().getStelObjectMgr().getWasSelected();
+        uiInteractMark(c.get(), c->selAfter8 && !sel,
+                       QStringLiteral("IT-09 右键释放反选 → 选中 %1（点击后）→ %2"
+                                      "（右键后，应 false）—— 引擎 deselection 经 "
+                                      "MouseArea 链是活的（与 IT-08 成对）")
+                           .arg(c->selAfter8 ? "true" : "false")
+                           .arg(sel ? "true" : "false"));
         uiInteractFinish(app, c.get());
         return;
     }
@@ -2179,7 +2454,7 @@ int runUiInteractCheck(QGuiApplication *app, QQuickWindow *window,
                          }
                      });
     c->timer = new QTimer(app);
-    std::printf("INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/键盘事件，共 6 条判据，"
+    std::printf("INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘事件，共 9 条判据，"
                 "每相位 %dms）\n", kUiInteractTickMs);
     std::fflush(stdout);
     uiInteractStep(app, c);

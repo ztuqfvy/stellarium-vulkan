@@ -303,6 +303,31 @@ public:
     //! THREAD: gui
     Q_INVOKABLE void wheelZoom(int dx, int dy, int modifiers);
 
+    //! T27：天空页鼠标（点击选中 / 拖拽平移 / 右键取消）→ 引擎的**保真转发**入口
+    //! （QML MouseArea 调用）。旧宿主链路是 StelMainView 的 mousePress/Release →
+    //! StelApp::handleClick、mouseMove → StelApp::handleMove（press 置 isDragging、
+    //! release 无拖拽时 findAndSelect、右键 release 反选、Ctrl+拖拽改时间等语义
+    //! 全在引擎侧）。本组方法只负责**坐标空间适配**（view 事实，非引擎语义）：
+    //! 合流形态引擎渲染固定 renderSize 帧再缩放显示到窗口 ⇒ QML 逻辑坐标与引擎
+    //! 投影像素**不同构**，须按 (x/wq·wp, (1-y/hq)·hp) 比例映射并并入 y 翻转
+    //! （旧宿主 convertMouseEvent 的 `h-1-y` 是它在等尺寸下的特例）；再除以
+    //! dppp，因 handleClick/handleMove 内部会乘回。**不在此复刻任何导航/选择
+    //! 语义**（复刻=双轨）。
+    //! @param x y MouseArea 本地坐标（QML mouse.x/y，逻辑像素）；
+    //!        viewportWidth/Height MouseArea 尺寸（映射基准）；button/buttons/
+    //!        modifiers 为 Qt::MouseButton / Qt::MouseButtons /
+    //!        Qt::KeyboardModifiers 的 int 值。**button 必须透传真实按键**：引擎
+    //!        release 分支按 button 区分（右键 release = 反选，左键 = 选中对象）
+    //!        ——硬编码左键会把右键反选变成"点哪选哪"。
+    //! 无引擎形态：安全 no-op。
+    //! THREAD: gui
+    Q_INVOKABLE void skyMousePress(double x, double y, double viewportWidth,
+                                   double viewportHeight, int button = 1, int modifiers = 0);
+    Q_INVOKABLE void skyMouseRelease(double x, double y, double viewportWidth,
+                                     double viewportHeight, int button = 1, int modifiers = 0);
+    Q_INVOKABLE void skyMouseMove(double x, double y, double viewportWidth,
+                                  double viewportHeight, int buttons = 1);
+
     // ---- T17 搜索 / 选择（模型持有 + 命令协调）----
     //! 本类持有的两个模型（main.cpp 以 context property 注入 QML，见头注"分工"）。
     //! 刻意不写成 Q_PROPERTY：QML 侧用 `model: searchResults` 直接消费模型本体，

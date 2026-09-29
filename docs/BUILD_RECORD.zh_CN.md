@@ -2624,3 +2624,74 @@ SEARCHCHECK 54/54 rc=0 ×5；回归 10 项 rc=0（含 S3 旧宿主硬要求）�
 `tools/t26-verify.sh`；`docs/evidence/2026-09-28-t26-recall/`；交付文档
 `docs/T26_RECALL_ENGINE_FIX.zh_CN.md`；证据总索引补 T26 行；计划文档 §9.4.10
 与移交表更新。
+
+## 2026-09-29｜T27 天空页鼠标（点击选中 / 拖拽平移 / 右键反选）端到端（A4 加固）（**INTERACTCHECK 6 → 9，9/9 ×5；两轮负控各命中一层；回归 10 项 rc=0 含 A2 逐像素与 S3 旧宿主**）
+
+### 任务定性
+
+A4 加固项"QML 交互级其余"之鼠标半边（T25 做完键盘/滚轮）。探查手法沿用 T25 的
+**链路完整性盘点**（`grep -rn "MouseArea|DragHandler" qml/` 天空页零命中）⇒ 与滚轮
+死路同源的缺陷：旧宿主 `StelMainView` 的 mousePress/Release → `StelApp::handleClick`、
+mouseMove → `handleMove`，合流形态从未接过。`SkyViewport` 头注释写了"向引擎转发
+手势"，实现里一行鼠标代码都没有——**注释承诺与实现脱节**也是本次的一个教训。
+
+### 修法：MouseArea → AppFacade 保真转发 + 坐标空间适配
+
+- QML `MouseArea`（Left|Right）→ `AppFacade::skyMouse{Press,Release,Move}` →
+  `handleClick`/`handleMove`。语义零复刻；`button` 必须透传（引擎按 button 分
+  左键选中/右键反选）。
+- 🔴 **坐标空间适配**（新发现）：引擎投影视口 = renderSize(1280×720) × dppp(2)
+  = **2560×1440**，QML 窗口逻辑 960×728 ⇒ **不同构**，旧宿主的 `h-1-y` 只够等尺寸
+  场景（旧宿主 rect == 引擎视口）。修法 = 比例映射 `(x/wq·wp/dppp,
+  (1-y/hq)·hp/dppp)`，等尺寸时自然退化。负控②（映射退化）实证其必要性。
+
+### 🔴 判据污染源：仿真时间推进淹没拖拽效果（本任务最重要的发现）
+
+首跑 IT-07（"视线转过 >0.2°"）在**拖拽链路整段断开**时仍然绿（46.58°）⇒ 孤立断言
+无判别力。定位（DIAG 二分）：turn* 无日志调用 → 边缘转向默认关 → 相位延迟
+400ms→50ms 漂移 80.58°→14.66°（比例关系）⇒ 读引擎真值：**engineRate=10 而
+simJD 差 0.61 天/0.4s**（≈1.5 天/秒，帧泵推进与 rate 读数**脱钩**）。视线锁地平
+⇒ J2000 视线 200°/s 漂移，把十几度的拖拽效果彻底淹没。
+
+处置：①**段内冻结仿真时间**（`setSimulationPaused(true)` → `setSimScale(0)`；门内
+实测 simJD 推进 0.000000000 天；段尾还原——血泪第 9 条）；②同相位**双向拖拽反向
+对照**（断言两次增量点积 <0；实测 **-0.9981**）。
+
+顺带留档待查线索：帧泵推进量（1.5 天/秒）与 `getTimeRate()`（10）不一致，若属设计
+需文档说明，否则是独立的时间链路缺陷——**建议单独立项核查**，本轮不改。
+
+### 判据（INTERACTCHECK 6 → 9）
+
+IT-07 拖拽（冻结 + 反向对照，成对）；IT-08 月球居中 → 清选中 → 真实点击中心 →
+选中 == Moon（**映射正确性**守卫）；IT-09 右键 press+release 反选（与 IT-08 成对）。
+首跑两次修正：①Y 量纲向量必先 normalize（`getJ2000EquatorialPos` 返回 AU 位置向量，
+月球 norm≈0.0026）；②`Vec3d` 只有 in-place `normalize()`，没有 `normalized()`。
+
+### 负控（两轮，各命中一层）
+
+① 链路层 `MouseArea.enabled:false` → IT-07/08/09 红（IT-05 不受伤）；
+② 适配层 `skyEnginePos` 退化为等尺寸 → IT-08/09 红而 **IT-07 仍绿** ⇒ 两层分工实证
+（IT-07 守"链路活"，IT-08 守"映射正确"；只有绝对位置判据能覆盖映射）。
+
+### 仪器加固（不放宽判据）
+
+IT-06 焦点腿偶发红，根因**不是守卫失效**而是**窗口未获得系统焦点**（`isActive=false`
+⇒ `focusObject()` 恒 nullptr ⇒ 守卫前提不存在；判据按键 sendEvent 直达窗口绕过系统
+焦点 ⇒ 引擎照样收到 L 键）。处置：点击后校验焦点对象（有界重试 2 次）+ 窗口激活门
+（requestActivate 有界 3 次），仍失活则**明确判红并标注"仪器不可用（窗口未激活）"+
+当前焦点类名**，不洗 PASS 不改 INVALID。（T26 曾把此现象笼统归为"Spotlight 干扰点击
+注入"——本轮拿到更精确的定性：**窗口激活态**。）
+
+### 读数与回归
+
+INTERACTCHECK **9/9 rc=0 ×5**；回归 10 项全 rc=0（searchcheck、locatecheck、
+locate-uicheck、actioncheck、timecheck、timeuicheck、returnuicheck、replaycheck、
+clockcheck、**a2-metal 逐像素**——动过 SkyTestPage.qml 的硬要求、**S3 旧宿主**——
+鼠标入口与旧宿主共用）；DYN 引擎 1/3 + 替身 1/3（load 3.6–4.2 + Spotlight 索引）
+⇒ 替身同败 = 仪器测不到（环境），非退化。
+
+### 产物
+
+`tools/t27-verify.sh`；`docs/evidence/2026-09-29-t27-mouse-nav/`（含 negctrl/ 三组）；
+交付文档 `docs/T27_MOUSE_NAV_UI_CHECK.zh_CN.md`；证据总索引补 T27 行；
+计划文档 §2 / §9.1 / §9.2 / §9.4.10 与移交表更新。

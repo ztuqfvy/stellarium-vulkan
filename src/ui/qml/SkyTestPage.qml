@@ -44,6 +44,32 @@ Item {
                                                     wheel.angleDelta.y,
                                                     wheel.modifiers)
         }
+
+        // T27：鼠标 → 引擎点击选中 / 拖拽平移（修复自 T10 起合流形态鼠标死路）。
+        //
+        // 背景：旧宿主的鼠标链路是 StelMainView 的 mousePress/Release →
+        // StelApp::handleClick、mouseMove → StelApp::handleMove，合流形态一直没接
+        // —— QML 天空页此前没有任何 MouseArea/DragHandler（T25 滚轮死路的同款
+        // 缺陷，同一条交互面的最后一半）。
+        //
+        // 语义边界：这里**只转发**窗口真实坐标/按键/修饰键；press 置 isDragging、
+        // release 无拖拽时选中对象、右键反选、Ctrl+拖拽改时间等语义全在引擎侧
+        // （QML 不复刻任何一条）。y 翻转（QML y 向下 → 引擎 y 向上）在
+        // AppFacade::skyMouse* 内做，与旧宿主 convertMouseEvent 的同一行适配。
+        //
+        // 页守卫天然成立：本 MouseArea 挂在 SkyViewport（只在天空页可见）上，
+        // 切页后事件落不到这里。A2 逐像素硬约束（页头注释）不受影响：
+        // MouseArea 不渲染任何内容。
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onPressed: (mouse) => appFacade.skyMousePress(mouse.x, mouse.y, width, height,
+                                                           mouse.button, mouse.modifiers)
+            onPositionChanged: (mouse) => appFacade.skyMouseMove(mouse.x, mouse.y, width, height,
+                                                                  mouse.buttons)
+            onReleased: (mouse) => appFacade.skyMouseRelease(mouse.x, mouse.y, width, height,
+                                                              mouse.button, mouse.modifiers)
+        }
     }
 
     // P-BRG-04：进入降级预览（显示帧率低于阈值）时必须明确告警。

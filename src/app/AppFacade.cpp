@@ -19,12 +19,14 @@
 #include "StelMovementMgr.hpp"
 #include "StelObject.hpp"
 #include "StelObjectMgr.hpp"
+#include "StelProjector.hpp"   // T27：skyEnginePos 读投影视口尺寸（比例映射基准）
 #include "StelUtils.hpp"
 
 #include <QDate>
 #include <QStringList>
 #include <QTimeZone>   // T22 时区选择器
 #include <QWheelEvent> // T25 滚轮保真转发（wheelZoom 合成事件）
+#include <QMouseEvent> // T27 鼠标保真转发（skyMouse* 合成事件）
 #endif
 
 namespace stelapp {
@@ -590,6 +592,86 @@ void AppFacade::wheelZoom(int dx, int dy, int modifiers)
                       Qt::NoButton, Qt::KeyboardModifiers(modifiers),
                       Qt::ScrollUpdate, false);
     StelApp::getInstance().handleWheel(&wheel);
+#endif
+}
+
+// ── T27：天空页鼠标保真转发 ─────────────────────────────────────────────────
+
+namespace {
+//! 三个 skyMouse* 共用的坐标空间适配：QML 逻辑坐标 → 合成事件坐标。
+//! 引擎投影视口 (wp,hp) 与 QML 窗口 (wq,hq) 在合流形态**不同构**（引擎渲染固定
+//! renderSize 帧再缩放显示），按比例映射 + y 翻转（引擎 y 向上）；结果再除以
+//! dppp——handleClick/handleMove 内部会乘回。等尺寸时退化为旧宿主 convertMouseEvent
+//! 的 `h-1-y`。任一基准无效时返回 QNaN（调用方跳过）。
+inline QPointF skyEnginePos(double x, double y, double wq, double hq)
+{
+    if (wq < 1.0 || hq < 1.0 || !StelApp::isInitialized())
+        return QPointF(qQNaN(), qQNaN());
+    StelCore *core = StelApp::getInstance().getCore();
+    const StelProjectorP prj = core ? core->getProjection(StelCore::FrameJ2000) : nullptr;
+    if (!prj || prj->getViewportWidth() < 1 || prj->getViewportHeight() < 1)
+        return QPointF(qQNaN(), qQNaN());
+    const double dppp = StelApp::getInstance().getDevicePixelsPerPixel();
+    if (dppp <= 0.0)
+        return QPointF(qQNaN(), qQNaN());
+    return QPointF(x / wq * prj->getViewportWidth() / dppp,
+                   (1.0 - y / hq) * prj->getViewportHeight() / dppp);
+}
+}  // namespace
+
+void AppFacade::skyMousePress(double x, double y, double viewportWidth,
+                              double viewportHeight, int button, int modifiers)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return;
+    const QPointF pos = skyEnginePos(x, y, viewportWidth, viewportHeight);
+    if (qIsNaN(pos.x()))
+        return;
+    const auto btn = static_cast<Qt::MouseButton>(button);
+    QMouseEvent press(QEvent::MouseButtonPress, pos, pos, pos,
+                      btn, btn, Qt::KeyboardModifiers(modifiers));
+    StelApp::getInstance().handleClick(&press);
+#else
+    Q_UNUSED(x) Q_UNUSED(y) Q_UNUSED(viewportWidth) Q_UNUSED(viewportHeight)
+    Q_UNUSED(button) Q_UNUSED(modifiers)
+#endif
+}
+
+void AppFacade::skyMouseRelease(double x, double y, double viewportWidth,
+                                double viewportHeight, int button, int modifiers)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return;
+    const QPointF pos = skyEnginePos(x, y, viewportWidth, viewportHeight);
+    if (qIsNaN(pos.x()))
+        return;
+    // buttons 在释放时刻为 NoButton；button 是**刚释放的那个键**——引擎用它
+    // 区分左键（选中对象）与右键（反选）。
+    QMouseEvent release(QEvent::MouseButtonRelease, pos, pos, pos,
+                        static_cast<Qt::MouseButton>(button), Qt::NoButton,
+                        Qt::KeyboardModifiers(modifiers));
+    StelApp::getInstance().handleClick(&release);
+#else
+    Q_UNUSED(x) Q_UNUSED(y) Q_UNUSED(viewportWidth) Q_UNUSED(viewportHeight)
+    Q_UNUSED(button) Q_UNUSED(modifiers)
+#endif
+}
+
+void AppFacade::skyMouseMove(double x, double y, double viewportWidth,
+                             double viewportHeight, int buttons)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return;
+    const QPointF pos = skyEnginePos(x, y, viewportWidth, viewportHeight);
+    if (qIsNaN(pos.x()))
+        return;
+    StelApp::getInstance().handleMove(pos.x(), pos.y(), Qt::MouseButtons(buttons));
+#else
+    Q_UNUSED(x) Q_UNUSED(y) Q_UNUSED(viewportWidth) Q_UNUSED(viewportHeight)
+    Q_UNUSED(buttons)
 #endif
 }
 
