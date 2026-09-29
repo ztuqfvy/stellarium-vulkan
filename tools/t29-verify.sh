@@ -127,7 +127,14 @@ run_dyn_engine() {
   local n=$DYN_RUNS pass=0 i rc
   : > "$OUT/regression-dyn-engine-metal.txt"
   for i in $(seq 1 $n); do
-    STELQUICK_DYN_CHECK=1 "$BIN" > "$OUT/regression-dyn-engine-metal-run$i.txt" 2>&1
+    # ⚠️ 2026-09-29 更正（W-T29 跨平台复验时抓到）：此处原先漏了
+    #    `STELQUICK_DYN_PRODUCER=engine`（t16..t28 全都有），而 main.cpp:4120-4121
+    #    只在**显式等于 "engine"** 时才装真实引擎 ⇒ 原版这里跑的是**替身**，
+    #    所谓"真实引擎 vs 替身"的判别性对照实际是两次替身。
+    #    本行已补上；T29 当轮已归档的日志保持原样（append-only），
+    #    更正说明见 docs/evidence/2026-09-29-t29-ime/CORRECTION.md。
+    STELQUICK_DYN_CHECK=1 STELQUICK_DYN_PRODUCER=engine "$BIN" \
+      > "$OUT/regression-dyn-engine-metal-run$i.txt" 2>&1
     rc=$?
     echo "──────── DYN(真实引擎) run $i/$n（rc=$rc）────────" >> "$OUT/regression-dyn-engine-metal.txt"
     grep -E "DYNCHECK:" "$OUT/regression-dyn-engine-metal-run$i.txt" \
@@ -150,7 +157,8 @@ run_dyn_stub() {
   local n=$DYN_RUNS pass=0 i rc
   : > "$OUT/regression-dyn-stub-metal.txt"
   for i in $(seq 1 $n); do
-    STELQUICK_DYN_CHECK=1 "$BIN" > "$OUT/regression-dyn-stub-metal-run$i.txt" 2>&1
+    STELQUICK_DYN_CHECK=1 STELQUICK_DYN_PRODUCER=test "$BIN" \
+      > "$OUT/regression-dyn-stub-metal-run$i.txt" 2>&1
     rc=$?
     echo "──────── DYN(替身) run $i/$n（rc=$rc）────────" >> "$OUT/regression-dyn-stub-metal.txt"
     grep -E "DYNCHECK:" "$OUT/regression-dyn-stub-metal-run$i.txt" \

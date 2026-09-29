@@ -1,0 +1,24 @@
+[t29w] suites start 2026-09-29T11:57:59.4878753+08:00
+repo HEAD = 20d4157
+exe = E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+exe size = 28877824 B   mtime = 2026-09-29T11:56:41.5969287+08:00
+exe md5  = 6E6B37B3553BC362305F3176AFA990E5
+SUITE clockcheck  rc=0  elapsed=1.1s  var=STELQUICK_CLOCK_CHECK
+SUITE actioncheck  rc=0  elapsed=18.2s  var=STELQUICK_ACTION_CHECK
+SUITE searchcheck  rc=0  elapsed=16.2s  var=STELQUICK_SEARCH_CHECK
+SUITE locatecheck  rc=0  elapsed=22.2s  var=STELQUICK_LOCATE_CHECK
+SUITE locate-uicheck  rc=0  elapsed=14.1s  var=STELQUICK_UI_CHECK
+SUITE timecheck  rc=0  elapsed=18.2s  var=STELQUICK_TIME_CHECK
+SUITE timeuicheck  rc=0  elapsed=22.2s  var=STELQUICK_TIME_UI_CHECK
+SUITE returnuicheck  rc=10  elapsed=17.2s  var=STELQUICK_RETURN_UI_CHECK
+SUITE replaycheck  rc=0  elapsed=17.2s  var=STELQUICK_REPLAY_CHECK
+SUITE interactcheck-run1  rc=10  elapsed=27.2s  var=STELQUICK_INTERACT_UI_CHECK
+SUITE interactcheck-run2  rc=10  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK
+SUITE interactcheck-run3  rc=10  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK
+SUITE interactcheck-run4  rc=10  elapsed=25.3s  var=STELQUICK_INTERACT_UI_CHECK
+SUITE interactcheck-run5  rc=10  elapsed=25.3s  var=STELQUICK_INTERACT_UI_CHECK
+SUITE a2-vulkan  rc=0  elapsed=3.1s  var=STELQUICK_A2_CHECK
+SUITE dyncheck-run1  rc=0  elapsed=10.1s  var=STELQUICK_DYN_CHECK
+SUITE dyncheck-run2  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK
+SUITE dyncheck-run3  rc=0  elapsed=10.1s  var=STELQUICK_DYN_CHECK
+[done] 2026-09-29T12:03:09.1132389+08:00

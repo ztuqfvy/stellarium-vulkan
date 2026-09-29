@@ -2912,3 +2912,228 @@ IT-14 因此属**"比真实更严苛"**的不变式测试；它仍有价值，�
 `probe-qt-source-evidence.txt` 328 行源码实证）；交付文档
 `docs/T29_IME_KEY_GUARD.zh_CN.md`；证据总索引补 T29 行；计划文档 §2 / §9.2 / §9.4.13
 与移交表更新。
+
+---
+
+## 2026-09-29｜W-T29 Windows 跨平台复验（W 支线）（**Windows 18/18 全 rc=0（首轮 2 红经定性全为仪器缺陷）；修出 1 个真实脚本缺陷（DYN 生产者漏项）；macOS 同轮复验全绿；30 min 长跑 rc=0 且 SL-C01..C11 全 PASS**）
+
+> 交付文档：`docs/WT29_WINDOWS_VERIFY.zh_CN.md`；
+> 证据：`docs/evidence/2026-09-29-w-t29/`（含 `README.md` 索引、`suites-round1/`、`suites/`、`mac/`、`longrun/`）；
+> 计划文档 §9.4.14。提交：`b4e8cf2`（仪器）；W-T29 产物提交见本节末。
+
+### 任务定性
+
+W 支线（**跨平台反证**）此前只走到 T17。T18–T29 的宿主层与引擎层改动**从未在 Windows 上跑过自检**，
+而 W 支线此前记录的阻塞点是"`schtasks` 被沙箱禁用，需用户侧配合"。
+
+**本轮先证伪这条记录**：`schtasks /query`、`/create /it`、`/run`、`/delete` 实测**全 rc=0**，
+探针任务确实写出了 `C:\temp\probe.out` ⇒ **阻塞点不存在**，W 支线可以自主推进。
+（`query session` 显示 `console ztuqfvy 13 **Active**`、`LogonUI` 进程数 0 ⇒ 交互会话在位且未锁屏。）
+
+### Windows 侧通路（环境事实，全部实测，已写进技能 `uu-remote-windows`）
+
+| 能力 | 状态 | 物证 |
+|---|---|---|
+| SSH 免密 | ✅ | `127.0.0.1:2222`（UU远程端口映射）→ `desktop-0pji1so\ztuqfvy`，Windows 10.0.19045.6159 |
+| 交互桌面会话 | ✅ | `query session` → `console … Active`；`LogonUI` 进程数 **0** |
+| `schtasks /it` | ✅ | create/run/delete 全 rc=0 |
+| 仓库 / 构建目录 | — | `E:\Qt_demo\stellarium-vulkan` / `build-win`（`CMAKE_HOME_DIRECTORY` 指向仓库根 ⇒ **合法根构建**） |
+| 工具链 | — | VS 自带 cmake 4.3.1（Qt Tools 自带 3.30.5 **不认** "Visual Studio 18 2026" 生成器） |
+| 后端 | — | **原生 Vulkan**：`device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0` |
+
+⚠️ **12 个资源目录是 junction**（`atmosphere/landscapes/models/nebulae/plugins/po/scenery3d/scripts/skycultures/stars/textures/util` → `E:\Qt_demo\stellarium-upstream\*`），
+git 因 `core.symlinks=false` 把它们报成 ` D`。**绝不能用 `git checkout -- .` / `reset --hard`**（会把 junction 变成实体空目录）。
+本轮拉取用的是"只对指定路径 checkout"的窄口径。
+
+**三条 Windows 侧操作坑（踩过，已写进技能）**：
+
+1. **SSH 里 `Start-Process` 的子进程随会话退出被杀** —— 首次构建脚本起了 20 秒就没了。长任务**必须**走 `schtasks /it`。
+2. **中文输出在 Mac 侧全乱码** —— 远程命令前加 `[Console]::OutputEncoding=[Text.Encoding]::UTF8; chcp 65001 | Out-Null`。
+3. **收日志别用 `*>>`** —— PS 5.1 先按 CP936 解码再写成 UTF-16LE（同款坑在 `docs/evidence/README.md` 已记）。
+   改用 `Start-Process -RedirectStandardOutput/-Error`，**原始字节直落盘**，产物就是 exe 吐出的 UTF-8
+   （exe 以 MSVC `/utf-8` 编译），Mac 侧直接 `cat`。
+
+### 故事主线：首轮两红 → 根因 → 修法
+
+**首轮**（`20d4157`，`stelQuickUI.exe 28877824 B / md5=6E6B37B3553BC362305F3176AFA990E5`）：
+18 个套件里 **16 个 rc=0**，两个红：
+
+| 套件 | 结果 | 红在哪 |
+|---|---|---|
+| `returnuicheck` | rc=10，9/11 | **RT-10**（非天空页投递 Esc → 应回天空页，实际停在搜索页）；RT-11 因 RT-10 未复原态而前提失败（**级联**，非独立红） |
+| `interactcheck` ×5 | rc=10，15/16 | **IT-05**（天空页注入 L 键 → timeRate 应变，实际 `0.1→0.1`、`dispatched=0`） |
+
+两条红的**共同形态**：都是该套件里**第一次键注入**。
+
+#### 🔴 硬线索 A（决定性）：IT-05 红之后紧接的 note
+
+```
+IT-note 窗口未激活（尝试 1/3），requestActivate 后重试本相位
+```
+
+这是 **IT-06 相位**自带的窗口激活门（T27 加的）。即：**窗口在 IT-05 跑时还没激活，
+是 IT-06 的重试把它激活的**；之后 IT-06…IT-16 共 **11 条键/手势判据全绿**。
+而 `returnuicheck` **完全没有激活门**，它唯一的键注入 RT-10 恰好红。
+
+#### 🔴 硬线索 B（反向）：`isAccepted()` 不可反推
+
+`returnuicheck` 的 `RT-note` 报"Esc 是否被受理 = **true**"。单看这条会得出
+"键送到了、是守卫吞了"的**相反结论** —— Esc 分支无论走"守卫吞掉"还是"返回天空"
+都会把 `accepted` 置真，这个读数**不区分**两者。（`interactcheck` 里 IT-06 的
+"事件受理=0"倒是有效的——它证明那个读数**不是恒真**。）⇒ 不能靠反推，
+**必须把状态直接读出来**。
+
+#### 修法（只动仪器，判据一条没改）
+
+`src/ui/main.cpp` 加两件东西（提交 `b4e8cf2`）：
+
+1. **`uiFocusSnapshot()` 焦点快照探针** —— 键派发后立刻取五项**原始状态**，不复刻任何被测逻辑：
+   `windowActive / keySinkHasActiveFocus / activeFocusItem.objectName / focusObject 类名 / canDispatchToSky()`。
+   挂在 RT-09、IT-05、IT-06、IT-14 四个相位。
+2. **`uiWindowActivationGate()` 前导有界窗口激活门** —— ≤3 次 × 400ms，装在
+   `uiReturnStep` / `uiInteractStep` 的 **`switch` 之前**（放在判据之后会让重试重跑判据、计数虚高
+   —— T22 的教训）。**门超时不洗成 PASS**：只留一条 note，后续键类判据照原样判红。
+
+**判据数一条没变**：INTERACT 仍 16 条、RETURNUI 仍 11 条，门槛全部原样。
+
+#### 修复后的决定性读数（`28884480 B / md5=838A7B55BB0DB8654EF48813CB02F601`）
+
+```
+RETURNUICHECK: T29W-note 前导窗口激活门：窗口未激活（尝试 1/3），requestActivate 后重入本相位
+RETURNUICHECK: T29W-note 前导窗口激活门：窗口已激活（重试 1 次）
+RETURNUICHECK: RT-note Esc 派发后焦点快照：windowActive=true keySinkHasActiveFocus=true
+               activeFocusItem=skyKeySink focusObject=QQuickItem canDispatchToSky=true
+RETURNUICHECK: RT-10 ... currentIndex=1（期望 1）：OK
+INTERACTCHECK: ✓ IT-05 ... timeRate 0.1 → 1，dispatched 累计=1，
+               lastActionId="actionIncrease_Time_Speed"
+```
+
+**⇒ 根因确定**：Windows 上由计划任务投递到交互会话的进程受 **foreground lock** 限制，
+窗口**默认不是前台窗口**；窗口未激活时 `keySink->forceActiveFocus()` 拿不到 active focus
+⇒ 注入的键根本没被派发到 QML。**缺的是仪器，不是产品。**
+
+#### 顺带证明的事：守卫判据的"前提"是看得见的
+
+| 场景 | `activeFocusItem` | `focusObject` | `canDispatchToSky` | 期望 | 实测 |
+|---|---|---|---|---|---|
+| IT-05 / RT-10（键应生效） | `skyKeySink` | `QQuickItem` | **true** | 生效 | ✅ |
+| IT-06 / IT-14（键应被守卫拦） | `searchQueryField` | `TextField_QMLTYPE_18` | **false** | 被拦 | ✅ |
+
+⇒ 之前"否定式判据（IT-06/IT-14 断言'不变'）可能是键根本没送到"的隐忧，
+现在有直接读数排除：**焦点确实在输入控件上、守卫确实判 false、键确实到了**。
+
+### 🔴 第二个真实缺陷：脚本的"判别性对照"没对照上
+
+排查 Windows 侧 DYN 时顺手核对 `tools/t29-verify.sh`：
+
+```
+$ grep -m1 '生产者=' regression-dyn-engine-metal-run1.txt regression-dyn-stub-metal-run1.txt
+regression-dyn-engine-metal-run1.txt: DYNCHECK: 生产者=test(替身场景)   ← 标着 engine，跑的是替身
+regression-dyn-stub-metal-run1.txt:  DYNCHECK: 生产者=test(替身场景)
+```
+
+`src/ui/main.cpp:4120-4121` 的口径是**只认显式 `"engine"`**：
+
+```cpp
+const bool engineProducer = (qgetenv("STELQUICK_DYN_PRODUCER") == "engine");
+```
+
+而 `t29-verify.sh` 的 `run_dyn_engine()` **漏了这个变量**——`t16..t28-verify.sh` 全都有
+（`t27-verify.sh:74`、`t28-verify.sh:87`），只有 t29 丢了。
+⇒ **T29 当轮的"真实引擎 vs 替身"判别性对照，事实上是同一路径的两次独立采样**
+（而两份读数确实互不相同 ⇒ 从读数上完全看不出破绽）。
+
+**归类**：与血泪第 8 条同款——**"规则正确"与"规则被调用"是两件事**；
+再延伸一条：**"判别性对照"必须回读被对照对象的身份**，不能只看两跑读数不同就认定对照成立。
+
+**处置**：
+
+- 已修 `tools/t29-verify.sh`（engine 补上变量；替身也显式写 `=test`，不再依赖默认值）。
+- T29 已归档日志**保持原样**（证据 append-only），另加
+  `docs/evidence/2026-09-29-t29-ime/CORRECTION.md` 作更正记录，并**降级** T29 的 DYN 结论为
+  "替身路径 3/3 ×2 组"。
+- 本轮用 `tools/wt29-verify.sh` **重新采集**，两路都做**生产者回读**：
+
+```
+engine   DYNCHECK: 生产者=engine(真实引擎)   ← 尾窗 49.8 fps（下限 30.0），735 帧，5/5 PASS
+test     DYNCHECK: 生产者=test(替身场景)     ← 5/5 PASS
+```
+
+- Windows 侧 `wt29-suites.ps1` 同款漏项也一并修掉（旧注释 "engine producer is chosen
+  internally" 是错的），改跑 engine ×3 + test ×3，并在 SUMMARY 里回读生产者标签。
+
+### 判据（镜像 macOS 口径，一条未改）
+
+| 套件 | 判据数 | 说明 |
+|---|---|---|
+| `returnuicheck` | 11 | RT-10 Esc 返回 / RT-11 负控（天空页不被拦、JD 位移 0） |
+| `interactcheck` | 16 | IT-13..IT-16（T29 的 IME 与 Esc 守卫） |
+| 其余 15 项套件 | 同 macOS | `clockcheck` / `actioncheck` / `searchcheck` / `locatecheck` / `locate-uicheck` / `timecheck` / `timeuicheck` / `replaycheck` / `a2-vulkan` / `dyn` |
+
+### 读数与回归
+
+**Windows 30 min 长跑**（`b4e8cf2`，原生 Vulkan，warmup 900 s + measure 1800 s）：
+**rc=0，`VERDICT=PASS`，SL-C01..SL-C11 全 PASS**。
+
+| 判据 | 读数 |
+|---|---|
+| SL-C01 生产者零失败 | 测量段渲染 **89 999 帧 / 失败 0**；稳态 **50.00 fps**（下限 40） |
+| SL-C02 稳态显示帧率 | **50.00 fps**；显示帧号 75 043 → 134 943（窗口 1198 s） |
+| SL-C03 上屏间隔 | 61 235 帧：mean 19.60 / p95 **21.23** / p99 **22.07** / max 35.59 ms（门槛 p99 ≤ 60.00） |
+| SL-C04 邮箱丢弃 | 投递 89 999 / **丢弃 0** |
+| SL-C05 上传耗时 | 89 999 次，增量均值 **0.571 ms**，最坏 11.31 ms |
+| SL-C06 邮箱帧龄 | 最大 **15 ms** |
+| SL-C07 内存斜率 | phys_footprint **0.080 MiB/min**（上限 1.0）；窗口内 1423.9 → 1425.3 MiB（增 1.4） |
+| SL-C08 环境漂移 | **0 次违规** |
+| SL-C09 窗口暴露 | **1800 / 1800** 采样点 |
+| SL-C10 降级误报 | **0 / 1800**（0.000%） |
+| SL-C11 稳态帧龄 | 10 971 样本：mean 3.17 / p95 **13.00** / max 16.00 ms（门槛 p95 ≤ 100） |
+
+**与历史基线同档**：W-T13 `0f2faae` 50.00 fps / 0.09 MiB·min⁻¹；W-T17 `6bce85d`
+50.00 fps / 0.09 MiB·min⁻¹；**W-T29 `b4e8cf2` 50.00 fps / 0.080 MiB·min⁻¹** ⇒ 不退化。
+
+**Windows DYN 双路重采**（`engine ×3 + test ×3`，`-DynOnly`，13:07–13:09）：**6/6 rc=0**，
+且每次 SUMMARY 都写 `producer-readback: requested=… observed=… OK`：
+
+| 路 | 生产者自报 | 尾窗稳态 fps | 全程累计帧 | VERDICT |
+|---|---|---|---|---|
+| engine | `生产者=engine(真实引擎)` | **49.9** | 723 | PASS |
+| test | `生产者=test(替身场景)` | **57.9** | 370 | PASS |
+
+⇒ 这次判别性对照**既对照上了、又能证明对照上了**（身份回读 + 读数分离）。
+`D1-C06 SKIP` 两路都 SKIP（Vulkan 纹理路径属 §6.2 已知外部缺陷，与本轮无关）。
+
+- **Windows 侧 18/18 rc=0**（首轮 16/18）。逐项：
+  - `searchcheck` 含 T24 `PINY-01..03`、T26 `SRC-12` **全量 1573** vs 旧 cap=3 的 16
+  - `locatecheck` 15/15、`locate-uicheck` 10/10、`timecheck` 21/21、`timeuicheck` 19/19
+  - `replaycheck` 11/11（I-REP-02 全流程回放）
+  - `a2-vulkan` **探针 12 项失败 0**，逐像素偏差全 0（唯一非零：半透明块 α=128 偏差 22，在容差内）
+  - `returnuicheck` **11/11**（首轮 9/11）、`interactcheck` **16/16 ×5**（首轮 15/16 ×5）
+- **macOS 同轮复验**（Metal，`39284312 B / md5=daf5c818…`）：INTERACTCHECK **5/5**、
+  `returnuicheck` 11/11（前导门"窗口已激活，重试 0 次"）、8 项相邻回归 rc=0、
+  `a2-metal` 逐像素 rc=0、DYN **engine 5/5 + test 5/5**（两路生产者回读正确，真引擎 49.8 fps）。
+- **两侧关键读数逐项一致**（尽管 `dppp` 2 vs 1）：拖拽 **18.1988°**、捏合 FOV
+  **60→30.72→60**、L 键 timeRate **0.1→1** ⇒ 额外证明**判据没有偷偷依赖某一侧的 dppp**。
+- **主动论证不跑 S3 旧宿主**：本轮改动面 = `src/ui/main.cpp`（**纯自检仪器**）+ `tools/*.sh`
+  + `tools/windows/*.ps1` + 文档。`uiFocusSnapshot` / `uiWindowActivationGate` 只被
+  `runUiReturnCheck` / `runUiInteractCheck` 调用，这两个套件**只在合流形态**里跑。
+  `stellarium.exe` 在 Windows 侧确实重新链接了，但 md5 与改动前**逐位相同**
+  （`66C51B61…`）——这是"改动未触及旧宿主"的**字节级证据**，比"跑一遍没报错"更强。
+
+### 仪器加固（不放宽判据）
+
+- **前导有界激活门**（≤3 次 ×400ms）装在**相位 switch 之前**；超时**明确留 note 不洗 PASS**。
+- **焦点快照探针**：五项原始状态，测"焦点守卫是否生效"之前先把前提看住。
+- ⚠️ 这条是"`isAccepted()` 类间接读数不可反推"的第二次实证（首次见 T28 §"附带发现"）。
+
+### 产物
+
+`tools/wt29-verify.sh`（macOS 侧复验，含生产者回读 + `wake_display()`）；
+`tools/windows/wt29-{build,suites,longrun,pull}.ps1`（Windows 侧，**全 ASCII**；
+PS 5.1 按 ANSI 码页读无 BOM `.ps1`，中文注释会报 `PARSE-ERR … 意外的标记"}"`）；
+`docs/WT29_WINDOWS_VERIFY.zh_CN.md`；
+`docs/evidence/2026-09-29-w-t29/`（`README.md` + `suites-round1/` 38 份 + `suites/` 38 份
++ `mac/` 复验 + `longrun/`）；
+`docs/evidence/2026-09-29-t29-ime/CORRECTION.md`；
+`docs/evidence/2026-09-29-w-t29/suites/SUMMARY.txt` 尾部含**生产者回读行**；
+计划文档 §9.4.14 与移交表更新。

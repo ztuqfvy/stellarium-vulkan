@@ -1,0 +1,13 @@
+interactcheck-mac 5/5 PASS
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-timecheck rc=0
+regression-timeuicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-a2-metal rc=0
+regression-dyn-engine-metal 5/5 PASS
+regression-dyn-test-metal 5/5 PASS

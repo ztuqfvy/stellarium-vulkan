@@ -1,0 +1,40 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.66645，时钟=HostDriven）
+TIMEUICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，共 19 条判据，每相位 500ms）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+TIMEUICHECK: UI-01 时间页锚点可寻且可见（6 个自旋框找到 6/6；应用/重置/现在/−1天/+1天 找到 5/5；状态行=有 JD 行=有；年框 visible=true）：OK
+TIMEUICHECK: UI-12 T22 新控件锚点可寻（MJD 行/历法行/速率行/方向行/时区组合框/自定义时区勾选/速率「+」按钮）找到 7/7；MJD 行可见=true、组合框可见=true：OK
+TIMEUICHECK: TIMEUICHECK-note 已暂停时钟（scale=0），全部 JD 断言在冻结区执行；tick=500ms
+TIMEUICHECK: UI-02-prep C++ setLocalDateTime(2030-06-15 09:30:00) → true（token=ok）
+TIMEUICHECK: UI-02 C++ 写入后 QML 自旋框跟着回填（框内=2030-06-15 09:30:00，目标=2030-06-15 09:30:00）：OK
+TIMEUICHECK: UI-03 判别性：换写 1999-01-01 00:00:00（与上组不同）后框内=1999-01-01 00:00:00 —— 排除"某字段写死/回填只回一部分"：OK
+TIMEUICHECK: UI-04-prep 已在 QML 里把 6 个框改成 2011-11-11 11:11:11，此刻引擎 JD=2451179.166667（**还没点应用**）
+TIMEUICHECK: UI-04 改框后等 500ms（≥ 400ms 自动回填周期），框内仍=2011-11-11 11:11:11（dirty 守卫挡住了回填）：OK
+TIMEUICHECK: UI-05-note 向窗口投递真实点击 @(34.0,463.5)——「应用」按钮尺寸 32×23，窗口 960×640，窗口受理=true
+TIMEUICHECK: UI-05 真实点击「应用」→ 引擎 JD=2455876.632766203，期望 2455876.632766203（差 0.00e+00 天，容差 1e-6；引擎本地读回=2011-11-11 11:11:11，目标 2011-11-11 11:11:11）：OK
+TIMEUICHECK: UI-06-note 框已改成 2022-02-22 22:22:22；负控靶点 = 状态行中心 @(223.0,519.0)，Label 尺寸 410.0×14.0（非按钮，无交互处理器）
+TIMEUICHECK: UI-06 负控：改了框（2022-02-22 22:22:22）但**不点应用**、只点非按钮控件 → JD 位移 0.00e+00 天（要求 <1e-12）；框内仍=2022-02-22 22:22:22：OK
+TIMEUICHECK: UI-07 真实点击「重置」→ 框内=2011-11-11 11:11:11 回到引擎当前值=2011-11-11 11:11:11，且 JD 位移 0.00e+00 天（<1e-12，即重置**不写时钟**）：OK
+TIMEUICHECK: UI-08-prep 已跳到 JD=2415020.5000（1900-01-01），与系统时刻差 46292.17 天 —— 判别性前提
+TIMEUICHECK: UI-08 真实点击「现在」→ 与系统时刻差 5.787e-06 天（容差 1e-3；跳转前是 46292.17 天，判别性成立=true）：OK
+TIMEUICHECK: UI-09a 写入成功后状态行文案="时间已按写入生效。"（token=ok，要求非空且声称已生效）：OK
+TIMEUICHECK: UI-09b-prep setLocalDateTime(2026-13-01 …) → false（token=invalid-date）
+TIMEUICHECK: UI-09b 非法写入后状态行文案="日期/时间字段超出范围（如 13 月、32 日、25 时）——已忽略。"（token=invalid-date，不得再声称已生效）；JD 位移 0.00e+00 天（<1e-12）：OK
+TIMEUICHECK: UI-10a JD 投影行文本="2461312.666506"（解析 2461312.666506，C++ 侧 2461312.666506，差 3.78e-07 天；容差 1e-3）：OK
+TIMEUICHECK: UI-10b 时钟 +365.25 天后投影行=2461677.916506（期望 2461677.916506，差 0.00e+00 天）—— 证明它是活的投影而不是常量：OK
+TIMEUICHECK: UI-11-note 向窗口投递真实点击 @(524.0,306.5)——「+1 天」按钮尺寸 40×23（ActionRouter 透传 actionAdd_Solar_Day）
+TIMEUICHECK: UI-11 真实点击「+1 天」→ JD 位移 0.999999960 天（期望 1，容差 1e-6）—— QML→ActionRouter→引擎 透传链是活的：OK
+TIMEUICHECK: UI-13 MJD 投影行="61678.416506"（解析 61678.416506；C++ 侧 61678.416506；差 3.37e-07 天，容差 1e-6）—— 且它与 JD 行同源（JD=2461678.916506）：OK
+TIMEUICHECK: UI-14a-prep 时钟跳到 JD=2299160.5（1582-10-04，儒略历区间）
+TIMEUICHECK: UI-14a 历法行="儒略历"（token=julian）—— 跳进 1582 年区间后必须自报儒略历：OK
+TIMEUICHECK: UI-14b 历法行="格里高利历"（token=gregorian）—— 与 UI-14a 的文案不同⇒ 它是活的投影，不是常量：OK
+TIMEUICHECK: UI-15-note 向窗口投递真实点击 @(677.5,337.5)——速率「+」按钮（ActionRouter 透传 actionIncrease_Time_Speed）；点击前引擎速率 1.000000e-01、速率行="x8640（2.40 时/秒）"
+TIMEUICHECK: UI-15 真实点击「+」→ 引擎速率 1.000000e-01 → 1.000000e+00（确实变了=true）；速率行 "x8640（2.40 时/秒）" → "x86400（1.00 天/秒）"（跟着变了=true）：OK
+TIMEUICHECK: UI-16-prep setTimeZoneId("Africa/Abidjan") → true（当前 Africa/Abidjan）
+TIMEUICHECK: UI-16 组合框当前项="Africa/Abidjan"（目标="Africa/Abidjan"，C++ 侧 timeZoneId="Africa/Abidjan"）—— 命令写入后轮询把控件带回实况：OK
+TIMEUICHECK: 判据 19/19
+TIMEUICHECK: VERDICT=PASS

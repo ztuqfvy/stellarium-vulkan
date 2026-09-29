@@ -1,0 +1,18 @@
+[t29w-dyn] suites start 2026-09-29T13:07:01.1367276+08:00
+repo HEAD = b4e8cf2
+exe = E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+exe size = 28884480 B   mtime = 2026-09-29T12:14:03.2640739+08:00
+exe md5  = 838A7B55BB0DB8654EF48813CB02F601
+SUITE dyn-engine-run1  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run2  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run3  rc=0  elapsed=32.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-test-run1  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run2  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run3  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+[done] 2026-09-29T13:09:13.6946825+08:00
