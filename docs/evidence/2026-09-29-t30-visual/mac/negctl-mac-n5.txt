@@ -1,0 +1,80 @@
+──────── NEGCTL run 1/5（rc=10）→ negctl-OK ────────
+  UI-17 FAIL=1  UI-20 FAIL=1  UI-21 FAIL=1 UI-22 FAIL=1  UI-23 FAIL=1（五条都要求 ≥1）
+  UI-18 FAIL=0 UI-19 FAIL=0 （这两条预期 **绿**：几何快照取自下一拍，见脚本头注）
+  既有 19 条（UI-01..UI-16）FAIL 命中=0（扰动在它们之后 ⇒ 要求 0）
+TIMEUICHECK: VIS-note 负控模式（STELQUICK_TIME_VISUAL_NEGCTL=1）：月框 height→0、年框 visible→false、JD 行 text→空、状态行前景色→它的有效背景色 #ffffff —— **只扰动观测面**，不改产品代码。期望 UI-17/UI-20/UI-21/UI-22/UI-23 判红，UI-18/UI-19 不受影响（它们的几何快照取自下一拍），既有 19 条零 FAIL
+TIMEUICHECK: UI-17 视觉层：20 个可交互靶控件几何非退化（找到 20/20；零尺寸 1 个；最小 w×h=51.0×24.0；窗口 960×640）：FAIL
+TIMEUICHECK: UI-18 视觉层：20 个靶控件都不被任何祖先裁掉（越界 0 个；页容器=pageStack，960×552）：OK
+TIMEUICHECK: UI-19 视觉层：27 项（20 可交互 + 7 文本行）两两不重叠（比对 351 对；重叠 0 对；最大交叠面积 0.0 px²）—— 贴边不算重叠，容差 1 px²：OK
+TIMEUICHECK: UI-20 视觉层：可见性成对 —— 靶控件不可见 1/20；反例 searchQueryField（页栈 currentIndex=3，非时间页）找到=true 可见=false（要求 false）；隐藏的是：timeYearField：FAIL
+TIMEUICHECK: UI-21 视觉层：七个文本行都画出了内容（空/占位 1 个）—— UT="2026-09-29 07:11:24"  JD=""  MJD="61312.299587"  历法="格里高利历"  速率="x86400（1.00 天/秒）"  方向="前进"  状态="时间已按写入生效。"：FAIL
+TIMEUICHECK: VIS-note 单行文本余量 px（宽度−contentWidth）：**只作读数、不判** —— 它立不了阈值。宽度未被布局约束时它是 ceil(contentWidth)−contentWidth，落在 [0,1) 的取整区间里（这种小值没有信息量）；一旦该行被布局挤压或拉伸，它就跳到**任意量级**（负值 = 文本宽于自身 item、会被裁；正的偏大值 = item 被拉开）⇒ 正常态没有分辨力、被破坏时又没边。见 docs/T30_TIME_VISUAL.zh_CN.md §4.2：UT:0.7 JD:102.0 MJD:0.6 历法:0.3 速率:0.4 方向:0.7
+TIMEUICHECK: UI-22 视觉层：20 个可交互靶控件的中心点命中测试都落回自己（落空 1 个）—— 透明覆盖层/z 序错/被兄弟盖住这三类只有这条看得见；落空的是：timeYearField：FAIL
+TIMEUICHECK: UI-23 视觉层：文本对比度 ≥ 2.0（低于下限 1 项、读不到色 0 项）—— UT=5.75:1(#1565c0/#ffffff) JD=21.00:1(#000000/#ffffff) MJD=21.00:1(#000000/#ffffff) 历法=9.39:1(#6a1b9a/#ffffff) 速率=21.00:1(#000000/#ffffff) 方向=5.13:1(#2e7d32/#ffffff) 状态=1.00:1(#ffffff/#ffffff)；最小 1.00:1；参考：≥4.5 的 6 项、≥3.0 的 6 项：FAIL
+TIMEUICHECK: UI-24 视觉层纯逻辑腿（判别性对照）：对比度 黑白=21.000000（期望 21）、同色=1.000000000（期望 1）、对称差=0.0e+00；矩形包含 真=true/右移 10000px=false/放大越界=false（期望 true/false/false）；交叠面积=25.000（期望 25）、贴边=0.000（期望 0）；命中判定 交叠处=1（期望 1=上层）、无子项命中=-1（期望 −1）、父外=-1（期望 −1）：OK
+TIMEUICHECK: 判据 22/27
+TIMEUICHECK: VERDICT=FAIL
+──────── NEGCTL run 2/5（rc=10）→ negctl-OK ────────
+  UI-17 FAIL=1  UI-20 FAIL=1  UI-21 FAIL=1 UI-22 FAIL=1  UI-23 FAIL=1（五条都要求 ≥1）
+  UI-18 FAIL=0 UI-19 FAIL=0 （这两条预期 **绿**：几何快照取自下一拍，见脚本头注）
+  既有 19 条（UI-01..UI-16）FAIL 命中=0（扰动在它们之后 ⇒ 要求 0）
+TIMEUICHECK: VIS-note 负控模式（STELQUICK_TIME_VISUAL_NEGCTL=1）：月框 height→0、年框 visible→false、JD 行 text→空、状态行前景色→它的有效背景色 #ffffff —— **只扰动观测面**，不改产品代码。期望 UI-17/UI-20/UI-21/UI-22/UI-23 判红，UI-18/UI-19 不受影响（它们的几何快照取自下一拍），既有 19 条零 FAIL
+TIMEUICHECK: UI-17 视觉层：20 个可交互靶控件几何非退化（找到 20/20；零尺寸 1 个；最小 w×h=51.0×24.0；窗口 960×640）：FAIL
+TIMEUICHECK: UI-18 视觉层：20 个靶控件都不被任何祖先裁掉（越界 0 个；页容器=pageStack，960×552）：OK
+TIMEUICHECK: UI-19 视觉层：27 项（20 可交互 + 7 文本行）两两不重叠（比对 351 对；重叠 0 对；最大交叠面积 0.0 px²）—— 贴边不算重叠，容差 1 px²：OK
+TIMEUICHECK: UI-20 视觉层：可见性成对 —— 靶控件不可见 1/20；反例 searchQueryField（页栈 currentIndex=3，非时间页）找到=true 可见=false（要求 false）；隐藏的是：timeYearField：FAIL
+TIMEUICHECK: UI-21 视觉层：七个文本行都画出了内容（空/占位 1 个）—— UT="2026-09-29 07:11:44"  JD=""  MJD="61312.299822"  历法="格里高利历"  速率="x86400（1.00 天/秒）"  方向="前进"  状态="时间已按写入生效。"：FAIL
+TIMEUICHECK: VIS-note 单行文本余量 px（宽度−contentWidth）：**只作读数、不判** —— 它立不了阈值。宽度未被布局约束时它是 ceil(contentWidth)−contentWidth，落在 [0,1) 的取整区间里（这种小值没有信息量）；一旦该行被布局挤压或拉伸，它就跳到**任意量级**（负值 = 文本宽于自身 item、会被裁；正的偏大值 = item 被拉开）⇒ 正常态没有分辨力、被破坏时又没边。见 docs/T30_TIME_VISUAL.zh_CN.md §4.2：UT:0.8 JD:102.0 MJD:0.3 历法:0.3 速率:0.4 方向:0.7
+TIMEUICHECK: UI-22 视觉层：20 个可交互靶控件的中心点命中测试都落回自己（落空 1 个）—— 透明覆盖层/z 序错/被兄弟盖住这三类只有这条看得见；落空的是：timeYearField：FAIL
+TIMEUICHECK: UI-23 视觉层：文本对比度 ≥ 2.0（低于下限 1 项、读不到色 0 项）—— UT=5.75:1(#1565c0/#ffffff) JD=21.00:1(#000000/#ffffff) MJD=21.00:1(#000000/#ffffff) 历法=9.39:1(#6a1b9a/#ffffff) 速率=21.00:1(#000000/#ffffff) 方向=5.13:1(#2e7d32/#ffffff) 状态=1.00:1(#ffffff/#ffffff)；最小 1.00:1；参考：≥4.5 的 6 项、≥3.0 的 6 项：FAIL
+TIMEUICHECK: UI-24 视觉层纯逻辑腿（判别性对照）：对比度 黑白=21.000000（期望 21）、同色=1.000000000（期望 1）、对称差=0.0e+00；矩形包含 真=true/右移 10000px=false/放大越界=false（期望 true/false/false）；交叠面积=25.000（期望 25）、贴边=0.000（期望 0）；命中判定 交叠处=1（期望 1=上层）、无子项命中=-1（期望 −1）、父外=-1（期望 −1）：OK
+TIMEUICHECK: 判据 22/27
+TIMEUICHECK: VERDICT=FAIL
+──────── NEGCTL run 3/5（rc=10）→ negctl-OK ────────
+  UI-17 FAIL=1  UI-20 FAIL=1  UI-21 FAIL=1 UI-22 FAIL=1  UI-23 FAIL=1（五条都要求 ≥1）
+  UI-18 FAIL=0 UI-19 FAIL=0 （这两条预期 **绿**：几何快照取自下一拍，见脚本头注）
+  既有 19 条（UI-01..UI-16）FAIL 命中=0（扰动在它们之后 ⇒ 要求 0）
+TIMEUICHECK: VIS-note 负控模式（STELQUICK_TIME_VISUAL_NEGCTL=1）：月框 height→0、年框 visible→false、JD 行 text→空、状态行前景色→它的有效背景色 #ffffff —— **只扰动观测面**，不改产品代码。期望 UI-17/UI-20/UI-21/UI-22/UI-23 判红，UI-18/UI-19 不受影响（它们的几何快照取自下一拍），既有 19 条零 FAIL
+TIMEUICHECK: UI-17 视觉层：20 个可交互靶控件几何非退化（找到 20/20；零尺寸 1 个；最小 w×h=51.0×24.0；窗口 960×640）：FAIL
+TIMEUICHECK: UI-18 视觉层：20 个靶控件都不被任何祖先裁掉（越界 0 个；页容器=pageStack，960×552）：OK
+TIMEUICHECK: UI-19 视觉层：27 项（20 可交互 + 7 文本行）两两不重叠（比对 351 对；重叠 0 对；最大交叠面积 0.0 px²）—— 贴边不算重叠，容差 1 px²：OK
+TIMEUICHECK: UI-20 视觉层：可见性成对 —— 靶控件不可见 1/20；反例 searchQueryField（页栈 currentIndex=3，非时间页）找到=true 可见=false（要求 false）；隐藏的是：timeYearField：FAIL
+TIMEUICHECK: UI-21 视觉层：七个文本行都画出了内容（空/占位 1 个）—— UT="2026-09-29 07:12:04"  JD=""  MJD="61312.300056"  历法="格里高利历"  速率="x86400（1.00 天/秒）"  方向="前进"  状态="时间已按写入生效。"：FAIL
+TIMEUICHECK: VIS-note 单行文本余量 px（宽度−contentWidth）：**只作读数、不判** —— 它立不了阈值。宽度未被布局约束时它是 ceil(contentWidth)−contentWidth，落在 [0,1) 的取整区间里（这种小值没有信息量）；一旦该行被布局挤压或拉伸，它就跳到**任意量级**（负值 = 文本宽于自身 item、会被裁；正的偏大值 = item 被拉开）⇒ 正常态没有分辨力、被破坏时又没边。见 docs/T30_TIME_VISUAL.zh_CN.md §4.2：UT:0.2 JD:104.0 MJD:0.8 历法:0.3 速率:0.4 方向:0.7
+TIMEUICHECK: UI-22 视觉层：20 个可交互靶控件的中心点命中测试都落回自己（落空 1 个）—— 透明覆盖层/z 序错/被兄弟盖住这三类只有这条看得见；落空的是：timeYearField：FAIL
+TIMEUICHECK: UI-23 视觉层：文本对比度 ≥ 2.0（低于下限 1 项、读不到色 0 项）—— UT=5.75:1(#1565c0/#ffffff) JD=21.00:1(#000000/#ffffff) MJD=21.00:1(#000000/#ffffff) 历法=9.39:1(#6a1b9a/#ffffff) 速率=21.00:1(#000000/#ffffff) 方向=5.13:1(#2e7d32/#ffffff) 状态=1.00:1(#ffffff/#ffffff)；最小 1.00:1；参考：≥4.5 的 6 项、≥3.0 的 6 项：FAIL
+TIMEUICHECK: UI-24 视觉层纯逻辑腿（判别性对照）：对比度 黑白=21.000000（期望 21）、同色=1.000000000（期望 1）、对称差=0.0e+00；矩形包含 真=true/右移 10000px=false/放大越界=false（期望 true/false/false）；交叠面积=25.000（期望 25）、贴边=0.000（期望 0）；命中判定 交叠处=1（期望 1=上层）、无子项命中=-1（期望 −1）、父外=-1（期望 −1）：OK
+TIMEUICHECK: 判据 22/27
+TIMEUICHECK: VERDICT=FAIL
+──────── NEGCTL run 4/5（rc=10）→ negctl-OK ────────
+  UI-17 FAIL=1  UI-20 FAIL=1  UI-21 FAIL=1 UI-22 FAIL=1  UI-23 FAIL=1（五条都要求 ≥1）
+  UI-18 FAIL=0 UI-19 FAIL=0 （这两条预期 **绿**：几何快照取自下一拍，见脚本头注）
+  既有 19 条（UI-01..UI-16）FAIL 命中=0（扰动在它们之后 ⇒ 要求 0）
+TIMEUICHECK: VIS-note 负控模式（STELQUICK_TIME_VISUAL_NEGCTL=1）：月框 height→0、年框 visible→false、JD 行 text→空、状态行前景色→它的有效背景色 #ffffff —— **只扰动观测面**，不改产品代码。期望 UI-17/UI-20/UI-21/UI-22/UI-23 判红，UI-18/UI-19 不受影响（它们的几何快照取自下一拍），既有 19 条零 FAIL
+TIMEUICHECK: UI-17 视觉层：20 个可交互靶控件几何非退化（找到 20/20；零尺寸 1 个；最小 w×h=51.0×24.0；窗口 960×640）：FAIL
+TIMEUICHECK: UI-18 视觉层：20 个靶控件都不被任何祖先裁掉（越界 0 个；页容器=pageStack，960×552）：OK
+TIMEUICHECK: UI-19 视觉层：27 项（20 可交互 + 7 文本行）两两不重叠（比对 351 对；重叠 0 对；最大交叠面积 0.0 px²）—— 贴边不算重叠，容差 1 px²：OK
+TIMEUICHECK: UI-20 视觉层：可见性成对 —— 靶控件不可见 1/20；反例 searchQueryField（页栈 currentIndex=3，非时间页）找到=true 可见=false（要求 false）；隐藏的是：timeYearField：FAIL
+TIMEUICHECK: UI-21 视觉层：七个文本行都画出了内容（空/占位 1 个）—— UT="2026-09-29 07:12:25"  JD=""  MJD="61312.300291"  历法="格里高利历"  速率="x86400（1.00 天/秒）"  方向="前进"  状态="时间已按写入生效。"：FAIL
+TIMEUICHECK: VIS-note 单行文本余量 px（宽度−contentWidth）：**只作读数、不判** —— 它立不了阈值。宽度未被布局约束时它是 ceil(contentWidth)−contentWidth，落在 [0,1) 的取整区间里（这种小值没有信息量）；一旦该行被布局挤压或拉伸，它就跳到**任意量级**（负值 = 文本宽于自身 item、会被裁；正的偏大值 = item 被拉开）⇒ 正常态没有分辨力、被破坏时又没边。见 docs/T30_TIME_VISUAL.zh_CN.md §4.2：UT:0.9 JD:101.0 MJD:0.3 历法:0.3 速率:0.4 方向:0.7
+TIMEUICHECK: UI-22 视觉层：20 个可交互靶控件的中心点命中测试都落回自己（落空 1 个）—— 透明覆盖层/z 序错/被兄弟盖住这三类只有这条看得见；落空的是：timeYearField：FAIL
+TIMEUICHECK: UI-23 视觉层：文本对比度 ≥ 2.0（低于下限 1 项、读不到色 0 项）—— UT=5.75:1(#1565c0/#ffffff) JD=21.00:1(#000000/#ffffff) MJD=21.00:1(#000000/#ffffff) 历法=9.39:1(#6a1b9a/#ffffff) 速率=21.00:1(#000000/#ffffff) 方向=5.13:1(#2e7d32/#ffffff) 状态=1.00:1(#ffffff/#ffffff)；最小 1.00:1；参考：≥4.5 的 6 项、≥3.0 的 6 项：FAIL
+TIMEUICHECK: UI-24 视觉层纯逻辑腿（判别性对照）：对比度 黑白=21.000000（期望 21）、同色=1.000000000（期望 1）、对称差=0.0e+00；矩形包含 真=true/右移 10000px=false/放大越界=false（期望 true/false/false）；交叠面积=25.000（期望 25）、贴边=0.000（期望 0）；命中判定 交叠处=1（期望 1=上层）、无子项命中=-1（期望 −1）、父外=-1（期望 −1）：OK
+TIMEUICHECK: 判据 22/27
+TIMEUICHECK: VERDICT=FAIL
+──────── NEGCTL run 5/5（rc=10）→ negctl-OK ────────
+  UI-17 FAIL=1  UI-20 FAIL=1  UI-21 FAIL=1 UI-22 FAIL=1  UI-23 FAIL=1（五条都要求 ≥1）
+  UI-18 FAIL=0 UI-19 FAIL=0 （这两条预期 **绿**：几何快照取自下一拍，见脚本头注）
+  既有 19 条（UI-01..UI-16）FAIL 命中=0（扰动在它们之后 ⇒ 要求 0）
+TIMEUICHECK: VIS-note 负控模式（STELQUICK_TIME_VISUAL_NEGCTL=1）：月框 height→0、年框 visible→false、JD 行 text→空、状态行前景色→它的有效背景色 #ffffff —— **只扰动观测面**，不改产品代码。期望 UI-17/UI-20/UI-21/UI-22/UI-23 判红，UI-18/UI-19 不受影响（它们的几何快照取自下一拍），既有 19 条零 FAIL
+TIMEUICHECK: UI-17 视觉层：20 个可交互靶控件几何非退化（找到 20/20；零尺寸 1 个；最小 w×h=51.0×24.0；窗口 960×640）：FAIL
+TIMEUICHECK: UI-18 视觉层：20 个靶控件都不被任何祖先裁掉（越界 0 个；页容器=pageStack，960×552）：OK
+TIMEUICHECK: UI-19 视觉层：27 项（20 可交互 + 7 文本行）两两不重叠（比对 351 对；重叠 0 对；最大交叠面积 0.0 px²）—— 贴边不算重叠，容差 1 px²：OK
+TIMEUICHECK: UI-20 视觉层：可见性成对 —— 靶控件不可见 1/20；反例 searchQueryField（页栈 currentIndex=3，非时间页）找到=true 可见=false（要求 false）；隐藏的是：timeYearField：FAIL
+TIMEUICHECK: UI-21 视觉层：七个文本行都画出了内容（空/占位 1 个）—— UT="2026-09-29 07:12:45"  JD=""  MJD="61312.300525"  历法="格里高利历"  速率="x86400（1.00 天/秒）"  方向="前进"  状态="时间已按写入生效。"：FAIL
+TIMEUICHECK: VIS-note 单行文本余量 px（宽度−contentWidth）：**只作读数、不判** —— 它立不了阈值。宽度未被布局约束时它是 ceil(contentWidth)−contentWidth，落在 [0,1) 的取整区间里（这种小值没有信息量）；一旦该行被布局挤压或拉伸，它就跳到**任意量级**（负值 = 文本宽于自身 item、会被裁；正的偏大值 = item 被拉开）⇒ 正常态没有分辨力、被破坏时又没边。见 docs/T30_TIME_VISUAL.zh_CN.md §4.2：UT:0.4 JD:103.0 MJD:0.3 历法:0.3 速率:0.4 方向:0.7
+TIMEUICHECK: UI-22 视觉层：20 个可交互靶控件的中心点命中测试都落回自己（落空 1 个）—— 透明覆盖层/z 序错/被兄弟盖住这三类只有这条看得见；落空的是：timeYearField：FAIL
+TIMEUICHECK: UI-23 视觉层：文本对比度 ≥ 2.0（低于下限 1 项、读不到色 0 项）—— UT=5.75:1(#1565c0/#ffffff) JD=21.00:1(#000000/#ffffff) MJD=21.00:1(#000000/#ffffff) 历法=9.39:1(#6a1b9a/#ffffff) 速率=21.00:1(#000000/#ffffff) 方向=5.13:1(#2e7d32/#ffffff) 状态=1.00:1(#ffffff/#ffffff)；最小 1.00:1；参考：≥4.5 的 6 项、≥3.0 的 6 项：FAIL
+TIMEUICHECK: UI-24 视觉层纯逻辑腿（判别性对照）：对比度 黑白=21.000000（期望 21）、同色=1.000000000（期望 1）、对称差=0.0e+00；矩形包含 真=true/右移 10000px=false/放大越界=false（期望 true/false/false）；交叠面积=25.000（期望 25）、贴边=0.000（期望 0）；命中判定 交叠处=1（期望 1=上层）、无子项命中=-1（期望 −1）、父外=-1（期望 −1）：OK
+TIMEUICHECK: 判据 22/27
+TIMEUICHECK: VERDICT=FAIL

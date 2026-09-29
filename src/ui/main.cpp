@@ -78,6 +78,8 @@
 #include <QKeyEvent>            // T20：Esc 判据要投递**真实**键盘事件（先例见 AppFacadeCheck AC-12）
 #include <QDateTime>            // T22：按偏移挑时区候选（与"跑在哪一天"解耦）
 #include <QTimeZone>            // T22
+#include <QColor>               // T30：视觉层判据读控件声明色与有效背景色算对比度
+#include <cmath>                // T30：std::pow（WCAG 亮度分量）
 #include "core/StelFileMgr.hpp"
 #include "core/StelTranslator.hpp"
 #include "core/StelIniParser.hpp"
@@ -880,10 +882,13 @@ int runUiLocateCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFac
 //     TimePage 头注里"改成显式应用是为了可测"所指向的那条；它同时验了 QML 的
 //     `dirty` 守卫是活的（挡住 400ms 自动回填，见 UI-04）。
 //
-// 判据 19 条：UI-01..UI-16（含 UI-09a/09b、UI-14a/14b）。退出码：0=PASS / 10=FAIL /
-// 6=UNAVAILABLE。
+// 判据 27 条：UI-01..UI-16（含 UI-09a/09b、UI-14a/14b）+ UI-17..UI-24（T30 视觉层）。
+// 退出码：0=PASS / 10=FAIL / 6=UNAVAILABLE。
 // T22（2026-09-28）追加 UI-12..UI-16：新控件锚点、MJD 投影行、历法行**成对**、
 // 速率**成对**（真实点击「+」→ 引擎变了 ∧ 仪表跟着变）、时区组合框回填。
+// T30（2026-09-29）追加 UI-17..UI-24：**视觉层**（几何非退化 / 不被祖先裁掉 /
+// 两两不重叠 / 可见性成对 / 文本非空非占位 / 文本不截断 / 对比度下限 / 度量的纯逻辑腿）。
+// 见 `uiLinChannel` 上方那段注释，那里写了动机、阈值出处与负控口径。
 // ══════════════════════════════════════════════════════════════════════════
 
 //! 本地时刻用例（年/月/日/时/分/秒）。四组**互不相同**，用来判别"QML 有没有把值写死"。
@@ -891,6 +896,231 @@ const int kUiTimeA[6] = {2030,  6, 15,  9, 30,  0};   // C++ 写 → 看 QML 字
 const int kUiTimeB[6] = {1999,  1,  1,  0,  0,  0};   // 第二组（与 A 不同 ⇒ 判别性）
 const int kUiTimeC[6] = {2011, 11, 11, 11, 11, 11};   // 在 UI 上改框后点「应用」
 const int kUiTimeD[6] = {2022,  2, 22, 22, 22, 22};   // 改了框但**不点应用**（负控）
+
+// ══════════════════════════════════════════════════════════════════════════
+// T30（2026-09-29）「时间页**视觉层**」判据组的度量
+//
+// 交付物出处（A4 移交清单）："QML 交互级测试：时间页新增控件的视觉层 ⬜ 仍待做"。
+//
+// 动机：UI-01..UI-16 断言的全是**数据面** —— 锚点找得到、值对不对、点击有没有落到
+// 引擎。它们对"控件存在但**看不见**"完全无感，而 Qt Quick 最典型的布局缺陷正是这
+// 一类（本仓库已经真金白银踩过其中一条：T22 实测到 `resultList` = **207×0**，那是
+// "布局/polish 还没跑完"的前尺寸，照它算坐标投递点击就是空点）：
+//   · 零尺寸（控件在、但宽或高为 0）
+//   · 被祖先裁掉 / 溢出面板（RowLayout 挤不下 ⇒ 右列按钮跑到页外）          → UI-18
+//   · 叠在一处（两个控件矩形相交，上面那个把下面那个盖住）                  → UI-19
+//   · 不可见（visible=false，或某个祖先把整支子树隐藏了）                    → UI-20
+//   · 文本为空串（Label 画出来是一片空白）                                   → UI-21
+//   · **点不到**（透明覆盖层 / z 序错 / 被兄弟盖住 —— 矩形检查看不出来）     → UI-22
+//   · 前景 ≈ 背景（文字"存在但读不到"）                                      → UI-23
+//
+//  「文本被截断」这一类**故意不立判据**：Label 的宽度取自 `implicitWidth`，而
+//  QQuickText 的 implicitWidth 就是 `ceil(contentWidth)` ⇒ 两者之差恒在 [0,1) 的
+//  取整区间里，任何阈值都只会给出恒真的结论（假绿）。实测六行余量 0.2~0.7 px 正是
+//  这个取整余量。它改作 **读数** 打在 UI-21 的 note 里 —— 有余量记录、但不能假装
+//  它是一条判据。
+//
+// 手法（与 UI-01..UI-16 同一纪律）：
+//   · **只读** QQuickItem 的原始几何/属性（`mapToItem` + width/height + isVisible +
+//     text/color），**不复刻**任何被测逻辑（血泪第 4 条）；
+//   · 采一次**快照**，后续判据只读快照 —— 免得判据读到一半被布局改掉；
+//   · 两个自写的小函数（WCAG 对比度、矩形包含/交叠）另立**纯逻辑腿**（UI-24）用
+//     **已知输入 ⇒ 已知输出**验算。没有这条腿，任何一个函数写成 `return 21.0` /
+//     `return true`，活体判据都会全绿，而"全绿"看起来毫无破绽（血泪第 8 条）。
+//
+// **本判据组不改产品代码**：页面/面板一律沿**父链**取（不新增 QML 锚点）。
+// ══════════════════════════════════════════════════════════════════════════
+
+//! 对比度下限：低于它就属于"文字存在但读不到"。
+//! 为什么是 2.0 而不是 WCAG 正文的 4.5：本判据的职责是**回归护栏**（抓"前景被改成
+//! 与背景同色"这类真实缺陷），不是重新评审设计。产品里几处浅灰说明文字本来就低于
+//! AA，按 4.5 判会把**既有的设计选择**判红 —— 那不是本任务要的。
+//! 达标情况会作为读数一并打印（≥4.5 / ≥3.0 各几项），供人工评审。
+const double kUiContrastFloor = 2.0;
+
+//! sRGB 8bit 分量 → WCAG 线性亮度分量。
+double uiLinChannel(double c8)
+{
+    const double c = c8 / 255.0;
+    return (c <= 0.04045) ? (c / 12.92) : std::pow((c + 0.055) / 1.055, 2.4);
+}
+
+//! WCAG 相对亮度。
+double uiRelLuminance(const QColor &c)
+{
+    return 0.2126 * uiLinChannel(c.red()) + 0.7152 * uiLinChannel(c.green())
+         + 0.0722 * uiLinChannel(c.blue());
+}
+
+//! WCAG 对比度 (L_hi + 0.05) / (L_lo + 0.05)。**纯函数、无副作用** ⇒ UI-24 用
+//! 标准值（黑白 = 21）与自明值（同色 = 1）验算它，不由被测代码反推。
+double uiContrastRatio(const QColor &a, const QColor &b)
+{
+    const double la = uiRelLuminance(a), lb = uiRelLuminance(b);
+    const double hi = qMax(la, lb), lo = qMin(la, lb);
+    return (hi + 0.05) / (lo + 0.05);
+}
+
+//! 控件在 root 坐标系里的矩形。用 `mapToItem` 一次映射，**不**自己累加 x/y
+//! （累加会在祖先带 scale/transform 时悄悄错掉）。
+QRectF uiRectIn(QQuickItem *item, QQuickItem *root)
+{
+    if (!item || !root)
+        return QRectF();
+    const QPointF tl = item->mapToItem(root, QPointF(0.0, 0.0));
+    return QRectF(tl, QSizeF(item->width(), item->height()));
+}
+
+//! 两矩形交叠面积（相交但某边为 0 ⇒ 面积 0，即"贴边不算重叠"）。纯函数。
+double uiIntersectArea(const QRectF &a, const QRectF &b)
+{
+    const QRectF i = a.intersected(b);
+    return (i.width() > 0.0 && i.height() > 0.0) ? i.width() * i.height() : 0.0;
+}
+
+//! inner 是否落在 outer 内（容差 eps）。纯函数 —— UI-18 的祖先链检查与 UI-24 的
+//! 纯逻辑腿**共用**这一个判定，所以 UI-24 在反例上给 false 就能证明 UI-18 不是恒真。
+bool uiRectInside(const QRectF &inner, const QRectF &outer, double eps)
+{
+    return inner.left() >= outer.left() - eps && inner.top() >= outer.top() - eps
+        && inner.right() <= outer.right() + eps && inner.bottom() <= outer.bottom() + eps;
+}
+
+//! 给定矩形 r（item 自身或"文本绘制矩形"）沿父链一直查到 root：若**任一**祖先装不下
+//! 它就返回该祖先的描述；全部装得下则返回空串。这就是"**被祖先裁掉 / 溢出面板**"
+//! 的定义，`uiAncestorOverflowDetail` 与 UI-22 共用它。
+QString uiRectOverflowDetail(const QRectF &r, QQuickItem *item, QQuickItem *root, double eps)
+{
+    if (!item || !root)
+        return QStringLiteral("(缺锚点)");
+    for (QQuickItem *a = item->parentItem(); a; a = a->parentItem())
+    {
+        const QRectF ar = uiRectIn(a, root);
+        if (!uiRectInside(r, ar, eps))
+        {
+            return QStringLiteral("被 %1 裁掉（自身 %2,%3 %4×%5；祖先 %6,%7 %8×%9）")
+                .arg(a->objectName().isEmpty()
+                         ? QString::fromLatin1(a->metaObject()->className())
+                         : a->objectName())
+                .arg(r.x(), 0, 'f', 1).arg(r.y(), 0, 'f', 1)
+                .arg(r.width(), 0, 'f', 1).arg(r.height(), 0, 'f', 1)
+                .arg(ar.x(), 0, 'f', 1).arg(ar.y(), 0, 'f', 1)
+                .arg(ar.width(), 0, 'f', 1).arg(ar.height(), 0, 'f', 1);
+        }
+        if (a == root)
+            break;
+    }
+    return QString();
+}
+
+//! 控件自身的矩形是否被祖先裁掉（UI-18 用）。
+QString uiAncestorOverflowDetail(QQuickItem *item, QQuickItem *root, double eps)
+{
+    if (!item || !root)
+        return QStringLiteral("(缺锚点)");
+    return uiRectOverflowDetail(uiRectIn(item, root), item, root, eps);
+}
+
+//! 命中判定的**纯几何核**：父矩形 + 一组"按叠加顺序排列（**列表末尾在最上层**）"的
+//! 子矩形 + 点 ⇒ 返回命中的子下标；都不命中返回 -1。
+//! 抽成纯函数是为了 UI-24 能用已知输入验算"**最上层那个赢**"这条语义 —— 否则
+//! 下降逻辑只能靠"跑起来看着对"来背书（血泪第 8 条）。
+int uiHitPickChild(const QRectF &parentRect, const QList<QRectF> &childRects, const QPointF &p)
+{
+    if (!parentRect.contains(p))
+        return -1;
+    for (int i = childRects.size() - 1; i >= 0; --i)
+        if (childRects.at(i).contains(p))
+            return i;
+    return -1;
+}
+
+//! 手写的命中下降（**不用 `QQuickItem::childAt`**）：实测它在本工程的窗口结构下
+//! 只下降一层就停 —— `pageStack->childAt(...)` 返回的是 `TimePage` 本身，而不是
+//! 它里面那个按钮（`ApplicationWindowContentControl` 那一层同样）。既然它给不出
+//! 可用的结果，就自己走一遍，语义按场景图来：
+//!   · 只考虑 `isVisible()` 的子项；
+//!   · **子项顺序的反向** = 叠加顺序（QML 里后声明的画在上面）；
+//!   · 命中即递归；子项都不命中时返回 `self`（点落在自己身上）。
+//! ⚠️ 刻意**不**建模 `z` 与 `clip`（本页没有设过 `z`；`clip` 只影响"能否看到超出
+//! 父边界的部分"，而 UI-18 已经断言没有任何控件越出祖先）。这条限制写在判据的
+//! 报告里，不藏着。
+QQuickItem *uiHitAt(QQuickItem *self, const QPointF &pInSelf)
+{
+    if (!self || !self->isVisible())
+        return nullptr;
+    const QRectF selfRect(0.0, 0.0, self->width(), self->height());
+    QList<QRectF> childRects;
+    QList<QQuickItem *> childItems;
+    const QList<QQuickItem *> kids = self->childItems();
+    for (QQuickItem *k : kids)
+    {
+        if (!k->isVisible())
+            continue;
+        childRects.append(uiRectIn(k, self));
+        childItems.append(k);
+    }
+    const int idx = uiHitPickChild(selfRect, childRects, pInSelf);
+    if (idx < 0)
+        return self;
+    QQuickItem *k = childItems.at(idx);
+    if (QQuickItem *deep = uiHitAt(k, k->mapFromItem(self, pInSelf)))
+        return deep;
+    return k;
+}
+
+//! 靶控件**中心点**命中测试是否落回它自己（含它的后代 —— 按钮的文字/背景子项算命中）。
+//! 这是"**点得到**"的定义，也是本组里唯一能抓住"透明覆盖层 / z 序错 / 被兄弟盖住"
+//! 三类缺陷的判据（矩形检查对它们**统统无感**）。
+bool uiHitTestHits(QQuickItem *root, QQuickItem *target)
+{
+    if (!root || !target)
+        return false;
+    const QPointF c = target->mapToItem(
+        root, QPointF(target->width() / 2.0, target->height() / 2.0));
+    QQuickItem *hit = uiHitAt(root, c);
+    for (QQuickItem *p = hit; p; p = p->parentItem())
+        if (p == target)
+            return true;
+    return false;
+}
+
+//! 控件的**有效背景色**：沿父链找第一个"真的声明了不透明 color"的祖先。
+//! 找不到就落回 fallback。Button/CheckBox/ComboBox 的文字底色由 style 绘制，
+//! 读不到 color ⇒ 那一类**不纳入**对比度判据（不假装覆盖）。
+QColor uiEffectiveBackground(QQuickItem *item, const QColor &fallback)
+{
+    for (QQuickItem *a = item ? item->parentItem() : nullptr; a; a = a->parentItem())
+    {
+        const QVariant v = a->property("color");
+        if (v.isValid() && v.canConvert<QColor>())
+        {
+            const QColor c = v.value<QColor>();
+            if (c.isValid() && c.alpha() > 0)
+                return c;
+        }
+    }
+    return fallback;
+}
+
+//! 视觉层几何面的靶控件（20 个**可交互**控件：6 自旋框 + 3 日历按钮 + 4 步进按钮
+//! + 7 速率按钮）。名字都是既有的 objectName（T19/T22 加的锚点），全部照抄，
+//! 不新增、不改名。
+const char *const kUiVisGeoNames[20] = {
+    "timeYearField", "timeMonthField", "timeDayField", "timeHourField",
+    "timeMinuteField", "timeSecondField",
+    "timeApplyButton", "timeResetButton", "timeNowButton",
+    "timeSubDayButton", "timeAddDayButton", "timeSubHourButton", "timeAddHourButton",
+    "timeSpeedDownButton", "timeSpeedDownLessButton", "timeRealTimeSpeedButton",
+    "timeZeroRateButton", "timeReverseButton", "timeSpeedUpLessButton",
+    "timeSpeedUpButton"};
+
+//! 视觉层文本面的靶控件（7 个文本行）。前 6 个是**非换行**的单行投影，
+//! 第 7 个（状态行）是 WordWrap ⇒ 不纳入"不截断"判据。
+const char *const kUiVisTextNames[7] = {
+    "timeUtcLabel", "timeJdLabel", "timeMjdLabel", "timeCalendarLabel",
+    "timeRateLabel", "timeDirectionLabel", "timeStatusLabel"};
+const char *const kUiVisTextZH[7] = {"UT", "JD", "MJD", "历法", "速率", "方向", "状态"};
 
 struct UiTimeCheck
 {
@@ -931,6 +1161,19 @@ struct UiTimeCheck
     double rateBeforeClick = 0.0;  //!< UI-15 点击「+」之前的引擎速率
     QString rateTextBefore;        //!< UI-15 点击之前的速率行文本
     QString tzTargetId;            //!< UI-16 要切入的时区 id（UI-15 相位里挑好）
+
+    // ── T30 视觉层（UI-17..UI-24）────────────────────────────────────────────
+    //! 采集时刻的快照。判据只读快照，**不再**触碰控件（免得读到一半被布局改掉）。
+    QList<QQuickItem *> visItems;   //!< 几何面靶控件（找到几个算几个，与 visNames 对齐）
+    QStringList visNames;
+    QList<QRectF> visRects;         //!< 上者在 window contentItem 坐标系里的矩形
+    QString visGeometryWhy;         //!< 采集阶段没找到的锚点（空串 = 全找到）
+    //! 文本面靶控件（与 `kUiVisTextNames` 同下标；nullptr = 该锚点没找到）。
+    QQuickItem *visText[7] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    QList<QRectF> visTextRects;     //!< 上者在 window contentItem 坐标系里的矩形
+    QQuickItem *pageStack = nullptr;
+    QQuickItem *searchQueryField = nullptr;  //!< 判别性对照：**非当前页**的控件
+    bool negCtlApplied = false;     //!< STELQUICK_TIME_VISUAL_NEGCTL 的扰动只做一次
 };
 
 void uiTimeMark(UiTimeCheck *c, bool ok, const QString &line)
@@ -1436,7 +1679,7 @@ void uiTimeStep(QGuiApplication *app, std::shared_ptr<UiTimeCheck> c)
         }
         break;
     }
-    default: {
+    case 21: {
         // ── UI-16：时区组合框跟着**实况**回填（C++ 写入 → 300 ms 轮询 → ComboBox）──
         //  这条测的是"程序赋值 currentIndex"这条回填路 —— 它**不会**触发 activated
         //  （只有用户交互才触发），所以回填不会反过来再写一次引擎。
@@ -1448,6 +1691,388 @@ void uiTimeStep(QGuiApplication *app, std::shared_ptr<UiTimeCheck> c)
                                       "timeZoneId=\"%3\"）—— 命令写入后轮询把控件带回实况")
                            .arg(shown, c->tzTargetId, c->facade->timeZoneId()));
         }
+        break;
+    }
+    // ══ T30（2026-09-29）时间页**视觉层**判据组（UI-17..UI-24）═════════════════
+    //  交付物出处：A4 移交清单"QML 交互级测试：时间页新增控件的视觉层 ⬜ 仍待做"。
+    //  设计理由、阈值出处、以及"为什么不新增 QML 锚点"见文件上方 `uiLinChannel`
+    //  那一段注释。这里只重复两条**执行**纪律：
+    //    · 一条判据要么**成对**（正例 ∧ 反例），要么有**判别性对照**（纯逻辑腿）；
+    //    · 负控扰动只动**观测面**、不动产品代码，且**不洗成 PASS**。
+    case 22: {
+        // ── 负控扰动（一次性；仅环境变量置位时）────────────────────────────
+        //  四个扰动分别打中"几何 / 可见性 / 文本 / 颜色"四族判据：
+        //    ① 月框 `height=0`      ⇒ 几何退化（UI-17）必须红；
+        //    ② 年框 `visible=false` ⇒ 可见性（UI-20）与命中测试（UI-22）必须红；
+        //    ③ JD 行 `text=""`      ⇒ 文本非空（UI-21）必须红；
+        //    ④ 状态行前景色改成它**自己的有效背景色** ⇒ 对比度 = 1.0（UI-23）必须红。
+        //  ⚠️ 为什么这些扰动"打得到"：
+        //    · `height` 直接赋值后，布局的 polish 要等**事件循环下一拍**才会把它改回去，
+        //      而采集就在**同一个同步块**里紧接着做 ⇒ 读到的一定是被扰动后的几何。
+        //      （这也是为什么 UI-18/UI-19 不会跟着红：它们用的是下一拍的快照。）
+        //    · `visible` 不是布局管的属性，改了就一直有效。
+        //    · `setProperty` 赋给**带绑定的**属性会**解绑**（JD 行的 text 绑定
+        //      `timePage.jdText`、状态行的 color 绑定 `lastTimeRefusal`），所以不会被
+        //      随后的 300 ms 轮询改回去 —— 这正是负控需要的"稳定破坏"。
+        //  扰动发生在 UI-01..UI-16 **全部跑完之后**，故那些判据看到的是干净页（脚本
+        //  会断言它们零 FAIL）。
+        if (qEnvironmentVariableIsSet("STELQUICK_TIME_VISUAL_NEGCTL") && !c->negCtlApplied)
+        {
+            c->negCtlApplied = true;
+            const QColor bg = c->statusLabel
+                                  ? uiEffectiveBackground(c->statusLabel, QColor(QStringLiteral("#ffffff")))
+                                  : QColor(QStringLiteral("#ffffff"));
+            c->details.append(QStringLiteral(
+                "VIS-note 负控模式（STELQUICK_TIME_VISUAL_NEGCTL=1）：月框 height→0、"
+                "年框 visible→false、JD 行 text→空、状态行前景色→它的有效背景色 %1 "
+                "—— **只扰动观测面**，不改产品代码。期望 UI-17/UI-20/UI-21/UI-22/UI-23 "
+                "判红，UI-18/UI-19 不受影响（它们的几何快照取自下一拍），"
+                "既有 19 条零 FAIL").arg(bg.name()));
+            if (c->fields[1])
+                c->fields[1]->setProperty("height", 0.0);          // ①
+            if (c->fields[0])
+                c->fields[0]->setProperty("visible", false);        // ②
+            QQuickItem *jd = c->window->findChild<QQuickItem *>(QStringLiteral("timeJdLabel"));
+            if (jd)
+                jd->setProperty("text", QString());                 // ③
+            if (c->statusLabel)
+                c->statusLabel->setProperty("color", bg);           // ④
+        }
+
+        // ── 采集靶控件快照（几何面 + 文本面）──────────────────────────────
+        QStringList missing;
+        c->visItems.clear();
+        c->visNames.clear();
+        for (int k = 0; k < 20; ++k)
+        {
+            const QString nm = QString::fromLatin1(kUiVisGeoNames[k]);
+            QQuickItem *it = c->window->findChild<QQuickItem *>(nm);
+            if (!it)
+            {
+                missing.append(nm);
+                continue;   // 保持 visItems / visNames / visRects 三者**同下标对齐**
+            }
+            c->visItems.append(it);
+            c->visNames.append(nm);
+        }
+        c->visGeometryWhy = missing.isEmpty()
+                                ? QString()
+                                : QStringLiteral("找不到 %1 个锚点：%2")
+                                      .arg(missing.size())
+                                      .arg(missing.join(QStringLiteral("、")));
+        QQuickItem *root = c->window->contentItem();
+        c->visRects.clear();
+        for (QQuickItem *it : c->visItems)
+            c->visRects.append(uiRectIn(it, root));
+        // 文本面：7 个文本行（顺序与 kUiVisTextNames / kUiVisTextZH 对齐）
+        c->visTextRects.clear();
+        for (int k = 0; k < 7; ++k)
+        {
+            c->visText[k] = c->window->findChild<QQuickItem *>(
+                QString::fromLatin1(kUiVisTextNames[k]));
+            c->visTextRects.append(uiRectIn(c->visText[k], root));
+        }
+        if (!c->pageStack)
+            c->pageStack = c->window->findChild<QQuickItem *>(QStringLiteral("pageStack"));
+        if (!c->searchQueryField)
+            c->searchQueryField =
+                c->window->findChild<QQuickItem *>(QStringLiteral("searchQueryField"));
+
+        // ── UI-17：几何**非退化**（有正尺寸）──────────────────────────────
+        //  专门打"控件在、但宽或高是 0"这一类：T22 实测过的 207×0 就是它。
+        int degenerate = 0;
+        double minW = -1.0, minH = -1.0;
+        for (QQuickItem *it : c->visItems)
+        {
+            if (it->width() <= 1.0 || it->height() <= 1.0)
+            {
+                ++degenerate;
+                continue;
+            }
+            minW = (minW < 0.0) ? it->width() : qMin(minW, it->width());
+            minH = (minH < 0.0) ? it->height() : qMin(minH, it->height());
+        }
+        uiTimeMark(c.get(),
+                   c->visItems.size() == 20 && degenerate == 0 && c->visGeometryWhy.isEmpty(),
+                   QStringLiteral("UI-17 视觉层：20 个可交互靶控件几何非退化（找到 %1/20；"
+                                  "零尺寸 %2 个；最小 w×h=%3×%4；窗口 %5×%6）%7")
+                       .arg(c->visItems.size()).arg(degenerate)
+                       .arg(minW, 0, 'f', 1).arg(minH, 0, 'f', 1)
+                       .arg(root ? root->width() : -1.0, 0, 'f', 0)
+                       .arg(root ? root->height() : -1.0, 0, 'f', 0)
+                       .arg(c->visGeometryWhy.isEmpty()
+                                ? QString()
+                                : QStringLiteral("；%1").arg(c->visGeometryWhy)));
+        break;
+    }
+    case 23: {
+        QQuickItem *root = c->window->contentItem();
+
+        // ── UI-18：**不被任何祖先裁掉**（含页容器与两侧面板）───────────────
+        //  为什么不新增 QML 锚点去拿"页矩形"：沿**父链**逐级比对**更强** —— 它同时
+        //  覆盖"跑到页外"和"溢出自己所在的面板（白色圆角块）"两种越界，而且一个
+        //  QML 锚点都不用加（本轮产品代码零改动）。
+        QStringList clipped;
+        for (int k = 0; k < c->visItems.size(); ++k)
+        {
+            const QString why = uiAncestorOverflowDetail(c->visItems[k], root, 1.0);
+            if (!why.isEmpty())
+                clipped.append(QStringLiteral("%1 %2").arg(c->visNames[k], why));
+        }
+        uiTimeMark(c.get(), c->visItems.size() == 20 && clipped.isEmpty(),
+                   QStringLiteral("UI-18 视觉层：20 个靶控件都不被任何祖先裁掉（越界 %1 个；"
+                                  "页容器=%2，%3×%4）%5")
+                       .arg(clipped.size())
+                       .arg(c->pageStack ? (c->pageStack->objectName().isEmpty()
+                                                ? QStringLiteral("(未命名)")
+                                                : c->pageStack->objectName())
+                                         : QStringLiteral("(缺)"))
+                       .arg(c->pageStack ? c->pageStack->width() : -1.0, 0, 'f', 0)
+                       .arg(c->pageStack ? c->pageStack->height() : -1.0, 0, 'f', 0)
+                       .arg(clipped.isEmpty() ? QString()
+                                              : QStringLiteral("；首个：%1").arg(clipped.first())));
+
+        // ── UI-19：两两**不重叠**（27 项 = 20 可交互 + 7 文本行）────────────
+        //  打"塌在一处"这一族：布局彻底失效时所有控件会堆在 (0,0)，矩形互相包含，
+        //  交叠面积很大 —— 而"锚点找得到""值也对"这类判据完全看不出来。
+        //  文本行也纳入：`GridLayout` 里"文字压住旁边的输入框"是同一族的缺陷。
+        QList<QRectF> allRects = c->visRects;
+        allRects += c->visTextRects;
+        QStringList allNames = c->visNames;
+        for (int k = 0; k < 7; ++k)
+            allNames.append(QStringLiteral("文本行·%1").arg(QString::fromUtf8(kUiVisTextZH[k])));
+        int overlaps = 0;
+        double worst = 0.0;
+        QString worstPair;
+        for (int i = 0; i < allRects.size(); ++i)
+        {
+            for (int j = i + 1; j < allRects.size(); ++j)
+            {
+                const double a = uiIntersectArea(allRects[i], allRects[j]);
+                if (a > 1.0)
+                {
+                    ++overlaps;
+                    if (a > worst)
+                    {
+                        worst = a;
+                        worstPair = allNames[i] + QStringLiteral("×") + allNames[j];
+                    }
+                }
+            }
+        }
+        uiTimeMark(c.get(), c->visRects.size() == 20 && allRects.size() == 27 && overlaps == 0,
+                   QStringLiteral("UI-19 视觉层：27 项（20 可交互 + 7 文本行）两两不重叠"
+                                  "（比对 %1 对；重叠 %2 对；最大交叠面积 %3 px²%4）—— "
+                                  "贴边不算重叠，容差 1 px²")
+                       .arg(allRects.size() * (allRects.size() - 1) / 2)
+                       .arg(overlaps).arg(worst, 0, 'f', 1)
+                       .arg(worstPair.isEmpty()
+                                ? QString()
+                                : QStringLiteral("，%1").arg(worstPair)));
+        break;
+    }
+    case 24: {
+        // ── UI-20：可见性**成对**（正例集合 ∧ 反例），兼作"可见性判定可判别"对照 ─
+        //  正例：时间页上的 20 个靶控件**全部** isVisible()。
+        //  反例：**非当前页**的 `searchQueryField` 必须 isVisible()==false
+        //        （StackLayout 的契约就是"只有当前页可见"）。
+        //  没有反例腿的话，"靶控件都可见"这条在 isVisible() 恒真的实现下也会绿。
+        QStringList hidden;
+        for (int k = 0; k < c->visItems.size(); ++k)
+            if (!c->visItems[k]->isVisible())
+                hidden.append(c->visNames[k]);
+        const bool probeFound = (c->searchQueryField != nullptr);
+        const bool probeVisible = probeFound && c->searchQueryField->isVisible();
+        const int curIdx = c->pageStack ? c->pageStack->property("currentIndex").toInt() : -1;
+        uiTimeMark(c.get(),
+                   c->visItems.size() == 20 && hidden.isEmpty() && probeFound && !probeVisible,
+                   QStringLiteral("UI-20 视觉层：可见性成对 —— 靶控件不可见 %1/%2；"
+                                  "反例 searchQueryField（页栈 currentIndex=%3，非时间页）"
+                                  "找到=%4 可见=%5（要求 false）%6")
+                       .arg(hidden.size()).arg(c->visItems.size()).arg(curIdx)
+                       .arg(probeFound ? QStringLiteral("true") : QStringLiteral("false"))
+                       .arg(probeVisible ? QStringLiteral("true") : QStringLiteral("false"))
+                       .arg(hidden.isEmpty()
+                                ? QString()
+                                : QStringLiteral("；隐藏的是：%1")
+                                      .arg(hidden.join(QStringLiteral("、")))));
+
+        // ── UI-21：七个文本行**都画出了内容**（非空、非占位符"?"）──────────
+        //  与 UI-10a/UI-13/UI-14/UI-15 的分工：那几条管"值对不对"，这条管
+        //  "**有没有东西**"—— 一条空串 Label 在视觉上就是一块空白，而它的值
+        //  （空串）在数据面判据里可能根本不被断言（例如 UT 行从来没被判过）。
+        QQuickItem *const *txt = c->visText;
+        int blank = 0;
+        QStringList shards;
+        for (int k = 0; k < 7; ++k)
+        {
+            const QString t = txt[k] ? txt[k]->property("text").toString() : QString();
+            const bool ok = txt[k] && !t.isEmpty() && t != QStringLiteral("—");
+            if (!ok)
+                ++blank;
+            shards.append(QStringLiteral("%1=\"%2\"")
+                              .arg(QString::fromUtf8(kUiVisTextZH[k]), t));
+        }
+        uiTimeMark(c.get(), blank == 0,
+                   QStringLiteral("UI-21 视觉层：七个文本行都画出了内容（空/占位 %1 个）—— %2")
+                       .arg(blank).arg(shards.join(QStringLiteral("  "))));
+        // 读数（**不是判据**）：6 个单行文本"布局给的宽度 − 文本自然宽度"。
+        // 为什么只当读数：QQuickText 的 implicitWidth = `ceil(contentWidth)`，而
+        // Label 没设 `Layout.fillWidth` 时布局给的就是 implicitWidth ⇒ 这个差值
+        // 恒在 [0,1) 的取整区间里。任何阈值都只会得出恒真的结论（假绿，血泪第 4 条）
+        // —— 所以它记录余量、但不冒充判据。
+        {
+            QStringList slacks;
+            for (int k = 0; k < 6; ++k)
+                slacks.append(QStringLiteral("%1:%2")
+                                  .arg(QString::fromUtf8(kUiVisTextZH[k]))
+                                  .arg(c->visText[k]
+                                           ? c->visText[k]->width()
+                                                 - c->visText[k]->property("contentWidth").toDouble()
+                                           : -999.0,
+                                       0, 'f', 1));
+            c->details.append(QStringLiteral(
+                "VIS-note 单行文本余量 px（宽度−contentWidth）：**只作读数、不判** —— 它"
+                "立不了阈值。宽度未被布局约束时它是 ceil(contentWidth)−contentWidth，"
+                "落在 [0,1) 的取整区间里（这种小值没有信息量）；一旦该行被布局挤压或拉伸，"
+                "它就跳到**任意量级**（负值 = 文本宽于自身 item、会被裁；正的偏大值 = item "
+                "被拉开）⇒ 正常态没有分辨力、被破坏时又没边。见 "
+                "docs/T30_TIME_VISUAL.zh_CN.md §4.2：%1")
+                                  .arg(slacks.join(QStringLiteral(" "))));
+        }
+        break;
+    }
+    case 25: {
+        // ── UI-22：**中心点命中测试落回自己**（"点得到"）────────────────────
+        //  逐控件把"中心点"喂给场景图，问它这一点最深的**可见**子项是谁，再沿父链看
+        //  能不能回到靶控件本身。这是本组里**唯一**一条能抓住下面这三类缺陷的判据，
+        //  而"矩形在页内""不被祖先裁掉""两两不重叠"对它们**统统无感**：
+        //    · 有透明覆盖层压在控件上（矩形都在、isVisible 也都真）
+        //    · z 序错（后加的一个空 Item 盖在按钮上）
+        //    · 被兄弟控件盖住（矩形相交但交叠面积 < 1 px²，UI-19 的容差放过去了）
+        //  **负控会翻转它**：`STELQUICK_TIME_VISUAL_NEGCTL=1` 把年框置为 hidden 之后，
+        //  它中心点命中的就不再是它自己 —— 所以这条判据不是恒真。
+        QQuickItem *root = c->window->contentItem();
+        int missed = 0;
+        QStringList missedNames;
+        for (int k = 0; k < c->visItems.size(); ++k)
+        {
+            if (!uiHitTestHits(root, c->visItems[k]))
+            {
+                ++missed;
+                missedNames.append(c->visNames[k]);
+            }
+        }
+        uiTimeMark(c.get(), c->visItems.size() == 20 && missed == 0,
+                   QStringLiteral("UI-22 视觉层：20 个可交互靶控件的中心点命中测试都落回"
+                                  "自己（落空 %1 个）—— 透明覆盖层/z 序错/被兄弟盖住这三类"
+                                  "只有这条看得见%2")
+                       .arg(missed)
+                       .arg(missedNames.isEmpty()
+                                ? QString()
+                                : QStringLiteral("；落空的是：%1")
+                                      .arg(missedNames.join(QStringLiteral("、")))));
+
+        // ── UI-23：对比度下限（**活引擎腿**）───────────────────────────────
+        //  只纳入**声明了 color** 的文本行（Button/CheckBox/ComboBox 的文字底色由
+        //  style 绘制、读不到 color ⇒ 明确不纳入，不假装覆盖）。
+        QQuickItem *const *txt = c->visText;
+        int noColor = 0, belowFloor = 0, above45 = 0, above30 = 0;
+        double minRatio = 1e9;
+        QStringList ratios;
+        for (int k = 0; k < 7; ++k)
+        {
+            if (!txt[k])
+            {
+                ++noColor;
+                continue;
+            }
+            const QColor fg = txt[k]->property("color").value<QColor>();
+            if (!fg.isValid())
+            {
+                ++noColor;
+                continue;
+            }
+            const QColor bg = uiEffectiveBackground(txt[k], QColor(QStringLiteral("#ffffff")));
+            const double r = uiContrastRatio(fg, bg);
+            minRatio = qMin(minRatio, r);
+            if (r < kUiContrastFloor)
+                ++belowFloor;
+            if (r >= 4.5)
+                ++above45;
+            if (r >= 3.0)
+                ++above30;
+            ratios.append(QStringLiteral("%1=%2:1(%3/%4)")
+                              .arg(QString::fromUtf8(kUiVisTextZH[k]))
+                              .arg(r, 0, 'f', 2).arg(fg.name(), bg.name()));
+        }
+        uiTimeMark(c.get(), belowFloor == 0 && noColor == 0,
+                   QStringLiteral("UI-23 视觉层：文本对比度 ≥ %1（低于下限 %2 项、读不到色 %3 项）"
+                                  "—— %4；最小 %5:1；参考：≥4.5 的 %6 项、≥3.0 的 %7 项")
+                       .arg(kUiContrastFloor, 0, 'f', 1).arg(belowFloor).arg(noColor)
+                       .arg(ratios.join(QStringLiteral(" ")))
+                       .arg(minRatio < 1e9 ? minRatio : -1.0, 0, 'f', 2)
+                       .arg(above45).arg(above30));
+        break;
+    }
+    case 26: {
+        // ── UI-24：度量的**纯逻辑腿**（判别性对照）──────────────────────────
+        //  为什么必须有这条：UI-18/UI-19/UI-23 用的都是本文件自写的小函数。若其中
+        //  任何一个写成 `return 21.0` / `return true`，活体判据会在**任何**输入下
+        //  全绿 —— 而"全绿"看起来毫无破绽（血泪第 8 条：规则正确与规则被调用是两件
+        //  事）。所以另立一条，用**已知输入 ⇒ 已知输出**验算它们：
+        //    · WCAG 对比度：黑白 = **21**（WCAG 标准值，不从被测代码推出）；
+        //      同色 = 1；交换参数不变（对称）。
+        //    · 矩形包含：真矩形在自身内 = true；同一矩形右移 10000 px = false；
+        //      放大到超出 = false。
+        //    · 交叠面积：两个可手算的矩形 = **25**（(10−5)×(10−5)）。
+        const double cBW = uiContrastRatio(QColor(QStringLiteral("#000000")),
+                                          QColor(QStringLiteral("#ffffff")));
+        const double cSame = uiContrastRatio(QColor(QStringLiteral("#9e9e9e")),
+                                             QColor(QStringLiteral("#9e9e9e")));
+        const double cAB = uiContrastRatio(QColor(QStringLiteral("#1565c0")),
+                                           QColor(QStringLiteral("#ffffff")));
+        const double cBA = uiContrastRatio(QColor(QStringLiteral("#ffffff")),
+                                           QColor(QStringLiteral("#1565c0")));
+        const QRectF outer(0.0, 0.0, 100.0, 50.0);
+        const QRectF inner(10.0, 10.0, 30.0, 20.0);
+        const bool inTrue = uiRectInside(inner, outer, 1.0);
+        const bool inShift = uiRectInside(inner.translated(10000.0, 0.0), outer, 1.0);
+        const bool inBig = uiRectInside(QRectF(10.0, 10.0, 500.0, 20.0), outer, 1.0);
+        const double area = uiIntersectArea(QRectF(0.0, 0.0, 10.0, 10.0),
+                                            QRectF(5.0, 5.0, 10.0, 10.0));
+        const double areaTouch = uiIntersectArea(QRectF(0.0, 0.0, 10.0, 10.0),
+                                                 QRectF(10.0, 0.0, 10.0, 10.0));
+        //    · 命中判定（父 100×100；子 A(0,0,50,50)、子 B(25,0,50,50)，B 后声明 ⇒ 在上）：
+        //      点 (30,25) 落在 A、B 的交集里 ⇒ 必须命中 **B（下标 1）**；
+        //      点 (80,80) 两者都不含 ⇒ −1；点在父外 (200,200) ⇒ −1。
+        const QRectF hitParent(0.0, 0.0, 100.0, 100.0);
+        QList<QRectF> hitKids;
+        hitKids << QRectF(0.0, 0.0, 50.0, 50.0) << QRectF(25.0, 0.0, 50.0, 50.0);
+        const int hitTop = uiHitPickChild(hitParent, hitKids, QPointF(30.0, 25.0));
+        const int hitNone = uiHitPickChild(hitParent, hitKids, QPointF(80.0, 80.0));
+        const int hitOut = uiHitPickChild(hitParent, hitKids, QPointF(200.0, 200.0));
+        const bool ok = qAbs(cBW - 21.0) < 1e-6 && qAbs(cSame - 1.0) < 1e-9
+                     && qAbs(cAB - cBA) < 1e-12 && inTrue && !inShift && !inBig
+                     && qAbs(area - 25.0) < 1e-9 && qAbs(areaTouch) < 1e-12
+                     && hitTop == 1 && hitNone == -1 && hitOut == -1;
+        uiTimeMark(c.get(), ok,
+                   QStringLiteral("UI-24 视觉层纯逻辑腿（判别性对照）：对比度 黑白=%1"
+                                  "（期望 21）、同色=%2（期望 1）、对称差=%3；"
+                                  "矩形包含 真=%4/右移 10000px=%5/放大越界=%6"
+                                  "（期望 true/false/false）；交叠面积=%7（期望 25）、"
+                                  "贴边=%8（期望 0）；命中判定 交叠处=%9（期望 1=上层）、"
+                                  "无子项命中=%10（期望 −1）、父外=%11（期望 −1）")
+                       .arg(cBW, 0, 'f', 6).arg(cSame, 0, 'f', 9)
+                       .arg(qAbs(cAB - cBA), 0, 'e', 1)
+                       .arg(inTrue ? QStringLiteral("true") : QStringLiteral("false"),
+                            inShift ? QStringLiteral("true") : QStringLiteral("false"),
+                            inBig ? QStringLiteral("true") : QStringLiteral("false"))
+                       .arg(area, 0, 'f', 3).arg(areaTouch, 0, 'f', 3)
+                       .arg(hitTop).arg(hitNone).arg(hitOut));
+        break;
+    }
+    default: {
         uiTimeFinish(app, c.get());
         return;
     }
@@ -1467,7 +2092,8 @@ int runUiTimeCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacad
     c->window = window;
     c->facade = facade;
     std::printf("TIMEUICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，"
-                "共 19 条判据，每相位 %dms）\n", c->tickMs);
+                "共 27 条判据 = 数据面 19（T19/T22）+ 视觉层 8（T30），每相位 %dms）\n",
+                c->tickMs);
     std::fflush(stdout);
     uiTimeStep(app, c);
     return 0;
@@ -4460,7 +5086,10 @@ int main(int argc, char **argv)
     // 与 TIMECHECK 的关键区别：TIMECHECK 走 AppFacade 的 C++ 公共 API，证明不了
     // TimePage.qml 的 onClicked 接线与状态行绑定是活的；本检查按 objectName 找
     // 真实控件、向窗口投递真实鼠标事件，并反向读 QML 控件的真实属性
-    // （SpinBox.value / Label.text）。判据见下方 uiTime*，共 19 条（T22 追加 6 条）。
+    // （SpinBox.value / Label.text）。判据见下方 uiTime*，共 27 条
+    // （T22 追加 6 条数据面；T30 追加 8 条**视觉层**）。
+    // 负控：`STELQUICK_TIME_VISUAL_NEGCTL=1` 会故意破坏两个视觉事实 ⇒ 期望
+    // UI-17/UI-20/UI-23 判红（扰动观测面，不改产品代码）。
     if (timeUiCheck) {
 #if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
         std::printf("TIMEUICHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");

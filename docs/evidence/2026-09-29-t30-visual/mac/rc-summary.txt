@@ -1,0 +1,15 @@
+timeuicheck-mac 5/5 PASS
+negctl-mac 5/5 翻转成立（要求 rc=10 ∧ UI-17/20/21/22/23 各 ≥1 条 FAIL ∧ 既有 19 条零 FAIL）
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-interactcheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-a2-metal rc=0
+regression-dyn-engine-metal 4/5 PASS
+regression-dyn-test-metal 5/5 PASS
+producer-readback OK
