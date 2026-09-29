@@ -22,6 +22,10 @@ Item {
 
     // 供 MainWindow 的页切换器使用；也可由 C++ startPage="search" 直接进入。
     property alias queryText: queryField.text
+    // T32：把搜索框本体暴露给 MainWindow —— 两段式 Esc 要用**对象同一性**判"焦点是不是
+    // 落在搜索框上"（见 MainWindow.focusedSearchField 的注释：不按名字/类型字符串判，
+    // 那种判法会随 Qt 实现漂移）。
+    property alias queryFieldItem: queryField
 
     RowLayout {
         anchors.fill: parent

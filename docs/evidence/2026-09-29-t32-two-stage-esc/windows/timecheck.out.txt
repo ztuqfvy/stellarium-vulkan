@@ -1,0 +1,39 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.98559，时钟=HostDriven）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+LIVESKY: simScale -> 1.000（引擎仿真时钟）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+TIMECHECK: T19 改时间自检全过（往返恒等/公式一致/UTC 往返/非法拒绝/星空随动/对照不动/可逆/现在/不被拽回）
+TIMECHECK: TIMECHECK-note fixture = 月球（stableId=Planet:Moon）
+TIMECHECK: TIMECHECK-note 时钟已暂停（scale=0），时间判据在冻结区执行；simRate=0.1000 天/秒
+TIMECHECK: TC-01 往返恒等·常规日期：写 2026-09-24 14:30:00 → 读回 2026-09-24 14:30:00：OK
+TIMECHECK: TC-02 往返恒等·跨年边界：写 2026-12-31 23:59:59 → 读回 2026-12-31 23:59:59：OK
+TIMECHECK: TC-03 往返恒等·闰日：写 2024-02-29 12:00:00 → 读回 2024-02-29 12:00:00：OK
+TIMECHECK: TC-04 读回确实依赖输入（三组读回互不相同：2026-09-24 14:30:00 / 2026-12-31 23:59:59 / 2024-02-29 12:00:00）：OK
+TIMECHECK: TC-05 与旧对话框公式逐位一致（本层 2461307.770833333 vs 旧公式 2461307.770833333，差 0.000e+00 天；容差 1.0e-09）：OK
+TIMECHECK: TC-06 UTC 往返（偏移 8.00 h）：读本地字段 2026-09-24 14:30:00 → 原样写回 → ΔJD = 0.000e+00 天（容差 1.5e-05；整数秒截断下界 1.16e-5）：OK
+TIMECHECK: TC-07 utcOffsetHours 与 core->getUTCOffset 一致（8.000000 vs 8.000000 h，时区=Asia/Shanghai）：OK
+TIMECHECK: TC-08 非法输入被拒且无副作用（13 月→invalid-date、32 日→invalid-date、25 时→invalid-date；时钟 ΔJD=0.000e+00 天）：OK
+TIMECHECK: TC-14 超范围 JD 被拒（setJulianDay(1e12) → false / 理由 out-of-range；时钟 ΔJD=0.000e+00 天）：OK
+TIMECHECK: TC-09 世界确实动了（暂停态跳 0.25 天后等 1200ms，目标 AltAz 变化 85.6289°，门槛 >5.0）：OK
+TIMECHECK: TC-10 判别性对照：写回同一 JD 后等 1200ms，AltAz 变化 0.0000°（上限 <0.05）—— 证明 TC-09 的"动了"不是测量噪声：OK
+TIMECHECK: TC-11 可逆：跳回原时刻后等 1200ms，AltAz 复原（残差 0.0000°，上限 <0.05）—— 排除"改时间把状态写坏了"：OK
+TIMECHECK: TC-12 "现在"：跳开后与系统时刻差 46292.49 天（>100 的对照成立=true），setTimeNow 后差 0.000e+00 天（容差 1.0e-03）：OK
+TIMECHECK: TC-13 写入不被帧泵拽回（运行态跳 0.50 天，实测 0.606 s × 0.1000 = 预期漂移 6.06e-02 天）：JD 差值 0.5620，与"目标+漂移"差 1.40e-03 天（容差 3.21e-02）；未被拽回=true：OK
+TIMECHECK: TC-15-note 同一时刻引擎快照 core->getMJDay()=61313.047663 vs 本层读数 61313.047663（差 0.00e+00 天）—— 若某天 `setJD` 不再同步 `JD.first`，这里会先显形；此刻两者一致，故不判红
+TIMECHECK: TC-15 MJD 与 JD 同源：恒等式残差 0.00e+00 天（<1e-12）；写 MJD=61313.250000 落地=true，JD 残差 0.00e+00 天（<1e-9）：OK
+TIMECHECK: TC-16 显示历法换历边界（JD 2299160.5 → julian；JD 2299161.0 → gregorian；要求 julian/gregorian 成对）：OK
+TIMECHECK: TC-16-note 时钟已还原到现代时刻 —— 引擎在 JD < TZ_ERA_BEGINNING（1847-12-01）时 `getUTCOffset` 按经度算 LMST 而不看时区名，不还原会让下面 ③ 假红
+TIMECHECK: TC-17 时区非法 id 被拒（No/Such_Zone_xyz 落地=false，要求 false）：OK
+TIMECHECK: TC-18 时区写入生效且偏移成对（Africa/Abidjan → 0.0000 h；Asia/Brunei → 8.0000 h；落地 true/true）—— 两者必须相差 8 小时：OK
+TIMECHECK: TC-18-note 时区复原为 Asia/Shanghai（落地=true；原偏移 8.0000 h）
+TIMECHECK: TC-19 速率仪表接在实况上（成对）：引擎设 4.16666667e-02 → facade 4.16666667e-02（一致=true）；引擎动作后引擎 4.16666667e-01 / facade 4.16666667e-01（引擎确实变了=true，读数跟上=true）：OK
+TIMECHECK: TC-20 速率文本换算（1×→"x1.0"；3600×→"x3600（1.00 时/秒）"；86400×→"x86400（1.00 天/秒）"；要求按旧口径四档跳档）：OK
+TIMECHECK: TC-21 时间方向 token（正 forward / 零 stopped / 负 backward；要求 forward/stopped/backward）：OK
+TIMECHECK: TC-21-note 速率已复原为 1.00000000e-01（facade 读数 1.00000000e-01）
+TIMECHECK: 判据 21/21
+TIMECHECK: VERDICT=PASS

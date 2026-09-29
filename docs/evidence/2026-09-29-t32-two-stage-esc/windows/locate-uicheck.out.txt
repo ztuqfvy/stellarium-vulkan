@@ -1,0 +1,22 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.98542，时钟=HostDriven）
+UICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，共 8 条判据，每相位 300ms）
+UICHECK: UI-01 搜索页控件锚点可寻且可见（locateButton=有 untrackButton=有 statusLabel=有，visible=true）：OK
+UICHECK: UI-02 无选中时两个按钮均禁用（enabled: 定位=false 取消=false）：OK
+UICHECK: UI-fixture 选中 月球（stableId=Planet:Moon）
+UICHECK: UI-03 选中后定位按钮可用 / 取消跟踪仍禁用（enabled: 定位=true 取消=false）：OK
+UICHECK: UI-note 向窗口投递真实点击 @(445.0,552.5)——定位按钮尺寸 874×23，窗口 960×640，窗口受理=true
+UICHECK: UI-04 真实点击「定位并跟踪」→ 引擎 isTracking=true trackedName="月球"（期望 "月球"）：OK
+UICHECK: UI-05 跟踪中状态文案="正在跟踪：月球"（应以「正在跟踪：」开头且含 月球）：OK
+UICHECK: UI-06-note 负控靶点 = 状态 Label 中心 @(475.0,577.0)，Label 尺寸 934.0×14.0（非按钮，无交互处理器）
+UICHECK: UI-06 负控：点在非按钮控件上 → isTracking=true trackedName="月球"（应与此前 "月球" 相同）：OK
+UICHECK: UI-07 真实点击「取消跟踪」→ isTracking=false：OK
+UICHECK: UI-09-prep 重进跟踪（locateSelected=true，isTracking=true）—— 前提不成立则下一条无效：OK
+UICHECK: UI-08 清除选中后文案=""（不得再声称正在跟踪）：OK
+UICHECK: UI-10 真实点击「清除选中」→ isTracking=false trackedName=""（T23 根治断言：unSelect 必须关跟踪）：OK
+UICHECK: 判据 10/10
+UICHECK: VERDICT=PASS

@@ -1,0 +1,17 @@
+──────── 探针（FORCE_INACTIVE + PROBE_ACTIVATION）（rc=10）→ probe-OK（本平台边界 = IT-06/13/14/17/18，是 kFocusGatedIds 两平台并集的子集） ────────
+  期望：判据 13/18，红项**恰好** IT-06 / IT-13 / IT-14 / IT-17 / IT-18（rc=10 是期望，非回归）
+  实测：INTERACTCHECK: 判据 13/18   红项=[IT-06,IT-13,IT-14,IT-17,IT-18,]
+INTERACTCHECK: PROBE-note 已置 Qt::WindowDoesNotAcceptFocus（失活探针；isActive 现在应为 false）
+INTERACTCHECK: PROBE-note 前导门超时（前导窗口激活门超时：3 次 requestActivate 后窗口仍未激活（isActive=false）），探针模式下**照跑**，用来测各判据的激活依赖
+INTERACTCHECK: PROBE-note 失活探针：窗口 4 次 requestActivate 后仍失活，探针模式下**照跑**（测量各判据的激活依赖）
+INTERACTCHECK: ✗ IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate 0 → 1（应不变），dispatched=1（应=基线 0）—— U-ACT-03 的 QML 端到端腿
+INTERACTCHECK: PROBE-note 失活探针：窗口 5 次 requestActivate 后仍失活，探针模式下**照跑**
+INTERACTCHECK: PROBE-note 失活探针：点击搜索框 4 次后焦点仍不是 TextInput，探针模式下**照跑**
+INTERACTCHECK: ✗ IT-13 IME 组合链：注入 preedit → preeditText=""（应=yueqiu）、inputMethodComposing=false（应=true）、text=""（应仍=""，组合不得污染正文）—— 窗口→focusTargetItem→TextInput 的输入法通路是活的（此前从未在合流形态被测过）
+INTERACTCHECK: ✗ IT-14 组合态注入 Esc：页 2 → 1（应仍=2）、rate 1 → 1（应不变）、dispatched 1（应=基线 1）—— 焦点在输入控件时 Esc 必须走守卫，不得跳页
+INTERACTCHECK: PROBE-note 失活探针：点击搜索框 4 次后焦点仍不是 TextInput，探针模式下**照跑**（缺口未布 ⇒ 本就是这条判据红）
+INTERACTCHECK: ✗ IT-17 两段式 Esc 第一段：text "" → "月球"（应被清空）、页 -1 → 2（应不动，仍=搜索页 2）、dispatched 1（应=基线 0）—— 焦点在输入框且有文本时，Esc 只清空、不跳页
+INTERACTCHECK: PROBE-note 失活探针：点击搜索框 4 次后焦点仍不是 TextInput，探针模式下**照跑**
+INTERACTCHECK: ✗ IT-18 两段式 Esc 第二段：注入前 text=""（应空）、页=-1（应=搜索页 2）、守卫判定不可派发=false（判别腿）→ 注入后 currentIndex=2（应=1 天空页）—— 空框再按一次 Esc 才离开搜索，**且走的是守卫路径**（不是 canDispatchToSky 回真的回退路径）
+INTERACTCHECK: 判据 13/18
+INTERACTCHECK: VERDICT=FAIL

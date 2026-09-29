@@ -1,0 +1,59 @@
+[t32w] suites start 2026-09-29T19:37:51.8697761+08:00
+repo HEAD = cf738bb
+script md5 = 0dd0d151159e3fafe2013f295cbcc3b2
+SRC MainWindow.qml md5=e9858e4e4ddf6bb51aa76fa9a32f340c
+SRC SearchPage.qml md5=21b92f1717383d31e1ab336b8078f914
+SRC main.cpp md5=92d2fa0e07ec7b1d89eb2d828d2d69e8
+exe = E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+exe size = 28939264 B   mtime = 2026-09-29T19:31:32.1038461+08:00
+exe md5  = CDF612C345B9A586E96C476518180790
+SUITE clockcheck  rc=0  elapsed=1.1s  var=STELQUICK_CLOCK_CHECK  producer=
+SUITE actioncheck  rc=0  elapsed=17.2s  var=STELQUICK_ACTION_CHECK  producer=
+SUITE searchcheck  rc=0  elapsed=16.2s  var=STELQUICK_SEARCH_CHECK  producer=
+SUITE locatecheck  rc=0  elapsed=22.2s  var=STELQUICK_LOCATE_CHECK  producer=
+SUITE locate-uicheck  rc=0  elapsed=15.2s  var=STELQUICK_UI_CHECK  producer=
+SUITE timecheck  rc=0  elapsed=19.2s  var=STELQUICK_TIME_CHECK  producer=
+SUITE returnuicheck  rc=0  elapsed=18.2s  var=STELQUICK_RETURN_UI_CHECK  producer=
+SUITE replaycheck  rc=0  elapsed=17.2s  var=STELQUICK_REPLAY_CHECK  producer=
+SUITE timeuicheck  rc=0  elapsed=26.3s  var=STELQUICK_TIME_UI_CHECK  producer=
+SUITE a2-vulkan  rc=0  elapsed=3.1s  var=STELQUICK_A2_CHECK  producer=
+SUITE interactcheck-run1  rc=0  elapsed=28.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run1: rc=0  armed=1  full18=True  degraded=False  crosses=0  -> pos-pass
+    judge: 
+SUITE interactcheck-run2  rc=0  elapsed=28.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run2: rc=0  armed=1  full18=True  degraded=False  crosses=0  -> pos-pass
+    judge: 
+SUITE interactcheck-run3  rc=0  elapsed=28.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run3: rc=0  armed=1  full18=True  degraded=False  crosses=0  -> pos-pass
+    judge: 
+SUITE interactcheck-run4  rc=0  elapsed=28.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run4: rc=0  armed=1  full18=True  degraded=False  crosses=0  -> pos-pass
+    judge: 
+SUITE interactcheck-run5  rc=0  elapsed=28.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run5: rc=0  armed=1  full18=True  degraded=False  crosses=0  -> pos-pass
+    judge: 
+  INTERACT summary: pos-pass=5 env-skip=0 of 5
+SUITE negctl-run1  rc=6  elapsed=28.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  NEGCTL-DIAG run1: attempts=2 bytes=6436 txtCount=38 plainIntegrity=1 verdictLines=1
+  NEGCTL run1: rc=6  judge12=True  verdictUNAVAIL=True  unavailNamed=7(7)  integrityOK=1(1)  ranIT07to12=6(6)  crosses=0(0)  -> OK
+SUITE negctl-run2  rc=6  elapsed=27.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  NEGCTL-DIAG run2: attempts=2 bytes=6436 txtCount=38 plainIntegrity=1 verdictLines=1
+  NEGCTL run2: rc=6  judge12=True  verdictUNAVAIL=True  unavailNamed=7(7)  integrityOK=1(1)  ranIT07to12=6(6)  crosses=0(0)  -> OK
+SUITE negctl-run3  rc=6  elapsed=27.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  NEGCTL-DIAG run3: attempts=2 bytes=6436 txtCount=38 plainIntegrity=1 verdictLines=1
+  NEGCTL run3: rc=6  judge12=True  verdictUNAVAIL=True  unavailNamed=7(7)  integrityOK=1(1)  ranIT07to12=6(6)  crosses=0(0)  -> OK
+SUITE probe-inactive  rc=10  elapsed=29.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  PROBE: rc=10  crosses=[IT-05,IT-06,IT-13,IT-16,IT-17,IT-18]  count=6  expect=[IT-05,IT-06,IT-13,IT-16,IT-17,IT-18]  -> OK
+SUITE dyn-engine-run1  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run2  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run3  rc=0  elapsed=32.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-test-run1  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run2  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run3  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+[done] 2026-09-29T19:46:56.0217687+08:00

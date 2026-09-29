@@ -2645,9 +2645,21 @@ void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
 //     **不污染 text**（成对）；IT-15 = commit 真的写进 text（组合态归位）；
 //     IT-16 = **判别性对照**——焦点离开输入控件后按 Esc 必须仍然返回天空页
 //     （证明修复没有把 Esc 返回链路一起杀掉；改动过宽时这条红）。
+//   · IT-17/18（T32）：**两段式 Esc**（浏览器习惯）—— 焦点在文本输入控件时，
+//     第一段清空文本、第二段才返回天空页。T29 当时刻意没做（"清空输入框"是新增
+//     交互特性，要单独立项），本轮就是那个立项。
+//     IT-17 = 第一段：注入前文本**非空**（前提腿）+ 注入后文本被清空 + **页没动、
+//     没有动作被派发**（三腿成对；只断言"清空了"会放过"清空完顺手跳页"的写法）。
+//     IT-18 = 第二段：空文本再按 Esc ⇒ **返回天空页**，且**判别腿** pin 住机制——
+//     注入时 `canDispatchToSky()` 必须为 false（即键确实走的守卫路径）。
+//     没有这条腿，IT-18 会**靠回退路径偶然通过**：失活时守卫回真 ⇒ Esc 走 T20 的
+//     返回分支同样回天空页，"第二段"根本没被验证却显示绿（血泪第 20 条一族）。
+//     IT-16 依旧是本组的判别性对照：**焦点不在文本控件时，一次 Esc 就该返回**
+//     （两段式不得把这条一键返回也变成两段）。
 //
-// 判据 16 条：IT-01..IT-16（T27 追加 IT-07/08/09，T28 追加 IT-10/11/12，
-// T29 追加 IT-13/14/15/16）。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+// 判据 18 条：IT-01..IT-18（T27 追加 IT-07/08/09，T28 追加 IT-10/11/12，
+// T29 追加 IT-13/14/15/16，**T32 追加 IT-17/IT-18**：两段式 Esc）。
+// 退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
 //
 // ── T31：环境门降级（"标记但继续"）──────────────────────────────────────────
 // 起因（T29 实测）：`pmset` 电池档 `displaysleep=2` ⇒ 构建几分钟后屏幕已睡 ⇒
@@ -2670,8 +2682,10 @@ void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
 //   两处都只**置标志**（`uiInteractSetFocusGateFailed`）或就地记 IT-06
 //   （`uiInteractEnterFocusUnavailable`）；记账规则见两个 helper 的注释。
 // 负控：`STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1` 在相位 7 入口强制置标志
-//   ⇒ 期望读数 = `IT-07..IT-12 全绿` + `UNAVAILABLE 恰好 IT-06,13,14,15,16` + `rc=6`
+//   ⇒ 期望读数 = `IT-07..IT-12 全绿` + `UNAVAILABLE 恰好 IT-06,13,14,15,16,17,18` + `rc=6`
 //   （前导门在负控里是**成功**的，所以 IT-05 照跑、不在跳过集合里）。
+//   ⚠️ T32 追加 IT-17/IT-18 后：执行数从 12 变 11 + 收尾自检 1 = **仍是 12/12**，
+//      只是 UNAVAILABLE 从 5 条变 7 条 —— 这正是"路径上少判一条、不报幽灵红/绿"的账。
 // 收尾另有 `INTERACT-INTEGRITY` 纯逻辑腿：实际跳过序列必须等于分类表的**后缀**。
 // ⚠️ 本降级**只针对环境门**；"切页后页码不对""视线基线无效"这类**真前提失败**仍旧
 // 立即 `exit(10)`（那是套件布场坏了，继续跑没有意义）。
@@ -2749,6 +2763,18 @@ struct UiInteractCheck
     QString focusGateWhy;          //!< 失败原因（写进每条 UNAVAILABLE 行，供人读）
     int unavailable = 0;           //!< UNAVAILABLE 判据计数（**不计入** total/passed）
     QStringList unavailIds;        //!< 被跳过的判据 ID（收尾按"分类表后缀"自检，防漏跳/多跳）
+    // T32（IT-17/IT-18）：两段式 Esc —— 有文本先清空（第一段）、空则返回天空（第二段）
+    QString esc2TextBefore17;      //!< IT-17 前提腿：第一段 Esc 注入前的文本（**必须非空**）
+    int esc2PageBefore17 = -1;     //!< IT-17：注入前的页索引（应=搜索页且注入后不动）
+    int esc2DispatchBefore17 = 0;  //!< IT-17：注入前的 dispatched 基线（应不动）
+    bool esc2It17Done = false;     //!< IT-17 是否已断言（case 26 会重入 ⇒ 防重复计数）
+    QString esc2TextBefore18;      //!< IT-18 前提腿：第二段 Esc 注入前的文本（**必须为空**）
+    int esc2PageBefore18 = -1;     //!< IT-18：注入前的页索引（必须=搜索页，不是已在天空页）
+    bool esc2GuardBlocks = false;  //!< IT-18 判别腿：注入时 `canDispatchToSky()==false`
+    int focusTries17 = 0;          //!< IT-17 焦点门重试计数（有界 3 次）
+    int focusTries18 = 0;          //!< IT-18 焦点门重试计数（有界 3 次）
+    int bootstrap32a = 0;          //!< IT-17 布场（切搜索页）重入计数（有界 2 次）
+    int bootstrap32b = 0;          //!< IT-18 布场（回搜索页）重入计数（有界 2 次）
 };
 
 //! T31：**窗口激活依赖**判据的 ID 表（按相位序）。门失败时这些判据记 UNAVAILABLE。
@@ -2786,12 +2812,21 @@ struct UiInteractCheck
 //!   · **IT-15 / IT-16 探针下是绿的，仍归入依赖**：IT-15 的前提（"组合前 text"）由 IT-13
 //!     建立，失活时它把空串当基线 ⇒ **偶然通过**、成对腿根本没成立；IT-16 是 IT-14 的
 //!     **判别性对照**，对照的另一半不可判时它单独绿没有意义（血泪第 20 条）。
+//!   · **IT-17 / IT-18（T32 追加）**：前提都是"焦点落在文本输入控件里"，与 IT-13 同源
+//!     ⇒ 失活时前提不可能成立。IT-17 在失活下会**真红**（Esc 走了回退路径 ⇒ 跳页），
+//!     IT-18 则相反 —— 回退路径同样"回到天空页"，**偶然通过**（同 IT-15/IT-16 一族）。
+//!     两条都必须进表：一条会报幽灵 FAIL，一条会报幽灵 PASS，都是语义错误。
+//!     ⚠️ **多平台并集的口径照旧**：IT-17/IT-18 靠**注入按键**（Windows 失活时键进不了
+//!     `keySink`）+ 焦点前提，两个平台都依赖 ⇒ 并入表是安全的（表只可保守）。
 //!
-//! ⚠️ **顺序要求**：表按**相位序**书写（IT-05 在相位 6、IT-06 在相位 7、其余 17+），
-//! 收尾自检按"**从失败点起的后缀**"比对（见 uiInteractFinish）。因此**前导门的超时
-//! 必须在 IT-05 之前就置标志**（见 `uiInteractStep` 顶部）—— 把门只放在相位 7 会让
-//! IT-05 以 FAIL 的形式漏出去，那正是本任务要消灭的"幽灵产品缺陷"。
-const char *const kFocusGatedIds[] = { "IT-05", "IT-06", "IT-13", "IT-14", "IT-15", "IT-16" };
+//! ⚠️ **顺序要求**：表按**相位序**书写（IT-05 在相位 6、IT-06 在相位 7、
+//! IT-13..18 在相位 17+），收尾自检按"**从失败点起的后缀**"比对（见 uiInteractFinish）。
+//! 因此**前导门的超时必须在 IT-05 之前就置标志**（见 `uiInteractStep` 顶部）—— 把门
+//! 只放在相位 7 会让 IT-05 以 FAIL 的形式漏出去，那正是本任务要消灭的"幽灵产品缺陷"。
+//! 同理，**新判据只能追加在表尾**（相位序在最后）：插在中间会让"后缀"不再是从失败点
+//! 连续到末尾的那一段。
+const char *const kFocusGatedIds[] = { "IT-05", "IT-06", "IT-13", "IT-14", "IT-15", "IT-16",
+                                       "IT-17", "IT-18" };
 const int kFocusGatedCount = int(sizeof(kFocusGatedIds) / sizeof(kFocusGatedIds[0]));
 
 //! T31 **探针**：门失败时是否**照跑**（用来测量每条判据的窗口激活依赖边界）。
@@ -2878,7 +2913,7 @@ void uiInteractFinish(QGuiApplication *app, UiInteractCheck *c)
             want << QString::fromLatin1(kFocusGatedIds[i]);
         uiInteractMark(c, !want.isEmpty() && c->unavailIds == want,
                        QStringLiteral("INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [%1] "
-                                      "↔ 期望后缀 [%2]（分类表取两平台并集 IT-05..IT-16，"
+                                      "↔ 期望后缀 [%2]（分类表取两平台并集 IT-05..IT-18，"
                                       "须逐项相等）")
                            .arg(c->unavailIds.join(QStringLiteral(",")),
                                 want.join(QStringLiteral(","))));
@@ -3038,6 +3073,17 @@ int uiInteractSendInputMethod(QQuickWindow *window, const QString &preedit,
         ev.setCommitString(commit);
     QCoreApplication::sendEvent(window, &ev);
     return ev.isAccepted() ? 1 : 0;
+}
+
+//! T32：焦点是否落在**文本输入控件**里（= 守卫 `canDispatchToSky()` 的口径）。
+//! 抽成一处是为了不让"焦点在输入框里吗"这个问题在套件里散成三份 lambda
+//! （IT-06 / IT-13 各写过一个）。判型一律用 `inherits()` —— Qt Quick Controls 的
+//! TextField 最派生类名是 `QQuickTextField`（QQuickTextInput 的子类），
+//! 精确比 className 不命中（T25 的血泪：守卫因此假绿 15 个任务）。
+bool uiInteractFocusIsTextItem()
+{
+    QObject *f = QGuiApplication::focusObject();
+    return f && f->inherits("QQuickTextInput");
 }
 
 void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
@@ -3865,12 +3911,13 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
         break;
     }
     case 23: {
-        // T31：门失败 ⇒ 本判据不可判（自己记账）⇒ 直接收尾（这是套件最后一个相位）。
+        // T31：门失败 ⇒ 本判据不可判（自己记账）。
+        // ⚠️ T32：这里**不再收尾** —— 后面还追加了 IT-17/IT-18 两个相位，它们的
+        //    UNAVAILABLE 由各自相位记录（本相位只记 IT-16，保证"每个 ID 恰好一次"）。
         if (c->focusGateFailed)
         {
             uiInteractUnavailable(c.get(), "IT-16", c->focusGateWhy);
-            uiInteractFinish(app, c.get());
-            return;
+            break;
         }
         // ── IT-16：判别性对照 —— 焦点不在输入控件时 Esc 必须返回天空页 ──────
         const int cur = uiCurrentPageIndex(c->pageStack);
@@ -3880,6 +3927,225 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
                                       "同一个页，唯一差别是焦点位置；Esc 返回链路仍然活着"
                                       "（修复没有把它一起杀掉）")
                            .arg(cur).arg(c->idxSky));
+        // T32：不再收尾 —— 继续到 IT-17（T32：两段式 Esc）与 IT-18。
+        break;
+    }
+    case 24: {
+        // ── T32：IT-17 布场① —— 切到搜索页 ──────────────────────────────────
+        // 为什么单独占一个相位：血泪第 10 条 —— Qt Quick 的布局/polish 由**渲染循环**
+        // 驱动，刚切页时新页控件还是"布局前尺寸"（实测 207×0），照它算坐标等于点空。
+        // 所以"切页"与"点新页里的控件"必须分相位（case 25 才是那次点击）。
+        if (c->focusGateFailed)
+            break;   // 布场无意义；IT-17/IT-18 的 UNAVAILABLE 由各自相位记录
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        if (cur != c->idxSearch)
+        {
+            ++c->bootstrap32a;
+            if (c->bootstrap32a <= 2)
+            {
+                uiReturnClick(c->window, c->navSearch);
+                c->details.append(QStringLiteral("IT-note（T32）IT-17 布场：当前页=%1 ≠ 搜索页"
+                                                 "（%2），点搜索页按钮后重入本相位（%3/2）")
+                                      .arg(cur).arg(c->idxSearch).arg(c->bootstrap32a));
+                c->nextDelayMs = 400;
+                QTimer::singleShot(400, app, [app, c]() { uiInteractStep(app, c); });
+                return;   // 不 ++phase：重入本相位（不虚增判据数）
+            }
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-17 前提失败：2 次布场后仍未切到搜索页"
+                                          "（currentIndex=%1，期望 %2）")
+                               .arg(cur).arg(c->idxSearch));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        break;
+    }
+    case 25: {
+        // ── T32：IT-17 写入步 —— 聚焦搜索框 → 置非空文本 → 注入 Esc（第一段）────
+        if (c->focusGateFailed)
+            break;
+        // 有界焦点门（同 IT-06 / IT-13）：点击注入偶尔因环境干扰没把焦点交给搜索框。
+        uiReturnClick(c->window, c->queryField);
+        while (!uiInteractFocusIsTextItem() && c->focusTries17 < 3)
+        {
+            ++c->focusTries17;
+            uiReturnClick(c->window, c->queryField);
+        }
+        if (!uiInteractFocusIsTextItem())
+        {
+            QObject *f = QGuiApplication::focusObject();
+            if (uiInteractProbeActivation())
+            {
+                c->details.append(QStringLiteral("PROBE-note 失活探针：点击搜索框 %1 次后焦点"
+                                                 "仍不是 TextInput，探针模式下**照跑**"
+                                                 "（缺口未布 ⇒ 本就是这条判据红）")
+                                      .arg(c->focusTries17 + 1));
+                break;
+            }
+            uiInteractEnterFocusUnavailable(
+                c.get(), "IT-17",
+                QStringLiteral("点击搜索框 %1 次后焦点仍不是 QQuickTextInput（当前=%2）"
+                               "⇒ 两段式 Esc 的前提（焦点在文本控件里）无法成立")
+                    .arg(c->focusTries17 + 1)
+                    .arg(f ? f->metaObject()->className() : "(null)"));
+            break;
+        }
+        // 置一个**非空**文本作为"第一段"的前提。直接写属性是**布场**，不是被测对象：
+        // 被测的是"Esc 到达 keySink 之后做什么"，不是"用户怎么把字打进去"。
+        // （键注入的变体 `uiInteractSendKeyNoFocusGrab` 构造的 QKeyEvent 不带 text()，
+        //   所以它插不进字符 —— 见该函数的注释，这也是 IT-06 之后 text 仍为空的原因。）
+        c->queryField->setProperty("text", QStringLiteral("mars"));
+        c->esc2TextBefore17 = c->queryField->property("text").toString();
+        c->esc2PageBefore17 = uiCurrentPageIndex(c->pageStack);
+        c->esc2DispatchBefore17 = c->dispatchedCount;
+        // ⚠️ 必须用**不抢焦点**的注入变体：抢焦点 = 仪器亲手拆掉"焦点在输入框里"
+        //    这条前提（血泪第 14 条；T29 首跑就踩过）。
+        const int acc = uiInteractSendKeyNoFocusGrab(c->window, Qt::Key_Escape);
+        c->details.append(QStringLiteral("IT-note（T32）IT-17 写入步：点击搜索框聚焦（焦点门重试 "
+                                         "%1 次）→ text=\"%2\"（页=%3 dispatched=%4）→ 注入 Esc"
+                                         "（受理=%5，**不抢焦点**变体）")
+                              .arg(c->focusTries17).arg(c->esc2TextBefore17)
+                              .arg(c->esc2PageBefore17).arg(c->esc2DispatchBefore17).arg(acc));
+        c->details.append(QStringLiteral("IT-note Esc 派发后焦点快照：%1")
+                              .arg(uiFocusSnapshot(c->window, c->keySink, c->router)));
+        break;
+    }
+    case 26: {
+        // ── T32：IT-17 断言（成对三腿）＋ IT-18 布场 ──────────────────────────
+        // 三腿成对：① 前提腿——注入前文本**非空**（否则"被清空"是空话，血泪第 4 条）；
+        //           ② 清空腿——注入后文本变空；③ 无副作用腿——页没动、没有动作被派发。
+        // 只断言②会放过"清空了但顺手跳了页"，只断言③会放过"压根没处理 Esc"。
+        if (c->focusGateFailed)
+        {
+            if (!c->esc2It17Done)
+            {
+                uiInteractUnavailable(c.get(), "IT-17", c->focusGateWhy);
+                c->esc2It17Done = true;
+            }
+            break;
+        }
+        if (!c->esc2It17Done)
+        {
+            c->esc2It17Done = true;
+            const QString textNow = c->queryField->property("text").toString();
+            const int pageNow = uiCurrentPageIndex(c->pageStack);
+            uiInteractMark(c.get(),
+                           !c->esc2TextBefore17.isEmpty() && textNow.isEmpty()
+                               && pageNow == c->esc2PageBefore17 && pageNow == c->idxSearch
+                               && c->dispatchedCount == c->esc2DispatchBefore17,
+                           QStringLiteral("IT-17 两段式 Esc 第一段：text \"%1\" → \"%2\""
+                                          "（应被清空）、页 %3 → %4（应不动，仍=搜索页 %5）、"
+                                          "dispatched %6（应=基线 %7）—— 焦点在输入框且有文本时，"
+                                          "Esc 只清空、不跳页")
+                               .arg(c->esc2TextBefore17).arg(textNow)
+                               .arg(c->esc2PageBefore17).arg(pageNow).arg(c->idxSearch)
+                               .arg(c->dispatchedCount).arg(c->esc2DispatchBefore17));
+        }
+        // ── T32：IT-18 布场 —— **自建前提，不搭 IT-17 的便车** ────────────────
+        // IT-18 与 IT-17 是同一条链上的两段。若直接沿用 IT-17 的舞台，第一段一旦坏掉，
+        // 第二段就在错误的前提上判红 ⇒ "一次手术红两条"，看不出判别力落在哪
+        // （T29 首轮负控正是这个形态）。所以这里**显式复位**：① 页回到搜索页
+        // （不在就点导航按钮后重入本相位）；② 文本清空（第一段坏了也照样清）。
+        // 焦点由 case 27 重新点回搜索框。
+        if (uiCurrentPageIndex(c->pageStack) != c->idxSearch)
+        {
+            ++c->bootstrap32b;
+            if (c->bootstrap32b <= 2)
+            {
+                uiReturnClick(c->window, c->navSearch);
+                c->details.append(QStringLiteral("IT-note（T32）IT-18 布场：页不在搜索页，"
+                                                 "点导航按钮后重入本相位（%1/2）")
+                                      .arg(c->bootstrap32b));
+                c->nextDelayMs = 400;
+                QTimer::singleShot(400, app, [app, c]() { uiInteractStep(app, c); });
+                return;   // 不 ++phase
+            }
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-18 前提失败：2 次布场后仍未回到搜索页"
+                                          "（currentIndex=%1，期望 %2）")
+                               .arg(uiCurrentPageIndex(c->pageStack)).arg(c->idxSearch));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        if (!c->queryField->property("text").toString().isEmpty())
+        {
+            const QString stale = c->queryField->property("text").toString();
+            c->queryField->setProperty("text", QString());
+            c->details.append(QStringLiteral("IT-note（T32）IT-18 布场：清掉残留文本 \"%1\""
+                                             "（自建\"空文本\"前提，不搭 IT-17 的便车）")
+                                  .arg(stale));
+        }
+        break;
+    }
+    case 27: {
+        // ── T32：IT-18 写入步 —— 重新聚焦搜索框 → 注入 Esc（第二段）──────────
+        if (c->focusGateFailed)
+            break;   // IT-18 的 UNAVAILABLE 由 case 28 记录
+        uiReturnClick(c->window, c->queryField);
+        while (!uiInteractFocusIsTextItem() && c->focusTries18 < 3)
+        {
+            ++c->focusTries18;
+            uiReturnClick(c->window, c->queryField);
+        }
+        if (!uiInteractFocusIsTextItem())
+        {
+            QObject *f = QGuiApplication::focusObject();
+            if (uiInteractProbeActivation())
+            {
+                c->details.append(QStringLiteral("PROBE-note 失活探针：点击搜索框 %1 次后焦点"
+                                                 "仍不是 TextInput，探针模式下**照跑**")
+                                      .arg(c->focusTries18 + 1));
+                break;
+            }
+            uiInteractEnterFocusUnavailable(
+                c.get(), "IT-18",
+                QStringLiteral("点击搜索框 %1 次后焦点仍不是 QQuickTextInput（当前=%2）"
+                               "⇒ 第二段 Esc 的前提无法成立")
+                    .arg(c->focusTries18 + 1)
+                    .arg(f ? f->metaObject()->className() : "(null)"));
+            break;
+        }
+        c->esc2TextBefore18 = c->queryField->property("text").toString();
+        c->esc2PageBefore18 = uiCurrentPageIndex(c->pageStack);
+        // 判别腿的快照：注入**那一刻**守卫怎么判。读的是 C++ 侧那只函数本身
+        // （口径只有一份），不是在这里复刻一遍"哪些控件算输入框"。
+        // 没有这条腿，IT-18 会**依赖回退路径偶然通过** —— 失活时 `canDispatchToSky()`
+        // 回真 ⇒ Esc 走 T20 的返回分支同样回天空页，于是"第二段"根本没被验证却显示绿。
+        c->esc2GuardBlocks = c->router && !c->router->canDispatchToSky();
+        const int acc = uiInteractSendKeyNoFocusGrab(c->window, Qt::Key_Escape);
+        c->details.append(QStringLiteral("IT-note（T32）IT-18 写入步：重新点击搜索框聚焦"
+                                         "（焦点门重试 %1 次）→ text=\"%2\"（页=%3）→ 注入 Esc"
+                                         "（受理=%4，**不抢焦点**变体）；注入时守卫判定"
+                                         "canDispatchToSky=%5")
+                              .arg(c->focusTries18).arg(c->esc2TextBefore18)
+                              .arg(c->esc2PageBefore18).arg(acc)
+                              .arg(c->esc2GuardBlocks ? QStringLiteral("false（焦点在输入框）")
+                                                      : QStringLiteral("true/未知")));
+        c->details.append(QStringLiteral("IT-note Esc 派发后焦点快照：%1")
+                              .arg(uiFocusSnapshot(c->window, c->keySink, c->router)));
+        break;
+    }
+    case 28: {
+        // ── T32：IT-18 断言（第三态收尾）──────────────────────────────────────
+        if (c->focusGateFailed)
+        {
+            uiInteractUnavailable(c.get(), "IT-18", c->focusGateWhy);
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        const int pageNow = uiCurrentPageIndex(c->pageStack);
+        uiInteractMark(c.get(),
+                       c->esc2TextBefore18.isEmpty() && c->esc2PageBefore18 == c->idxSearch
+                           && c->esc2GuardBlocks && pageNow == c->idxSky,
+                       QStringLiteral("IT-18 两段式 Esc 第二段：注入前 text=\"%1\"（应空）、"
+                                      "页=%2（应=搜索页 %3）、守卫判定不可派发=%4（判别腿）"
+                                      "→ 注入后 currentIndex=%5（应=%6 天空页）—— "
+                                      "空框再按一次 Esc 才离开搜索，**且走的是守卫路径**"
+                                      "（不是 canDispatchToSky 回真的回退路径）")
+                           .arg(c->esc2TextBefore18).arg(c->esc2PageBefore18).arg(c->idxSearch)
+                           .arg(c->esc2GuardBlocks ? QStringLiteral("true")
+                                                   : QStringLiteral("false"))
+                           .arg(pageNow).arg(c->idxSky));
         uiInteractFinish(app, c.get());
         return;
     }

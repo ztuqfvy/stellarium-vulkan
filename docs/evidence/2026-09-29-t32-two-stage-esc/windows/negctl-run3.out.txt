@@ -1,0 +1,38 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.98887，时钟=HostDriven）
+INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合/输入法事件，共 16 条判据，每相位 400ms）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+LIVESKY: simScale -> 1.000（引擎仿真时钟）
+INTERACTCHECK: IT-note DIAG9 冻结窗口内 simJD 推进=0.000000000 天（应≈0；冻结前 engineRate=1）拖拽受理=7/7
+INTERACTCHECK: IT-note DIAG 引擎投影视口 1280x720 dppp=1 月球投影=(640.0,360.0) 点击=(480.0,356.0) 居中角距=0.0312°
+INTERACTCHECK: T29W-note 前导窗口激活门：窗口未激活（尝试 1/3），requestActivate 后重入本相位
+INTERACTCHECK: T29W-note 前导窗口激活门：窗口已激活（重试 1 次）
+INTERACTCHECK: ✓ IT-01 交互锚点齐备（keySink=有 pageStack=有 viewport=有 pinchHandler=有 navSky/Time/Search=有/有/有 queryField=有 页索引=1/3/2）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,356.0) 投递滚轮 dy=+1200（10 格），事件受理=0，FOV before=60.000
+INTERACTCHECK: ✓ IT-02 天空页滚轮向前 → FOV 60.0000 → 11.3325（应严格变小；不动即滚轮链路死，T10 起 T25 前的老病）
+INTERACTCHECK: ✓ IT-03 方向对照：滚轮向后 → FOV 11.3325 → 60.0000（应回升，且回到接近 60.0000）
+INTERACTCHECK: ✓ IT-04 负控：时间页滚轮 dy=+1200 → FOV 60.0000 → 60.0000（应不变：WheelHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: IT-note 已投递真实 L 键（引擎 actionIncrease_Time_Speed），timeRate before=0.1，dispatched 基线=0
+INTERACTCHECK: IT-note L 键派发后焦点快照：windowActive=true keySinkHasActiveFocus=true activeFocusItem=skyKeySink focusObject=QQuickItem canDispatchToSky=true
+INTERACTCHECK: ✓ IT-05 天空页注入 L 键 → timeRate 0.1 → 1（应变），dispatched 累计=1（应>基线 0），lastActionId="actionIncrease_Time_Speed"（应=actionIncrease_Time_Speed）—— QKeyEvent→keySink→routeKey 的 QML 链是活的
+INTERACTCHECK: ⊘ IT-06 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ✓ IT-07 冻结时间后向左拖 160px → 视线转过 18.1988°（应>0.2°），再向右拖 → 两次增量点积 -0.9981（应<0，反向）—— QML MouseArea→skyMouse*→handleClick/handleMove→dragView 的平移链是活的
+INTERACTCHECK: ✓ IT-08 月球居中后：清选中（前=false，应 false）→ 真实点击视口中心 → 选中="Moon"（应 Moon）—— 引擎 findAndSelect 经 QML MouseArea→skyMouse*→handleClick 链是活的
+INTERACTCHECK: ✓ IT-09 右键释放反选 → 选中 true（点击后）→ false（右键后，应 false）—— 引擎 deselection 经 MouseArea 链是活的（与 IT-08 成对）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,356.0) 投递 3× ZoomNativeGesture(1.25)，事件受理=0/3，FOV before=60.0000
+INTERACTCHECK: ✓ IT-10 天空页原生捏开 ×1.25³ → FOV 60.0000 → 30.7200（应严格变小；不动即捏合链路死，T10 起 T28 前的老病）
+INTERACTCHECK: ✓ IT-11 方向对照：反向捏拢 ×0.8³ → FOV 30.7200 → 60.0000（应回升且回到 60.0000，相对偏差 0.00000 应<0.02）
+INTERACTCHECK: ✓ IT-12 负控：时间页捏合 ×1.25³（受理=0/3）→ FOV 60.0000 → 60.0000（应不变：PinchHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: ⊘ IT-13 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-14 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-15 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-16 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-17 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-18 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ✓ INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [IT-06,IT-13,IT-14,IT-15,IT-16,IT-17,IT-18] ↔ 期望后缀 [IT-06,IT-13,IT-14,IT-15,IT-16,IT-17,IT-18]（分类表取两平台并集 IT-05..IT-18，须逐项相等）
+INTERACTCHECK: 判据 12/12（另 7 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16,IT-17,IT-18）
+INTERACTCHECK: VERDICT=UNAVAILABLE

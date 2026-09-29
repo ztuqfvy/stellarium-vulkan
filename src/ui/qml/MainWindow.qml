@@ -9,6 +9,10 @@
 //   不是撤销。详见 docs/T20_RETURN_RING.zh_CN.md 与 root.returnToSky() 的注释。
 // T29：修掉「Esc 绕过焦点守卫」——焦点在搜索框（含输入法组合中）时按 Esc 不再跳页。
 //   详见下方 keySink 里 Esc 分支的注释（含 Qt 源码实证的冒泡路径）。
+// T32：在 T29 的守卫之上给**搜索框**加**两段式 Esc**（浏览器习惯）：
+//   ① 框里有文本 → 清空（留在本页）；② 已空 → 返回天空页。组合态（IME）除外。
+//   适用面**只到搜索框**（时间页的 SpinBox 字段 `text` 是绑定，赋值会销毁绑定）。
+//   详见 root.focusedSearchField() 与 keySink 里 Esc 分支的 T32 段。
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -48,6 +52,26 @@ ApplicationWindow {
     //   否则"按钮返回"与"Esc 返回"迟早会漂移成两套语义。
     function returnToSky() {
         stack.currentIndex = root.pageIndex["sky"]
+    }
+
+    // ── T32：两段式 Esc 的**适用面 = 搜索框**（不是"所有文本框"）──────────────
+    //
+    // 为什么不广撒到"凡可编辑控件都两段式"（那看着更贴合"口径只有一份"）：
+    // 时间页那六个输入框是 `SpinBox`，它的 `contentItem.text` 是**绑定**
+    //   —— `QtQuick/Controls/Basic/SpinBox.qml:31` 写着 `text: control.displayText`。
+    // QML 的赋值语义里，**给一个带绑定的属性赋值会销毁该绑定** ⇒ 字段从此空白，
+    // 而且不会自己回来。那不是"清空可重打"，是把控件弄坏。
+    // ⇒ 两段式的适用面**故意窄于**守卫的适用面（窄 = 保守 = 不碰没测过的东西）：
+    //   守卫照旧管一切可编辑控件（它们在 Esc 下仍然只是"被尊重"：不清空、不跳页，
+    //   即 T29 语义），只有搜索框多出"第一段"。
+    //
+    // 判"是不是搜索框"用**对象同一性**，不用控件名/类型字符串 —— 后者会随 Qt
+    // 实现漂移（T17 拿 `className` 复刻守卫口径，结果守卫在真实 TextField 上变死代码、
+    // 假绿 15 个任务）。同一性判法的兜底不是"希望"，而是判据：**IT-17/IT-18** 一旦
+    // 发现这个条件不成立就会立刻红，不会悄悄失效。
+    function focusedSearchField() {
+        return (root.activeFocusItem === searchPage.queryFieldItem)
+               ? searchPage.queryFieldItem : null
     }
 
     // ── 键盘挂载点（T17 修复 T15 的缺陷）───────────────────────────────────────
@@ -94,11 +118,39 @@ ApplicationWindow {
             //   时不触发天空快捷键」自相矛盾：**守卫被绕过**。
             // 修法：先问守卫。口径只有一份，在 C++ `ActionRouter::canDispatchToSky()`
             //   （QML 侧不复刻任何判断——T17 的血泪：复刻就会漂移）。
-            //   输入控件持焦 ⇒ Esc 收下但不做事（不跳页、不丢上下文）。
-            // 为什么不顺手"清空输入框"：那是**新增交互特性**（浏览器式两段 Esc），
-            //   不是修缺陷；要加得单独立项 + 单独判据，别混进守卫修复里。
+            //
+            // ── T32：两段式 Esc（在此之上加"清空"这一段）──────────────────────
+            // T29 当时刻意**没做**这件事（"清空输入框"是新增交互特性、要单独立项），
+            //   本轮就是那个立项。语义照浏览器习惯：
+            //     ① 框里有文本 → **第一段**：清空文本，留在本页（用户要"重新输"）
+            //     ② 框里已空   → **第二段**：返回天空页（用户要"离开搜索"）
+            // 为什么要分两段：Esc 在输入框里同时被赋予了两个意图（放弃本次输入 /
+            //   离开这个页面），一次按下去无法区分。分两段 = 让用户**表达两次**，
+            //   第一段永远是"温和、可逆"的那个（清空可重打，跳页不可逆）。
+            //
+            // ⚠️ **组合态（IME）必须排除**：输入法组合中 Esc 是"取消候选"，
+            //   此时 `text` 往往是空的（组合串在 preeditText 里、不在 text 里）
+            //   ⇒ 若照走"已空 ⇒ 返回天空"，用户按 Esc 取消一次候选就会被甩回天空页。
+            //   实测坐实：IT-14（组合态注入 Esc）在漏掉这一条时必红。
+            //
+            // ⚠️ 两段式**只对搜索框**生效（见 root.focusedSearchField 的注释：时间页的
+            //   SpinBox 字段动不得）；焦点在别的可编辑控件里时，行为与 T29 完全一致。
             if (event.key === Qt.Key_Escape) {
                 if (!ActionRouter.canDispatchToSky()) {
+                    var edit = root.focusedSearchField()
+                    if (edit && edit.inputMethodComposing !== true) {
+                        if (edit.text.length > 0) {
+                            edit.text = ""                      // 第一段：清空
+                            event.accepted = true
+                            return
+                        }
+                        if (stack.currentIndex !== root.pageIndex["sky"])
+                            root.returnToSky()                  // 第二段：返回天空
+                        event.accepted = true
+                        return
+                    }
+                    // 组合态，或"焦在别的可编辑控件里"：维持 T29 —— 收下键、
+                    // 什么都不做（不跳页、不丢上下文、不清空）。
                     event.accepted = true
                     return
                 }
@@ -226,7 +278,7 @@ ApplicationWindow {
 
                 DiagnosticPage { }
                 SkyTestPage { }
-                SearchPage { }
+                SearchPage { id: searchPage }   // T32：两段式 Esc 按对象同一性认它
                 TimePage { }
             }
         }
