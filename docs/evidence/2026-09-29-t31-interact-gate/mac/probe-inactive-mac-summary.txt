@@ -1,0 +1,12 @@
+──────── 探针（FORCE_INACTIVE + PROBE_ACTIVATION）（rc=10）→ probe-OK（边界与 kFocusGatedIds 一致） ────────
+  期望：判据 13/16，红项**恰好** IT-06 / IT-13 / IT-14（rc=10 是期望，非回归）
+  实测：INTERACTCHECK: 判据 13/16   红项=[IT-06,IT-13,IT-14,]
+INTERACTCHECK: PROBE-note 已置 Qt::WindowDoesNotAcceptFocus（失活探针；isActive 现在应为 false）
+INTERACTCHECK: PROBE-note 失活探针：窗口 4 次 requestActivate 后仍失活，探针模式下**照跑**（测量各判据的激活依赖）
+INTERACTCHECK: ✗ IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate 0 → 1（应不变），dispatched=1（应=基线 0）—— U-ACT-03 的 QML 端到端腿
+INTERACTCHECK: PROBE-note 失活探针：窗口 5 次 requestActivate 后仍失活，探针模式下**照跑**
+INTERACTCHECK: PROBE-note 失活探针：点击搜索框 4 次后焦点仍不是 TextInput，探针模式下**照跑**
+INTERACTCHECK: ✗ IT-13 IME 组合链：注入 preedit → preeditText=""（应=yueqiu）、inputMethodComposing=false（应=true）、text=""（应仍=""，组合不得污染正文）—— 窗口→focusTargetItem→TextInput 的输入法通路是活的（此前从未在合流形态被测过）
+INTERACTCHECK: ✗ IT-14 组合态注入 Esc：页 2 → 1（应仍=2）、rate 1 → 1（应不变）、dispatched 1（应=基线 1）—— 焦点在输入控件时 Esc 必须走守卫，不得跳页
+INTERACTCHECK: 判据 13/16
+INTERACTCHECK: VERDICT=FAIL

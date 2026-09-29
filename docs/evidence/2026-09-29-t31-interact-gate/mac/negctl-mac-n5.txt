@@ -1,0 +1,60 @@
+──────── NEGCTL run 1/5（rc=6）→ negctl-OK ────────
+  rc=6（要求 6）  UNAVAILABLE 逐条点名=5（要求 5）  INTERACT-INTEGRITY 绿=1（要求 1）
+  IT-07..IT-12 真跑了=6/6（要求 6；旧逻辑下这 6 条根本不存在）  全日志 ✗ 数=0（要求 0）
+  判据行： INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: ⊘ IT-06 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-13 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-14 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-15 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-16 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ✓ INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [IT-06,IT-13,IT-14,IT-15,IT-16] ↔ 期望后缀 [IT-06,IT-13,IT-14,IT-15,IT-16]（分类表 IT-06..IT-16，须逐项相等）
+INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: VERDICT=UNAVAILABLE
+──────── NEGCTL run 2/5（rc=6）→ negctl-OK ────────
+  rc=6（要求 6）  UNAVAILABLE 逐条点名=5（要求 5）  INTERACT-INTEGRITY 绿=1（要求 1）
+  IT-07..IT-12 真跑了=6/6（要求 6；旧逻辑下这 6 条根本不存在）  全日志 ✗ 数=0（要求 0）
+  判据行： INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: ⊘ IT-06 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-13 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-14 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-15 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-16 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ✓ INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [IT-06,IT-13,IT-14,IT-15,IT-16] ↔ 期望后缀 [IT-06,IT-13,IT-14,IT-15,IT-16]（分类表 IT-06..IT-16，须逐项相等）
+INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: VERDICT=UNAVAILABLE
+──────── NEGCTL run 3/5（rc=6）→ negctl-OK ────────
+  rc=6（要求 6）  UNAVAILABLE 逐条点名=5（要求 5）  INTERACT-INTEGRITY 绿=1（要求 1）
+  IT-07..IT-12 真跑了=6/6（要求 6；旧逻辑下这 6 条根本不存在）  全日志 ✗ 数=0（要求 0）
+  判据行： INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: ⊘ IT-06 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-13 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-14 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-15 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-16 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ✓ INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [IT-06,IT-13,IT-14,IT-15,IT-16] ↔ 期望后缀 [IT-06,IT-13,IT-14,IT-15,IT-16]（分类表 IT-06..IT-16，须逐项相等）
+INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: VERDICT=UNAVAILABLE
+──────── NEGCTL run 4/5（rc=6）→ negctl-OK ────────
+  rc=6（要求 6）  UNAVAILABLE 逐条点名=5（要求 5）  INTERACT-INTEGRITY 绿=1（要求 1）
+  IT-07..IT-12 真跑了=6/6（要求 6；旧逻辑下这 6 条根本不存在）  全日志 ✗ 数=0（要求 0）
+  判据行： INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: ⊘ IT-06 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-13 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-14 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-15 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-16 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ✓ INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [IT-06,IT-13,IT-14,IT-15,IT-16] ↔ 期望后缀 [IT-06,IT-13,IT-14,IT-15,IT-16]（分类表 IT-06..IT-16，须逐项相等）
+INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: VERDICT=UNAVAILABLE
+──────── NEGCTL run 5/5（rc=6）→ negctl-OK ────────
+  rc=6（要求 6）  UNAVAILABLE 逐条点名=5（要求 5）  INTERACT-INTEGRITY 绿=1（要求 1）
+  IT-07..IT-12 真跑了=6/6（要求 6；旧逻辑下这 6 条根本不存在）  全日志 ✗ 数=0（要求 0）
+  判据行： INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: ⊘ IT-06 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-13 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-14 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-15 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ⊘ IT-16 UNAVAILABLE：负控强制（STELQUICK_INTERACT_FORCE_FOCUSGATE_FAIL=1）：把控制流按"窗口拿不到系统焦点"注入，用来验证**降级逻辑自身**（不必真把显示器睡掉） —— 本判据**未被验证**（既不是 PASS、也不是产品缺陷）
+INTERACTCHECK: ✓ INTERACT-INTEGRITY 环境门降级集合自检：实际跳过 [IT-06,IT-13,IT-14,IT-15,IT-16] ↔ 期望后缀 [IT-06,IT-13,IT-14,IT-15,IT-16]（分类表 IT-06..IT-16，须逐项相等）
+INTERACTCHECK: 判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）
+INTERACTCHECK: VERDICT=UNAVAILABLE
