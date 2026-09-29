@@ -1508,6 +1508,82 @@ int runUiTimeCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacad
 const int kUiReturnTickMs = 400;
 const int kUiReturnWorldSettleMs = 1200;  //!< 与 TimeCheck 的 kWorldSettleMs 同量级、同理由
 
+// ── T29-W：前导窗口激活门（Windows 前台锁）───────────────────────────────────
+//
+// 背景（2026-09-29 W-T29 首跑实证）：Windows 上由 `schtasks /it` 投递到交互会话的
+// 进程受 **foreground lock** 限制，窗口不会自动成为前台窗口；而 QQuickWindow 的
+// **键**事件派发依赖 `activeFocusItem`（`keySink->forceActiveFocus()` 在窗口未激活
+// 时拿不到 active focus）⇒ 注入的键被静默丢弃或落到别处。
+//
+// 实证（同一份二进制、同一轮）：INTERACTCHECK **IT-05（该套件第一次键注入）红**，
+// 紧接的 IT-06 相位做了 `requestActivate` 重试（日志 "窗口未激活（尝试 1/3）"），
+// 窗口激活之后**余下 11 条键/手势判据全绿**；RETURNUI 完全没有激活门，而它**唯一**
+// 的键注入 RT-10 恰好红。⇒ 缺的是仪器，不是产品。
+//
+// 处置沿 T22「有界就绪门」先例：在**任何判据之前**加有界激活门（≤3 次 ×400ms）。
+// 门**超时不洗成 PASS**：只留一条 note，后续键类判据照原样判红（"仪器不可用"= 判红，
+// 不是放宽）。门必须放在相位开头——放在判据之后会让重试重跑判据、计数虚高。
+const int kUiActivationGateTries = 3;
+const int kUiActivationGateMs = 400;
+
+enum class UiGate
+{
+    Proceed,   //!< 可以进入本相位
+    Retry      //!< 调用方必须**立即 return 且不 ++phase**，等重入
+};
+
+//! 前导窗口激活门。成功/超时都会把 `done` 置真（只在开头跑一次，不逐相位重试）。
+UiGate uiWindowActivationGate(QQuickWindow *window, int &retry, bool &done,
+                              QStringList &details)
+{
+    if (done)
+        return UiGate::Proceed;
+    if (window && window->isActive())
+    {
+        done = true;
+        details.append(QStringLiteral("T29W-note 前导窗口激活门：窗口已激活（重试 %1 次）")
+                           .arg(retry));
+        return UiGate::Proceed;
+    }
+    if (retry < kUiActivationGateTries)
+    {
+        ++retry;
+        if (window)
+            window->requestActivate();
+        details.append(QStringLiteral("T29W-note 前导窗口激活门：窗口未激活（尝试 %1/%2），"
+                                      "requestActivate 后重入本相位")
+                           .arg(retry).arg(kUiActivationGateTries));
+        return UiGate::Retry;
+    }
+    done = true;
+    details.append(QStringLiteral("T29W-note 前导窗口激活门超时：%1 次 requestActivate 后"
+                                  "窗口仍未激活（isActive=false）⇒ 键类判据的前提不成立。"
+                                  "**不洗成 PASS**：后续判据照原样判红")
+                       .arg(retry));
+    return UiGate::Proceed;
+}
+
+//! 焦点快照（T29-W 诊断）：给"键到没到、守卫有没有吞"提供一个**可直接读的事实**，
+//! 免得靠"受理=?"这类间接读数反推（T29 的教训：`QKeyEvent` 的 accepted 语义不直观）。
+//! 每一项都是**原始状态**，不复刻任何被测逻辑（血泪第 4 条）。
+QString uiFocusSnapshot(QQuickWindow *window, QQuickItem *keySink,
+                        const stelapp::ActionRouter *router)
+{
+    QObject *fo = QGuiApplication::focusObject();
+    QQuickItem *afi = window ? window->activeFocusItem() : nullptr;
+    return QStringLiteral("windowActive=%1 keySinkHasActiveFocus=%2 activeFocusItem=%3 "
+                          "focusObject=%4 canDispatchToSky=%5")
+        .arg(window && window->isActive() ? "true" : "false")
+        .arg(keySink && keySink->hasActiveFocus() ? "true" : "false")
+        .arg(afi ? (afi->objectName().isEmpty() ? QStringLiteral("(未命名)")
+                                                : afi->objectName())
+                 : QStringLiteral("(null)"))
+        .arg(fo ? QString::fromLatin1(fo->metaObject()->className()) : QStringLiteral("(null)"))
+        .arg(router ? (router->canDispatchToSky() ? QStringLiteral("true")
+                                                  : QStringLiteral("false"))
+                    : QStringLiteral("(n/a)"));
+}
+
 //! 页名 → 索引。**只在 QML 里定义一处**（MainWindow.pageIndex），C++ 不复制一份——
 //! 否则"加了页面忘了改另一处"会退化成只在运行时才暴露的错位。
 int uiPageIndexOf(QQuickWindow *w, const char *page)
@@ -1599,6 +1675,10 @@ struct UiReturnCheck
     Vec3d altAzRoundTripRef = Vec3d(0.);
     Vec3d altAzBeforeHour = Vec3d(0.);
     int layoutWait = 0;   //!< T22 布局就绪门的重试计数（见 uiLayoutReady 注释）
+    // T29-W：前导窗口激活门（见 uiWindowActivationGate 注释）
+    stelapp::ActionRouter *router = nullptr;   //!< 只用于诊断读 canDispatchToSky()
+    int prologueRetry = 0;
+    bool prologueDone = false;
 };
 
 void uiReturnMark(UiReturnCheck *c, bool ok, const QString &line)
@@ -1634,6 +1714,14 @@ void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c);
 
 void uiReturnStep(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
 {
+    // 🔴 T29-W 前导窗口激活门 —— **必须在 switch 之前**（任何判据之前）。
+    // 见 uiWindowActivationGate 的注释：门放在判据之后会让重试重跑判据、计数虚高。
+    if (uiWindowActivationGate(c->window, c->prologueRetry, c->prologueDone, c->details)
+        == UiGate::Retry)
+    {
+        QTimer::singleShot(kUiActivationGateMs, app, [app, c]() { uiReturnStep(app, c); });
+        return;   // 不 ++phase：重入本相位
+    }
     switch (c->phase)
     {
     case 0: {
@@ -1849,6 +1937,12 @@ void uiReturnStep(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
         const int accepted = uiReturnSendKey(c->window, c->keySink, Qt::Key_Escape);
         c->details.append(QStringLiteral("RT-note 已向窗口投递真实 Esc（是否被受理=%1）")
                               .arg(accepted ? QStringLiteral("true") : QStringLiteral("false")));
+        // T29-W 诊断：Esc 派发后立刻取焦点快照。uiReturnSendKey 内部先
+        // forceActiveFocus(keySink)，所以**这一拍的状态就是 QML 守卫当时看到的状态**
+        // ——RT-10 红时靠它区分"键没送到"与"守卫把 Esc 吞了"（首跑靠间接读数反推，
+        // 结论互相矛盾，才补的这条探针）。
+        c->details.append(QStringLiteral("RT-note Esc 派发后焦点快照：%1")
+                              .arg(uiFocusSnapshot(c->window, c->keySink, c->router)));
         c->nextDelayMs = kUiReturnTickMs;
         break;
     }
@@ -1984,6 +2078,10 @@ struct UiInteractCheck
     int dispatchBase14 = 0;               //!< IT-14 前提：dispatched 基线
     int focusTries29 = 0;                 //!< IT-13 焦点门重试计数（有界 3 次）
     int pageBootstrap29 = 0;              //!< IT-16 布场重试计数（有界 2 次）
+    // T29-W：前导窗口激活门（见 uiWindowActivationGate 注释）
+    stelapp::ActionRouter *router = nullptr;  //!< 只用于诊断读 canDispatchToSky()
+    int prologueRetry = 0;
+    bool prologueDone = false;
 };
 
 void uiInteractMark(UiInteractCheck *c, bool ok, const QString &line)
@@ -2147,6 +2245,15 @@ int uiInteractSendInputMethod(QQuickWindow *window, const QString &preedit,
 
 void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
 {
+    // 🔴 T29-W 前导窗口激活门 —— **必须在 switch 之前**（任何判据之前）。
+    // 首跑实证：IT-05（本套件第一次键注入）就是在窗口未激活时跑的 ⇒ 假红；
+    // 激活后余下键/手势判据全绿。理由与有界性见 uiWindowActivationGate 注释。
+    if (uiWindowActivationGate(c->window, c->prologueRetry, c->prologueDone, c->details)
+        == UiGate::Retry)
+    {
+        QTimer::singleShot(kUiActivationGateMs, app, [app, c]() { uiInteractStep(app, c); });
+        return;   // 不 ++phase：重入本相位
+    }
     switch (c->phase)
     {
     case 0: {
@@ -2264,6 +2371,9 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
         c->details.append(QStringLiteral("IT-note 已投递真实 L 键（引擎 actionIncrease_"
                                          "Time_Speed），timeRate before=%1，dispatched "
                                          "基线=%2").arg(c->rateBefore).arg(c->dispatchBase));
+        // T29-W 诊断：与 RT-note 同口径（见 uiFocusSnapshot 注释）
+        c->details.append(QStringLiteral("IT-note L 键派发后焦点快照：%1")
+                              .arg(uiFocusSnapshot(c->window, c->keySink, c->router)));
         break;
     }
     case 6: {
@@ -2360,6 +2470,9 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
                                          "before=%2，dispatched 基线=%3，事件受理=%4")
                               .arg(focusTries).arg(c->rateBefore2).arg(c->dispatchBase2)
                               .arg(acc));
+        // T29-W 诊断：守卫判据的"前提是否成立"要看快照，不看推断
+        c->details.append(QStringLiteral("IT-note L 键（不抢焦点变体）派发后焦点快照：%1")
+                              .arg(uiFocusSnapshot(c->window, c->keySink, c->router)));
         break;
     }
     case 8: {
@@ -2749,6 +2862,10 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
                                          "页=%2 rate=%3 dispatched=%4 preeditText=\"%5\"")
                               .arg(accEsc).arg(c->pageBefore14).arg(c->rateBefore14)
                               .arg(c->dispatchBase14).arg(c->imePreedit));
+        // T29-W 诊断：IT-14 是**否定式**判据（"没跳页"），必须能看到前提快照，
+        // 否则"键根本没送到"也会让它绿（T29 已记过这条：否定式判据单独绿没意义）。
+        c->details.append(QStringLiteral("IT-note 组合态 Esc 派发后焦点快照：%1")
+                              .arg(uiFocusSnapshot(c->window, c->keySink, c->router)));
         break;
     }
     case 20: {
@@ -2856,6 +2973,7 @@ int runUiInteractCheck(QGuiApplication *app, QQuickWindow *window,
     auto c = std::make_shared<UiInteractCheck>();
     c->window = window;
     c->facade = facade;
+    c->router = router;   // T29-W：只供诊断读 canDispatchToSky()
     // dispatched 信号 = 键盘链"routeKey 真的把动作发给引擎"的直接观测点。
     // 计数 + lastId 双记录：IT-05 断言"发过且发的是对的动作"，IT-06 断言"守卫时没发"。
     QObject::connect(router, &stelapp::ActionRouter::dispatched, app,
@@ -2874,11 +2992,13 @@ int runUiInteractCheck(QGuiApplication *app, QQuickWindow *window,
     return 0;
 }
 
-int runUiReturnCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacade *facade)
+int runUiReturnCheck(QGuiApplication *app, QQuickWindow *window, stelapp::AppFacade *facade,
+                     stelapp::ActionRouter *router)
 {
     auto c = std::make_shared<UiReturnCheck>();
     c->window = window;
     c->facade = facade;
+    c->router = router;   // T29-W：只供诊断读 canDispatchToSky()
     std::printf("RETURNUICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标/键盘"
                 "事件，共 11 条判据；纯 UI 相位 %dms，写引擎的相位 %dms）\n",
                 kUiReturnTickMs, kUiReturnWorldSettleMs);
@@ -4407,7 +4527,7 @@ int main(int argc, char **argv)
             return 6;
         }
         appFacade.attachSimControl(liveSkyRuntime.get());
-        runUiReturnCheck(&app, window, &appFacade);
+        runUiReturnCheck(&app, window, &appFacade, &actionRouter);
         const int rc = app.exec();
         if (liveSkyRuntime) {
             liveSkyRuntime->stop();
