@@ -44,8 +44,22 @@ $ErrorActionPreference = "Continue"
 $script:mismatch = 0
 $script:bad = 0
 
-$OK   = [char]0x2713   # check mark prefix used by the criteria lines
-$BADM = [char]0x2717   # cross mark prefix
+# Criterion-line prefixes, built from their code points so this file stays
+# ASCII-only.
+#
+# !!! NEVER NAME THESE "$OK" / "$BAD". PowerShell variable names are
+#     CASE-INSENSITIVE, so a per-iteration verdict boolean called "$ok"
+#     silently OVERWRITES the check-mark character "$OK". Measured 2026-09-29:
+#     the negative-control block computed "$integrity" correctly on iteration 1,
+#     then set "$ok = $true"; from iteration 2 on the pattern had become
+#     "INTERACTCHECK: True INTERACT-INTEGRITY*" and matched nothing. So runs
+#     2..N reported integrityOK=0 while every log file on disk was byte-identical
+#     to run 1 -> it read exactly like a product regression and burned a full
+#     investigation (file-lag / flash-race / stale-artifact theories all died).
+#     The underscore is the whole fix: "$MARK_OK" cannot collide with "$pass".
+#     Same trap if a future "$bad" ever appears next to "$MARK_BAD".
+$MARK_OK  = [char]0x2713   # check mark prefix used by the criteria lines
+$MARK_BAD = [char]0x2717   # cross mark prefix
 
 $exe = Join-Path $Repo "build-win\src\ui\Release\stelQuickUI.exe"
 $dir = "C:\temp\$Tag-suites"
@@ -117,13 +131,24 @@ function Run-Suite {
     return $rc
 }
 
-# Start-Process -Wait returns when the process exits, but the redirected output
-# file can still lag a few milliseconds behind. Observed 2026-09-29: 2 of the 3
-# negative-control runs read a snapshot in which the INTERACT-INTEGRITY line was
-# not visible yet, while re-reading the very same file afterwards did contain
-# it -> a scrape flake that looked like a product defect. Re-read with a bounded
-# retry until the anchor line shows up. A genuinely missing anchor still ends up
-# BAD, because every retry fails too. The anchor must be ASCII.
+# Read a suite's output file once it has SETTLED. Start-Process -Wait returns
+# when the process exits, and the redirect writer could in principle still be
+# flushing for a few milliseconds after that -- so wait for two consecutive
+# reads with an unchanged size. Bounded: if it never settles we hand back the
+# last snapshot and the caller still judges it BAD, because a real defect must
+# not be able to hide behind a wait.
+#
+# HISTORY -- this helper was born from a WRONG theory, keep the record honest:
+# the T31 negative control first reported integrityOK=0 on 2 of 3 runs while the
+# files on disk did contain the line. It was blamed on redirect lag, then on a
+# "flash race": the round-1 fix anchored the retry on the LAST line
+# ("*VERDICT=*") and did NOT help -- the failures stayed on exactly runs 2 and 3
+# and the diag line showed the anchor present while a line *before* it was
+# reported missing, which is impossible for a strictly sequential write.
+# The actual cause was a variable-name collision: "$ok" (per-run verdict)
+# overwriting "$OK" (the check mark). See the note at $MARK_OK. So treat the
+# settle-wait below as cheap insurance, NOT as the fix for those failures, and
+# do not resurrect the file-lag theory without fresh evidence.
 #
 # !!! DO NOT "return ,$lines" HERE. That idiom (comma = wrap in a 1-element
 #     array so the pipeline does not unroll the collection) is only correct when
@@ -138,13 +163,21 @@ function Run-Suite {
 #     BYTE-IDENTICAL to the fully-passing round -- i.e. the instrument lied.
 #     Plain "return $lines" is right: with @() at the call site a 1-element
 #     array unrolls to its element and is re-wrapped, 0 elements stays empty.
+#     This one WAS a real bug and the comma removal measurably fixed it
+#     (unavailNamed went 1(5) -> 5(5)).
 function Read-Lines {
-    param([string]$File, [string]$Anchor = "*VERDICT=*", [int]$Tries = 3)
+    param([string]$File, [int]$Tries = 8, [int]$SettleMs = 250)
+    $script:rlAttempts = 0
+    $prev = -1
+    $lines = @()
     for ($t = 1; $t -le $Tries; $t++) {
-        $lines = @(Get-Content $File -Encoding UTF8)
-        if ($Anchor -eq "") { return $lines }
-        if (@($lines | Where-Object { $_ -like $Anchor }).Count -gt 0) { return $lines }
-        Start-Sleep -Milliseconds 400
+        $script:rlAttempts = $t
+        $len = -1
+        if (Test-Path $File) { $len = (Get-Item $File).Length }
+        $lines = @(Get-Content $File -Encoding UTF8 -ErrorAction SilentlyContinue)
+        if ($len -gt 0 -and $len -eq $prev) { return $lines }   # size settled
+        $prev = $len
+        Start-Sleep -Milliseconds $SettleMs
     }
     return $lines
 }
@@ -155,13 +188,17 @@ function Count-Cross {
     param([string]$File)
     $n = 0
     foreach ($l in (Get-Content $File -Encoding UTF8)) {
-        if ($l.StartsWith("INTERACTCHECK: $BADM")) { $n++ }
+        if ($l.StartsWith("INTERACTCHECK: $MARK_BAD")) { $n++ }
     }
     return $n
 }
 
 # ---- the plain regression suites, in dependency order --------------------
-if (-not $ProbeOnly -and -not $DynOnly) {
+# NOTE -NegOnly must be honoured here too. It used to be checked only by the
+# probe and the DYN blocks, so "-NegOnly" silently ran the whole 10-suite
+# regression plus the 5 positive INTERACT runs -- measured 2026-09-29 when a
+# supposedly negctl-only diagnostic batch pushed the full SUMMARY over the top.
+if (-not $ProbeOnly -and -not $DynOnly -and -not $NegOnly) {
 Run-Suite -Name "CLOCK"    -Var "STELQUICK_CLOCK_CHECK"     -OutName "clockcheck"
 Run-Suite -Name "ACTION"   -Var "STELQUICK_ACTION_CHECK"    -OutName "actioncheck"
 Run-Suite -Name "SEARCH"   -Var "STELQUICK_SEARCH_CHECK"    -OutName "searchcheck"
@@ -230,6 +267,16 @@ for ($i = 1; $i -le $NegRuns; $i++) {
     $so = Join-Path $dir "negctl-run$i.out.txt"
     $txt = @(Read-Lines -File $so)
     $crosses = Count-Cross -File $so
+    # Diagnostic: the round-1/2 failures claimed integrityOK=0 while the anchor
+    # line and the lines BEFORE it were all visible, which is self-contradictory
+    # for a strictly sequential write. Print what the parser actually saw so the
+    # next batch can settle it with data instead of theories.
+    $diagLen = -1
+    if (Test-Path $so) { $diagLen = (Get-Item $so).Length }
+    "  NEGCTL-DIAG run${i}: attempts=$script:rlAttempts bytes=$diagLen " +
+    "txtCount=$($txt.Count) plainIntegrity=$(@($txt | Where-Object { $_ -like '*INTERACT-INTEGRITY*' }).Count) " +
+    "verdictLines=$(@($txt | Where-Object { $_ -like '*VERDICT=*' }).Count)" |
+        Out-File -Encoding ascii -Append $sum
     # The emitted line reads  "INTERACTCHECK: <circled-slash> IT-06 UNAVAILABLE:<why>"
     # -- id FIRST, then the keyword. Anchor on that exact ASCII order; anchoring
     # on "UNAVAILABLE: IT-06" matches nothing (and silently yields 0).
@@ -238,19 +285,19 @@ for ($i = 1; $i -le $NegRuns; $i++) {
                                        $_ -like "*IT-14 UNAVAILABLE*" -or
                                        $_ -like "*IT-15 UNAVAILABLE*" -or
                                        $_ -like "*IT-16 UNAVAILABLE*" }).Count
-    $integrity = @($txt | Where-Object { $_ -like "INTERACTCHECK: $OK INTERACT-INTEGRITY*" }).Count
+    $integrity = @($txt | Where-Object { $_ -like "INTERACTCHECK: $MARK_OK INTERACT-INTEGRITY*" }).Count
     $ran = 0
     foreach ($id in @("IT-07","IT-08","IT-09","IT-10","IT-11","IT-12")) {
         if (@($txt | Where-Object { $_ -like "* $id *" }).Count -gt 0) { $ran++ }
     }
     $judge  = [bool]($txt | Where-Object { $_ -like "*12/12*" } | Select-Object -First 1)
     $verdic = [bool]($txt | Where-Object { $_ -like "*VERDICT=UNAVAILABLE*" } | Select-Object -First 1)
-    $ok = ($rc -eq 6) -and $judge -and $verdic -and ($unavail -eq 5) -and
+    $pass = ($rc -eq 6) -and $judge -and $verdic -and ($unavail -eq 5) -and
           ($integrity -eq 1) -and ($ran -eq 6) -and ($crosses -eq 0)
-    if (-not $ok) { $script:bad++ }
+    if (-not $pass) { $script:bad++ }
     "  NEGCTL run${i}: rc=$rc  judge12=$judge  verdictUNAVAIL=$verdic  " +
     "unavailNamed=$unavail(5)  integrityOK=$integrity(1)  ranIT07to12=$ran(6)  " +
-    "crosses=$crosses(0)  -> " + $(if ($ok) { "OK" } else { "BAD" }) |
+    "crosses=$crosses(0)  -> " + $(if ($pass) { "OK" } else { "BAD" }) |
         Out-File -Encoding ascii -Append $sum
 }
 }
@@ -281,7 +328,7 @@ $so = Join-Path $dir "probe-inactive.out.txt"
 $txt = @(Read-Lines -File $so)
 $ids = @()
 foreach ($l in $txt) {
-    if ($l -like "INTERACTCHECK: $BADM IT-*") {
+    if ($l -like "INTERACTCHECK: $MARK_BAD IT-*") {
         # "INTERACTCHECK: <cross> IT-06 ..." -> token[0]=prefix, [1]=symbol, [2]=id
         $ids += (($l -split " ")[2])
     }
@@ -289,10 +336,10 @@ foreach ($l in $txt) {
 $ids = @($ids | Sort-Object -Unique)
 $judge = [bool]($txt | Where-Object { $_ -like "*12/16*" } | Select-Object -First 1)
 $expect = @("IT-05","IT-06","IT-13","IT-16")
-$ok = $judge -and ($ids.Count -eq 4) -and (-not (Compare-Object $ids $expect))
-if (-not $ok) { $script:bad++ }
+$pass = $judge -and ($ids.Count -eq 4) -and (-not (Compare-Object $ids $expect))
+if (-not $pass) { $script:bad++ }
 "  PROBE: rc=$rc  judge12of16=$judge  crosses=[$($ids -join ',')] expect=[IT-05,IT-06,IT-13,IT-16]  -> " +
-$(if ($ok) { "OK" } else { "BAD" }) | Out-File -Encoding ascii -Append $sum
+$(if ($pass) { "OK" } else { "BAD" }) | Out-File -Encoding ascii -Append $sum
 }
 
 # ---- DYN: two-way discriminating control ---------------------------------
