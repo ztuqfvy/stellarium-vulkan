@@ -124,16 +124,29 @@ function Run-Suite {
 # it -> a scrape flake that looked like a product defect. Re-read with a bounded
 # retry until the anchor line shows up. A genuinely missing anchor still ends up
 # BAD, because every retry fails too. The anchor must be ASCII.
+#
+# !!! DO NOT "return ,$lines" HERE. That idiom (comma = wrap in a 1-element
+#     array so the pipeline does not unroll the collection) is only correct when
+#     the CALLER assigns the result directly. Every caller below wraps with
+#     @( ... ), and @() does NOT flatten a nested array -- so ",$lines" plus
+#     "@( ... )" yields a 1-element array whose single element IS the array of
+#     lines. $txt then has Count 1 and every downstream Where-Object sees the
+#     whole array as $_ (an array -like <pattern> is truthy whenever ANY line
+#     matches), which silently reports "1 line matched" and turns the probe's
+#     ID extraction into garbage. Measured 2026-09-29: with the comma the batch
+#     printed unavailNamed=1(5) and crosses=[=] while the log files on disk were
+#     BYTE-IDENTICAL to the fully-passing round -- i.e. the instrument lied.
+#     Plain "return $lines" is right: with @() at the call site a 1-element
+#     array unrolls to its element and is re-wrapped, 0 elements stays empty.
 function Read-Lines {
     param([string]$File, [string]$Anchor = "*VERDICT=*", [int]$Tries = 3)
-    $lines = @()
     for ($t = 1; $t -le $Tries; $t++) {
         $lines = @(Get-Content $File -Encoding UTF8)
-        if ($Anchor -eq "") { return ,$lines }
-        if (@($lines | Where-Object { $_ -like $Anchor }).Count -gt 0) { return ,$lines }
+        if ($Anchor -eq "") { return $lines }
+        if (@($lines | Where-Object { $_ -like $Anchor }).Count -gt 0) { return $lines }
         Start-Sleep -Milliseconds 400
     }
-    return ,$lines
+    return $lines
 }
 
 # Count criteria lines carrying the cross prefix. The prefix is built from its
