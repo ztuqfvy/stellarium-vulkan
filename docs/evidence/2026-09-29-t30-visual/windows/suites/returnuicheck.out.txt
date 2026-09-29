@@ -1,0 +1,27 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.85175，时钟=HostDriven）
+RETURNUICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标/键盘事件，共 11 条判据；纯 UI 相位 400ms，写引擎的相位 1200ms）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+RETURNUICHECK: T29W-note 前导窗口激活门：窗口未激活（尝试 1/3），requestActivate 后重入本相位
+RETURNUICHECK: T29W-note 前导窗口激活门：窗口已激活（重试 1 次）
+RETURNUICHECK: RT-01 返回环锚点可寻且可见（skyReturnButton/pageStack/navSearchButton/navTimeButton/timeAddHourButton/skyKeySink 找到 6/6；页索引 sky=1 search=2 time=3；返回按钮 visible=true）：OK
+RETURNUICHECK: RT-fixture 已选中并锁定 月球（stableId=Planet:Moon），时钟已暂停；页索引 sky=1 search=2 time=3
+RETURNUICHECK: RT-02 真实点击「时间（T19）」→ pageStack.currentIndex=3（期望 3）：OK
+RETURNUICHECK: RT-03 前置状态非平凡（跟踪=true 选中=true stableId="Planet:Moon"）—— 没有这条，RT-05/06 的 PASS 可能只是"本来就什么都没有"：OK
+RETURNUICHECK: RT-04 真实点击「返回天空」→ pageStack.currentIndex=1（期望 1）—— 配对①：页面确实切回去了：OK
+RETURNUICHECK: RT-05 返回后引擎 JD 位移 0.000e+00 天（要求 <1e-12）—— 配对②：返回不是撤销，也不是"顺手重置一下"：OK
+RETURNUICHECK: RT-06 返回后跟踪/选中保留（tracking=true trackedName="月球"（此前 "月球"）stableId="Planet:Moon"（此前 "Planet:Moon"））：OK
+RETURNUICHECK: RT-07 负控：不碰时间只做一次切页往返 → 目标 AltAz 变化 0.0000°（上限 <0.05）—— 排除"切页本身就在动世界"：OK
+RETURNUICHECK: RT-note 已在时间页真实点击「+1 时」，等 1200ms 让引擎把新时刻算进位置，再返回
+RETURNUICHECK: RT-08 判别性对照（返回≠撤销）：改 1 小时后返回 → 页面=1（期望 1）且目标 AltAz 变化 13.4856°（门槛 >5.0）—— 若把返回实现成恢复快照，这条会红：OK
+RETURNUICHECK: RT-09 Esc 起点：真实点击「搜索天体」→ currentIndex=2（期望 2）：OK
+RETURNUICHECK: RT-note 已向窗口投递真实 Esc（是否被受理=true）
+RETURNUICHECK: RT-note Esc 派发后焦点快照：windowActive=true keySinkHasActiveFocus=true activeFocusItem=skyKeySink focusObject=QQuickItem canDispatchToSky=true
+RETURNUICHECK: RT-10 非天空页投递真实 Esc → currentIndex=1（期望 1）—— 键盘返回与按钮返回**走同一条路径**：OK
+RETURNUICHECK: RT-11 负控：天空页上按 Esc → currentIndex=1（不变）且 JD 位移 0.000e+00 天（<1e-12）—— Esc 在天空页不被拦、也不产生副作用：OK
+RETURNUICHECK: 判据 11/11
+RETURNUICHECK: VERDICT=PASS

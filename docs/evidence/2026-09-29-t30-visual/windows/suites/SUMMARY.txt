@@ -1,0 +1,48 @@
+[t30w] suites start 2026-09-29T16:24:48.8406695+08:00
+repo HEAD = ccd0cde
+exe = E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+exe size = 28917248 B   mtime = 2026-09-29T16:23:09.5114283+08:00
+exe md5  = 2BB6FBD49DFD3262B9C31DA9996087DF
+SUITE clockcheck  rc=0  elapsed=1s  var=STELQUICK_CLOCK_CHECK  producer=
+SUITE actioncheck  rc=0  elapsed=17.2s  var=STELQUICK_ACTION_CHECK  producer=
+SUITE searchcheck  rc=0  elapsed=16.2s  var=STELQUICK_SEARCH_CHECK  producer=
+SUITE locatecheck  rc=0  elapsed=22.2s  var=STELQUICK_LOCATE_CHECK  producer=
+SUITE locate-uicheck  rc=0  elapsed=15.1s  var=STELQUICK_UI_CHECK  producer=
+SUITE timecheck  rc=0  elapsed=19.2s  var=STELQUICK_TIME_CHECK  producer=
+SUITE returnuicheck  rc=0  elapsed=17.2s  var=STELQUICK_RETURN_UI_CHECK  producer=
+SUITE replaycheck  rc=0  elapsed=18.2s  var=STELQUICK_REPLAY_CHECK  producer=
+SUITE timeuicheck-run1  rc=0  elapsed=26.2s  var=STELQUICK_TIME_UI_CHECK  producer=
+  TIMEUI run1: rc=0  criteria27of27=True  -> OK
+SUITE timeuicheck-run2  rc=0  elapsed=26.3s  var=STELQUICK_TIME_UI_CHECK  producer=
+  TIMEUI run2: rc=0  criteria27of27=True  -> OK
+SUITE timeuicheck-run3  rc=0  elapsed=26.2s  var=STELQUICK_TIME_UI_CHECK  producer=
+  TIMEUI run3: rc=0  criteria27of27=True  -> OK
+SUITE timeuicheck-run4  rc=0  elapsed=26.2s  var=STELQUICK_TIME_UI_CHECK  producer=
+  TIMEUI run4: rc=0  criteria27of27=True  -> OK
+SUITE timeuicheck-run5  rc=0  elapsed=26.2s  var=STELQUICK_TIME_UI_CHECK  producer=
+  TIMEUI run5: rc=0  criteria27of27=True  -> OK
+SUITE interactcheck-run1  rc=0  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+SUITE interactcheck-run2  rc=0  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+SUITE interactcheck-run3  rc=0  elapsed=25.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+SUITE interactcheck-run4  rc=0  elapsed=25.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+SUITE interactcheck-run5  rc=0  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+SUITE a2-vulkan  rc=0  elapsed=3.1s  var=STELQUICK_A2_CHECK  producer=
+SUITE negctl-run1  rc=10  elapsed=26.2s  var=STELQUICK_TIME_UI_CHECK  producer=
+  NEGCTL run1: rc=10  fails=[UI-23,UI-21,UI-17,UI-20,UI-22]  missing=[]  unexpected=[]  -> OK
+SUITE negctl-run2  rc=10  elapsed=26.3s  var=STELQUICK_TIME_UI_CHECK  producer=
+  NEGCTL run2: rc=10  fails=[UI-23,UI-21,UI-17,UI-20,UI-22]  missing=[]  unexpected=[]  -> OK
+SUITE negctl-run3  rc=10  elapsed=26.2s  var=STELQUICK_TIME_UI_CHECK  producer=
+  NEGCTL run3: rc=10  fails=[UI-23,UI-21,UI-17,UI-20,UI-22]  missing=[]  unexpected=[]  -> OK
+SUITE dyn-engine-run1  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run2  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run3  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-test-run1  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run2  rc=0  elapsed=10.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run3  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+[done] 2026-09-29T16:34:47.0360935+08:00

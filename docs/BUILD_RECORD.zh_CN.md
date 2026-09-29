@@ -3140,7 +3140,7 @@ PS 5.1 按 ANSI 码页读无 BOM `.ps1`，中文注释会报 `PARSE-ERR … 意�
 
 ---
 
-## 2026-09-29｜T30 时间页**视觉层**判据组（A4 加固）（**TIMEUICHECK 19 → 27，27/27 ×5；负控四扰动命中 5 条翻转、既有 19 条零泄漏；回归 10 项 rc=0 含 A2 逐像素；DYN 引擎 4/5 + 替身 5/5（引擎掉的那跑为显示侧停摆，环境敏感）**）
+## 2026-09-29｜T30 时间页**视觉层**判据组（A4 加固）（**TIMEUICHECK 19 → 27，27/27 ×5；负控四扰动命中 5 条翻转、既有 19 条零泄漏；回归 10 项 rc=0 含 A2 逐像素；DYN 引擎 4/5 + 替身 5/5（引擎掉的那跑为显示侧停摆，环境敏感）；Windows 侧（W-T30）补跑 26 个套件全符合预期、负控 3/3 翻转、旧宿主字节级不变**）
 
 一句话：把"控件**存在**但**看不见 / 点不到**"这一类缺陷，从"只能人工看"变成**可复跑**。
 **产品代码零改动**（纯仪器）。提交 `d04ea31`。
@@ -3251,21 +3251,47 @@ UI-24 = OK                                    ← 纯函数，与页面状态无
   稳态 `0.0 fps` + `D1-C07` degraded 标志** —— 显示侧停摆，而同跑的生产者腿 `D1-C01`
   仍 `PASS`（49.9 fps / 642 帧）⇒ 属既有**环境敏感量**（T27 `1/3`、T28 `3/3`、T29 `5/5`
   同现象），不是本轮退化。
-- **S3 旧宿主：主动论证不需要**。改动面 = `src/ui/main.cpp`（**纯自检仪器**，只被
-  `uiTimeStep` 这一条只在合流形态里跑的相位使用）+ `tools/t30-verify.sh` +
-  `tools/windows/wt30-*.ps1` + 文档。**没有碰 `src/core/`，也没有碰旧宿主的任何构建目标。**
+- **S3 旧宿主：不需要重跑，且这次有字节级证据**。改动面 = `src/ui/main.cpp`（**纯自检仪器**，
+  只被 `uiTimeStep` 这一条只在合流形态里跑的相位使用）+ `tools/t30-verify.sh` +
+  `tools/windows/wt30-*.ps1` + 文档，**没有碰 `src/core/`，也没有碰旧宿主的任何构建目标**。
+  Windows 侧构建清单给出硬证据：旧宿主 `stellarium.exe` = `27634176 B` /
+  md5 `66C51B61582BAC065C7A7FE5ACA44A42` / mtime `11:56:35`，与 W-T29 记下的基线
+  **size、md5、mtime 三项全等** ⇒ 文件根本没被重写（对照：`stelQuickUI.exe` 由
+  `28884480 B / 838A7B55…` 变为 `28917248 B / 2BB6FBD4…`，符合预期）。
 
-### Windows 侧：**未执行**（隧道不通，脚本已备好）
+### Windows 侧（W-T30）：**已补跑** —— 26 个套件全符合预期
 
-开工时 Windows 隧道（`127.0.0.1:2222`）**拒绝连接**：`nc` 探测 `PORT_CLOSED`，
-`scp`/`ssh` 报 `Connection closed` / `Connection refused`（`UURemote` 三个进程在 Mac
-侧仍在，远端未接入）。**没有伪造通过** —— 本节如实记"未执行"。
-`tools/windows/wt30-{pull,build,suites}.ps1` 已写好（**全 ASCII**，
-`LC_ALL=C grep -c '[^ -~]'` = 0），但**尚未上传、尚未过 PS 5.1 `ParseFile` 校验**；
-恢复隧道后第一件事就是补这一步 + 跑批。
+隧道恢复后补跑（`2026-09-29 16:21–16:34`，原生 Vulkan）。证据
+`docs/evidence/2026-09-29-t30-visual/windows/`（含 `README.md` + `suites/` 58 份）。
 
-为什么仍然需要：Windows 的 CJK 回退字体与 macOS 不是同一套 ⇒ 字体度量不同 ⇒ 列宽可能被
-挤 —— 正是 UI-18/UI-19 要判的东西；且 `src/ui/main.cpp` 是**宿主层**，按 W 支线规矩要过一遍。
+| 组 | 读数 |
+|---|---|
+| 8 项基础回归 + `interactcheck` ×5 | 全 `rc=0` |
+| **正题 TIMEUICHECK ×5** | 每跑 `rc=0` + `criteria27of27=True` |
+| **负控 NEGCTL ×3** | 每跑 `rc=10`，`fails=[UI-17,UI-20,UI-21,UI-22,UI-23]`、`missing=[]`、`unexpected=[]` |
+| **DYN 双路** | `engine` 3/3 + `test` 3/3，**6 次生产者回读**全 `OK` |
+| A2 逐像素（Vulkan 基线） | `rc=0`、`VERDICT=PASS` |
+
+**跑这一趟的价值 —— 平台差异是真的，结论是稳的**：
+
+| 项 | macOS（Metal） | Windows（原生 Vulkan） |
+|---|---|---|
+| `UI-17` 最小 `w×h` | `51.0×24.0` | **`17.0×19.0`** |
+| `UI-18` 页容器 | `960×552` | **`960×568`** |
+| `UI-19` / `UI-22` / 负控翻转集合 | `351 对 / 0 重叠`；落空 `0`；`UI-17/20/21/22/23` | 同 |
+| `UI-23` 七行对比度 | 最小 `5.13:1` | **逐位相同**（颜色来自 QML 声明，与平台字体无关） |
+
+⇒ 字体度量差异（CJK 回退字体不是同一套）**实测确实把控件最小尺寸与页容器高度改了**
+（`51×24 → 17×19`、`552 → 568`），但 `UI-17` 两边都判"非退化"、`UI-18` 两边都判"零越界"
+—— **"面板不会被挤坏"这条结论跨平台成立**。旧宿主字节不变见上。
+
+**一次顺序失误（留档）**：`wt30-*.ps1` 已在提交 `ccd0cde` 里，我又 `scp` 上传了三份 ⇒ 它们成了
+untracked 文件，把 `git merge --ff-only` 顶回去（`Aborting`，`merge_rc=1`）。删掉后内联 merge 成功
+（`eec8187 → ccd0cde`），随后重跑一次 `wt30-pull.ps1` 取幂等日志（`Already up to date.` /
+`merge_rc=0` / `after=ccd0cde`）。**教训：脚本一旦入库就别再 scp。**
+
+**收尾**：三个 `schtasks` 任务已删；**另外清掉了 W-T29 遗留的 `StelQC_t29w_build`** —— 它是
+`/sc once /st 23:59`，不删的话今晚 23:59 会自己跑一次构建。
 
 ### 产物
 
@@ -3273,6 +3299,6 @@ UI-24 = OK                                    ← 纯函数，与页面状态无
 `tools/windows/wt30-{pull,build,suites}.ps1`（全 ASCII）；
 `docs/T30_TIME_VISUAL.zh_CN.md`（8 节）；
 `docs/evidence/2026-09-29-t30-visual/mac/`（35 份：正题 6 + 负控 6 + 回归 12 +
-A2 1 + DYN 11 + `rc-summary.txt`）+ 该目录 `README.md`；
+A2 1 + DYN 11 + `rc-summary.txt`）+ `windows/`（构建 4 份 + `suites/` 58 份）+ 该目录 `README.md`；
 `src/ui/main.cpp`（UI-17..UI-24 + 四个自写纯函数 + 三个几何/颜色辅助函数；
 头注与启动 printf 的判据总数 19 → 27）。

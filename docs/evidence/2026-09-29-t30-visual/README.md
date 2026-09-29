@@ -25,7 +25,8 @@
 | `mac/regression-a2-metal.txt` | A2 逐像素（Metal） | **rc=0**；`runtimeApi=Metal`；**探针 12 项、失败 0** |
 | `mac/regression-dyn-{engine,test}-metal-run1..5.txt` | DYN 双路（**显式生产者 + 回读**） | `engine` **4/5** + `test` **5/5**；生产者回读 OK |
 | `mac/a2-manual-probe-INVALID-wrongenv/` | ⚠️ **无效证据留档**：手工重探 A2 时漏了 Metal 三件套 ⇒ 落到 Vulkan 组合、12 项全黑 | **不作为任何结论依据**（该目录 `README.md` 说明来龙去脉） |
-| `windows/` | ⚠️ **不存在**：本轮 Windows 隧道不通（`127.0.0.1:2222` `PORT_CLOSED`），复验未执行 | — |
+| `windows/README.md` + `windows/suites/SUMMARY.txt` | **W-T30 跨平台复验**（原生 Vulkan，58 个文件） | **26 个套件全符合预期**：正题 27/27 ×5、负控 3/3 翻转、`interactcheck` ×5、8 项回归、DYN `engine` 3/3 + `test` 3/3（**6 次回读全 OK**）、A2 `VERDICT=PASS` |
+| `windows/t30w-{pull,build}.log` + `build.rc` + `build-manifest.txt` | Windows 侧快进与增量构建 | `merge_rc=0`；构建 `rc=0`（`0.3 min`）；**旧宿主 `stellarium.exe` 的 size/md5/mtime 三项与 W-T29 基线全等** ⇒ S3 字节级证明 |
 
 ### 两处环境间歇（如实留档，不洗成 PASS）
 
@@ -41,7 +42,8 @@
 | 平台 | 二进制 | 大小 | md5 |
 |---|---|---|---|
 | macOS（Metal + MoltenVK） | `build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI` | `39320456 B` | `d33f873224cfec8e4a39504d832a58a7`（`2026-09-29 15:09`，正题+负控+回归+DYN **同一枚**） |
-| Windows（原生 Vulkan） | `build-win/src/ui/Release/stelQuickUI.exe` | — | —（未跑） |
+| Windows（原生 Vulkan） | `build-win/src/ui/Release/stelQuickUI.exe` | `28917248 B` | `2BB6FBD49DFD3262B9C31DA9996087DF`（`2026-09-29 16:23:09`，全部 26 个套件 **同一枚**） |
+| Windows 旧宿主（对照） | `build-win/src/Release/stellarium.exe` | `27634176 B` | `66C51B61582BAC065C7A7FE5ACA44A42`（mtime `11:56:35`）—— 与 W-T29 基线**三项全等** ⇒ 未被重写 |
 
 ## 为什么"负控里 UI-18/UI-19 是绿的"不是漏了
 
