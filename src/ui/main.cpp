@@ -33,11 +33,13 @@
  *   STELQUICK_REPLAY_CHECK=1     → T20 **I-REP-02 全流程回放**（A-alpha 出口测试）：
  *                                  开机→搜月球→定位→改时间→返回，全程只投递真实
  *                                  鼠标事件；末态四连断言（页面/时间/跟踪/星空）。
- *   STELQUICK_INTERACT_UI_CHECK=1 → T25/T27/T28 **交互级**自检：窗口真实滚轮
+ *   STELQUICK_INTERACT_UI_CHECK=1 → T25/T27/T28/T29 **交互级**自检：窗口真实滚轮
  *                                  （滚轮缩放活链 + 页守卫负控 + 方向对照）、真实
  *                                  L 键（routeKey QML 活链 + 焦点守卫 U-ACT-03）、
- *                                  真实鼠标（点击选中 / 拖拽平移 / 右键反选）与
- *                                  真实原生捏合（捏合缩放 + 方向对照 + 页守卫负控）。
+ *                                  真实鼠标（点击选中 / 拖拽平移 / 右键反选）、
+ *                                  真实原生捏合（捏合缩放 + 方向对照 + 页守卫负控）与
+ *                                  真实输入法事件（preedit/commit 活链 + 组合期间按键
+ *                                  不得抢 + Esc 走守卫不跳页 + 判别性对照）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -104,6 +106,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QMouseEvent>
+#include <QInputMethodEvent>    // T29：合成输入法 preedit/commit 事件（真实投递链入口）
 #include <QPointingDevice>      // T28：合成 QNativeGestureEvent 需要"主指针设备"
 #include <QSGRendererInterface>
 #include <QTimer>
@@ -1910,9 +1913,21 @@ void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
 //   · IT-10/11/12（T28）：捏合缩放。IT-10 成对（FOV 变小）、IT-11 方向对照
 //     （反向捏合必须回升**且回到原值**——只会单向缩放的假链会红）、IT-12 负控
 //     （时间页捏合必须不动 FOV，即页守卫）
+//   · IT-13/14/15/16（T29）：输入法组合键。**先看 Qt 6.11.2 源码定事实**：
+//     ① 组合期间 macOS **根本不产生 QKeyEvent**（qnsview_keys.mm:137 的闸门
+//        `if (m_sendKeyEvent && m_composingText.isEmpty())`）⇒ "组合中天空快捷键
+//        被抢"在平台层就不成立。IT-14 用注入**刻意比真实更严苛**：即使这些键
+//        到达，也必须被守卫拦住（负控无守卫时必红 ⇒ 判据非摆设）。
+//     ② 非组合态真正的漏洞在 QML 侧：Esc 分支写在焦点守卫之前（见
+//        MainWindow.qml keySink 的 T29 注释）⇒ 搜索框里按 Esc 直接跳页。
+//        **IT-14 是修复前必红的那一条**。
+//     IT-13 = IME preedit 到达搜索框（合流形态的 IME 通路此前从未被测过）且
+//     **不污染 text**（成对）；IT-15 = commit 真的写进 text（组合态归位）；
+//     IT-16 = **判别性对照**——焦点离开输入控件后按 Esc 必须仍然返回天空页
+//     （证明修复没有把 Esc 返回链路一起杀掉；改动过宽时这条红）。
 //
-// 判据 12 条：IT-01..IT-12（T27 追加 IT-07 拖拽平移 / IT-08 点击选中 / IT-09 右键
-// 反选）。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+// 判据 16 条：IT-01..IT-16（T27 追加 IT-07/08/09，T28 追加 IT-10/11/12，
+// T29 追加 IT-13/14/15/16）。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
 // ══════════════════════════════════════════════════════════════════════════
 
 const int kUiInteractTickMs = 400;
@@ -1960,6 +1975,15 @@ struct UiInteractCheck
     double fovBefore10 = 0.0;             //!< IT-10 捏开前的视场基线
     double fovAfter10 = 0.0;              //!< IT-10 捏开后（IT-11 的基线）
     double fovBefore12 = 0.0;             //!< IT-12 页守卫负控的基线
+    // T29（IT-13..16）：输入法组合键
+    QString imeTextBefore;                //!< IT-13 前提：注入 preedit 前的 text 快照
+    QString imePreedit;                   //!< IT-13 读数：注入后的 preeditText
+    bool imeComposing = false;            //!< IT-13 读数：注入后的 inputMethodComposing
+    int pageBefore14 = -1;                //!< IT-14 前提：组合态按键前的页索引
+    double rateBefore14 = 0.0;            //!< IT-14 前提：rate 基线
+    int dispatchBase14 = 0;               //!< IT-14 前提：dispatched 基线
+    int focusTries29 = 0;                 //!< IT-13 焦点门重试计数（有界 3 次）
+    int pageBootstrap29 = 0;              //!< IT-16 布场重试计数（有界 2 次）
 };
 
 void uiInteractMark(UiInteractCheck *c, bool ok, const QString &line)
@@ -2085,6 +2109,40 @@ int uiInteractSendKeyNoFocusGrab(QQuickWindow *window, int key)
     QCoreApplication::sendEvent(window, &press);
     QCoreApplication::sendEvent(window, &release);
     return (press.isAccepted() || release.isAccepted()) ? 1 : 0;
+}
+
+//! T29：向窗口投递一次**输入法事件**（preedit 组合串 或 commit 提交串）。
+//!
+//! 真实链路（Qt 6.11.2 源码实证）：
+//!   macOS 输入法 → QCocoaInputContext::sendInputMethodEvent
+//!   → QInputMethodEvent
+//!   → QQuickWindow::event() 的 `case QEvent::InputMethod`（qquickwindow.cpp:1643-1655）
+//!   → QQuickDeliveryAgent::event() 同分支（qquickdeliveryagent.cpp:921-928）
+//!       `QQuickItem *target = d->focusTargetItem();` ← **不是遍历、不是命中测试**：
+//!       固定投给 activeFocusItem（无焦点时回落到 rootItem 的 scopedFocusItem）
+//!   → QQuickTextInput::inputMethodEvent → processInputMethodEvent
+//!       preedit 非空 ⇒ `hasImState = true`（qquicktextinput.cpp:3666）
+//!                    ⇒ `inputMethodComposing` 变 true、`preeditText` 变组合串；
+//!       commit 非空 ⇒ `internalInsert(commitString)`（:3624-3626）⇒ `text` 变。
+//!   ⚠️ 所以本注入**必须落在窗口**上才测得到"焦点项是谁"这段判断；直接
+//!      sendEvent 给搜索框会绕过它（=血泪第 3 条：仪器自己构造输入就测不到链路）。
+//!
+//! 组合串给一个 Cursor 属性——真实 IME 至少给光标位（Qt 侧 hasImState 只要求
+//! preedit 非空，但多发一个属性让事件形状贴近真实；血泪第 18 条）。
+int uiInteractSendInputMethod(QQuickWindow *window, const QString &preedit,
+                              const QString &commit)
+{
+    // ⚠️ QInputMethodEvent 的拷贝赋值是 deleted ⇒ 不能"先默认构造再赋值"，
+    // 必须一次构造到位（首版踩中，编译错 overload resolution selected deleted operator '='）。
+    QList<QInputMethodEvent::Attribute> attrs;
+    if (!preedit.isEmpty())
+        attrs.append(QInputMethodEvent::Attribute(
+            QInputMethodEvent::Cursor, preedit.size(), 1, QVariant()));
+    QInputMethodEvent ev(preedit, attrs);
+    if (!commit.isEmpty())
+        ev.setCommitString(commit);
+    QCoreApplication::sendEvent(window, &ev);
+    return ev.isAccepted() ? 1 : 0;
 }
 
 void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
@@ -2590,6 +2648,195 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
                                       "没收到就是没收到）")
                            .arg(acc).arg(c->fovBefore12, 0, 'f', 4)
                            .arg(after, 0, 'f', 4));
+        // 写入步（T29）：切到搜索页，为输入法组合键判据布场
+        uiReturnClick(c->window, c->navSearch);
+        break;
+    }
+    case 17: {
+        // ── T29：IT-13 布场② —— 窗口激活门 + 页前提 ──────────────────────
+        // 窗口激活门理由同 IT-06（qquickwindow 失活时 focusObject() 恒 nullptr，
+        // 焦点前提不可能成立）；这里再叠一层"必须真的在搜索页"，否则点搜索框
+        // 会点在别的页上（血泪第 10 条：切页后必须等布局）。
+        if (!c->window->isActive())
+        {
+            ++c->activeRetry;
+            if (c->activeRetry <= 3)
+            {
+                c->window->requestActivate();
+                c->details.append(QStringLiteral("IT-note（T29）窗口未激活（尝试 %1/3），"
+                                                 "requestActivate 后重试本相位")
+                                      .arg(c->activeRetry));
+                c->nextDelayMs = 400;
+                QTimer::singleShot(400, app, [app, c]() { uiInteractStep(app, c); });
+                return;
+            }
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-13 仪器不可用：窗口 %1 次 requestActivate "
+                                          "后仍失活 ⇒ 焦点前提无法成立。**不洗成 PASS**")
+                               .arg(c->activeRetry));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        if (cur != c->idxSearch)
+        {
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-13 前提失败：切搜索页后 currentIndex=%1 "
+                                          "（期望 %2）—— 输入法判据无效")
+                               .arg(cur).arg(c->idxSearch));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        break;
+    }
+    case 18: {
+        // ── T29：IT-13 写入步 —— 真实点击搜索框聚焦 + 注入 preedit 组合串 ──
+        // 有界焦点门（同 IT-06）：点击注入偶尔因环境干扰没把焦点交给搜索框。
+        auto focusIsTextField = []() {
+            QObject *f = QGuiApplication::focusObject();
+            return f && f->inherits("QQuickTextInput");
+        };
+        uiReturnClick(c->window, c->queryField);
+        while (!focusIsTextField() && c->focusTries29 < 3)
+        {
+            ++c->focusTries29;
+            uiReturnClick(c->window, c->queryField);
+        }
+        if (!focusIsTextField())
+        {
+            QObject *f = QGuiApplication::focusObject();
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-13 前提失败：点击搜索框 %1 次后焦点仍不是 "
+                                          "QQuickTextInput（当前=%2）—— 不得洗成 PASS")
+                               .arg(c->focusTries29 + 1)
+                               .arg(f ? f->metaObject()->className() : "(null)"));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        c->imeTextBefore = c->queryField->property("text").toString();
+        const int acc = uiInteractSendInputMethod(c->window, QStringLiteral("yueqiu"),
+                                                  QString());
+        c->details.append(QStringLiteral("IT-note（T29）已真实点击搜索框聚焦（焦点门重试 "
+                                         "%1 次）并注入输入法 preedit=\"yueqiu\"（受理=%2），"
+                                         "组合前 text=\"%3\"")
+                              .arg(c->focusTries29).arg(acc).arg(c->imeTextBefore));
+        break;
+    }
+    case 19: {
+        // ── IT-13：IME 组合链在合流形态是活的 + 不污染 text（成对）──────────
+        // 「活」= preeditText 真的变成组合串 **且** inputMethodComposing 置位；
+        // 「不污染」= text 在组合期间**不许**被写（preedit 是临时区，不是内容）。
+        // 只断言前者会放过"把 preedit 直接当 text 插进去"的实现。
+        c->imePreedit = c->queryField->property("preeditText").toString();
+        c->imeComposing = c->queryField->property("inputMethodComposing").toBool();
+        const QString textNow = c->queryField->property("text").toString();
+        uiInteractMark(c.get(), c->imePreedit == QStringLiteral("yueqiu") && c->imeComposing
+                                    && textNow == c->imeTextBefore,
+                       QStringLiteral("IT-13 IME 组合链：注入 preedit → preeditText=\"%1\""
+                                      "（应=yueqiu）、inputMethodComposing=%2（应=true）、"
+                                      "text=\"%3\"（应仍=\"%4\"，组合不得污染正文）"
+                                      "—— 窗口→focusTargetItem→TextInput 的输入法通路"
+                                      "是活的（此前从未在合流形态被测过）")
+                           .arg(c->imePreedit, c->imeComposing ? "true" : "false",
+                                textNow, c->imeTextBefore));
+        // 写入步：**组合中**注入 Esc（真机由 IME 消费、不产生 QKeyEvent；这里刻意
+        // 比真实更严苛 —— 即使它到达，也必须被焦点守卫拦住）
+        c->pageBefore14 = uiCurrentPageIndex(c->pageStack);
+        c->rateBefore14 = c->facade->timeRate();
+        c->dispatchBase14 = c->dispatchedCount;
+        const int accEsc = uiInteractSendKeyNoFocusGrab(c->window, Qt::Key_Escape);
+        c->details.append(QStringLiteral("IT-note（T29）组合态注入 Esc（受理=%1），前提："
+                                         "页=%2 rate=%3 dispatched=%4 preeditText=\"%5\"")
+                              .arg(accEsc).arg(c->pageBefore14).arg(c->rateBefore14)
+                              .arg(c->dispatchBase14).arg(c->imePreedit));
+        break;
+    }
+    case 20: {
+        // ── IT-14：**组合态按 Esc 不得跳页**（修复前必红的那一条）────────────
+        // 三腿成对：页面没切 + 引擎时间速率没动 + 没有动作被派发。只断言"没切页"
+        // 会放过"页面没切但把 Esc 透传给了引擎"的实现。
+        const int pageNow = uiCurrentPageIndex(c->pageStack);
+        const double rateNow = c->facade->timeRate();
+        uiInteractMark(c.get(), pageNow == c->idxSearch && rateNow == c->rateBefore14
+                                    && c->dispatchedCount == c->dispatchBase14,
+                       QStringLiteral("IT-14 组合态注入 Esc：页 %1 → %2（应仍=%3）、"
+                                      "rate %4 → %5（应不变）、dispatched %6（应=基线 %7）"
+                                      "—— 焦点在输入控件时 Esc 必须走守卫，不得跳页")
+                           .arg(c->pageBefore14).arg(pageNow).arg(c->idxSearch)
+                           .arg(c->rateBefore14).arg(rateNow)
+                           .arg(c->dispatchedCount).arg(c->dispatchBase14));
+        // 写入步：提交组合（真实 IME 选词后的 commitString）
+        const int accCommit = uiInteractSendInputMethod(c->window, QString(), QStringLiteral("月球"));
+        c->details.append(QStringLiteral("IT-note（T29）注入输入法 commit=\"月球\"（受理=%1）")
+                              .arg(accCommit));
+        break;
+    }
+    case 21: {
+        // ── IT-15：组合提交真的写进 text，且组合区归位（成对）──────────────
+        // ⚠️ 判据解耦（首轮负控实测教训）：本条**不**断言"仍停在搜索页"——
+        //   那本是 IT-14 的内容，抄进来会让负控①（撤守卫）把 IT-14 与 IT-15
+        //   一起带红，红点糊成一片、看不出判别力落点。判据各管各的前提。
+        const QString textNow = c->queryField->property("text").toString();
+        const bool composing = c->queryField->property("inputMethodComposing").toBool();
+        const QString preeditNow = c->queryField->property("preeditText").toString();
+        const QString expect = c->imeTextBefore + QStringLiteral("月球");
+        uiInteractMark(c.get(), textNow == expect && !composing && preeditNow.isEmpty(),
+                       QStringLiteral("IT-15 IME 提交：commit=\"月球\" → text=\"%1\""
+                                      "（应=\"%2\"=组合前正文+提交串）、"
+                                      "inputMethodComposing=%3（应=false）、preeditText=\"%4\""
+                                      "（应空：组合区已归位）")
+                           .arg(textNow, expect, composing ? "true" : "false", preeditNow));
+        break;
+    }
+    case 22: {
+        // ── T29：IT-16 写入步 —— **判别性对照**：同一个键、同一个页，只把焦点
+        //    从输入控件移开（forceActiveFocus(keySink) 等价于用户点一下窗口空白）
+        //    ⇒ Esc 必须**仍然**能返回天空页。────────────────────────────────
+        // 为什么必须有这条：IT-14 是"否定式判据"（Esc 不得跳页），把它单独实现成
+        // "搜索页总是吞掉 Esc" 也会绿 —— 那样的修复把 T20 的返回链路一起杀了。
+        // 这条对照就是 IT-14 的"证明它会红"（血泪第 20 条）。实测：负控②（无条件
+        // 吞 Esc）下 IT-14 绿而本条红（currentIndex=2 未切天空页）。
+        // 此处 forceActiveFocus 是**判据要的前提**（焦点不在输入控件），不是污染
+        // ——与 IT-06 里它是污染的情形正相反（血泪第 14 条）。
+        //
+        // 前提自建（首轮负控实测教训）：本条的"非天空页"前提**不搭 IT-14 的便车**
+        // —— 负控①下 IT-14 把页面切走了，若此处只报"前提失败"就又是一处级联红。
+        // 自己布场：已在天空页则点搜索页按钮后重入本相位（最多 2 次）。
+        int cur = uiCurrentPageIndex(c->pageStack);
+        if (cur == c->idxSky)
+        {
+            ++c->pageBootstrap29;
+            if (c->pageBootstrap29 <= 2)
+            {
+                uiReturnClick(c->window, c->navSearch);
+                c->details.append(QStringLiteral("IT-note（T29）IT-16 布场：当前已在天空页，"
+                                                 "点搜索页按钮后重入本相位（%1/2）")
+                                      .arg(c->pageBootstrap29));
+                c->nextDelayMs = 400;
+                QTimer::singleShot(400, app, [app, c]() { uiInteractStep(app, c); });
+                return;   // 不 ++phase：重入本相位（不虚增判据数）
+            }
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-16 前提失败：2 次布场后仍未离开天空页"
+                                          "（currentIndex=%1）").arg(cur));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        const int acc = uiReturnSendKey(c->window, c->keySink, Qt::Key_Escape);
+        c->details.append(QStringLiteral("IT-note（T29）焦点移出输入控件后注入 Esc"
+                                         "（受理=%1），Esc 前页=%2（非天空页）")
+                              .arg(acc).arg(cur));
+        break;
+    }
+    case 23: {
+        // ── IT-16：判别性对照 —— 焦点不在输入控件时 Esc 必须返回天空页 ──────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        uiInteractMark(c.get(), cur == c->idxSky,
+                       QStringLiteral("IT-16 判别性对照：焦点移出输入控件后注入 Esc → "
+                                      "currentIndex=%1（应=%2 天空页）—— 与 IT-14 同一个键、"
+                                      "同一个页，唯一差别是焦点位置；Esc 返回链路仍然活着"
+                                      "（修复没有把它一起杀掉）")
+                           .arg(cur).arg(c->idxSky));
         uiInteractFinish(app, c.get());
         return;
     }
@@ -2620,8 +2867,8 @@ int runUiInteractCheck(QGuiApplication *app, QQuickWindow *window,
                          }
                      });
     c->timer = new QTimer(app);
-    std::printf("INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合事件，共 12 条判据，"
-                "每相位 %dms）\n", kUiInteractTickMs);
+    std::printf("INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合/输入法事件，"
+                "共 16 条判据，每相位 %dms）\n", kUiInteractTickMs);
     std::fflush(stdout);
     uiInteractStep(app, c);
     return 0;

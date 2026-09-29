@@ -1,0 +1,328 @@
+Qt 源码实证留档 — T29 输入法组合键（2026-09-29）
+Qt 版本：6.11.2
+取源方式：curl https://raw.githubusercontent.com/qt/qtdeclarative/v6.11.2/... 与 qtbase/v6.11.2/...
+落地：/tmp/qtsrc611/（qquickwindow.cpp qquicktextinput.cpp qquickdeliveryagent.cpp qinputcontrol.cpp cocoa/qnsview_keys.mm）
+所有行号均为 **该 tag 下文件的实际行号**（非估算）。
+
+════ ① 组合期间 macOS 不产生 QKeyEvent ════
+--- qtbase src/plugins/platforms/cocoa/qnsview_keys.mm:81-146 ---
+    if (keyEvent.type == QEvent::KeyPress) {
+
+        if (m_composingText.isEmpty()) {
+            if (sendAsShortcut(keyEvent, window))
+                return true;
+        }
+
+        QObject *focusObject = m_platformWindow ? m_platformWindow->window()->focusObject() : nullptr;
+        if (m_sendKeyEvent && focusObject) {
+            if (auto queryResult = queryInputMethod(focusObject, Qt::ImHints)) {
+                auto hints = static_cast<Qt::InputMethodHints>(queryResult.value(Qt::ImHints).toUInt());
+
+                // Make sure we send dead keys and the next key to the input method for composition
+                const bool isDeadKey = !nsevent.characters.length;
+                const bool ignoreHidden = (hints & Qt::ImhHiddenText) && !isDeadKey && !m_lastKeyDead;
+
+                if (!(hints & Qt::ImhDigitsOnly || hints & Qt::ImhFormattedNumbersOnly || ignoreHidden)) {
+                    // Pass the key event to the input method, and assume it handles the event,
+                    // unless we explicit set m_sendKeyEvent to deliver as a normal key event.
+                    m_sendKeyEvent = false;
+
+                    // Match NSTextView's keyDown behavior of hiding the cursor before
+                    // interpreting key events. Shortcuts should not trigger this though.
+                    // Unfortunately many of our controls handle shortcuts by accepting
+                    // the ShortcutOverride event and then handling the shortcut in the
+                    // following key event, and QWSI::handleShortcutEvent doesn't reveal
+                    // whether this will be the case. For NSTextView this is not an issue
+                    // as shortcuts are handled via performKeyEquivalent, which happens
+                    // prior to keyDown. To work around this until we can get the info
+                    // we need from handleShortcutEvent we match AppKit and assume that
+                    // any key press with a command or control modifier is a shortcut.
+                    if (!(nsevent.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl)))
+                        [NSCursor setHiddenUntilMouseMoves:YES];
+
+                    qCDebug(lcQpaKeys) << "Interpreting key event for focus object" << focusObject;
+                    m_currentlyInterpretedKeyEvent = nsevent;
+                    // Asking the input context to handle the event will involve both
+                    // the current input method, as well as NSKeyBindingManager, which
+                    // may result in action callbacks to doCommandBySelector.
+                    if (![self.inputContext handleEvent:nsevent]) {
+                        qCDebug(lcQpaKeys) << "Input context did not consume event";
+                        m_sendKeyEvent = true;
+                    }
+                    m_currentlyInterpretedKeyEvent = 0;
+                    didInterpretKeyEvent = true;
+
+                    // If the last key we sent was dead, then pass the next
+                    // key to the IM as well to complete composition.
+                    m_lastKeyDead = isDeadKey;
+                }
+
+            }
+        }
+    }
+
+    bool accepted = true;
+    if (m_sendKeyEvent && m_composingText.isEmpty()) {
+        // Trust text input system on whether to send the event with text or not,
+        // or otherwise apply heuristics to filter out private use symbols.
+        if (didInterpretKeyEvent ? m_sendKeyEventWithoutText : isSpecialKey(keyEvent.text))
+            keyEvent.text = {};
+        qCDebug(lcQpaKeys) << "Sending as" << keyEvent;
+        accepted = keyEvent.sendWindowSystemEvent(window);
+    }
+    return accepted;
+}
+
+--- qtbase .../qnsview_keys.mm:185-204（Esc 取消组合走 cancelOperation:）---
+- (void)cancelOperation:(id)sender
+{
+    Q_UNUSED(sender);
+
+    NSEvent *currentEvent = NSApp.currentEvent;
+    if (!currentEvent || currentEvent.type != NSEventTypeKeyDown)
+        return;
+
+    // Handling the key event may recurse back here through interpretKeyEvents
+    // (when IM is enabled), so we need to guard against that.
+    if (currentEvent == m_currentlyInterpretedKeyEvent) {
+        m_sendKeyEvent = true;
+        return;
+    }
+
+    // Send Command+Key_Period and Escape as normal keypresses so that
+    // the key sequence is delivered through Qt. That way clients can
+    // intercept the shortcut and override its effect.
+    [self handleKeyEvent:currentEvent];
+}
+
+════ ② Esc 在 QQuickTextInput 里必然被 ignore ════
+--- qtdeclarative src/quick/items/qquicktextinput.cpp:1479-1500（keyPressEvent）---
+void QQuickTextInput::keyPressEvent(QKeyEvent* ev)
+{
+    Q_D(QQuickTextInput);
+    // Don't allow MacOSX up/down support, and we don't allow a completer.
+    bool ignore = (ev->key() == Qt::Key_Up || ev->key() == Qt::Key_Down) && ev->modifiers() == Qt::NoModifier;
+    if (!ignore && (d->lastSelectionStart == d->lastSelectionEnd) && (ev->key() == Qt::Key_Right || ev->key() == Qt::Key_Left)) {
+        // Ignore when moving off the end unless there is a selection,
+        // because then moving will do something (deselect).
+        int cursorPosition = d->m_cursor;
+        if (cursorPosition == 0)
+            ignore = ev->key() == (d->layoutDirection() == Qt::LeftToRight ? Qt::Key_Left : Qt::Key_Right);
+        if (!ignore && cursorPosition == d->m_text.size())
+            ignore = ev->key() == (d->layoutDirection() == Qt::LeftToRight ? Qt::Key_Right : Qt::Key_Left);
+    }
+    if (ignore) {
+        ev->ignore();
+    } else {
+        d->processKeyEvent(ev);
+    }
+    if (!ev->isAccepted())
+        QQuickImplicitSizeItem::keyPressEvent(ev);
+}
+
+--- qtdeclarative .../qquicktextinput.cpp:4747-4798（unknown → event->ignore()）---
+    else {
+        bool handled = false;
+        if (event->modifiers() & Qt::ControlModifier) {
+            switch (event->key()) {
+            case Qt::Key_Backspace:
+                if (!m_readOnly)
+                    deleteStartOfWord();
+                break;
+            default:
+                if (!handled)
+                    unknown = true;
+            }
+        } else { // ### check for *no* modifier
+            switch (event->key()) {
+            case Qt::Key_Backspace:
+                if (!m_readOnly) {
+                    backspace();
+                }
+                break;
+            default:
+                if (!handled)
+                    unknown = true;
+            }
+        }
+    }
+
+    if (event->key() == Qt::Key_Direction_L || event->key() == Qt::Key_Direction_R) {
+        setLayoutDirection((event->key() == Qt::Key_Direction_L) ? Qt::LeftToRight : Qt::RightToLeft);
+        unknown = false;
+    }
+
+    if (unknown && !m_readOnly) {
+        if (m_inputControl->isAcceptableInput(event)) {
+            if (overwriteMode
+                // no need to call del() if we have a selection, insert
+                // does it already
+                && !hasSelectedText()
+                && !(m_cursor == q_func()->text().size())) {
+                del();
+            }
+
+            insert(event->text());
+            event->accept();
+            return;
+        }
+    }
+
+    if (unknown)
+        event->ignore();
+    else
+        event->accept();
+}
+
+--- qtbase src/gui/text/qinputcontrol.cpp:23-55（isAcceptableInput：空文本/控制字符 → false）---
+bool QInputControl::isAcceptableInput(const QKeyEvent *event) const
+{
+    const QString text = event->text();
+    if (text.isEmpty())
+        return false;
+
+    const QChar c = text.at(0);
+
+    // Formatting characters such as ZWNJ, ZWJ, RLM, etc. This needs to go before the
+    // next test, since CTRL+SHIFT is sometimes used to input it on Windows.
+    if (c.category() == QChar::Other_Format)
+        return true;
+
+    // QTBUG-35734: ignore Ctrl/Ctrl+Shift; accept only AltGr (Alt+Ctrl) on German keyboards
+    if (event->modifiers() == Qt::ControlModifier
+            || event->modifiers() == (Qt::ShiftModifier | Qt::ControlModifier)) {
+        return false;
+    }
+
+    if (c.isPrint())
+        return true;
+
+    if (c.category() == QChar::Other_PrivateUse)
+        return true;
+
+    if (c.isHighSurrogate() && text.size() > 1 && text.at(1).isLowSurrogate())
+        return true;
+
+    if (m_type == TextEdit && c == u'\t')
+        return true;
+
+    return false;
+}
+
+--- 反查：该文件全文无 QKeySequence::Cancel（Esc 不在它处理的键序列里）---
+命中行（仅此一条，且是 qinputcontrol.cpp:62 的 isCommonTextEditShortcut，不是 processKeyEvent）：
+1735:            if (ke->key() < Qt::Key_Escape) {
+
+════ ③ ignore 之后沿父链冒泡到 keySink ════
+--- qtdeclarative src/quick/util/qquickdeliveryagent.cpp:971-1001（deliverKeyEvent）---
+void QQuickDeliveryAgentPrivate::deliverKeyEvent(QKeyEvent *e)
+{
+    if (activeFocusItem) {
+        const bool keyPress = (e->type() == QEvent::KeyPress);
+        switch (e->type()) {
+        case QEvent::KeyPress:
+            Q_QUICK_INPUT_PROFILE(QQuickProfiler::Key, QQuickProfiler::InputKeyPress, e->key(), e->modifiers());
+            break;
+        case QEvent::KeyRelease:
+            Q_QUICK_INPUT_PROFILE(QQuickProfiler::Key, QQuickProfiler::InputKeyRelease, e->key(), e->modifiers());
+            break;
+        default:
+            break;
+        }
+
+        QQuickItem *item = activeFocusItem;
+
+        // In case of generated event, trigger ShortcutOverride event
+        if (keyPress && e->spontaneous() == false)
+                qt_sendShortcutOverrideEvent(item, e->timestamp(),
+                                         e->key(), e->modifiers(), e->text(),
+                                         e->isAutoRepeat(), e->count());
+
+        do {
+            Q_ASSERT(e->type() != QEvent::ShortcutOverride || !e->isAccepted());
+            if (e->type() != QEvent::ShortcutOverride)
+                e->accept();
+            QCoreApplication::sendEvent(item, e);
+        } while (!e->isAccepted() && (item = item->parentItem()));
+    }
+}
+
+════ ④ 输入法事件固定投给 focusTargetItem（证明注入到窗口才测得到这段）════
+--- qtdeclarative .../qquickdeliveryagent.cpp:917-928 ---
+#endif
+    case QEvent::ShortcutOverride:
+        d->deliverKeyEvent(static_cast<QKeyEvent *>(ev));
+        break;
+    case QEvent::InputMethod:
+    case QEvent::InputMethodQuery:
+        {
+            QQuickItem *target = d->focusTargetItem();
+            if (target)
+                QCoreApplication::sendEvent(target, ev);
+        }
+        break;
+
+--- qtdeclarative .../qquickdeliveryagent.cpp:734-753（focusTargetItem 本体）---
+/*!
+    Returns the item that should get active focus when the
+    root focus scope gets active focus.
+*/
+QQuickItem *QQuickDeliveryAgentPrivate::focusTargetItem() const
+{
+    if (activeFocusItem)
+        return activeFocusItem;
+
+    Q_ASSERT(rootItem);
+    QQuickItem *targetItem = rootItem;
+
+    while (targetItem->isFocusScope()
+            && targetItem->scopedFocusItem()
+            && targetItem->scopedFocusItem()->isEnabled()) {
+        targetItem = targetItem->scopedFocusItem();
+    }
+
+    return targetItem;
+}
+
+--- qtdeclarative src/quick/items/qquickwindow.cpp:1638-1655（窗口把 InputMethod 交给投递代理）---
+    switch (event->type()) {
+    // a few more types that are not QInputEvents, but QQuickDeliveryAgent needs to handle them anyway
+    case QEvent::FocusAboutToChange:
+    case QEvent::Enter:
+    case QEvent::Leave:
+    case QEvent::InputMethod:
+    case QEvent::InputMethodQuery:
+#if QT_CONFIG(quick_draganddrop)
+    case QEvent::DragEnter:
+    case QEvent::DragLeave:
+    case QEvent::DragMove:
+    case QEvent::Drop:
+#endif
+        if (d->inDestructor)
+            return false;
+        if (da && da->event(event))
+            return true;
+        break;
+
+════ ⑤ preedit / commit 落到 TextInput 的状态上 ════
+--- qtdeclarative .../qquicktextinput.cpp:3624-3629（commit 真插进 text）---
+    if (!event->commitString().isEmpty()) {
+        internalInsert(event->commitString());
+        cursorPositionChanged = true;
+    } else {
+        m_cursor = qBound(0, c, m_text.size());
+    }
+
+--- qtdeclarative .../qquicktextinput.cpp:3656-3667（preeditText / hasImState）---
+    QString oldPreeditString = m_textLayout.preeditAreaText();
+    m_textLayout.setPreeditArea(m_cursor, event->preeditString());
+    if (oldPreeditString != m_textLayout.preeditAreaText()) {
+        emit q->preeditTextChanged();
+        if (!event->preeditString().isEmpty() && m_undoPreeditState == -1)
+            // Pre-edit text started. Remember state for undo purpose.
+            m_undoPreeditState = priorState;
+    }
+    const int oldPreeditCursor = m_preeditCursor;
+    m_preeditCursor = event->preeditString().size();
+    hasImState = !event->preeditString().isEmpty();
+    bool cursorVisible = true;

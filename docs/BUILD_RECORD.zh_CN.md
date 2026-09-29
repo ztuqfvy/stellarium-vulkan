@@ -2793,3 +2793,122 @@ timecheck、timeuicheck、returnuicheck、replaycheck、clockcheck、**a2-metal 
 探针留档）；交付文档 `docs/T28_PINCH_ZOOM_UI_CHECK.zh_CN.md`；证据总索引补 T28 行；
 计划文档 §2 / §9.1 / §9.2 / §9.4.12 与移交表更新。
 
+
+## 2026-09-29｜T29 输入法组合键与 Esc 守卫（A4 加固）（**INTERACTCHECK 12 → 16，16/16 ×5 读数逐位一致；三轮负控各命中一条且互不串扰；回归 11 项 rc=0 含 A2 逐像素；DYN 引擎 5/5 + 替身 5/5**）
+
+### 任务定性
+
+A4 加固（**非功能缺口**），补齐 QML 交互级测试的"输入法组合键"一项。
+一句话结论：**"组合期间天空快捷键被抢"这个缺陷在 macOS 上不存在**（Qt 平台层就不产生
+QKeyEvent）；但顺着这条线查出一个**真缺陷**——`MainWindow.qml` 的 Esc 返回分支
+**写在焦点守卫之前**，焦点在搜索框时按 Esc 直接跳页，**守卫被绕过**。
+
+### 修法（语义级一行；C++ 侧一行未改）
+
+`src/ui/qml/MainWindow.qml` 的 `keySink`：
+
+```qml
+if (event.key === Qt.Key_Escape) {
+    if (!ActionRouter.canDispatchToSky()) {   // T29：先问守卫（口径仍在 C++）
+        event.accepted = true
+        return
+    }
+    if (stack.currentIndex !== root.pageIndex["sky"]) { root.returnToSky(); ... }
+}
+```
+
+- **只问不判**：`canDispatchToSky()` 早就是 `Q_INVOKABLE` ⇒ **`ActionRouter.hpp/cpp` 一行未动**，
+  QML 侧零复刻。守卫口径仍只有一份（T17 血泪：复刻就会漂移）。
+- **不顺手"清空输入框"**：那是**新增交互特性**（浏览器式两段 Esc），不是修缺陷；
+  要加得单独立项 + 单独判据。记为后续可选。
+- **不给 `ActionRouter` 加 `app.returnToSky`**：T20 已论证"返回是纯 UI 概念，塞进命令层
+  只会多一条与引擎无关的假动作"——不为了修守卫漏洞而破坏既定架构决策。
+
+### 真链（Qt 6.11.2 源码实证，原文留档 328 行）
+
+1. `QQuickDeliveryAgentPrivate::deliverKeyEvent`（`qquickdeliveryagent.cpp:971-1001`）
+   `e->accept(); sendEvent(item, e); while (!e->isAccepted() && (item = item->parentItem()))`
+   ⇒ **只有被 `ignore()` 才沿父链冒泡**。
+2. `QQuickTextInputPrivate::processKeyEvent`（`qquicktextinput.cpp:4747-4798`）对
+   "未命中编辑键 + `isAcceptableInput()` 为假"的键 `event->ignore()`；
+   **Esc 不在它处理的 QKeySequence 列表里**（全文件无 `QKeySequence::Cancel`）。
+   `QInputControl::isAcceptableInput`（`qinputcontrol.cpp:23-55`）对空文本/控制字符 → false。
+3. ⇒ 冒泡到 `keySink` 的 `Keys.onPressed` ⇒ 修复前**绕过守卫**直接 `returnToSky()`。
+
+### 🔴 必须留档的发现①：一个**不存在**的缺陷
+
+`src/plugins/platforms/cocoa/qnsview_keys.mm:137`：
+`if (m_sendKeyEvent && m_composingText.isEmpty()) { ... sendWindowSystemEvent(window); }`
+——这是 QKeyEvent 的**唯一出口**。**组合期间 `m_composingText` 非空 ⇒ 整段跳过 ⇒
+不产生 QKeyEvent**；空格/数字/回车选词、Esc 取消组合（走 `cancelOperation:` `:185-204`，
+最终仍被 `:137` 挡住）**都到不了应用层**。
+
+⇒ **"组合期间天空快捷键被抢"在 macOS 上不存在**。写进文档是为了**防止后来人凭想象修 bug**。
+IT-14 因此属**"比真实更严苛"**的不变式测试；它仍有价值，因为 (a) 它保护
+"即使到达也必须被拦"这条不变式（换平台 / 将来 QML 层加 pre-edit 处理时会用上），
+(b) 它的判别力是**实测**的（负控①下真红），不是假定的。
+
+### 🔴 必须留档的发现②：备份快照必须在**所有编辑完成之后**取
+
+负控前把 `main.cpp` 备份到 `/tmp/t29-bak/`，之后**又加了两处判据解耦改动**，再还原时把
+解耦一起回滚了。跑出的 5 次"全绿"其实是**旧版判据**的读数——靠日志文案差异（IT-15 少了
+`preeditText` 腿）才发现。这是"`git checkout --` 会抹掉未提交改动"的**同族陷阱但更隐蔽**：
+看起来有备份、实际备份过时。
+规矩：**备份永远是最后一步编辑之后的状态**；还原后除了 `md5`/`cmp`，还要**读一遍关键文案**
+做语义校验。
+
+### 判据（INTERACTCHECK 12 → 16）
+
+| 判据 | 断言 |
+|---|---|
+| **IT-13** | 注入 preedit → `preeditText=="yueqiu"` **且** `inputMethodComposing==true` **且** `text` 未被污染（三腿成对；合流形态输入法通路**首次**端到端验证） |
+| **IT-14** | 组合态注入 Esc → 页不切 **且** `rate` 不变 **且** `dispatched` 不增（**修复前必红**） |
+| **IT-15** | commit → `text == 组合前正文 + "月球"`、`composing==false`、`preeditText` 清空 |
+| **IT-16** | **判别性对照**：焦点移出输入控件后注入 Esc → 必须切回天空页 |
+
+**判据解耦**（首轮负控教训）：首版 IT-15 抄了一条"仍停在搜索页"腿、IT-16 只报"前提失败"就
+收尾 ⇒ 负控①下 **IT-14/15/16 三条一起红**，红点糊成一片、看不出判别力落点。
+处置：IT-15 换成"`preeditText` 清空"腿；IT-16 自带**有界布场**（已在天空页则点搜索页按钮、
+重入本相位，最多 2 次，不虚增判据数）。改完三轮负控**各命中一条**。
+
+### 负控（三轮，各命中一条，互不串扰）
+
+| # | 手手术 | 结果 | 命中 |
+|---|---|---|---|
+| ① | 撤掉守卫（回 T29 修复前写法） | 15/16 rc=10 | **只有 IT-14 红**（页 2→1） |
+| ② | **过宽修复**：无条件吞掉 Esc | 15/16 rc=10 | **只有 IT-16 红**（页没切）；⚠️ IT-14 **假绿** |
+| ③ | 判据取值敏感性：preedit 注入 `yueqiu-bogus` | 15/16 rc=10 | **只有 IT-13 红** |
+
+负控②是"否定式判据单独绿没有意义"的**实证**（血泪第 20 条第二次实例）。
+三份文件先 `cp` 到 `/tmp/t29-bak/`、每轮后 `md5` 校验还原，`grep -c "负控"` 确认零残留。
+
+### 仪器加固（不放宽判据）
+
+🔴 **新环境门：`displaysleep=2`**（本机 `pmset -g custom` 电池档，2 分钟息屏）。
+构建几分钟后屏幕已睡 ⇒ `requestActivate()` **再也拿不到焦点** ⇒ `focusObject()` 恒 `nullptr`
+⇒ `IT-06` 明确判红「仪器不可用」`exit(10)`；因 IT-06 在相位 7，**后面 9 条判据全不跑**
+（首轮连续 3 跑卡在 `判据 5/6`，留档 `instrument-unavailable-first-attempt.txt`）。
+处置：`tools/t29-verify.sh` 内置 `wake_display()`（`caffeinate -u -t 2` 唤醒 +
+`caffeinate -dimsu -t 7200` 常驻）⇒ 之后 5/5 稳定。
+⚠️ **与既有记忆的区别**：那条"`caffeinate -dimsu` 无效——别再试"说的是**锁屏**场景；
+这里是**显示器休眠**场景，`caffeinate` **有效**。两者别混淆。
+仪器行为本身正确（判红 + 标注仪器不可用 + **不洗成 PASS**，血泪第 17 条既定处置）。
+
+### 读数与回归
+
+- 正题 `INTERACTCHECK 16/16 rc=0 ×5`，5 跑 IT-13..16 读数 `md5` **逐位一致**
+- 回归 **11 项全 rc=0**：searchcheck / actioncheck / locatecheck / locate-uicheck /
+  timecheck / timeuicheck / returnuicheck / replaycheck / clockcheck /
+  **a2-metal 逐像素**（动过 `.qml` 的硬要求，探针 12 项失败 0）/
+  **dyn-engine 5/5** + **dyn-stub 5/5**
+- **主动论证不跑 S3 旧宿主**：本轮改动面 = `src/ui/qml/MainWindow.qml` + `src/ui/main.cpp`，
+  **二者都不在旧宿主（stellarium）的构建目标里**，未动 `src/core/`、未动两形态共用的引擎路径
+  ⇒ S3 对本轮改动**不敏感**。（T28 跑 S3 是因为捏合链终点 `StelMovementMgr::handlePinch`
+  与旧宿主共用；T29 的 Esc 守卫是纯 QML 层，没有对应的共用路径。）这是**取舍不是漏跑**。
+
+### 产物
+
+`tools/t29-verify.sh`；`docs/evidence/2026-09-29-t29-ime/`（含 `negctrl/` 四份、
+`probe-qt-source-evidence.txt` 328 行源码实证）；交付文档
+`docs/T29_IME_KEY_GUARD.zh_CN.md`；证据总索引补 T29 行；计划文档 §2 / §9.2 / §9.4.13
+与移交表更新。

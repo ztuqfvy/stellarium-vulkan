@@ -7,6 +7,8 @@
 // T20：新增「返回天空」——I-REP-02 固定流程「开机→搜月球→定位→改时间→**返回**」
 //   的最后一环。语义已定案（2026-09-27）：**返回 = 切回天空视口页 + 状态全保留**，
 //   不是撤销。详见 docs/T20_RETURN_RING.zh_CN.md 与 root.returnToSky() 的注释。
+// T29：修掉「Esc 绕过焦点守卫」——焦点在搜索框（含输入法组合中）时按 Esc 不再跳页。
+//   详见下方 keySink 里 Esc 分支的注释（含 Qt 源码实证的冒泡路径）。
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -78,10 +80,33 @@ ApplicationWindow {
             //
             // 天空页上的 Esc **不拦**：照旧透传 ActionRouter（当前无绑定 ⇒
             //   routeKey 返回 false，无副作用；但保留给后续引擎动作，不抢）。
-            if (event.key === Qt.Key_Escape && stack.currentIndex !== root.pageIndex["sky"]) {
-                root.returnToSky()
-                event.accepted = true
-                return
+            //
+            // ── T29：Esc 分支必须**服从焦点守卫** ────────────────────────────
+            // 缺陷（Qt 6.11.2 源码实证，非猜测）：QQuickTextInput::processKeyEvent
+            //   （qquicktextinput.cpp:4747-4797）对"未命中任何编辑键 + 无可用文本"
+            //   的键走 `event->ignore()`；Esc 不在它处理的 QKeySequence 列表里
+            //   （该文件全文无 `QKeySequence::Cancel`）⇒ `ignore()`
+            //   ⇒ 经 QQuickDeliveryAgentPrivate::deliverKeyEvent 的
+            //     `while (!e->isAccepted() && (item = item->parentItem()))`
+            //     （qquickdeliveryagent.cpp:994-999）沿父链冒泡到本 sink。
+            //   而 Esc 分支此前写在守卫**之前** ⇒ 焦点在搜索框时按 Esc 直接跳页，
+            //   把用户半途的输入丢在搜索框里 —— 与 U-ACT-03「焦点在可编辑控件
+            //   时不触发天空快捷键」自相矛盾：**守卫被绕过**。
+            // 修法：先问守卫。口径只有一份，在 C++ `ActionRouter::canDispatchToSky()`
+            //   （QML 侧不复刻任何判断——T17 的血泪：复刻就会漂移）。
+            //   输入控件持焦 ⇒ Esc 收下但不做事（不跳页、不丢上下文）。
+            // 为什么不顺手"清空输入框"：那是**新增交互特性**（浏览器式两段 Esc），
+            //   不是修缺陷；要加得单独立项 + 单独判据，别混进守卫修复里。
+            if (event.key === Qt.Key_Escape) {
+                if (!ActionRouter.canDispatchToSky()) {
+                    event.accepted = true
+                    return
+                }
+                if (stack.currentIndex !== root.pageIndex["sky"]) {
+                    root.returnToSky()
+                    event.accepted = true
+                    return
+                }
             }
             if (ActionRouter.routeKey(event.key, event.modifiers))
                 event.accepted = true
