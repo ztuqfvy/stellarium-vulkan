@@ -9,8 +9,16 @@
 | 目录 | 内容 |
 |---|---|
 | `mac/` | macOS + Metal + MoltenVK 全量读数（`tools/t31-verify.sh all 5`） |
-| `windows/t31w-suites/` | Windows 原生 Vulkan 复验（最终轮，`tools/windows/wt31-suites.ps1`） |
-| `windows/t31w-suites-round1/` | Windows **首轮**读数 —— 保留它是因为**平台差异就是这一轮暴露的**（探针 `12/16`、红 `IT-05/06/13/16`，与 macOS 预期不符） |
+| `windows/README.md` | Windows 原生 Vulkan 复验的**总说明**：五轮对照表 + 平台差异 + 三个仪器缺陷 |
+| `windows/t31w-suites/` | Windows **最终归档**（三个仪器缺陷全修；SUMMARY 含 `script md5` 自证） |
+| `windows/t31w-suites-round1/` | **发现平台差异**的那一轮（探针 `12/16`、红 `IT-05/06/13/16`，与 macOS 预期不符） |
+| `windows/t31w-suites-round2-scrapebug/` | 仪器缺陷①暴露的那一轮（`,$lines` 双重包裹） |
+| `windows/t31w-suites-round3-integritybug/` | 仪器缺陷②暴露的那一轮（`$ok` 覆盖 `$OK`；**与最终轮同一个二进制**） |
+| `windows/t31w-suites-round-diag/` | **加诊断定位真因**的那一轮（SUMMARY 首现 `NEGCTL-DIAG`） |
+
+> **round3 与最终轮的 `stelQuickUI.exe` 是同一个文件**（`size`/`md5`/`mtime` 三项全等）
+> ⇒ 两者唯一的变量是**跑批脚本的版本**：同一被测对象、两套脚本、两种 SUMMARY。
+> "是仪器而不是产品"由此无可争辩。
 
 ## 读数摘要（`mac/rc-summary.txt` 为准）
 
@@ -61,5 +69,6 @@
 - `INTERACT-INTEGRITY` 只在**门失败路径**上执行 —— 正题里分类表**不被校验**
   （"表写对了没有"在正题下没有观测点）。覆盖靠两条腿：探针证明表的**内容**、
   负控证明表的**落地**。若改成"改表同时改错守卫"，两条腿都在同一个人手里，属"人祸"边界。
-- Windows 侧（W-T31）读数见 **`windows/README.md`**（含三次跑批的对照：**首轮 = 发现平台差异**、
-  **第二轮 = 仪表自身翻车**、**最终轮 = 归档**）。
+- Windows 侧（W-T31）读数见 **`windows/README.md`**：**五轮**跑批的完整对照（首轮 = 发现平台
+  差异、第二轮 = 逗号双重包裹、第三轮 = `$ok`/`$OK` 碰撞、第四轮 = 加诊断定位、最终轮 = 归档），
+  外加三个仪器缺陷的机理与"给解析器自己加诊断"的定位手法。

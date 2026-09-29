@@ -1,0 +1,43 @@
+[t31w] suites start 2026-09-29T18:50:13.7137737+08:00
+repo HEAD = cf738bb
+exe = E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+exe size = 28922368 B   mtime = 2026-09-29T18:14:16.6556070+08:00
+exe md5  = C37136BB9EAADE81EBEBE972AADAA356
+SUITE clockcheck  rc=0  elapsed=1s  var=STELQUICK_CLOCK_CHECK  producer=
+SUITE actioncheck  rc=0  elapsed=17.2s  var=STELQUICK_ACTION_CHECK  producer=
+SUITE searchcheck  rc=0  elapsed=16.2s  var=STELQUICK_SEARCH_CHECK  producer=
+SUITE locatecheck  rc=0  elapsed=22.2s  var=STELQUICK_LOCATE_CHECK  producer=
+SUITE locate-uicheck  rc=0  elapsed=15.2s  var=STELQUICK_UI_CHECK  producer=
+SUITE timecheck  rc=0  elapsed=19.2s  var=STELQUICK_TIME_CHECK  producer=
+SUITE returnuicheck  rc=0  elapsed=17.2s  var=STELQUICK_RETURN_UI_CHECK  producer=
+SUITE replaycheck  rc=0  elapsed=18.2s  var=STELQUICK_REPLAY_CHECK  producer=
+SUITE timeuicheck  rc=0  elapsed=26.2s  var=STELQUICK_TIME_UI_CHECK  producer=
+SUITE a2-vulkan  rc=0  elapsed=3.1s  var=STELQUICK_A2_CHECK  producer=
+SUITE interactcheck-run1  rc=0  elapsed=26.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run1: rc=0  armed=1  full16=True  degraded12=False  crosses=0  -> pos-pass
+SUITE interactcheck-run2  rc=0  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run2: rc=0  armed=1  full16=True  degraded12=False  crosses=0  -> pos-pass
+SUITE interactcheck-run3  rc=0  elapsed=25.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run3: rc=0  armed=1  full16=True  degraded12=False  crosses=0  -> pos-pass
+SUITE interactcheck-run4  rc=0  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run4: rc=0  armed=1  full16=True  degraded12=False  crosses=0  -> pos-pass
+SUITE interactcheck-run5  rc=0  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run5: rc=0  armed=1  full16=True  degraded12=False  crosses=0  -> pos-pass
+  INTERACT summary: pos-pass=5 env-skip=0 of 5
+SUITE negctl-run1  rc=6  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  NEGCTL-DIAG run1: attempts=2 bytes=5800 txtCount=36 plainIntegrity=1 verdictLines=1
+  NEGCTL run1: rc=6  judge12=True  verdictUNAVAIL=True  unavailNamed=5(5)  integrityOK=1(1)  ranIT07to12=6(6)  crosses=0(0)  -> OK
+SUITE negctl-run2  rc=6  elapsed=26.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  NEGCTL-DIAG run2: attempts=2 bytes=5800 txtCount=36 plainIntegrity=1 verdictLines=1
+  NEGCTL run2: rc=6  judge12=True  verdictUNAVAIL=True  unavailNamed=5(5)  integrityOK=0(1)  ranIT07to12=6(6)  crosses=0(0)  -> BAD
+SUITE negctl-run3  rc=6  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  NEGCTL-DIAG run3: attempts=2 bytes=5800 txtCount=36 plainIntegrity=1 verdictLines=1
+  NEGCTL run3: rc=6  judge12=True  verdictUNAVAIL=True  unavailNamed=5(5)  integrityOK=0(1)  ranIT07to12=6(6)  crosses=0(0)  -> BAD
+SUITE negctl-run4  rc=6  elapsed=25.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  NEGCTL-DIAG run4: attempts=2 bytes=5800 txtCount=36 plainIntegrity=1 verdictLines=1
+  NEGCTL run4: rc=6  judge12=True  verdictUNAVAIL=True  unavailNamed=5(5)  integrityOK=0(1)  ranIT07to12=6(6)  crosses=0(0)  -> BAD
+SUITE negctl-run5  rc=6  elapsed=26.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  NEGCTL-DIAG run5: attempts=2 bytes=5800 txtCount=36 plainIntegrity=1 verdictLines=1
+  NEGCTL run5: rc=6  judge12=True  verdictUNAVAIL=True  unavailNamed=5(5)  integrityOK=0(1)  ranIT07to12=6(6)  crosses=0(0)  -> BAD
+[done] 2026-09-29T18:57:07.7282793+08:00
+FATAL 4 expectation check(s) failed (INTERACT pos/neg/probe)

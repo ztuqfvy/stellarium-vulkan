@@ -3,7 +3,7 @@ STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
 LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.91020，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.95929，时钟=HostDriven）
 LIVESKY: simRate -> 0.100000 天/秒（引擎仿真时钟）
 LIVESKY: simScale -> 0.000（引擎仿真时钟）
 LIVESKY: simScale -> 1.000（引擎仿真时钟）
@@ -33,8 +33,8 @@ ACTIONCHECK: AC-3a 同值 setSimulationPaused 幂等（零信号）：OK
 ACTIONCHECK: AC-3b 运行态 JD 推进（+0.4s @rate=0.100，Δ=0.037900 天）：OK
 ACTIONCHECK: AC-3c 暂停 0.5s JD 漂移 0.000e+00 天（门槛 1e-12）：OK
 ACTIONCHECK: AC-8 墙钟锚点拉远 1h 后 JD 仍严格不变（Δ=0.000e+00 天，证明 updateTime 不读墙钟）：OK
-ACTIONCHECK: AC-9b 暂停态外部跳转静置 0.5s 仍严格成立（目标 2462312.948，观测 2462312.948）：OK
-ACTIONCHECK: AC-9c 恢复 0.8s 推进 Δ=0.080600 天（期望 0.080000±30%，起点=跳转值 2462312.948）：OK
-ACTIONCHECK: AC-10 速率贯通：R=0.100 窗口 Δ=0.080600，2R=0.200 窗口 Δ=0.162600，比值 2.017（期望 ≈2）：OK
+ACTIONCHECK: AC-9b 暂停态外部跳转静置 0.5s 仍严格成立（目标 2462312.997，观测 2462312.997）：OK
+ACTIONCHECK: AC-9c 恢复 0.8s 推进 Δ=0.082000 天（期望 0.080000±30%，起点=跳转值 2462312.997）：OK
+ACTIONCHECK: AC-10 速率贯通：R=0.100 窗口 Δ=0.082000，2R=0.200 窗口 Δ=0.160000，比值 1.951（期望 ≈2）：OK
 ACTIONCHECK: AC-11 插件式 core->setTimeRate(0) 后 0.5s 漂移 0.000e+00 天（门槛 1e-12）：OK
 ACTIONCHECK: VERDICT=PASS

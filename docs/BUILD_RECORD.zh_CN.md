@@ -3140,7 +3140,7 @@ PS 5.1 按 ANSI 码页读无 BOM `.ps1`，中文注释会报 `PARSE-ERR … 意�
 
 ---
 
-## 2026-09-29｜T31 INTERACTCHECK 环境门降级（A4 加固：套件"环境门短路"收口）（**判据 16 → 16（口径一条未改）+ 新增 1 条收尾自检 `INTERACT-INTEGRITY`；正题 16/16 ×5 全 PASS（此前 0/5）；负控 5/5 降级成立；探针边界**平台相关**⇒ 出厂表取两平台并集；回归 9 项 + A2 + DYN 双路 5/5 全 rc=0；`VERIFY_RC=0`；产品代码零改动、相位编号一处未动；**Windows 侧已复验**：正题 5/5 pos-pass、负控 3/3、探针 `12/16` 红项 `IT-05/06/13/16`、旧宿主字节级不变**）
+## 2026-09-29｜T31 INTERACTCHECK 环境门降级（A4 加固：套件"环境门短路"收口）（**判据 16 → 16（口径一条未改）+ 新增 1 条收尾自检 `INTERACT-INTEGRITY`；正题 16/16 ×5 全 PASS（此前 0/5）；负控 5/5 降级成立；探针边界**平台相关**⇒ 出厂表取两平台并集；回归 9 项 + A2 + DYN 双路 5/5 全 rc=0；`VERIFY_RC=0`；产品代码零改动、相位编号一处未动；**Windows 侧已复验**：正题 5/5 pos-pass、负控 3/3、探针 `12/16` 红项 `IT-05/06/13/16`、旧宿主字节级不变、批无 `FATAL`；**仪器自身修掉三处缺陷**（`$ok` 覆盖 `$OK` 的变量名大小写不敏感 / PS 数组双重包裹 / `-NegOnly` 哑开关），并推翻上一轮"抓取竞态"的归因**）
 
 一句话：把"**仪器测不到**"和"**产品坏了**"分开 —— 环境门（窗口激活）失败时不再短路
 后面 9 条判据，改为记**第三态 UNAVAILABLE** + 其余照跑 + `rc=6`。
@@ -3240,41 +3240,64 @@ macOS **App Nap 节流**（实测事件链整段退化：滚轮 IT-02/03 不动�
 
 ### Windows 侧复验（W-T31，原生 Vulkan）
 
-脚本 `tools/windows/wt31-{pull,build,suites}.ps1`；仓库 `cf738bb`；
-`stelQuickUI.exe` **28922368 B / md5=`C37136BB9EAADE81EBEBE972AADAA356`**；
+脚本 `tools/windows/wt31-{pull,build,suites}.ps1`；
+`stelQuickUI.exe` **28922368 B / md5=`C37136BB9EAADE81EBEBE972AADAA356`**；整批**无 `FATAL`**。
 旧宿主 `stellarium.exe` **27634176 B / md5=`66C51B61582BAC065C7A7FE5ACA44A42` /
 mtime=`2026-09-29T11:56:35`** —— 与 **W-T30 基线逐项相同** ⇒ **S3 不需重跑**（字节级证据）。
+
+> ⚠️ SUMMARY 里 `repo HEAD = cf738bb` **是过期的**：跑批时 Windows 那台机器连不上 GitHub
+> （`git fetch` 报 `Recv failure: Connection was reset`）。执行的是 `C:\temp` 副本，故最终轮
+> 起 SUMMARY 多一行 **`script md5 = 333dd19788ae7b300501e6a5f15d45cf`**（== 仓库 `de711cc`
+> 工作树内容）自证。
 
 | 组 | 期望 | 实测 |
 |---|---|---|
 | 正题 ×5（带 `REQUEST_ACTIVATE`） | 至少 1 次 `pos-pass` | ✅ **pos-pass=5 env-skip=0**（`armed=1`、`full16=True`、`crosses=0`） |
-| 负控 ×3 | `rc=6` + 5 条逐项点名 + `INTERACT-INTEGRITY` 绿 + IT-07..12 真跑 + 零 ✗ | ✅ **3/3** |
+| 负控 ×3 | `rc=6` + 5 条逐项点名 + `INTERACT-INTEGRITY` 绿 + IT-07..12 真跑 + 零 ✗ | ✅ **3/3**（`integrityOK=1(1)` 三跑齐） |
 | 探针 | `判据 12/16`，红项恰好 **IT-05** / IT-06 / IT-13 / **IT-16** | ✅ 与 Windows 实测边界一致（**这就是促使出厂表取并集的那次测量**） |
 | 回归 9 项 + A2 | 全 `rc=0` | ✅ 全 `rc=0` |
-| DYN 双路 ×3 | 各自 3/3 | ✅ 3/3 + 3/3，`producer-readback OK` |
+| DYN 双路 ×3 | 各自 3/3 | ✅ 3/3 + 3/3，`producer-readback` 六跑全 `requested==observed` |
 
 ⚠️ **平台差异是本轮最有价值的发现**：IT-05（第一次键注入）与 IT-16（靠键的 Esc 对照）
 在 Windows 上**确实**是激活依赖的（失活时 `forceActiveFocus()` 拿不到 active focus，
 注入的键进不了 `keySink`，实测 `dispatched=0` / `lastActionId=""`），而 macOS 上不是
 ⇒ 出厂表改取**两平台并集**（见上）。
 
-⚠️ **仪器自身也有一次翻车**（值得单独记）：第二次跑批的 SUMMARY 报
-`negctl unavailNamed=1(5)`、探针 `crosses=[=]`，看起来像产品退步；但磁盘上的日志
-与首轮**字节级同内容**。根因是上一轮为修"抓取竞态"而新加的 `Read-Lines`：
-`return ,$lines` 与调用点 `@( ... )` **双重包裹**成嵌套数组 ⇒ `$txt.Count==1`、
-`Where-Object` 的 `$_` 是整个数组（array `-like` 只要有任一行命中即为真）⇒ 恒报 1 条。
-**修法**：去掉逗号（见 `cf738bb`）。教训与血泪第 3 条同源 —— **仪表先证明自己在干活**。
+⚠️ **Windows 侧一轮留了五份证据，因为仪器自身接连暴露三个缺陷**（比"产品退步"更值得记）：
+
+| # | 缺陷 | 表现 | 修法 |
+|---|---|---|---|
+| ① | `return ,$lines` ＋ 调用点 `@( ... )` **双重包裹**（`@()` 不展平嵌套数组） | `unavailNamed=1(5)`、探针字段抽取退化成 `=` | 去掉逗号（`cf738bb`） |
+| ② | **`$ok` 静默覆盖 `$OK`**（PowerShell 变量名**大小写不敏感**） | `integrityOK=1,0,0,0,0` —— **run1 对、其余全错**，而文件字节完全一致 | 改名 `$MARK_OK`/`$MARK_BAD`/`$pass`（`986dbb5`） |
+| ③ | `-NegOnly` 是**哑开关**（主回归块守卫漏查它） | "只跑负控"的诊断批次实际跑了完整 15 套件、刷掉 SUMMARY | 补守卫（`986dbb5`） |
+
+**②的机理**：`$OK = [char]0x2713` 与 `$ok = ($rc -eq 6) -and ...` 在 PowerShell 里**是同一个
+变量** ⇒ 第 1 次循环先算 `$integrity`（对勾还在 → 命中），紧接着 `$ok = $true` 把对勾**覆盖成
+`True`** ⇒ 从第 2 跑起模式变成 `"INTERACTCHECK: True INTERACT-INTEGRITY*"`、恒 0。
+
+⚠️ **同时推翻上一轮的一个归因**：先前把 `integrityOK=0` 归因为"重定向文件滞后 ⇒ 抓取竞态"
+（并据此把 `Read-Lines` 从"锚定最后一行"改成"等文件静止"）—— **该归因是错的**：锚定最后一行
+时它明明存在、而它**前面**的行反而"缺"，严格顺序写入下不可能，当时就该否证。竞态从未出现，
+静止等待降级为**廉价保险**（脚本注释已改写成诚实版）。
+
+**定位手法（本轮真正的收获）**：不要对生产者编故事，而是**给解析器自己加诊断**、打印它实际
+看到的量 —— 一趟结案。`NEGCTL-DIAG` 五行（`attempts/bytes/txtCount/plainIntegrity/
+verdictLines`）**输入全同、结论不同** ⇒ 直接锁定表达式而非文件。该诊断现已常驻套件。
+附带教训：**复现脚本必须复现"状态变更序列"** —— 本地单测那条 `-like` 表达式对五个文件
+**全给 1**（因为没执行 `$ok = ...` 那句赋值），差点据此宣布"产品与脚本都没问题"。
 
 ### 证据与文档
 
 `docs/evidence/2026-09-29-t31-interact-gate/`（`README.md` + `mac/` 含 `rc-summary.txt`
-+ `windows/` 含 `README.md` 与**三次跑批**：`t31w-suites-round1/` 发现平台差异、
-`t31w-suites-round2-scrapebug/` 仪器自身翻车、`t31w-suites/` 最终归档）；
++ `windows/README.md` 与**五轮跑批**：`t31w-suites-round1/` 发现平台差异、
+`t31w-suites-round2-scrapebug/` 逗号双重包裹、`t31w-suites-round3-integritybug/` 逗号已修而
+`$ok`/`$OK` 仍在、`t31w-suites-round-diag/` 加诊断定位、`t31w-suites/` 最终归档）；
 `docs/T31_INTERACT_GATE.zh_CN.md`；计划文档 §9.4.16 与移交表更新；
 技能 `qt-quick-vulkan-macos` §39（含 **§39.4 平台对照表 + 表取并集**、
 **§39.6 前台提升改写**：旧 `open -a` 结论已被实测推翻、
-**§39.8 读数为负时先证明仪表在干活**）；技能 `uu-remote-windows`
-（PS 数组双重包裹坑 + `C:\temp` 副本的 md5 对账法）。
+**§39.8 三个仪器缺陷 + 一个被推翻的假说 + "给仪器自己加诊断"**）；
+技能 `uu-remote-windows`（PS 数组双重包裹坑、**变量名大小写不敏感**、**开关参数要逐块查**、
+`C:\temp` 副本的 md5 对账法、`grep -c` 零命中 rc=1 截断 `&&` 链）。
 
 ---
 

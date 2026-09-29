@@ -3,7 +3,7 @@ STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
 LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.91084，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.95993，时钟=HostDriven）
 UICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，共 8 条判据，每相位 300ms）
 UICHECK: UI-01 搜索页控件锚点可寻且可见（locateButton=有 untrackButton=有 statusLabel=有，visible=true）：OK
 UICHECK: UI-02 无选中时两个按钮均禁用（enabled: 定位=false 取消=false）：OK

@@ -151,7 +151,7 @@ SSE: Comet cross-index data: Overwriting entry for "481P"
 Loaded 2576 discovery circumstances records for comets...
 OpenGL viewport size: 1280 x 720
 Creating scene FBO with size 1280x720
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.91285"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.96195"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
 Dubious result: Landscape  "Hurricane"  not calibrated. Opacity test represents mathematical horizon only.
 AppFacade: simulationPaused = true 

@@ -3,12 +3,12 @@ STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
 LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.91144，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.96053，时钟=HostDriven）
 REPLAYCHECK: 开始（I-REP-02 全流程回放：开机→搜月球→定位→改时间→返回，全程只投递真实鼠标事件，共 11 条判据）
 LIVESKY: simScale -> 0.000（引擎仿真时钟）
 REPLAYCHECK: RP-01 全流程锚点可寻（9 个控件找到 9/9：pageStack/navSearch/navTime/searchQueryField/searchGoButton/searchResultList/locateButton/timeAddHourButton/skyReturnButton）：OK
 REPLAYCHECK: RP-02 开机态（startPage=sky）→ currentIndex=1（期望 1）：OK
-REPLAYCHECK: RP-note 时钟已暂停（scale=0），开机 JD=2461312.911437；全程只投递真实鼠标事件
+REPLAYCHECK: RP-note 时钟已暂停（scale=0），开机 JD=2461312.960526；全程只投递真实鼠标事件
 REPLAYCHECK: RP-note 已在搜索框写入 "Moon"（框内=Moon）
 REPLAYCHECK: RP-03 「搜月球」：真实输入 + 点「搜索」→ 结果 3 条（要求 >0）：OK
 REPLAYCHECK: RP-note 结果[0] "Moon" / english="Moon" / Planet:Moon
@@ -23,6 +23,6 @@ REPLAYCHECK: RP-05 「定位」：真实点击后 tracking=true stableId="Planet
 REPLAYCHECK: RP-06 「改时间」：真实点击「+1 时」→ JD 位移 0.041667 天（期望 ≈1/24=0.041667 天，±30%）：OK
 REPLAYCHECK: RP-07 末态·页面：真实点击「返回天空」→ currentIndex=1（期望 1）：OK
 REPLAYCHECK: RP-08 末态·状态保留：时间位移 0.041667 天（未被撤销）、tracking=true stableId="Planet:Moon"（期望 Planet:Moon）：OK
-REPLAYCHECK: RP-09 末态·星空（I-DYN-02 内核）：改 1 小时后，月球 AltAz 相对改前变化 13.5015°（门槛 >5.0）：OK
+REPLAYCHECK: RP-09 末态·星空（I-DYN-02 内核）：改 1 小时后，月球 AltAz 相对改前变化 14.1020°（门槛 >5.0）：OK
 REPLAYCHECK: 判据 11/11
 REPLAYCHECK: VERDICT=PASS

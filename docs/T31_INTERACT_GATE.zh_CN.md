@@ -269,9 +269,9 @@ uiInteractEnterFocusUnavailable(c, id, why)  // 置标志 + 记一条 ← 由该
 
 ### Windows（原生 Vulkan）
 
-脚本 `tools/windows/wt31-{pull,build,suites}.ps1`；仓库 `cf738bb`；
+脚本 `tools/windows/wt31-{pull,build,suites}.ps1`；
 `stelQuickUI.exe` **28922368 B / md5=`C37136BB9EAADE81EBEBE972AADAA356`**
-（`2026-09-29T18:14:16` 构建，含 §3.1 的并集修正）。
+（`2026-09-29T18:14:16` 构建，含 §3.1 的并集修正）。整批**无 `FATAL`**（⇒ `exit 0`）。
 
 要点（与 macOS 侧的差异，先写清楚免得跑歪）：
 
@@ -289,7 +289,7 @@ uiInteractEnterFocusUnavailable(c, id, why)  // 置标志 + 记一条 ← 由该
 | 负控 ×3 | `rc=6` + 5 条逐项点名 + `INTERACT-INTEGRITY` 绿 + IT-07..12 真跑 + 零 ✗ | ✅ **3/3 全项成立** |
 | 探针 | `判据 12/16`，红项**恰好** **IT-05** / IT-06 / IT-13 / **IT-16** | ✅ 与 Windows 实测边界一致 |
 | 回归 9 项 + A2 | 全 `rc=0` | ✅ 全 `rc=0` |
-| DYN 双路 ×3 | 各自 3/3 | ✅ 3/3 + 3/3，`producer-readback OK` |
+| DYN 双路 ×3 | 各自 3/3 | ✅ 3/3 + 3/3，`producer-readback` 六跑全 `requested==observed` |
 
 旧宿主（S3 判据）：`stellarium.exe` **27634176 B / md5=`66C51B61582BAC065C7A7FE5ACA44A42` /
 mtime=`2026-09-29T11:56:35`** —— 与 **W-T30 基线逐项相同** ⇒ **S3 不需重跑**（字节级证据）。
@@ -298,15 +298,35 @@ mtime=`2026-09-29T11:56:35`** —— 与 **W-T30 基线逐项相同** ⇒ **S3 �
 与 macOS 期望的 `13/16`/`IT-06/13/14` 不符 ⇒ 才有了 §3.1 的并集修正。
 首轮证据**原样保留**在 `windows/t31w-suites-round1/`（它不是"跑错"，它是那条结论的来源）。
 
-⚠️ **仪器自身也翻车一次（值得留档）**：第二轮跑批的 SUMMARY 报 `negctl unavailNamed=1(5)`、
-探针 `crosses=[=]`，看起来像产品退步；但磁盘上的日志与首轮**字节级同内容**。根因是上一轮
-为修"输出文件写入滞后 ⇒ 抓取竞态"新加的 `Read-Lines`：`return ,$lines` 与调用点
-`@( ... )` **双重包裹**成嵌套数组（`@()` 不展平嵌套数组）⇒ `$txt` 只有 1 个元素
-（其唯一元素就是行数组本体）⇒ `Where-Object` 的 `$_` 是数组，而**数组中任一行命中
-`-like` 即为真** ⇒ 恒报 1 条命中；探针的字段抽取退化成 `=`。
-**修法**：去掉逗号（`cf738bb`，随该提交入库）。**判别套路**：负读数先换一条**完全独立**
-的读数路径复核（这里用 `/usr/bin/grep -a` 直接数原始日志）——两条路径冲突就是仪表在撒谎，
-而不是产品坏了。同源教训见血泪第 3 条。
+⚠️ **Windows 侧一轮留了五份证据，因为仪器自身出了三个缺陷**（详见
+`docs/evidence/2026-09-29-t31-interact-gate/windows/README.md`）：
+
+| # | 缺陷 | 表现 | 修法 |
+|---|---|---|---|
+| ① | `return ,$lines` ＋ 调用点 `@( ... )` **双重包裹**（`@()` 不展平嵌套数组） | `unavailNamed=1(5)`、探针字段抽取退化成 `=` | 去掉逗号（`cf738bb`） |
+| ② | **`$ok` 静默覆盖 `$OK`**（PowerShell 变量名**大小写不敏感**） | `integrityOK=1,0,0,0,0` —— **run1 对、其余全错**，而文件字节完全一致 | 改名 `$MARK_OK`/`$MARK_BAD`/`$pass`（`986dbb5`） |
+| ③ | `-NegOnly` 是**哑开关**（主回归块的守卫漏查它） | "只跑负控"的诊断批次实际跑了完整 15 套件，把 SUMMARY 刷掉 | 补守卫（`986dbb5`） |
+
+**②的机理**：`$OK = [char]0x2713` 与 `$ok = ($rc -eq 6) -and ...` 是同一个变量 ⇒
+第 1 次循环先算 `$integrity`（对勾还在 → 命中），紧接着 `$ok = $true` 把对勾**覆盖成
+`True`** ⇒ 从第 2 跑起模式变成 `"INTERACTCHECK: True INTERACT-INTEGRITY*"`、恒 0。
+
+⚠️ **同时推翻上一轮的一个结论**：先前把 `integrityOK=0` 归因为"`Start-Process -Wait`
+返回后重定向文件仍滞后 ⇒ 抓取竞态"，并据此把 `Read-Lines` 的等待从"锚定最后一行"改成
+"等文件静止"。**该归因是错的** —— 锚定最后一行时它明明存在、而它**前面**的行反而"缺"，
+严格顺序写入下不可能，当时就该否证。竞态从未出现；静止等待降级为**廉价保险**
+（脚本注释已改写成诚实版）。
+
+**定位手法（本轮真正的收获）**：别对生产者编故事，而是**给解析器自己加诊断**、打印它
+实际看到的量 —— 一趟结案。`NEGCTL-DIAG` 五行（`attempts/bytes/txtCount/plainIntegrity/
+verdictLines`）**输入全同、结论不同** ⇒ 直接锁定表达式，而不是文件。这行诊断现在常驻套件。
+附带教训：**复现脚本必须复现"状态变更序列"** —— 本地单测那条 `-like` 表达式对五个文件
+**全给 1**（因为没执行 `$ok = ...` 那句赋值），差点据此宣布"产品与脚本都没问题"。
+
+> ⚠️ Windows 那台机器 19:0x 时**连不上 GitHub**（`git fetch` 报 `Recv failure:
+> Connection was reset`），故 SUMMARY 里 `repo HEAD = cf738bb` **是过期的**。
+> 执行的是 `C:\temp` 副本，因此最终轮起 SUMMARY 多一行 **`script md5`** 自证：
+> `333dd19788ae7b300501e6a5f15d45cf` == 仓库 `de711cc` 工作树内容。
 
 ## 7 与既有判据 / 文档的关系
 

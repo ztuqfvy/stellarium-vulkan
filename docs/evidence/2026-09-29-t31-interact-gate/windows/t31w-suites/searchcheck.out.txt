@@ -3,7 +3,7 @@ STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
 LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.91040，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.95949，时钟=HostDriven）
 SEARCHCHECK: 54/54 PASS（含纵向判据 V1–V9）
 SEARCHCHECK: PASS SRC-01a 请求编号单调递增（1 → 2）
 SEARCHCHECK: PASS SRC-01b currentRequestId = 最后一次搜索（2）
@@ -50,7 +50,7 @@ SEARCHCHECK: PASS T17-V9 行越界 → 返回 false 且信息页保持归零，�
 SEARCHCHECK: PASS SRC-04c 按 stableId 跨查询回查，重新选中同一天体（HIP 32349）
 SEARCHCHECK: PASS T17-V4 displayName 非空（Sirius）
 SEARCHCHECK: PASS T17-V5 typeName 非空（Star）
-SEARCHCHECK: PASS T17-V6 infoText 非空（734 字符）
+SEARCHCHECK: PASS T17-V6 infoText 非空（733 字符）
 SEARCHCHECK: PASS T17-V7 infoMap 非空（54 项）
 SEARCHCHECK: PASS T17-V8 stableId 形如 type:id（Star:HIP 32349 A）
 SEARCHCHECK: PASS SRC-11 活引擎端到端：搜「Moon」首行 = Planet:Moon（实得 Planet:Moon，匹配质量 完全匹配）；完整顺序 [Moon > Pirate Moon Cluster > Ghost of the Moon Nebula]
