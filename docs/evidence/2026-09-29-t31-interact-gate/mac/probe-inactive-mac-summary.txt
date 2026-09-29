@@ -1,4 +1,4 @@
-──────── 探针（FORCE_INACTIVE + PROBE_ACTIVATION）（rc=10）→ probe-OK（边界与 kFocusGatedIds 一致） ────────
+──────── 探针（FORCE_INACTIVE + PROBE_ACTIVATION）（rc=10）→ probe-OK（本平台边界 = IT-06/13/14，是 kFocusGatedIds 两平台并集的子集） ────────
   期望：判据 13/16，红项**恰好** IT-06 / IT-13 / IT-14（rc=10 是期望，非回归）
   实测：INTERACTCHECK: 判据 13/16   红项=[IT-06,IT-13,IT-14,]
 INTERACTCHECK: PROBE-note 已置 Qt::WindowDoesNotAcceptFocus（失活探针；isActive 现在应为 false）

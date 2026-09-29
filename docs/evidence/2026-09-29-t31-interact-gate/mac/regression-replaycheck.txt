@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 83 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 84 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
@@ -152,15 +152,15 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.92293"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.93226"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.92293，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.93226，时钟=HostDriven）
 REPLAYCHECK: 开始（I-REP-02 全流程回放：开机→搜月球→定位→改时间→返回，全程只投递真实鼠标事件，共 11 条判据）
 LIVESKY: simScale -> 0.000（引擎仿真时钟）
 AppFacade: simulationPaused = true 
 REPLAYCHECK: RP-01 全流程锚点可寻（9 个控件找到 9/9：pageStack/navSearch/navTime/searchQueryField/searchGoButton/searchResultList/locateButton/timeAddHourButton/skyReturnButton）：OK
 REPLAYCHECK: RP-02 开机态（startPage=sky）→ currentIndex=1（期望 1）：OK
-REPLAYCHECK: RP-note 时钟已暂停（scale=0），开机 JD=2461312.922931；全程只投递真实鼠标事件
+REPLAYCHECK: RP-note 时钟已暂停（scale=0），开机 JD=2461312.932261；全程只投递真实鼠标事件
 REPLAYCHECK: RP-note 已在搜索框写入 "Moon"（框内=Moon）
 REPLAYCHECK: RP-03 「搜月球」：真实输入 + 点「搜索」→ 结果 3 条（要求 >0）：OK
 REPLAYCHECK: RP-note 结果[0] "Moon" / english="Moon" / Planet:Moon
@@ -175,6 +175,6 @@ REPLAYCHECK: RP-05 「定位」：真实点击后 tracking=true stableId="Planet
 REPLAYCHECK: RP-06 「改时间」：真实点击「+1 时」→ JD 位移 0.041667 天（期望 ≈1/24=0.041667 天，±30%）：OK
 REPLAYCHECK: RP-07 末态·页面：真实点击「返回天空」→ currentIndex=1（期望 1）：OK
 REPLAYCHECK: RP-08 末态·状态保留：时间位移 0.041667 天（未被撤销）、tracking=true stableId="Planet:Moon"（期望 Planet:Moon）：OK
-REPLAYCHECK: RP-09 末态·星空（I-DYN-02 内核）：改 1 小时后，月球 AltAz 相对改前变化 13.5065°（门槛 >5.0）：OK
+REPLAYCHECK: RP-09 末态·星空（I-DYN-02 内核）：改 1 小时后，月球 AltAz 相对改前变化 13.5109°（门槛 >5.0）：OK
 REPLAYCHECK: 判据 11/11
 REPLAYCHECK: VERDICT=PASS

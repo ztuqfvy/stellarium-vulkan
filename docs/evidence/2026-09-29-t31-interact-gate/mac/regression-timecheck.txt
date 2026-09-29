@@ -152,9 +152,9 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.92212"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.93145"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.92212，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.93145，时钟=HostDriven）
 LIVESKY: simScale -> 0.000（引擎仿真时钟）
 AppFacade: simulationPaused = true 
 LIVESKY: simScale -> 1.000（引擎仿真时钟）
@@ -176,9 +176,9 @@ TIMECHECK: TC-14 超范围 JD 被拒（setJulianDay(1e12) → false / 理由 out
 TIMECHECK: TC-09 世界确实动了（暂停态跳 0.25 天后等 1200ms，目标 AltAz 变化 85.6289°，门槛 >5.0）：OK
 TIMECHECK: TC-10 判别性对照：写回同一 JD 后等 1200ms，AltAz 变化 0.0000°（上限 <0.05）—— 证明 TC-09 的"动了"不是测量噪声：OK
 TIMECHECK: TC-11 可逆：跳回原时刻后等 1200ms，AltAz 复原（残差 0.0000°，上限 <0.05）—— 排除"改时间把状态写坏了"：OK
-TIMECHECK: TC-12 "现在"：跳开后与系统时刻差 46292.42 天（>100 的对照成立=true），setTimeNow 后差 0.000e+00 天（容差 1.0e-03）：OK
-TIMECHECK: TC-13 写入不被帧泵拽回（运行态跳 0.50 天，实测 0.600 s × 0.1000 = 预期漂移 6.00e-02 天）：JD 差值 0.5599，与"目标+漂移"差 1.00e-04 天（容差 3.20e-02）；未被拽回=true：OK
-TIMECHECK: TC-15-note 同一时刻引擎快照 core->getMJDay()=61312.982089 vs 本层读数 61312.982089（差 0.00e+00 天）—— 若某天 `setJD` 不再同步 `JD.first`，这里会先显形；此刻两者一致，故不判红
+TIMECHECK: TC-12 "现在"：跳开后与系统时刻差 46292.43 天（>100 的对照成立=true），setTimeNow 后差 0.000e+00 天（容差 1.0e-03）：OK
+TIMECHECK: TC-13 写入不被帧泵拽回（运行态跳 0.50 天，实测 0.609 s × 0.1000 = 预期漂移 6.09e-02 天）：JD 差值 0.5620，与"目标+漂移"差 1.10e-03 天（容差 3.22e-02）；未被拽回=true：OK
+TIMECHECK: TC-15-note 同一时刻引擎快照 core->getMJDay()=61312.993512 vs 本层读数 61312.993512（差 0.00e+00 天）—— 若某天 `setJD` 不再同步 `JD.first`，这里会先显形；此刻两者一致，故不判红
 TIMECHECK: TC-15 MJD 与 JD 同源：恒等式残差 0.00e+00 天（<1e-12）；写 MJD=61312.250000 落地=true，JD 残差 0.00e+00 天（<1e-9）：OK
 TIMECHECK: TC-16 显示历法换历边界（JD 2299160.5 → julian；JD 2299161.0 → gregorian；要求 julian/gregorian 成对）：OK
 TIMECHECK: TC-16-note 时钟已还原到现代时刻 —— 引擎在 JD < TZ_ERA_BEGINNING（1847-12-01）时 `getUTCOffset` 按经度算 LMST 而不看时区名，不还原会让下面 ③ 假红

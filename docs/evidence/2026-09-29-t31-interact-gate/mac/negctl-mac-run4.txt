@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 90 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 88 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
@@ -93,13 +93,13 @@ Loading DSO data ...
 [...] Stellarium DSO Catalog, version 3.23 (standard edition)
 Loaded 94899 DSO records
 Loading DSO name data ...
-qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
 Loaded 1361 / 1388 DSO name records successfully
 No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
 Loading DSO outline data ...
 Loaded 100 DSO outline records successfully
 Loading DSO discovery data ...
 Loaded 183 / 183 DSO discovery records successfully
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
 LandscapeMgr: initialized Cache for 100 MB.
 Loading star names from ./skycultures/common_star_names.fab
 Loaded 411 / 411 common star names
@@ -152,9 +152,9 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.92141"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.93073"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.92141，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.93073，时钟=HostDriven）
 INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合/输入法事件，共 16 条判据，每相位 400ms）
 LIVESKY: simScale -> 0.000（引擎仿真时钟）
 AppFacade: simulationPaused = true 

@@ -3140,7 +3140,7 @@ PS 5.1 按 ANSI 码页读无 BOM `.ps1`，中文注释会报 `PARSE-ERR … 意�
 
 ---
 
-## 2026-09-29｜T31 INTERACTCHECK 环境门降级（A4 加固：套件"环境门短路"收口）（**判据 16 → 16（口径一条未改）+ 新增 1 条收尾自检 `INTERACT-INTEGRITY`；正题 16/16 ×5 全 PASS（此前 0/5）；负控 5/5 降级成立；探针边界 13/16 红项恰好 IT-06/13/14；回归 9 项 + A2 + DYN 双路 5/5 全 rc=0；`VERIFY_RC=0`；产品代码零改动、相位编号一处未动**）
+## 2026-09-29｜T31 INTERACTCHECK 环境门降级（A4 加固：套件"环境门短路"收口）（**判据 16 → 16（口径一条未改）+ 新增 1 条收尾自检 `INTERACT-INTEGRITY`；正题 16/16 ×5 全 PASS（此前 0/5）；负控 5/5 降级成立；探针边界**平台相关**⇒ 出厂表取两平台并集；回归 9 项 + A2 + DYN 双路 5/5 全 rc=0；`VERIFY_RC=0`；产品代码零改动、相位编号一处未动；**Windows 侧已复验**：正题 5/5 pos-pass、负控 3/3、探针 `12/16` 红项 `IT-05/06/13/16`、旧宿主字节级不变**）
 
 一句话：把"**仪器测不到**"和"**产品坏了**"分开 —— 环境门（窗口激活）失败时不再短路
 后面 9 条判据，改为记**第三态 UNAVAILABLE** + 其余照跑 + `rc=6`。
@@ -3172,17 +3172,33 @@ PS 5.1 按 ANSI 码页读无 BOM `.ps1`，中文注释会报 `PARSE-ERR … 意�
   跑 ⇒ **级联假红**，我据此一度把 IT-07..12 全错归为"激活依赖"；
 - ⚠️ **只降级"环境门"**："切页后页码不对""视线基线无效"这类**真前提失败**仍旧立即 `exit(10)`。
 
-### 分类表是**探针实测**出来的，不是推的
+### 分类表是**探针实测**出来的，不是推的（而且**边界是平台相关的**）
 
 ```
 STELQUICK_INTERACT_FORCE_INACTIVE=1    +    STELQUICK_INTERACT_PROBE_ACTIVATION=1
 ```
-（强制 `WindowDoesNotAcceptFocus` + 门失败后照跑）⇒ 一趟拿到全量边界：`判据 13/16`，
-红项**恰好** IT-06 / IT-13 / IT-14 ⇒ **IT-01..05、IT-07..12 全部"激活无关"**
-（`sendEvent` 直达窗口的鼠标/手势确实不看 `isActive`）。
-最终表 `kFocusGatedIds = {IT-06, IT-13, IT-14, IT-15, IT-16}` —— 后两条虽然探针下是**绿**的
-仍归"依赖"：**IT-15** 的前提（组合前正文）由 IT-13 建立，失活时基线是空串 ⇒ **偶然通过**；
-**IT-16** 是 IT-14 的**判别性对照** ⇒ 对照的另一半不可判时它单独绿**说明不了任何事**。
+（强制 `WindowDoesNotAcceptFocus` + 门失败后照跑）⇒ 一趟拿到全量边界。
+同一份代码在两个平台上的读数**不一样**：
+
+| 平台 | 探针读数 | 失活下红的（⇒ 激活依赖） |
+|---|---|---|
+| macOS（Metal） | `判据 13/16` | IT-06 焦点守卫、IT-13/14 IME |
+| Windows（原生 Vulkan） | `判据 12/16` | **IT-05 键**、IT-06、IT-13、**IT-16**（靠键的 Esc 对照） |
+
+**IT-05（第一次键注入）在 Windows 上是激活依赖的、在 macOS 上不是**：Windows 窗口未激活时
+`forceActiveFocus()` 拿不到 active focus ⇒ 注入的键**根本进不了 `keySink`**
+（实测 `dispatched=0`、`lastActionId=""`）；macOS 失活时 `activeFocusItem` 仍被设置，键照样到。
+⇒ **出厂表 = 两平台并集** `kFocusGatedIds = {IT-05, IT-06, IT-13, IT-14, IT-15, IT-16}` ——
+取舍原则：**少判一条只是覆盖率损失；把"仪器测不到"报成 FAIL 才是语义错误**。
+
+后两条（macOS 探针下是**绿**的）仍归"依赖"：**IT-15** 的前提（组合前正文）由 IT-13 建立，
+失活时基线是空串 ⇒ **偶然通过**；**IT-16** 是 IT-14 的**判别性对照** ⇒ 对照的另一半
+不可判时它单独绿**说明不了任何事**。
+
+⚠️ **这个并集反过来决定了门的位置**：IT-05 在相位 6、门在相位 7 ⇒ 若只把门放在相位 7，
+**IT-05 会以 FAIL 的形式漏出去**（Windows 首轮实测就是这个形态）。所以**前导（相位 0）
+激活门超时必须自己置降级标志**，且**置标志 ≠ 记账** —— 另拆一个只置标志、不记账的
+`uiInteractSetFocusGateFailed()`，避免重复记账把收尾自检逼成**假红**。
 
 **新增判据 `INTERACT-INTEGRITY`（收尾，纯逻辑腿）**：断言"实际被跳过的 ID 序列 ==
 分类表里**从失败点起的后缀**"，漏跳/多跳都红。值来自两条**独立**路径
@@ -3206,25 +3222,59 @@ macOS **App Nap 节流**（实测事件链整段退化：滚轮 IT-02/03 不动�
 ### 读数（`tools/t31-verify.sh all 5` ⇒ `VERIFY_RC=0`）
 
 二进制 `build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI`
-**39321464 B / md5=`7d44141217e44d70a6140ffa237899d8`**。
+**39338088 B / md5=`bad9c90fad1b2975722d1fc16403d6dc`**（`2026-09-29 18:03`，含并集修正）。
 
 | 组 | 期望 | 实测 |
 |---|---|---|
 | 正题 ×5 | `判据 16/16` + `PASS` + `rc=0` + `act-note` | ✅ **pos-pass=5 env-skip=0 bad=0**；门**重试 0 次**、✗=0、**残留进程数=0** |
 | 负控 ×5 | `判据 12/12（另 5 条 UNAVAILABLE：IT-06,IT-13,IT-14,IT-15,IT-16）` + `rc=6` + 零 ✗ | ✅ **5/5**：`INTERACT-INTEGRITY` 绿、**IT-07..IT-12 真跑 6/6** |
-| 探针 | `判据 13/16`，红项恰好 IT-06/IT-13/IT-14 | ✅ 红项 `[IT-06,IT-13,IT-14]` |
+| 探针 | `判据 13/16`，红项恰好 IT-06/IT-13/IT-14 | ✅ 红项 `[IT-06,IT-13,IT-14]`（**本平台**边界 = 两平台并集的子集） |
 | 相邻回归 9 项 + A2 + DYN 双路 ×5 | 全 `rc=0` | ✅ 9 项全 `rc=0`；A2 `rc=0`；DYN **engine 5/5 + test 5/5**，`producer-readback OK` |
+
+（同二进制的更早一次跑批曾出 `dyn-test 4/5` —— 已知**显示侧停摆**，环境敏感量，见 T27/T29 先例；本次复跑 5/5。）
 
 **负控的判别力**：若还是旧逻辑，日志到 IT-06 就**断了**、`rc=10`、IT-07 之后的行
 **根本不存在** ⇒ "IT-07..IT-12 真跑了 6/6"这一条就是活的判别性。
 **探针的判别力**：它否证了"IT-07..12 依赖激活"这个**看起来同样合理**的结论；
 没有它，分类会多跳 6 条本可以跑的判据（覆盖率白丢）。
 
+### Windows 侧复验（W-T31，原生 Vulkan）
+
+脚本 `tools/windows/wt31-{pull,build,suites}.ps1`；仓库 `cf738bb`；
+`stelQuickUI.exe` **28922368 B / md5=`C37136BB9EAADE81EBEBE972AADAA356`**；
+旧宿主 `stellarium.exe` **27634176 B / md5=`66C51B61582BAC065C7A7FE5ACA44A42` /
+mtime=`2026-09-29T11:56:35`** —— 与 **W-T30 基线逐项相同** ⇒ **S3 不需重跑**（字节级证据）。
+
+| 组 | 期望 | 实测 |
+|---|---|---|
+| 正题 ×5（带 `REQUEST_ACTIVATE`） | 至少 1 次 `pos-pass` | ✅ **pos-pass=5 env-skip=0**（`armed=1`、`full16=True`、`crosses=0`） |
+| 负控 ×3 | `rc=6` + 5 条逐项点名 + `INTERACT-INTEGRITY` 绿 + IT-07..12 真跑 + 零 ✗ | ✅ **3/3** |
+| 探针 | `判据 12/16`，红项恰好 **IT-05** / IT-06 / IT-13 / **IT-16** | ✅ 与 Windows 实测边界一致（**这就是促使出厂表取并集的那次测量**） |
+| 回归 9 项 + A2 | 全 `rc=0` | ✅ 全 `rc=0` |
+| DYN 双路 ×3 | 各自 3/3 | ✅ 3/3 + 3/3，`producer-readback OK` |
+
+⚠️ **平台差异是本轮最有价值的发现**：IT-05（第一次键注入）与 IT-16（靠键的 Esc 对照）
+在 Windows 上**确实**是激活依赖的（失活时 `forceActiveFocus()` 拿不到 active focus，
+注入的键进不了 `keySink`，实测 `dispatched=0` / `lastActionId=""`），而 macOS 上不是
+⇒ 出厂表改取**两平台并集**（见上）。
+
+⚠️ **仪器自身也有一次翻车**（值得单独记）：第二次跑批的 SUMMARY 报
+`negctl unavailNamed=1(5)`、探针 `crosses=[=]`，看起来像产品退步；但磁盘上的日志
+与首轮**字节级同内容**。根因是上一轮为修"抓取竞态"而新加的 `Read-Lines`：
+`return ,$lines` 与调用点 `@( ... )` **双重包裹**成嵌套数组 ⇒ `$txt.Count==1`、
+`Where-Object` 的 `$_` 是整个数组（array `-like` 只要有任一行命中即为真）⇒ 恒报 1 条。
+**修法**：去掉逗号（见 `cf738bb`）。教训与血泪第 3 条同源 —— **仪表先证明自己在干活**。
+
 ### 证据与文档
 
-`docs/evidence/2026-09-29-t31-interact-gate/`（`README.md` + `mac/` 42 份含 `rc-summary.txt`）；
+`docs/evidence/2026-09-29-t31-interact-gate/`（`README.md` + `mac/` 含 `rc-summary.txt`
++ `windows/` 含 `README.md` 与**三次跑批**：`t31w-suites-round1/` 发现平台差异、
+`t31w-suites-round2-scrapebug/` 仪器自身翻车、`t31w-suites/` 最终归档）；
 `docs/T31_INTERACT_GATE.zh_CN.md`；计划文档 §9.4.16 与移交表更新；
-技能 `qt-quick-vulkan-macos` §39（含 **§39.6 前台提升改写**：旧 `open -a` 结论已被实测推翻）。
+技能 `qt-quick-vulkan-macos` §39（含 **§39.4 平台对照表 + 表取并集**、
+**§39.6 前台提升改写**：旧 `open -a` 结论已被实测推翻、
+**§39.8 读数为负时先证明仪表在干活**）；技能 `uu-remote-windows`
+（PS 数组双重包裹坑 + `C:\temp` 副本的 md5 对账法）。
 
 ---
 

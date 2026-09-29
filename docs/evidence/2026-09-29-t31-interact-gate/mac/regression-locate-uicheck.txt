@@ -152,9 +152,9 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.92283"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.93216"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.92283，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.93216，时钟=HostDriven）
 UICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，共 8 条判据，每相位 300ms）
 UICHECK: UI-01 搜索页控件锚点可寻且可见（locateButton=有 untrackButton=有 statusLabel=有，visible=true）：OK
 UICHECK: UI-02 无选中时两个按钮均禁用（enabled: 定位=false 取消=false）：OK

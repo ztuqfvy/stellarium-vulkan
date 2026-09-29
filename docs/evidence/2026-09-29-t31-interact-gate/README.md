@@ -9,12 +9,14 @@
 | 目录 | 内容 |
 |---|---|
 | `mac/` | macOS + Metal + MoltenVK 全量读数（`tools/t31-verify.sh all 5`） |
+| `windows/t31w-suites/` | Windows 原生 Vulkan 复验（最终轮，`tools/windows/wt31-suites.ps1`） |
+| `windows/t31w-suites-round1/` | Windows **首轮**读数 —— 保留它是因为**平台差异就是这一轮暴露的**（探针 `12/16`、红 `IT-05/06/13/16`，与 macOS 预期不符） |
 
 ## 读数摘要（`mac/rc-summary.txt` 为准）
 
 二进制 `build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI`
-**39321464 B / md5=`7d44141217e44d70a6140ffa237899d8`**（2026-09-29 17:30 构建）。
-`tools/t31-verify.sh all 5` ⇒ **`VERIFY_RC=0`**。
+**39338088 B / md5=`bad9c90fad1b2975722d1fc16403d6dc`**（2026-09-29 18:03，含"两平台并集"修正）。
+`tools/t31-verify.sh all 5` ⇒ **`VERIFY_RC=0`**（`FAILED=0`）。
 
 | 组 | 期望 | 实测 |
 |---|---|---|
@@ -24,6 +26,10 @@
 | 相邻回归 9 项 | 全 `rc=0` | ✅ `timecheck`/`returnuicheck`/`searchcheck`/`actioncheck`/`locatecheck`/`locate-uicheck`/`replaycheck`/`clockcheck`/`timeuicheck` |
 | A2 逐像素 | `rc=0` | ✅ `rc=0` |
 | DYN 双路 ×5 | 各自 5/5 | ✅ **engine 5/5 + test 5/5**，`producer-readback OK` |
+
+> ⚠️ 同一二进制的更早一次跑批出现过 `dyn-test 4/5` —— 掉的那跑是**已知显示侧停摆**
+> （`D1-C02` 尾窗 0.0 fps + `D1-C07`，同跑 `D1-C01` 51.1 fps）。DYN 是**环境敏感量**，
+> 按 T27/T29 先例报 `N/5` + 替身对照，**不洗成 PASS**。本次复跑 5/5。
 
 ## 文件
 
@@ -55,4 +61,5 @@
 - `INTERACT-INTEGRITY` 只在**门失败路径**上执行 —— 正题里分类表**不被校验**
   （"表写对了没有"在正题下没有观测点）。覆盖靠两条腿：探针证明表的**内容**、
   负控证明表的**落地**。若改成"改表同时改错守卫"，两条腿都在同一个人手里，属"人祸"边界。
-- Windows 侧（W-T31）读数见 `docs/evidence/README.md` 的相应条目（`windows/` 子目录）。
+- Windows 侧（W-T31）读数见 **`windows/README.md`**（含三次跑批的对照：**首轮 = 发现平台差异**、
+  **第二轮 = 仪表自身翻车**、**最终轮 = 归档**）。

@@ -152,9 +152,9 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.92096"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.93028"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.92096，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.93028，时钟=HostDriven）
 INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合/输入法事件，共 16 条判据，每相位 400ms）
 LIVESKY: simScale -> 0.000（引擎仿真时钟）
 AppFacade: simulationPaused = true 

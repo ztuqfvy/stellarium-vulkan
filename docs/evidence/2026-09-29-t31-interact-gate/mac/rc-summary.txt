@@ -1,7 +1,7 @@
 interactcheck-mac pos-pass=5 env-skip=0 bad=0（共 5 跑；env-skip = 窗口未激活导致 5 条 UNAVAILABLE，**不洗成 PASS**）
 interactcheck-mac 残留进程数=0（要求 0；非 0 说明又出现了幽灵实例）
 negctl-mac 5/5 降级成立（要求 rc=6 ∧ 判据 12/12 ∧ 5 条逐项点名 ∧ INTERACT-INTEGRITY 绿 ∧ IT-07..12 全跑 ∧ 零 ✗）
-probe-inactive-mac probe-OK（边界与 kFocusGatedIds 一致）（INTERACTCHECK: 判据 13/16；红=[IT-06,IT-13,IT-14,]）
+probe-inactive-mac probe-OK（本平台边界 = IT-06/13/14，是 kFocusGatedIds 两平台并集的子集）（INTERACTCHECK: 判据 13/16；红=[IT-06,IT-13,IT-14,]）
 regression-timecheck rc=0
 regression-returnuicheck rc=0
 regression-searchcheck rc=0
@@ -13,5 +13,5 @@ regression-clockcheck rc=0
 regression-timeuicheck rc=0
 regression-a2-metal rc=0
 regression-dyn-engine-metal 5/5 PASS
-regression-dyn-test-metal 4/5 PASS
+regression-dyn-test-metal 5/5 PASS
 producer-readback OK

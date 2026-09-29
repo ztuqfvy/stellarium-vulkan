@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 84 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 83 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
@@ -152,23 +152,23 @@ Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
-StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.92264"
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461312.93197"
 StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
-LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.92264，时钟=HostDriven）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461312.93197，时钟=HostDriven）
 Dubious result: Landscape  "Hurricane"  not calibrated. Opacity test represents mathematical horizon only.
 LOCATECHECK: T18 定位/跟踪自检全过（守卫/无选中不谎报/定位落地/跟踪跟随/放开不跟随/关跟踪/幂等重选/家园行星）
 LOCATECHECK: LOC-01 家园行星守卫谓词（同名拒绝/异名放行/空串不误拒/大小写严格）：OK
 LOCATECHECK: LOC-02 无选中时 setTracking(true) 拒绝（返回 false，理由 no-selection，isTracking=false）：OK
 LOCATECHECK: LOC-fixture 选中 Moon（stableId=Planet:Moon）：OK
-LOCATECHECK: LOC-info 基准 JD=2461312.92264，视口中心偏移等效 0.0000°（跟踪期望夹角=|偏移|）
+LOCATECHECK: LOC-info 基准 JD=2461312.93197，视口中心偏移等效 0.0000°（跟踪期望夹角=|偏移|）
 LOCATECHECK: LOC-03a locateSelected(true) 返回 true，理由 ok：OK
-LOCATECHECK: LOC-03b 自动移动结束后锁定夹角 0.0177°（期望 |0.0000|±0.50）：OK
-LOCATECHECK: LOC-04 (a) 跳 0.25 天后目标 AltAz 变化 114.75°（门槛 >5.0，证明世界确实动了）：OK
-LOCATECHECK: LOC-04 (b) 跟踪中目标到视向夹角 0.0434°（期望 |0.0000|±0.50）：OK
+LOCATECHECK: LOC-03b 自动移动结束后锁定夹角 0.0125°（期望 |0.0000|±0.50）：OK
+LOCATECHECK: LOC-04 (a) 跳 0.25 天后目标 AltAz 变化 114.46°（门槛 >5.0，证明世界确实动了）：OK
+LOCATECHECK: LOC-04 (b) 跟踪中目标到视向夹角 0.0792°（期望 |0.0000|±0.50）：OK
 LOCATECHECK: LOC-05a locateSelected(false) 只归中不跟踪（返回 true，isTracking=false）：OK
-LOCATECHECK: LOC-05b-note 归中等待的 2.5s 内天空自转 74.42°（自动移动 1.5s 追完之后视向即固定，余量即 off0 的来源）
-LOCATECHECK: LOC-05 (a2) 不跟踪时同样的跳变下目标 AltAz 变化 109.94°（门槛 >5.0，证明对照组的信号同样存在）：OK
-LOCATECHECK: LOC-05 (c) 不跟踪时夹角 30.1741° → 跳变后 128.87°（门槛 >5.0，与 LOC-04(b) 的 0.0434° 形成判别性对照）：OK
+LOCATECHECK: LOC-05b-note 归中等待的 2.5s 内天空自转 74.24°（自动移动 1.5s 追完之后视向即固定，余量即 off0 的来源）
+LOCATECHECK: LOC-05 (a2) 不跟踪时同样的跳变下目标 AltAz 变化 109.91°（门槛 >5.0，证明对照组的信号同样存在）：OK
+LOCATECHECK: LOC-05 (c) 不跟踪时夹角 30.1335° → 跳变后 128.71°（门槛 >5.0，与 LOC-04(b) 的 0.0792° 形成判别性对照）：OK
 LOCATECHECK: LOC-06 setTracking(false)（返回 true，isTracking=false，trackedName 空=true）：OK
 LOCATECHECK: LOC-07 幂等重选不打断跟踪（跟踪中「月球」→ 重选同一 stableId 返回 true → 跟踪 true）：OK
 LOCATECHECK: LOC-08 家园行星端到端（选中 "Earth" 后 locateSelected 返回 false，理由 home-planet，isTracking=false）：OK
