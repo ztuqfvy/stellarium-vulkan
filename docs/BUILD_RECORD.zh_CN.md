@@ -2695,3 +2695,101 @@ clockcheck、**a2-metal 逐像素**——动过 SkyTestPage.qml 的硬要求、*
 `tools/t27-verify.sh`；`docs/evidence/2026-09-29-t27-mouse-nav/`（含 negctrl/ 三组）；
 交付文档 `docs/T27_MOUSE_NAV_UI_CHECK.zh_CN.md`；证据总索引补 T27 行；
 计划文档 §2 / §9.1 / §9.2 / §9.4.10 与移交表更新。
+
+---
+
+## 2026-09-29｜T28 天空页触控板捏合 → 引擎缩放端到端（A4 加固）（**INTERACTCHECK 9 → 12，12/12 ×5 读数逐位一致；三轮负控各命中一层；回归 12 项 rc=0 含 A2 逐像素与 S3；DYN 3/3 + 替身 3/3**）
+
+### 任务定性
+
+A4 加固"QML 交互级其余"之 pinch。引擎的"输入面"共三块，旧宿主三块都接了，
+合流形态此前**一块都没接**：滚轮（T25 补）、鼠标（T27 补）、**触控板捏合（T28 补）**。
+旧宿主链路：`StelMainView::grabGesture(Qt::PinchGesture)`（:371）→ `gestureEvent`
+（:530）→ `pinchTriggered`（:538-548）→ `StelApp::handlePinch(scaleFactor, true)`；
+合流形态 QML 天空页**没有任何 `PinchHandler`**。
+
+### 修法：QML `PinchHandler` → `AppFacade::pinchZoom` 保真转发（语义零复刻）
+
+`SkyTestPage.qml` 的 `SkyViewport` 内加 `PinchHandler { target: null;
+onScaleChanged: (delta) => appFacade.pinchZoom(delta) }`；
+`AppFacade::pinchZoom(scale)` 只做透传前的健全闸（`0.5 < scale < 2`，照抄旧宿主，
+同时天然挡掉 NaN/±inf）再调 `handlePinch(scale, true)`。
+
+三个刻意选择（均写入源码注释）：
+- **用 `onScaleChanged(delta)` 而非 `activeScale`**：delta 是官方定义的**乘法变化量**
+  （`activeScale` 2→2.5 时给 1.25），与旧宿主读的 `QPinchGesture::scaleFactor()`
+  逐字对应；`activeScale` 是手势内累积量，引擎每次以当前 `aimFov` 为基准再除一次
+  ⇒ 传累积量会**双重累积**。
+- **`target: null` 必须**：否则 handler 直接改写目标项 `scale` —— 污染 A2 逐像素
+  判据，且与"引擎负责缩放"双轨。
+- **`started` 恒 `true`**（与旧宿主一致）：`zoomTo(..., 0)` 是 0ms ⇒ 立即生效 ⇒
+  `previousFov = getAimFov()` 每次读到的是刚写进去的值 ⇒ 天然增量语义。
+
+### 真链（Qt 6.11.2 源码实证，非推测）
+
+`QNativeGestureEvent` → `QQuickDeliveryAgent::event()` 的 `case QEvent::NativeGesture`
+（`deliverSinglePointEventUntilAccepted`，**单点**投递，`qquickdeliveryagent.cpp:1001`）
+→ `QQuickMultiPointHandler` 显式放行 NativeGesture（`qquickmultipointhandler.cpp:49`）
+→ `QQuickPinchHandler`（`qquickpinchhandler.cpp:341-364 / 509-535`）
+→ `setActiveScale(activeValue × (1 + value))` → `scaleChanged(delta)` → QML → facade → 引擎。
+
+### 🔴 判据对"事件形状"敏感：首版注入全红是好事
+
+首版注入**只发裸 `ZoomNativeGesture`**，且把 `value` 传成倍率（1.25）而非**增量分数**
+（0.25）⇒ FOV `60.0000 → 60.0000` 不动，IT-10/11 红（存档
+`probe-native-pinch-injection.log`）。修正为 **Begin → Zoom(0.25) → End** 后一次转绿。
+两条教训：`BeginNativeGesture` 不是可选仪式（`setActive(true)` 只在它的分支）；
+`QNativeGestureEvent::value()` ≠ `QPinchGesture::scaleFactor()`（分数 vs 倍率）。
+反过来也说明这套判据**不是恒绿摆设**。
+
+### ⚠️ 附带发现：`event->isAccepted()` 不可作判据
+
+注入函数的受理位对滚轮/鼠标/捏合**全是 0**，而它们都生效了（IT-02 滚轮 60→11.33、
+IT-10 捏合 60→30.72 同时"受理=0"）。原因：QML `PointerHandler` 走**独占 grab**，
+不通过 `QEvent::accept()` 表征受理 ⇒ 判据一律读**引擎可观测的 FOV**。
+
+### 判据（INTERACTCHECK 9 → 12）
+
+IT-10 捏开 ×1.25³ → FOV 严格变小（成对）；IT-11 反向捏拢 ×0.8³ → 回升**且回到原值**
+（2% 内；方向 + 幅值双腿，只写"回升"会让"每次捏固定倍率"的实现蒙混过关）；
+IT-12 时间页捏合不动 FOV（页守卫负控）。
+
+### 负控（三轮，各命中一层）
+
+① QML 接线层（`onScaleChanged` 掐断，保留对象与锚点避免 harness 判 UNAVAILABLE）
+→ **10/12**，IT-10/11 红；② C++ 转发层（`pinchZoom` 首行 return）→ **10/12** 同形态
+（两轮读数相同但断在不同层，证明每层都是敏感点）；③ handler 挪到 `StackLayout`
+→ **11/12**，IT-12 **断言腿**红（60.0000→30.7200）、IT-10/11 绿 ⇒ 实证页守卫负控
+真有判别力（血泪第 4 条：**负控判据必须自带"证明它会红"的对照**）。
+
+**③a 未采纳的开局（留档）**：先挂窗口根 → 工具栏点击被吞、页面切不过去，套件在
+IT-12 **前提腿**判红、读数不干净。机制：`QQuickPinchHandler` 的 native 分支提前
+return、**不清理 `currentPoints`** ⇒ handler 保留上一次手势的 1 个点 ⇒ 下一次鼠标
+压迫被 `hasCurrentPoints()` 判 true 而抢走 grab。改挂 `StackLayout`（工具栏在作用域
+之外）后拿到干净读数。该机制另作为"捏合后首击失灵"的**待查线索**留档（本轮不改）。
+
+### 仪器加固（不放宽判据）
+
+**IT-08 前提腿（T27 遗留偶发）**：×5 第 5 跑残差 **0.6321° > 0.5°**（定位动画 ≈1.5s
+在负载高时 4s 未收敛）⇒ 套件在 IT-08 提前收尾（只跑 8 条判据），**T28 新判据拿不到
+读数**（与捏合无关：捏合在 case 13-16、在 IT-08 之后）。处置沿 T22/T27「有界就绪门」
+先例：重发一次定位写入步 + **重入本相位**（不 `++phase`、不调 `uiInteractMark`
+⇒ 判据数不虚增），最多 2 次，仍不居中则**明确判红**；阈值（0.5°）**一字不放宽**。
+加固后 ×5 全绿。
+
+### 读数与回归
+
+INTERACTCHECK **12/12 rc=0 ×5**，5 跑读数**逐位一致**：IT-10 `60.0000→30.7200`
+（=60/1.953125）、IT-11 `30.7200→60.0000` 偏差 `0.00000`、IT-12 `60.0000→60.0000`。
+回归 **12 项全 rc=0**（searchcheck、actioncheck、locatecheck、locate-uicheck、
+timecheck、timeuicheck、returnuicheck、replaycheck、clockcheck、**a2-metal 逐像素**
+——动过 `SkyTestPage.qml` 的硬要求、**DYN 引擎 3/3 + 替身 3/3**、**S3 旧宿主**
+——捏合链终点与旧宿主共用）。本轮 load 低于 T27 时，DYN 由 1/3 升到 3/3（"环境敏感"
+结论不变，两次读数都照实保留）。
+
+### 产物
+
+`tools/t28-verify.sh`；`docs/evidence/2026-09-29-t28-pinch/`（含 negctrl/ 四份 +
+探针留档）；交付文档 `docs/T28_PINCH_ZOOM_UI_CHECK.zh_CN.md`；证据总索引补 T28 行；
+计划文档 §2 / §9.1 / §9.2 / §9.4.12 与移交表更新。
+

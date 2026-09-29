@@ -595,6 +595,27 @@ void AppFacade::wheelZoom(int dx, int dy, int modifiers)
 #endif
 }
 
+// ── T28：触控板捏合保真转发 ─────────────────────────────────────────────────
+
+void AppFacade::pinchZoom(double scale)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    // T28：语义见头注。旧宿主（StelMainView::pinchTriggered）的同一道闸：
+    //   0.5 < zoom < 2 之外直接丢弃，不交给引擎。
+    // 该范围检查同时天然挡掉 NaN（任何与 NaN 的比较均为 false）与 ±inf。
+    if (!(scale > 0.5 && scale < 2.0))
+        return;
+    if (!StelApp::isInitialized())
+        return;
+    // started 恒为 true —— 与旧宿主逐字一致（它每次 ScaleFactorChanged 都传 true）。
+    // 这不是疏漏：handlePinch 里 `previousFov = getAimFov()` 只在 started 时刷新，
+    // 而上一行的 zoomTo(..., 0) 是 0ms ⇒ 立刻生效 ⇒ 下一次读到的 getAimFov()
+    // 就是刚写进去的值。传 false 反而会让 previousFov 停在手势起点，把增量语义
+    // 退化成"以手势起点为基准反复相乘"的错误累积。
+    StelApp::getInstance().handlePinch(scale, true);
+#endif
+}
+
 // ── T27：天空页鼠标保真转发 ─────────────────────────────────────────────────
 
 namespace {

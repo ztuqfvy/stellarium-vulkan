@@ -70,6 +70,39 @@ Item {
             onReleased: (mouse) => appFacade.skyMouseRelease(mouse.x, mouse.y, width, height,
                                                               mouse.button, mouse.modifiers)
         }
+
+        // T28：触控板捏合 → 引擎缩放（修复自 T10 起合流形态捏合死路）。
+        //
+        // 背景：旧宿主的捏合链路是 grabGesture(Qt::PinchGesture) → gestureEvent →
+        // pinchTriggered → StelApp::handlePinch(scaleFactor, true)，合流形态一直没接
+        // —— QML 天空页此前没有任何 PinchHandler（T25 滚轮、T27 鼠标之外，同一条
+        // "引擎输入面"的第三块）。
+        //
+        // 语义边界：只转发 PinchHandler 的 `scaleChanged(delta)` —— 该 delta 是
+        // **乘法变化量**（官方语义：activeScale 2→2.5 时给 1.25），与旧宿主读的
+        // QPinchGesture::scaleFactor() 逐字对应。缩放倍率与视场 min/max 钳制全在
+        // 引擎侧，这里一行语义都不复刻。
+        //
+        // ⚠️ 不要改用 activeScale：那是手势内的累积量，而引擎每次都以当前 aimFov
+        // 为基准再除一次 ⇒ 传累积量会**双重累积**，捏一下视场就指数级塌陷。
+        //
+        // ⚠️ target: null 是必须的：target 非 null 时 PinchHandler 会直接改写目标项
+        // 的 scale —— 那是 QML 侧的变换，既污染 A2 逐像素判据（SkyViewport 被缩放后
+        // 探针像素全错），又与"引擎负责缩放"双轨。
+        //
+        // 为什么只有 scale、没有 rotation/translation：真实目标是"缩放天空"，张角
+        // 旋转/平移在引擎里没有对应动作（旧宿主也只接了 ScaleFactorChanged）。
+        // 顺带：Qt 官方文档点名 macOS 触控板上原生手势的 translation 恒为 (0,0)
+        // ⇒ 那条路本来也拿不到数据。
+        //
+        // 页守卫天然成立：本 Handler 挂在 SkyViewport（只在天空页可见）上，
+        // StackLayout 切页后事件落不到这里（INTERACTCHECK IT-12 即这条负控）。
+        // 本页硬约束（页头注释 1/2 条）不受影响：PinchHandler 不渲染任何内容。
+        PinchHandler {
+            objectName: "skyPinchHandler"   // INTERACTCHECK IT-10..12 的锚点
+            target: null
+            onScaleChanged: (delta) => appFacade.pinchZoom(delta)
+        }
     }
 
     // P-BRG-04：进入降级预览（显示帧率低于阈值）时必须明确告警。

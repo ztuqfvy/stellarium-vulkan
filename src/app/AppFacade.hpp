@@ -303,6 +303,24 @@ public:
     //! THREAD: gui
     Q_INVOKABLE void wheelZoom(int dx, int dy, int modifiers);
 
+    //! T28：触控板捏合 → 引擎的**保真转发**入口（QML PinchHandler 调用）。
+    //! 旧宿主链路是 StelMainView::grabGesture(Qt::PinchGesture) → gestureEvent →
+    //! pinchTriggered → StelApp::handlePinch(QPinchGesture::scaleFactor(), true)，
+    //! 引擎侧 StelMovementMgr::handlePinch 做 `previousFov=getAimFov()` +
+    //! `zoomTo(previousFov/scale, 0)`（0ms ⇒ 立即生效 ⇒ 每次调用天然以**当前真值**
+    //! 为基准，即增量语义）。合流形态此前没接 —— QML 天空页没有任何 PinchHandler
+    //! （T25 滚轮、T27 鼠标之外，同一条"引擎输入面"的第三块）。
+    //! @param scale 捏合的**乘法变化量**（QML `PinchHandler::scaleChanged(delta)` 的
+    //!        delta，官方语义 = activeScale 的相对变化，如 2→2.5 时给 1.25）——
+    //!        与旧宿主读的 scaleFactor() 逐字对应。**不要传 activeScale**（手势内
+    //!        累积量）：引擎每次都以当前 aimFov 为基准再除一次，传累积量会双重累积。
+    //! 本方法只做透传前的健全性过滤（丢弃 0.5..2 之外的荒诞比值，与旧宿主
+    //! `zoom < 2 && zoom > 0.5` 的同一道闸），**不复刻任何缩放语义**（复刻=双轨）；
+    //! 视场 min/max 钳制仍在引擎侧。
+    //! 无引擎形态：安全 no-op。
+    //! THREAD: gui
+    Q_INVOKABLE void pinchZoom(double scale);
+
     //! T27：天空页鼠标（点击选中 / 拖拽平移 / 右键取消）→ 引擎的**保真转发**入口
     //! （QML MouseArea 调用）。旧宿主链路是 StelMainView 的 mousePress/Release →
     //! StelApp::handleClick、mouseMove → StelApp::handleMove（press 置 isDragging、

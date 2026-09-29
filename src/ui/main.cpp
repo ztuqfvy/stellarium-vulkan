@@ -33,9 +33,11 @@
  *   STELQUICK_REPLAY_CHECK=1     → T20 **I-REP-02 全流程回放**（A-alpha 出口测试）：
  *                                  开机→搜月球→定位→改时间→返回，全程只投递真实
  *                                  鼠标事件；末态四连断言（页面/时间/跟踪/星空）。
- *   STELQUICK_INTERACT_UI_CHECK=1 → T25 **交互级（键盘/滚轮）**自检：窗口真实滚轮
- *                                  （滚轮缩放活链 + 页守卫负控 + 方向对照）与真实
- *                                  L 键（routeKey QML 活链 + 焦点守卫 U-ACT-03）。
+ *   STELQUICK_INTERACT_UI_CHECK=1 → T25/T27/T28 **交互级**自检：窗口真实滚轮
+ *                                  （滚轮缩放活链 + 页守卫负控 + 方向对照）、真实
+ *                                  L 键（routeKey QML 活链 + 焦点守卫 U-ACT-03）、
+ *                                  真实鼠标（点击选中 / 拖拽平移 / 右键反选）与
+ *                                  真实原生捏合（捏合缩放 + 方向对照 + 页守卫负控）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -102,6 +104,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QMouseEvent>
+#include <QPointingDevice>      // T28：合成 QNativeGestureEvent 需要"主指针设备"
 #include <QSGRendererInterface>
 #include <QTimer>
 #include <QUrl>
@@ -1902,8 +1905,13 @@ void uiReturnAdvance(QGuiApplication *app, std::shared_ptr<UiReturnCheck> c)
 //   · IT-05 成对（dispatched 收到 actionIncrease_Time_Speed + timeRate 真变了）
 //   · IT-06 焦点守卫活链（U-ACT-03 的 QML 端到端腿）：真实点击搜索框聚焦后
 //     注入同键必须被拦（timeRate 不变 + dispatched 不发）
+//   · IT-07/08/09（T27）：拖拽平移（**段内冻结仿真时间** + 双向反向对照）/ 点击
+//     选中（绝对位置腿）/ 右键反选
+//   · IT-10/11/12（T28）：捏合缩放。IT-10 成对（FOV 变小）、IT-11 方向对照
+//     （反向捏合必须回升**且回到原值**——只会单向缩放的假链会红）、IT-12 负控
+//     （时间页捏合必须不动 FOV，即页守卫）
 //
-// 判据 9 条：IT-01..IT-09（T27 追加 IT-07 拖拽平移 / IT-08 点击选中 / IT-09 右键
+// 判据 12 条：IT-01..IT-12（T27 追加 IT-07 拖拽平移 / IT-08 点击选中 / IT-09 右键
 // 反选）。退出码沿用既有约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -1923,6 +1931,7 @@ struct UiInteractCheck
     QQuickItem *keySink = nullptr;
     QQuickItem *pageStack = nullptr;
     QQuickItem *viewport = nullptr;
+    QObject *pinchHandler = nullptr;      // T28：PinchHandler 是**对象**（handler），非 Item
     QQuickItem *navSky = nullptr;
     QQuickItem *navTime = nullptr;
     QQuickItem *navSearch = nullptr;
@@ -1946,6 +1955,11 @@ struct UiInteractCheck
     bool selBefore8 = false;              //!< IT-08 前提腿：点击前确无选中
     bool selAfter8 = false;               //!< IT-09 前提腿：点击后确有选中
     int activeRetry = 0;                  //!< IT-06 窗口激活门重试计数（有界 3 次）
+    int centerRetry = 0;                  //!< IT-08 居中前提门重试计数（有界 2 次）
+    // T28（IT-10..12）
+    double fovBefore10 = 0.0;             //!< IT-10 捏开前的视场基线
+    double fovAfter10 = 0.0;              //!< IT-10 捏开后（IT-11 的基线）
+    double fovBefore12 = 0.0;             //!< IT-12 页守卫负控的基线
 };
 
 void uiInteractMark(UiInteractCheck *c, bool ok, const QString &line)
@@ -2020,6 +2034,45 @@ int uiInteractSendRightRelease(QQuickWindow *window, const QPointF &scenePos)
     return (press.isAccepted() || release.isAccepted()) ? 1 : 0;
 }
 
+//! T28：向窗口投递一次**原生捏合手势**（macOS 触控板的真实事件类型）。
+//!
+//! 真实链路（Qt 源码实证，非猜测）：
+//!   macOS 平台层 beginGestureWithEvent/magnifyWithEvent/endGestureWithEvent
+//!   → QNativeGestureEvent(Begin/Zoom/End, Zoom 的 value = **增量分数**)
+//!   → QQuickDeliveryAgent::event() 的 `case QEvent::NativeGesture` 分支
+//!     （`deliverSinglePointEventUntilAccepted`，**单点**投递）
+//!   → QQuickPinchHandler（QQuickMultiPointHandler 显式放行 NativeGesture，
+//!     qquickmultipointhandler.cpp:49）
+//!   → setActiveScale(activeValue * (1 + value)) → scaleChanged(delta=乘法倍率)
+//!   → QML onScaleChanged → AppFacade::pinchZoom。
+//!
+//! ⚠️ 两个易错点（首版注入实测踩中）：
+//!   ① 必须发 **BeginNativeGesture / EndNativeGesture** 包住 Zoom——`setActive`
+//!      只在 Begin 里做（qquickpinchhandler.cpp:516-528），裸发 Zoom 不是真实序列；
+//!   ② `value` 是**增量分数**（0.25 ⇒ 引擎侧倍率 1.25），不是倍率本身。
+//! 首版注入只发裸 Zoom 且 value 传成倍率 ⇒ FOV 60→60 不动（IT-10 红）。
+int uiInteractSendNativePinch(QQuickWindow *window, const QPointF &scenePos, qreal factor)
+{
+    const QPointF global = window->mapToGlobal(scenePos.toPoint());
+    const QPointingDevice *dev = QPointingDevice::primaryPointingDevice();
+    auto send = [&](Qt::NativeGestureType type, qreal value) {
+        QNativeGestureEvent ev(type, dev, 2, scenePos, scenePos, global, value, QPointF(0, 0));
+        QCoreApplication::sendEvent(window, &ev);
+        return ev.isAccepted() ? 1 : 0;
+    };
+    const int a1 = send(Qt::BeginNativeGesture, 0.0);
+    const int a2 = send(Qt::ZoomNativeGesture, factor - 1.0);
+    const int a3 = send(Qt::EndNativeGesture, 0.0);
+    if (qEnvironmentVariableIsSet("STELQUICK_PINCH_DIAG"))
+        std::printf("INTERACTCHECK: DIAG pinch 设备=%s type=%d caps=%d | Begin/Zoom(value=%g)/End "
+                    "受理=%d/%d/%d\n",
+                    dev ? dev->name().toUtf8().constData() : "(null)",
+                    dev ? int(dev->type()) : -1,
+                    dev ? int(dev->capabilities()) : -1,
+                    factor - 1.0, a1, a2, a3);
+    return a2;
+}
+
 //! 与 uiReturnSendKey 的唯一差别：**不 forceActiveFocus**。
 //! IT-06（焦点守卫）的前提是"焦点真的在搜索框里"——uiReturnSendKey 会把焦点
 //! 强行交给 keySink（T20 Esc 场景的兜底），那等于仪器亲手拆掉守卫前提，
@@ -2043,6 +2096,10 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
         c->keySink = c->window->findChild<QQuickItem *>(QStringLiteral("skyKeySink"));
         c->pageStack = c->window->findChild<QQuickItem *>(QStringLiteral("pageStack"));
         c->viewport = c->window->findChild<QQuickItem *>(QStringLiteral("skyViewport"));
+        // T28：PinchHandler 是 **QObject（handler）**，不是 Item —— findChild 靠
+        // QObject::children() 递归，handler 由 QML 引擎设置为所属 Item 的子对象，
+        // 故按名字查得到。查不到即"接线断了"，IT-10 无从谈起（硬锚点）。
+        c->pinchHandler = c->window->findChild<QObject *>(QStringLiteral("skyPinchHandler"));
         c->navSky = c->window->findChild<QQuickItem *>(QStringLiteral("navSkyButton"));
         c->navTime = c->window->findChild<QQuickItem *>(QStringLiteral("navTimeButton"));
         c->navSearch = c->window->findChild<QQuickItem *>(QStringLiteral("navSearchButton"));
@@ -2050,16 +2107,17 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
         c->idxSky = uiPageIndexOf(c->window, "sky");
         c->idxTime = uiPageIndexOf(c->window, "time");
         c->idxSearch = uiPageIndexOf(c->window, "search");
-        const bool anchors = c->keySink && c->pageStack && c->viewport && c->navSky
-                             && c->navTime && c->navSearch && c->queryField
+        const bool anchors = c->keySink && c->pageStack && c->viewport && c->pinchHandler
+                             && c->navSky && c->navTime && c->navSearch && c->queryField
                              && c->idxSky >= 0 && c->idxTime >= 0 && c->idxSearch >= 0;
         uiInteractMark(c.get(), anchors,
                        QStringLiteral("IT-01 交互锚点齐备（keySink=%1 pageStack=%2 "
-                                      "viewport=%3 navSky/Time/Search=%4/%5/%6 "
-                                      "queryField=%7 页索引=%8/%9/%10）")
+                                      "viewport=%3 pinchHandler=%4 navSky/Time/Search=%5/%6/%7 "
+                                      "queryField=%8 页索引=%9/%10/%11）")
                            .arg(c->keySink ? "有" : "无", c->pageStack ? "有" : "无",
-                                c->viewport ? "有" : "无", c->navSky ? "有" : "无",
-                                c->navTime ? "有" : "无", c->navSearch ? "有" : "无",
+                                c->viewport ? "有" : "无", c->pinchHandler ? "有" : "无",
+                                c->navSky ? "有" : "无", c->navTime ? "有" : "无",
+                                c->navSearch ? "有" : "无",
                                 c->queryField ? "有" : "无")
                            .arg(c->idxSky).arg(c->idxTime).arg(c->idxSearch));
         if (!anchors)
@@ -2367,12 +2425,32 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
         // 6 个月球直径，点击中心可能落在 findAndSelect 搜索半径外的月面旁）。
         // 居中后清选中（T23：跟踪随反选断开，月球 400ms 内仅漂移 ~0.03°，仍居中）
         // → 点击中心 → findAndSelect 必中月球。
+        //
+        // 🔴 有界前提就绪门（T28 加固，实测 IT-08 前提腿偶发未收敛：×5 的第 5 跑
+        // 残差 0.6321° > 0.5°）：定位动画（autoMoveDuration≈1.5s）在机器负载高
+        // （Spotlight 批量索引）时 4s 内没收敛完，于是**前提不成立**、整个套件在
+        // IT-08 提前收尾（只跑出 8 条判据）——**与 T28 的捏合无关**（捏合在
+        // case 13-16，在 IT-08 之后），但会让新判据拿不到读数。
+        // 处置沿 T22/T27「有界就绪门」先例：**重发一次定位写入步 + 重入本相位**
+        // （不 ++phase、不调 uiInteractMark ⇒ 不虚增判据数），最多 2 次；仍不居中
+        // 则**明确判红**，判据阈值（0.5°）一字不放宽。
         if (centeredDeg < 0.0 || centeredDeg > 0.5)
         {
+            ++c->centerRetry;
+            if (c->centerRetry <= 2 && objMgr.getWasSelected())
+            {
+                c->facade->locateSelected(true);
+                c->details.append(QStringLiteral("IT-note IT-08 前提门：定位后月球未居中"
+                                                 "（角距=%1°>0.5°），重发定位并重入本相位"
+                                                 "（尝试 %2/2）")
+                                      .arg(centeredDeg, 0, 'f', 4).arg(c->centerRetry));
+                QTimer::singleShot(4000, app, [app, c]() { uiInteractStep(app, c); });
+                return;
+            }
             uiInteractMark(c.get(), false,
                            QStringLiteral("IT-08 前提失败：定位后月球未居中"
-                                          "（视线-月球角距=%1°，应<0.5）")
-                               .arg(centeredDeg, 0, 'f', 4));
+                                          "（视线-月球角距=%1°，应<0.5；定位重试 %2 次）")
+                               .arg(centeredDeg, 0, 'f', 4).arg(c->centerRetry - 1));
             uiInteractFinish(app, c.get());
             return;
         }
@@ -2424,6 +2502,94 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
                                       "MouseArea 链是活的（与 IT-08 成对）")
                            .arg(c->selAfter8 ? "true" : "false")
                            .arg(sel ? "true" : "false"));
+        // 写入步（T28）：本相位起进入捏合判据。此处**不需要**切页——IT-08/09 之后
+        // 一直停在天空页（case 8 切回后再没离开）。下面刻意不投任何鼠标事件，
+        // 避免选中状态/拖动标志干扰后续断言。
+        break;
+    }
+    case 13: {
+        // ── IT-10 写入步：天空页投递真实原生捏合（ZoomNativeGesture，捏开 ×3）──
+        //
+        // 「捏开」= 两指张开 = 距离变大 = scale > 1 ⇒ 引擎 `zoomTo(previousFov/scale)`
+        // ⇒ 视场**变小**（画面放大）。三次 1.25 ⇒ 理论 FOV ×(1/1.25)³ ≈ ×0.512，
+        // 远大于读数噪声，又与旧宿主 0.5..2 的健全闸相容。
+        if (uiCurrentPageIndex(c->pageStack) != c->idxSky)
+        {
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-10 前提失败：捏合判据需要天空页，当前 "
+                                          "currentIndex=%1（期望 %2）")
+                               .arg(uiCurrentPageIndex(c->pageStack)).arg(c->idxSky));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        c->fovBefore10 = c->facade->fieldOfView();
+        const QPointF p = uiLocateCenter(c->viewport);
+        int acc = 0;
+        for (int i = 0; i < 3; ++i)
+            acc += uiInteractSendNativePinch(c->window, p, 1.25);
+        c->details.append(QStringLiteral("IT-note 天空页视口中心 @(%1,%2) 投递 3× "
+                                         "ZoomNativeGesture(1.25)，事件受理=%3/3，"
+                                         "FOV before=%4")
+                              .arg(p.x(), 0, 'f', 1).arg(p.y(), 0, 'f', 1).arg(acc)
+                              .arg(c->fovBefore10, 0, 'f', 4));
+        break;
+    }
+    case 14: {
+        // ── IT-10：捏开 → FOV 真的变小（成对：before>0 且严格变小）──────────
+        c->fovAfter10 = c->facade->fieldOfView();
+        uiInteractMark(c.get(), c->fovBefore10 > 0.0 && c->fovAfter10 > 0.0
+                                    && c->fovAfter10 < c->fovBefore10,
+                       QStringLiteral("IT-10 天空页原生捏开 ×1.25³ → FOV %1 → %2"
+                                      "（应严格变小；不动即捏合链路死，T10 起 T28 前的"
+                                      "老病）")
+                           .arg(c->fovBefore10, 0, 'f', 4).arg(c->fovAfter10, 0, 'f', 4));
+        // 写入步：反向捏合（捏拢 0.8 ×3，理论把 FOV 乘回 ×(1/0.8)³ = ×1.953125）
+        const QPointF p = uiLocateCenter(c->viewport);
+        for (int i = 0; i < 3; ++i)
+            uiInteractSendNativePinch(c->window, p, 0.8);
+        break;
+    }
+    case 15: {
+        // ── IT-11：方向对照——反向捏合必须回升**且回到原值**──────────────────
+        // 断言两根腿：
+        //   ① 方向：大于 IT-10 后的值（只会单向缩放的假链会红）；
+        //   ② 幅值：回到捏合前的值 2% 以内（1.25³ 与 0.8³ 互逆 ⇒ 理论精确还原）。
+        // 只写①会让"每次捏合都乘固定倍率"的实现蒙混过关。
+        const double back = c->facade->fieldOfView();
+        const double rel = (c->fovBefore10 > 0.0)
+                               ? std::fabs(back - c->fovBefore10) / c->fovBefore10 : 9.99;
+        uiInteractMark(c.get(), back > c->fovAfter10 && rel < 0.02,
+                       QStringLiteral("IT-11 方向对照：反向捏拢 ×0.8³ → FOV %1 → %2"
+                                      "（应回升且回到 %3，相对偏差 %4 应<0.02）")
+                           .arg(c->fovAfter10, 0, 'f', 4).arg(back, 0, 'f', 4)
+                           .arg(c->fovBefore10, 0, 'f', 4).arg(rel, 0, 'f', 5));
+        // 写入步：切到时间页（IT-12 页守卫负控的舞台）
+        uiReturnClick(c->window, c->navTime);
+        break;
+    }
+    case 16: {
+        // ── IT-12 负控：时间页捏合必须不动 FOV（页守卫）────────────────────
+        const int cur = uiCurrentPageIndex(c->pageStack);
+        if (cur != c->idxTime)
+        {
+            uiInteractMark(c.get(), false,
+                           QStringLiteral("IT-12 前提失败：切时间页后 currentIndex=%1 "
+                                          "（期望 %2）—— 负控无效")
+                               .arg(cur).arg(c->idxTime));
+            uiInteractFinish(app, c.get());
+            return;
+        }
+        c->fovBefore12 = c->facade->fieldOfView();
+        int acc = 0;
+        for (int i = 0; i < 3; ++i)
+            acc += uiInteractSendNativePinch(c->window, uiLocateCenter(c->pageStack), 1.25);
+        const double after = c->facade->fieldOfView();
+        uiInteractMark(c.get(), after == c->fovBefore12,
+                       QStringLiteral("IT-12 负控：时间页捏合 ×1.25³（受理=%1/3）→ FOV "
+                                      "%2 → %3（应不变：PinchHandler 只挂天空页，引擎"
+                                      "没收到就是没收到）")
+                           .arg(acc).arg(c->fovBefore12, 0, 'f', 4)
+                           .arg(after, 0, 'f', 4));
         uiInteractFinish(app, c.get());
         return;
     }
@@ -2454,7 +2620,7 @@ int runUiInteractCheck(QGuiApplication *app, QQuickWindow *window,
                          }
                      });
     c->timer = new QTimer(app);
-    std::printf("INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘事件，共 9 条判据，"
+    std::printf("INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合事件，共 12 条判据，"
                 "每相位 %dms）\n", kUiInteractTickMs);
     std::fflush(stdout);
     uiInteractStep(app, c);

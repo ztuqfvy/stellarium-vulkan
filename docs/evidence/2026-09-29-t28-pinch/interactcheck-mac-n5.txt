@@ -1,0 +1,110 @@
+──────── INTERACTCHECK run 1/5（rc=0）────────
+INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合事件，共 12 条判据，每相位 400ms）
+INTERACTCHECK: IT-note DIAG9 冻结窗口内 simJD 推进=0.000000000 天（应≈0；冻结前 engineRate=1）拖拽受理=7/7
+INTERACTCHECK: IT-note DIAG 引擎投影视口 2560x1440 dppp=2 月球投影=(1280.0,720.0) 点击=(480.0,364.0) 居中角距=0.0360°
+INTERACTCHECK: ✓ IT-01 交互锚点齐备（keySink=有 pageStack=有 viewport=有 pinchHandler=有 navSky/Time/Search=有/有/有 queryField=有 页索引=1/3/2）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递滚轮 dy=+1200（10 格），事件受理=0，FOV before=60.000
+INTERACTCHECK: ✓ IT-02 天空页滚轮向前 → FOV 60.0000 → 11.3325（应严格变小；不动即滚轮链路死，T10 起 T25 前的老病）
+INTERACTCHECK: ✓ IT-03 方向对照：滚轮向后 → FOV 11.3325 → 60.0000（应回升，且回到接近 60.0000）
+INTERACTCHECK: ✓ IT-04 负控：时间页滚轮 dy=+1200 → FOV 60.0000 → 60.0000（应不变：WheelHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: IT-note 已投递真实 L 键（引擎 actionIncrease_Time_Speed），timeRate before=0.1，dispatched 基线=0
+INTERACTCHECK: ✓ IT-05 天空页注入 L 键 → timeRate 0.1 → 1（应变），dispatched 累计=1（应>基线 0），lastActionId="actionIncrease_Time_Speed"（应=actionIncrease_Time_Speed）—— QKeyEvent→keySink→routeKey 的 QML 链是活的
+INTERACTCHECK: IT-note 已真实点击搜索框并再次投递 L 键（不抢焦点变体；焦点门重试 0 次），timeRate before=1，dispatched 基线=1，事件受理=0
+INTERACTCHECK: ✓ IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate 1 → 1（应不变），dispatched=1（应=基线 1）—— U-ACT-03 的 QML 端到端腿
+INTERACTCHECK: ✓ IT-07 冻结时间后向左拖 160px → 视线转过 18.1566°（应>0.2°），再向右拖 → 两次增量点积 -0.9981（应<0，反向）—— QML MouseArea→skyMouse*→handleClick/handleMove→dragView 的平移链是活的
+INTERACTCHECK: ✓ IT-08 月球居中后：清选中（前=false，应 false）→ 真实点击视口中心 → 选中="Moon"（应 Moon）—— 引擎 findAndSelect 经 QML MouseArea→skyMouse*→handleClick 链是活的
+INTERACTCHECK: ✓ IT-09 右键释放反选 → 选中 true（点击后）→ false（右键后，应 false）—— 引擎 deselection 经 MouseArea 链是活的（与 IT-08 成对）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递 3× ZoomNativeGesture(1.25)，事件受理=0/3，FOV before=60.0000
+INTERACTCHECK: ✓ IT-10 天空页原生捏开 ×1.25³ → FOV 60.0000 → 30.7200（应严格变小；不动即捏合链路死，T10 起 T28 前的老病）
+INTERACTCHECK: ✓ IT-11 方向对照：反向捏拢 ×0.8³ → FOV 30.7200 → 60.0000（应回升且回到 60.0000，相对偏差 0.00000 应<0.02）
+INTERACTCHECK: ✓ IT-12 负控：时间页捏合 ×1.25³（受理=0/3）→ FOV 60.0000 → 60.0000（应不变：PinchHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: 判据 12/12
+INTERACTCHECK: VERDICT=PASS
+──────── INTERACTCHECK run 2/5（rc=0）────────
+INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合事件，共 12 条判据，每相位 400ms）
+INTERACTCHECK: IT-note DIAG9 冻结窗口内 simJD 推进=0.000000000 天（应≈0；冻结前 engineRate=1）拖拽受理=7/7
+INTERACTCHECK: IT-note DIAG 引擎投影视口 2560x1440 dppp=2 月球投影=(1280.0,720.0) 点击=(480.0,364.0) 居中角距=0.0525°
+INTERACTCHECK: ✓ IT-01 交互锚点齐备（keySink=有 pageStack=有 viewport=有 pinchHandler=有 navSky/Time/Search=有/有/有 queryField=有 页索引=1/3/2）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递滚轮 dy=+1200（10 格），事件受理=0，FOV before=60.000
+INTERACTCHECK: ✓ IT-02 天空页滚轮向前 → FOV 60.0000 → 11.3325（应严格变小；不动即滚轮链路死，T10 起 T25 前的老病）
+INTERACTCHECK: ✓ IT-03 方向对照：滚轮向后 → FOV 11.3325 → 60.0000（应回升，且回到接近 60.0000）
+INTERACTCHECK: ✓ IT-04 负控：时间页滚轮 dy=+1200 → FOV 60.0000 → 60.0000（应不变：WheelHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: IT-note 已投递真实 L 键（引擎 actionIncrease_Time_Speed），timeRate before=0.1，dispatched 基线=0
+INTERACTCHECK: ✓ IT-05 天空页注入 L 键 → timeRate 0.1 → 1（应变），dispatched 累计=1（应>基线 0），lastActionId="actionIncrease_Time_Speed"（应=actionIncrease_Time_Speed）—— QKeyEvent→keySink→routeKey 的 QML 链是活的
+INTERACTCHECK: IT-note 已真实点击搜索框并再次投递 L 键（不抢焦点变体；焦点门重试 0 次），timeRate before=1，dispatched 基线=1，事件受理=0
+INTERACTCHECK: ✓ IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate 1 → 1（应不变），dispatched=1（应=基线 1）—— U-ACT-03 的 QML 端到端腿
+INTERACTCHECK: ✓ IT-07 冻结时间后向左拖 160px → 视线转过 18.1566°（应>0.2°），再向右拖 → 两次增量点积 -0.9981（应<0，反向）—— QML MouseArea→skyMouse*→handleClick/handleMove→dragView 的平移链是活的
+INTERACTCHECK: ✓ IT-08 月球居中后：清选中（前=false，应 false）→ 真实点击视口中心 → 选中="Moon"（应 Moon）—— 引擎 findAndSelect 经 QML MouseArea→skyMouse*→handleClick 链是活的
+INTERACTCHECK: ✓ IT-09 右键释放反选 → 选中 true（点击后）→ false（右键后，应 false）—— 引擎 deselection 经 MouseArea 链是活的（与 IT-08 成对）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递 3× ZoomNativeGesture(1.25)，事件受理=0/3，FOV before=60.0000
+INTERACTCHECK: ✓ IT-10 天空页原生捏开 ×1.25³ → FOV 60.0000 → 30.7200（应严格变小；不动即捏合链路死，T10 起 T28 前的老病）
+INTERACTCHECK: ✓ IT-11 方向对照：反向捏拢 ×0.8³ → FOV 30.7200 → 60.0000（应回升且回到 60.0000，相对偏差 0.00000 应<0.02）
+INTERACTCHECK: ✓ IT-12 负控：时间页捏合 ×1.25³（受理=0/3）→ FOV 60.0000 → 60.0000（应不变：PinchHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: 判据 12/12
+INTERACTCHECK: VERDICT=PASS
+──────── INTERACTCHECK run 3/5（rc=0）────────
+INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合事件，共 12 条判据，每相位 400ms）
+INTERACTCHECK: IT-note DIAG9 冻结窗口内 simJD 推进=0.000000000 天（应≈0；冻结前 engineRate=1）拖拽受理=7/7
+INTERACTCHECK: IT-note DIAG 引擎投影视口 2560x1440 dppp=2 月球投影=(1280.0,720.0) 点击=(480.0,364.0) 居中角距=0.0418°
+INTERACTCHECK: ✓ IT-01 交互锚点齐备（keySink=有 pageStack=有 viewport=有 pinchHandler=有 navSky/Time/Search=有/有/有 queryField=有 页索引=1/3/2）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递滚轮 dy=+1200（10 格），事件受理=0，FOV before=60.000
+INTERACTCHECK: ✓ IT-02 天空页滚轮向前 → FOV 60.0000 → 11.3325（应严格变小；不动即滚轮链路死，T10 起 T25 前的老病）
+INTERACTCHECK: ✓ IT-03 方向对照：滚轮向后 → FOV 11.3325 → 60.0000（应回升，且回到接近 60.0000）
+INTERACTCHECK: ✓ IT-04 负控：时间页滚轮 dy=+1200 → FOV 60.0000 → 60.0000（应不变：WheelHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: IT-note 已投递真实 L 键（引擎 actionIncrease_Time_Speed），timeRate before=0.1，dispatched 基线=0
+INTERACTCHECK: ✓ IT-05 天空页注入 L 键 → timeRate 0.1 → 1（应变），dispatched 累计=1（应>基线 0），lastActionId="actionIncrease_Time_Speed"（应=actionIncrease_Time_Speed）—— QKeyEvent→keySink→routeKey 的 QML 链是活的
+INTERACTCHECK: IT-note 已真实点击搜索框并再次投递 L 键（不抢焦点变体；焦点门重试 0 次），timeRate before=1，dispatched 基线=1，事件受理=0
+INTERACTCHECK: ✓ IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate 1 → 1（应不变），dispatched=1（应=基线 1）—— U-ACT-03 的 QML 端到端腿
+INTERACTCHECK: ✓ IT-07 冻结时间后向左拖 160px → 视线转过 18.1566°（应>0.2°），再向右拖 → 两次增量点积 -0.9981（应<0，反向）—— QML MouseArea→skyMouse*→handleClick/handleMove→dragView 的平移链是活的
+INTERACTCHECK: ✓ IT-08 月球居中后：清选中（前=false，应 false）→ 真实点击视口中心 → 选中="Moon"（应 Moon）—— 引擎 findAndSelect 经 QML MouseArea→skyMouse*→handleClick 链是活的
+INTERACTCHECK: ✓ IT-09 右键释放反选 → 选中 true（点击后）→ false（右键后，应 false）—— 引擎 deselection 经 MouseArea 链是活的（与 IT-08 成对）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递 3× ZoomNativeGesture(1.25)，事件受理=0/3，FOV before=60.0000
+INTERACTCHECK: ✓ IT-10 天空页原生捏开 ×1.25³ → FOV 60.0000 → 30.7200（应严格变小；不动即捏合链路死，T10 起 T28 前的老病）
+INTERACTCHECK: ✓ IT-11 方向对照：反向捏拢 ×0.8³ → FOV 30.7200 → 60.0000（应回升且回到 60.0000，相对偏差 0.00000 应<0.02）
+INTERACTCHECK: ✓ IT-12 负控：时间页捏合 ×1.25³（受理=0/3）→ FOV 60.0000 → 60.0000（应不变：PinchHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: 判据 12/12
+INTERACTCHECK: VERDICT=PASS
+──────── INTERACTCHECK run 4/5（rc=0）────────
+INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合事件，共 12 条判据，每相位 400ms）
+INTERACTCHECK: IT-note DIAG9 冻结窗口内 simJD 推进=0.000000000 天（应≈0；冻结前 engineRate=1）拖拽受理=7/7
+INTERACTCHECK: IT-note DIAG 引擎投影视口 2560x1440 dppp=2 月球投影=(1280.0,720.0) 点击=(480.0,364.0) 居中角距=0.0000°
+INTERACTCHECK: ✓ IT-01 交互锚点齐备（keySink=有 pageStack=有 viewport=有 pinchHandler=有 navSky/Time/Search=有/有/有 queryField=有 页索引=1/3/2）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递滚轮 dy=+1200（10 格），事件受理=0，FOV before=60.000
+INTERACTCHECK: ✓ IT-02 天空页滚轮向前 → FOV 60.0000 → 11.3325（应严格变小；不动即滚轮链路死，T10 起 T25 前的老病）
+INTERACTCHECK: ✓ IT-03 方向对照：滚轮向后 → FOV 11.3325 → 60.0000（应回升，且回到接近 60.0000）
+INTERACTCHECK: ✓ IT-04 负控：时间页滚轮 dy=+1200 → FOV 60.0000 → 60.0000（应不变：WheelHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: IT-note 已投递真实 L 键（引擎 actionIncrease_Time_Speed），timeRate before=0.1，dispatched 基线=0
+INTERACTCHECK: ✓ IT-05 天空页注入 L 键 → timeRate 0.1 → 1（应变），dispatched 累计=1（应>基线 0），lastActionId="actionIncrease_Time_Speed"（应=actionIncrease_Time_Speed）—— QKeyEvent→keySink→routeKey 的 QML 链是活的
+INTERACTCHECK: IT-note 已真实点击搜索框并再次投递 L 键（不抢焦点变体；焦点门重试 0 次），timeRate before=1，dispatched 基线=1，事件受理=0
+INTERACTCHECK: ✓ IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate 1 → 1（应不变），dispatched=1（应=基线 1）—— U-ACT-03 的 QML 端到端腿
+INTERACTCHECK: ✓ IT-07 冻结时间后向左拖 160px → 视线转过 18.1566°（应>0.2°），再向右拖 → 两次增量点积 -0.9981（应<0，反向）—— QML MouseArea→skyMouse*→handleClick/handleMove→dragView 的平移链是活的
+INTERACTCHECK: ✓ IT-08 月球居中后：清选中（前=false，应 false）→ 真实点击视口中心 → 选中="Moon"（应 Moon）—— 引擎 findAndSelect 经 QML MouseArea→skyMouse*→handleClick 链是活的
+INTERACTCHECK: ✓ IT-09 右键释放反选 → 选中 true（点击后）→ false（右键后，应 false）—— 引擎 deselection 经 MouseArea 链是活的（与 IT-08 成对）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递 3× ZoomNativeGesture(1.25)，事件受理=0/3，FOV before=60.0000
+INTERACTCHECK: ✓ IT-10 天空页原生捏开 ×1.25³ → FOV 60.0000 → 30.7200（应严格变小；不动即捏合链路死，T10 起 T28 前的老病）
+INTERACTCHECK: ✓ IT-11 方向对照：反向捏拢 ×0.8³ → FOV 30.7200 → 60.0000（应回升且回到 60.0000，相对偏差 0.00000 应<0.02）
+INTERACTCHECK: ✓ IT-12 负控：时间页捏合 ×1.25³（受理=0/3）→ FOV 60.0000 → 60.0000（应不变：PinchHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: 判据 12/12
+INTERACTCHECK: VERDICT=PASS
+──────── INTERACTCHECK run 5/5（rc=0）────────
+INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合事件，共 12 条判据，每相位 400ms）
+INTERACTCHECK: IT-note DIAG9 冻结窗口内 simJD 推进=0.000000000 天（应≈0；冻结前 engineRate=1）拖拽受理=7/7
+INTERACTCHECK: IT-note DIAG 引擎投影视口 2560x1440 dppp=2 月球投影=(1280.0,720.0) 点击=(480.0,364.0) 居中角距=0.0000°
+INTERACTCHECK: ✓ IT-01 交互锚点齐备（keySink=有 pageStack=有 viewport=有 pinchHandler=有 navSky/Time/Search=有/有/有 queryField=有 页索引=1/3/2）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递滚轮 dy=+1200（10 格），事件受理=0，FOV before=60.000
+INTERACTCHECK: ✓ IT-02 天空页滚轮向前 → FOV 60.0000 → 11.3325（应严格变小；不动即滚轮链路死，T10 起 T25 前的老病）
+INTERACTCHECK: ✓ IT-03 方向对照：滚轮向后 → FOV 11.3325 → 60.0000（应回升，且回到接近 60.0000）
+INTERACTCHECK: ✓ IT-04 负控：时间页滚轮 dy=+1200 → FOV 60.0000 → 60.0000（应不变：WheelHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: IT-note 已投递真实 L 键（引擎 actionIncrease_Time_Speed），timeRate before=0.1，dispatched 基线=0
+INTERACTCHECK: ✓ IT-05 天空页注入 L 键 → timeRate 0.1 → 1（应变），dispatched 累计=1（应>基线 0），lastActionId="actionIncrease_Time_Speed"（应=actionIncrease_Time_Speed）—— QKeyEvent→keySink→routeKey 的 QML 链是活的
+INTERACTCHECK: IT-note 已真实点击搜索框并再次投递 L 键（不抢焦点变体；焦点门重试 0 次），timeRate before=1，dispatched 基线=1，事件受理=0
+INTERACTCHECK: ✓ IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate 1 → 1（应不变），dispatched=1（应=基线 1）—— U-ACT-03 的 QML 端到端腿
+INTERACTCHECK: ✓ IT-07 冻结时间后向左拖 160px → 视线转过 18.1566°（应>0.2°），再向右拖 → 两次增量点积 -0.9981（应<0，反向）—— QML MouseArea→skyMouse*→handleClick/handleMove→dragView 的平移链是活的
+INTERACTCHECK: ✓ IT-08 月球居中后：清选中（前=false，应 false）→ 真实点击视口中心 → 选中="Moon"（应 Moon）—— 引擎 findAndSelect 经 QML MouseArea→skyMouse*→handleClick 链是活的
+INTERACTCHECK: ✓ IT-09 右键释放反选 → 选中 true（点击后）→ false（右键后，应 false）—— 引擎 deselection 经 MouseArea 链是活的（与 IT-08 成对）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,364.0) 投递 3× ZoomNativeGesture(1.25)，事件受理=0/3，FOV before=60.0000
+INTERACTCHECK: ✓ IT-10 天空页原生捏开 ×1.25³ → FOV 60.0000 → 30.7200（应严格变小；不动即捏合链路死，T10 起 T28 前的老病）
+INTERACTCHECK: ✓ IT-11 方向对照：反向捏拢 ×0.8³ → FOV 30.7200 → 60.0000（应回升且回到 60.0000，相对偏差 0.00000 应<0.02）
+INTERACTCHECK: ✓ IT-12 负控：时间页捏合 ×1.25³（受理=0/3）→ FOV 60.0000 → 60.0000（应不变：PinchHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: 判据 12/12
+INTERACTCHECK: VERDICT=PASS
