@@ -68,6 +68,12 @@ New-Item -ItemType Directory -Force -Path $dir | Out-Null
 $sum = Join-Path $dir "SUMMARY.txt"
 "[$Tag] suites start " + (Get-Date -Format o) | Out-File -Encoding ascii $sum
 "repo HEAD = " + (& git -C $Repo rev-parse --short HEAD) | Out-File -Encoding ascii -Append $sum
+# The instrument's own hash. This batch is normally launched from a COPY at
+# C:\temp, and the E: checkout may be behind origin when the network is down, so
+# a repo HEAD alone cannot prove which revision of the parser produced these
+# numbers. Print it and compare against the repo copy by hand.
+"script md5 = " + (Get-FileHash $MyInvocation.MyCommand.Path -Algorithm MD5).Hash.ToLower() |
+    Out-File -Encoding ascii -Append $sum
 if (Test-Path $exe) {
     $f = Get-Item $exe
     "exe = $exe" | Out-File -Encoding ascii -Append $sum
