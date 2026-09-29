@@ -11,10 +11,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #if defined(STELQUICK_HAS_ENGINE)
 #include "StelApp.hpp"
 #include "StelCore.hpp"
+#include "StelLocation.hpp"      // T33：StelLocation 值对象（U-FAC-03 要求值语义）
 #include "StelLocationMgr.hpp"   // T22：getAllTimezoneNames()（引擎真正接受的时区名单）
 #include "StelMovementMgr.hpp"
 #include "StelObject.hpp"
@@ -910,6 +912,339 @@ bool AppFacade::setTracking(bool on)
     setRefusal("engine-unavailable");
     return false;
 #endif
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// T33：观察地点（观察者位置）写入面
+//
+// 全部口径来自 T33-A 的地点数据面**探针**（只报读数、不下结论的那一支）。
+// 探针实测四条，逐条都在下面有对应处置：
+//   ① 地点库在合流布局下加载正常（33501 条 / 193 区域 / 496 时区名），
+//      且 installDir 有编译期兜底 ⇒ **不依赖 cwd**（无需额外处理，但要知道）。
+//   ② `locationForString(单名)` **不报错也不命中**，返回 `role='!'` 的无效地点
+//      ⇒ 对外一律走 ID；`setLocationById` 用 `isValid()` 当"找没找到"的闸。
+//   ③ 引擎 `StelLocation::isValid()` **不校验经纬度范围** ⇒ 范围闸在**本层**。
+//   ④ `moveObserverTo(loc, 0.0)` 走瞬时分支；写后时区**联动**（引擎 `setObserver`）。
+// ══════════════════════════════════════════════════════════════════════════
+
+namespace {
+
+#if defined(STELQUICK_HAS_ENGINE)
+//! 角度差归一到 [-180, 180]（回读比对用；经度在 ±180 附近要绕）。
+double t33AngleDelta(double a, double b)
+{
+    return std::fmod(a - b + 540.0, 360.0) - 180.0;
+}
+
+//! ad-hoc 地点的默认名（`setLocationByCoordinates` 未给名字时用）。
+QString t33DefaultLocationLabel(double lat, double lon)
+{
+    return QStringLiteral("观察点 %1%2 %3%4")
+        .arg(qAbs(lat), 0, 'f', 2)
+        .arg(lat >= 0 ? QLatin1Char('N') : QLatin1Char('S'))
+        .arg(qAbs(lon), 0, 'f', 2)
+        .arg(lon >= 0 ? QLatin1Char('E') : QLatin1Char('W'));
+}
+
+//! 回读验证：引擎当前地点与**请求值**是否一致（浮点容差）。
+bool t33ReadbackMatches(StelCore *core, double wantLat, double wantLon, double wantAlt)
+{
+    const StelLocation after = core->getCurrentLocation();
+    constexpr double kTolDeg = 1e-3;
+    constexpr double kTolM = 1.5;   // 高度在引擎里是 int，允许取整误差
+    if (qAbs(t33AngleDelta(double(after.getLatitude(true)), wantLat)) > kTolDeg)
+        return false;
+    if (qAbs(t33AngleDelta(double(after.getLongitude(true)), wantLon)) > kTolDeg)
+        return false;
+    if (qAbs(double(after.altitude) - wantAlt) > kTolM)
+        return false;
+    return true;
+}
+
+//! **单点写入**：全工程只有这里为了"用户改地点"调用 `moveObserverTo`
+//! （同"单点键位路由"的理由 —— 另开一条写路径就会与其它入口双轨）。
+//! `duration = 0.0` ⇒ 瞬时 `StelObserver` 分支（探针 ④；>0 是飞行动画、跨帧异步）。
+//! 返回 nullptr 表示成功，否则是拒绝 token。
+const char *t33ApplyLocation(StelCore *core, const StelLocation &loc,
+                             double wantLat, double wantLon, double wantAlt)
+{
+    // ==== NC-D 负控开关：写入 no-op（**对外照旧报成功**）====
+    // 用来证明 LC-03a/03b/04/04b 这些"活引擎腿"不是摆设 —— 写入不落地时必须红。
+    // ⚠️ 它**绕过回读验证**直接报成功，所以 LC-07（往返）在 no-op 下仍会绿：
+    //    起点就是绵阳、写回的也是绵阳 ⇒ "位置纹丝不动"这条对往返判据是**不可见**的。
+    //    这是刻意的读数 —— LC-07 单独没有判别力，判别力来自 LC-03a/03b 的对照。
+    static const bool ncWriteNoop = qEnvironmentVariableIsSet("STELQUICK_LOC_WRITE_NOOP");
+    if (ncWriteNoop)
+        return nullptr;
+    // ==== NC-D 结束 ====
+    core->moveObserverTo(loc, 0.0);
+    // 回读验证（照 T22 时区那套）：引擎是"值对象 + 观察者替换"，正常路径必落；
+    // 但验一遍比假设好 —— 引擎若因行星切换等条件走了别的分支，这里能立刻发现，
+    // 而不是向 UI 谎报"已切换"。
+    if (!t33ReadbackMatches(core, wantLat, wantLon, wantAlt))
+        return "readback-mismatch";
+    return nullptr;
+}
+#endif  // STELQUICK_HAS_ENGINE
+
+} // namespace
+
+// ── T33：坐标范围纯谓词（**恒可跑**，不依赖引擎）──────────────────────────────
+// `std::isfinite` 同时挡掉 NaN 与 ±inf —— 空输入经 QML 的 `Number()` 会变成 NaN，
+// 这是真实的用户路径（不只理论边界）。
+bool AppFacade::isAcceptableLatitude(double deg)
+{
+    return std::isfinite(deg) && deg >= -90.0 && deg <= 90.0;
+}
+
+bool AppFacade::isAcceptableLongitude(double deg)
+{
+    return std::isfinite(deg) && deg >= -180.0 && deg <= 180.0;
+}
+
+bool AppFacade::isAcceptableAltitude(double meters)
+{
+    return std::isfinite(meters) && meters >= -1000.0 && meters <= 100000.0;
+}
+
+QString AppFacade::locationName() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (StelApp::isInitialized())
+        if (StelCore *core = StelApp::getInstance().getCore())
+            return core->getCurrentLocation().name;
+#endif
+    return QString();
+}
+
+QString AppFacade::locationId() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (StelApp::isInitialized())
+        if (StelCore *core = StelApp::getInstance().getCore())
+            return core->getCurrentLocation().getID();
+#endif
+    return QString();
+}
+
+double AppFacade::locationLatitude() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (StelApp::isInitialized())
+        if (StelCore *core = StelApp::getInstance().getCore())
+            // true = 抑制"观察者伪行星"特例（那种 role='o' 的地点会返回北极点）。
+            return double(core->getCurrentLocation().getLatitude(true));
+#endif
+    // 引擎不可用 ⇒ NaN（不用哨兵数字：天文量里没有"不可能值"是安全的）。
+    // QML 侧一律先 isNaN() 再显示。
+    return std::numeric_limits<double>::quiet_NaN();
+}
+
+double AppFacade::locationLongitude() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (StelApp::isInitialized())
+        if (StelCore *core = StelApp::getInstance().getCore())
+            return double(core->getCurrentLocation().getLongitude(true));
+#endif
+    return std::numeric_limits<double>::quiet_NaN();
+}
+
+double AppFacade::locationAltitudeMeters() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (StelApp::isInitialized())
+        if (StelCore *core = StelApp::getInstance().getCore())
+            return double(core->getCurrentLocation().altitude);
+#endif
+    return std::numeric_limits<double>::quiet_NaN();
+}
+
+QString AppFacade::locationPlanet() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (StelApp::isInitialized())
+        if (StelCore *core = StelApp::getInstance().getCore())
+            return core->getCurrentLocation().planetName;
+#endif
+    return QString();
+}
+
+QString AppFacade::locationTimeZone() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (StelApp::isInitialized())
+        if (StelCore *core = StelApp::getInstance().getCore())
+            return core->getCurrentLocation().ianaTimeZone;
+#endif
+    return QString();
+}
+
+bool AppFacade::setLocationById(const QString &id)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setLocationRefusal("engine-unavailable");
+        return false;
+    }
+    StelCore *core = StelApp::getInstance().getCore();
+    if (!core)
+    {
+        setLocationRefusal("engine-unavailable");
+        return false;
+    }
+    // 探针 ②：认不出的输入**不报错**，而是返回 role='!' 的无效地点
+    // （StelLocationMgr.cpp:784）⇒ 只能拿 isValid() 当闸。
+    const StelLocation loc = StelApp::getInstance().getLocationMgr().locationForString(id);
+    if (!loc.isValid())
+    {
+        setLocationRefusal("not-found");
+        return false;
+    }
+    const char *err = t33ApplyLocation(core, loc,
+                                       double(loc.getLatitude(true)),
+                                       double(loc.getLongitude(true)),
+                                       double(loc.altitude));
+    setLocationRefusal(err);
+    return err == nullptr;
+#else
+    Q_UNUSED(id)
+    setLocationRefusal("engine-unavailable");
+    return false;
+#endif
+}
+
+bool AppFacade::setLocationByCoordinates(double latitudeDeg, double longitudeDeg,
+                                         double altitudeMeters, const QString &name)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setLocationRefusal("engine-unavailable");
+        return false;
+    }
+    StelCore *core = StelApp::getInstance().getCore();
+    if (!core)
+    {
+        setLocationRefusal("engine-unavailable");
+        return false;
+    }
+    // ⚠️ 引擎**不校验**这些范围（探针 ③，`StelLocation::isValid()` 只看 role 与
+    // "经纬不同时为 0"）—— 这里是**唯一**一道闸。拒绝要无副作用：直接返回，
+    // 不触碰引擎任何状态。闸本体是上面的**纯谓词**（判据直接测它们，见 LC-01）。
+    // ==== NC-C 负控开关：摘掉写入路径的范围闸（**谓词本体不动**）====
+    // `STELQUICK_LOC_RANGE_GATE_OFF=1` ⇒ 写入路径不再过范围闸。
+    // 为什么要有它：LC-01 测的是**谓词**（恒可跑），LC-05 测的是**"这道闸被调用"**。
+    // 只注掉谓词的返回值，两条会一起红，"两条腿各自承重"就说不清了；
+    // 这个开关只摘掉**调用点**，于是 LC-01 应仍绿、LC-05 应红 —— 这正是两腿分离的实证。
+    static const bool ncRangeGateOff =
+        qEnvironmentVariableIsSet("STELQUICK_LOC_RANGE_GATE_OFF");
+    if (!ncRangeGateOff)
+    {
+        if (!isAcceptableLatitude(latitudeDeg))
+        {
+            setLocationRefusal("invalid-latitude");
+            return false;
+        }
+        if (!isAcceptableLongitude(longitudeDeg))
+        {
+            setLocationRefusal("invalid-longitude");
+            return false;
+        }
+        if (!isAcceptableAltitude(altitudeMeters))
+        {
+            setLocationRefusal("invalid-altitude");
+            return false;
+        }
+    }
+    // ==== NC-C 结束 ====
+    const QString label = name.trimmed().isEmpty()
+                              ? t33DefaultLocationLabel(latitudeDeg, longitudeDeg)
+                              : name.trimmed();
+    const int altM = int(qRound(altitudeMeters));
+    // 短构造（地球）：(name, state, region, **lng, lat**, alt, populationK,
+    // timeZone, bortle, roleKey)。注意参数序是**经在前、纬在后**。
+    // 时区刻意留空 ⇒ 引擎 `setObserver` 的 `!ianaTimeZone.isEmpty()` 条件跳过，
+    // **不动当前时区**（保守且可逆；"按经度自动配时区"是另一个设计决定，先不做）。
+    const StelLocation loc(label, QString(), QString(),
+                           float(longitudeDeg), float(latitudeDeg), altM, 0,
+                           QString(), 1, QChar('X'));
+    const char *err = t33ApplyLocation(core, loc, latitudeDeg, longitudeDeg, double(altM));
+    setLocationRefusal(err);
+    return err == nullptr;
+#else
+    Q_UNUSED(latitudeDeg)
+    Q_UNUSED(longitudeDeg)
+    Q_UNUSED(altitudeMeters)
+    Q_UNUSED(name)
+    setLocationRefusal("engine-unavailable");
+    return false;
+#endif
+}
+
+QStringList AppFacade::findLocations(const QString &query, int maxItems) const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized() || maxItems <= 0)
+        return QStringList();
+    const QString q = query.trimmed();
+    if (q.isEmpty())
+        return QStringList();
+    // 地点库 33501 条（探针实测），线性扫描一次可接受；刻意**不**走
+    // `locationForString`（探针 ②：它对认不出的输入返回无效地点而不报错）。
+    const LocationList all = StelApp::getInstance().getLocationMgr().getAll();
+    QStringList out;
+    for (const StelLocation &l : all)
+    {
+        if (l.name.contains(q, Qt::CaseInsensitive)
+            || l.region.contains(q, Qt::CaseInsensitive)
+            || l.planetName.contains(q, Qt::CaseInsensitive))
+        {
+            out.append(l.getID());
+            if (out.size() >= maxItems)
+                break;
+        }
+    }
+    return out;
+#else
+    Q_UNUSED(query)
+    Q_UNUSED(maxItems)
+    return QStringList();
+#endif
+}
+
+QString AppFacade::locationRefusalText() const
+{
+    if (m_locationRefusal == QStringLiteral("ok"))
+        return QString();
+    if (m_locationRefusal == QStringLiteral("engine-unavailable"))
+        return QStringLiteral("引擎未就绪，地点无法写入。");
+    if (m_locationRefusal == QStringLiteral("invalid-latitude"))
+        return QStringLiteral("纬度必须在 -90° 到 90° 之间——已忽略。");
+    if (m_locationRefusal == QStringLiteral("invalid-longitude"))
+        return QStringLiteral("经度必须在 -180° 到 180° 之间——已忽略。");
+    if (m_locationRefusal == QStringLiteral("invalid-altitude"))
+        return QStringLiteral("海拔超出可接受范围（-1000 ~ 100000 米）——已忽略。");
+    if (m_locationRefusal == QStringLiteral("not-found"))
+        return QStringLiteral("地点库里没有这个地点——已忽略。");
+    if (m_locationRefusal == QStringLiteral("readback-mismatch"))
+        return QStringLiteral("引擎没有接受这次地点切换——已忽略。");
+    return QStringLiteral("地点写入失败（%1）。").arg(m_locationRefusal);
+}
+
+void AppFacade::setLocationRefusal(const char *reason)
+{
+    const QString next = (reason && *reason) ? QString::fromLatin1(reason)
+                                             : QStringLiteral("ok");
+    if (next != QStringLiteral("ok"))
+        ++m_locationRefusedCount;   // 计数照旧：不因"值没变"而漏计一次拒绝
+    else
+        ++m_locationWriteCount;
+    if (next == m_locationRefusal)
+        return;                     // 只在**确有变化**时通知（与 setTimeRefusal 同纪律）
+    m_locationRefusal = next;
+    emit lastLocationRefusalChanged();
 }
 
 } // namespace stelapp

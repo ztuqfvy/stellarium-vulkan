@@ -1,0 +1,79 @@
+[t33w] suites start 2026-09-29T22:08:30.5006582+08:00
+repo HEAD = cf738bb
+script md5 = 29c1039c9d16bcd5be34a7db592157da
+SRC src\app\LocationCheck.hpp md5=2b3eb1c206e744d4a5c1f877cc36be8e
+SRC src\app\LocationCheck.cpp md5=df3a09b5d01f9cbbbf706f29c8296b8d
+SRC src\app\LocationProbe.cpp md5=c585b65d6bbb2a4a15ebf02c229a1bd8
+SRC src\app\AppFacade.cpp md5=6db2ca379d9030127458d993d9d587e4
+SRC src\ui\main.cpp md5=b6f14e39667f958ac7f0e96c2b328595
+SRC src\ui\qml\LocationPage.qml md5=35868a6a756f62223cae1f29a80befde
+SRC src\ui\qml\MainWindow.qml md5=01bbf904adfc9dbee7f43b1b341f19b9
+exe = E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+exe size = 29085184 B   mtime = 2026-09-29T21:56:55.8429837+08:00
+exe md5  = FCDC226861C3D6FC7094B09EB43169CB
+SUITE clockcheck  rc=0  elapsed=1.1s  var=STELQUICK_CLOCK_CHECK  producer=
+SUITE actioncheck  rc=0  elapsed=18.2s  var=STELQUICK_ACTION_CHECK  producer=
+SUITE searchcheck  rc=0  elapsed=16.2s  var=STELQUICK_SEARCH_CHECK  producer=
+SUITE locatecheck  rc=0  elapsed=22.2s  var=STELQUICK_LOCATE_CHECK  producer=
+SUITE locate-uicheck  rc=0  elapsed=15.1s  var=STELQUICK_UI_CHECK  producer=
+SUITE timecheck  rc=0  elapsed=19.2s  var=STELQUICK_TIME_CHECK  producer=
+SUITE returnuicheck  rc=0  elapsed=17.2s  var=STELQUICK_RETURN_UI_CHECK  producer=
+SUITE replaycheck  rc=0  elapsed=17.2s  var=STELQUICK_REPLAY_CHECK  producer=
+SUITE timeuicheck  rc=0  elapsed=26.2s  var=STELQUICK_TIME_UI_CHECK  producer=
+SUITE a2-vulkan  rc=0  elapsed=3.1s  var=STELQUICK_A2_CHECK  producer=
+SUITE s3-stela3-legacy  rc=0  elapsed=14.1s  var=STELA3_CHECK  producer=
+  S3 legacy: rc=0 verdictPASS=True -> OK
+SUITE loccheck-run1  rc=10  elapsed=17.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC run1: rc=10  judge=9/10  red=[LC-03a]  gates=3(3)  catlat=1(1)  -> BAD
+SUITE loccheck-run2  rc=10  elapsed=17.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC run2: rc=10  judge=9/10  red=[LC-03a]  gates=3(3)  catlat=1(1)  -> BAD
+SUITE loccheck-run3  rc=10  elapsed=17.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC run3: rc=10  judge=9/10  red=[LC-03a]  gates=3(3)  catlat=1(1)  -> BAD
+SUITE loccheck-run4  rc=10  elapsed=18.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC run4: rc=10  judge=9/10  red=[LC-03a]  gates=3(3)  catlat=1(1)  -> BAD
+SUITE loccheck-run5  rc=10  elapsed=18.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC run5: rc=10  judge=9/10  red=[LC-03a]  gates=3(3)  catlat=1(1)  -> BAD
+  LOC summary: pos-pass=0 env-skip=0 of 5
+FATAL LOCATIONCHECK never produced a full 10/10 run -- positive case not exercised
+SUITE locneg-a-run1  rc=10  elapsed=15.1s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-A run1: rc=10 judge=7/10 red=[LC-03a,LC-04,LC-04b] -> BAD (unexpected red set)
+SUITE locneg-a-run2  rc=10  elapsed=15.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-A run2: rc=10 judge=7/10 red=[LC-03a,LC-04,LC-04b] -> BAD (unexpected red set)
+  LOC-NEG-A: BAD -- 2 run(s) had an unexpected red set
+SUITE locneg-b-run1  rc=10  elapsed=16.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-B run1: rc=10 judge=9/10 red=[LC-03a] gateLines=3 -> BAD
+SUITE locneg-b-run2  rc=10  elapsed=15.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-B run2: rc=10 judge=9/10 red=[LC-03a] gateLines=3 -> BAD
+SUITE locneg-c  rc=10  elapsed=17.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-C: rc=10 judge=7/10 red=[LC-03a,LC-05,LC-08] LC01green=True -> BAD
+SUITE locneg-d  rc=10  elapsed=17.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-D: rc=10 judge=6/10 red=[LC-03a,LC-03b,LC-04,LC-04b] -> OK (live-engine legs are load-bearing)
+SUITE locprobe  rc=0  elapsed=16.2s  var=STELQUICK_LOC_PROBE  producer=
+  LOCPROBE: rc=0 verdictDONE=True catalogScaleLines=1 -> OK
+SUITE interactcheck-run1  rc=0  elapsed=28.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run1: rc=0 armed=1 full18=True degraded=False crosses=0 -> pos-pass
+SUITE interactcheck-run2  rc=0  elapsed=28.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run2: rc=0 armed=1 full18=True degraded=False crosses=0 -> pos-pass
+SUITE interactcheck-run3  rc=0  elapsed=28.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run3: rc=0 armed=1 full18=True degraded=False crosses=0 -> pos-pass
+SUITE interactcheck-run4  rc=0  elapsed=28.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run4: rc=0 armed=1 full18=True degraded=False crosses=0 -> pos-pass
+SUITE interactcheck-run5  rc=0  elapsed=28.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run5: rc=0 armed=1 full18=True degraded=False crosses=0 -> pos-pass
+  INTERACT summary: pos-pass=5 env-skip=0 of 5
+SUITE probe-inactive  rc=10  elapsed=29.2s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT-PROBE: rc=10 crosses=[IT-05,IT-06,IT-13,IT-16,IT-17,IT-18] expect=[IT-05,IT-06,IT-13,IT-16,IT-17,IT-18] -> OK
+SUITE dyn-engine-run1  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run2  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run3  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-test-run1  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run2  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run3  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+[done] 2026-09-29T22:19:55.9632916+08:00
+FATAL 10 expectation check(s) failed

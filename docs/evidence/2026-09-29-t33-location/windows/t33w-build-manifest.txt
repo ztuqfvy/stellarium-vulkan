@@ -1,0 +1,14 @@
+elapsed_min=0.27
+stelQuickUI.exe  size=29086720  md5=79F18B3D3D4A1764A3144091D2C51BA4  mtime=2026-09-29T22:21:36.0061942+08:00
+stellarium.exe  size=27634176  md5=1074FA8CAE315504576971916123D9AF  mtime=2026-09-29T21:56:55.9679833+08:00
+SRC src\app\LocationProbe.hpp  size=4057  md5=87e3089f473afb9a848264f7b9fff1e2
+SRC src\app\LocationProbe.cpp  size=23438  md5=c585b65d6bbb2a4a15ebf02c229a1bd8
+SRC src\app\LocationCheck.hpp  size=9128  md5=10f6fc92451e670555a3352695208531
+SRC src\app\LocationCheck.cpp  size=47482  md5=b745beab264b73cbb761c96d09ae055d
+SRC src\app\AppFacade.hpp  size=33837  md5=947c754f628670965f586b828b9e47c6
+SRC src\app\AppFacade.cpp  size=48893  md5=6db2ca379d9030127458d993d9d587e4
+SRC src\ui\main.cpp  size=365351  md5=b6f14e39667f958ac7f0e96c2b328595
+SRC src\ui\CMakeLists.txt  size=20693  md5=dead9a0176d6e867f66520081515e599
+SRC src\ui\qml\LocationPage.qml  size=13553  md5=35868a6a756f62223cae1f29a80befde
+SRC src\ui\qml\MainWindow.qml  size=17567  md5=01bbf904adfc9dbee7f43b1b341f19b9
+SRC tools\windows\wt33-suites.ps1  size=26022  md5=09a145452b57e643d4a645c7c68de92c

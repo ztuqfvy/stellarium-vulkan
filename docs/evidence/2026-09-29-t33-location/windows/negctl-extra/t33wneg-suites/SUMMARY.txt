@@ -1,0 +1,35 @@
+[t33wneg] suites start 2026-09-29T22:37:28.1585131+08:00
+repo HEAD = cf738bb
+script md5 = 09a145452b57e643d4a645c7c68de92c
+SRC src\app\LocationCheck.hpp md5=10f6fc92451e670555a3352695208531
+SRC src\app\LocationCheck.cpp md5=b745beab264b73cbb761c96d09ae055d
+SRC src\app\LocationProbe.cpp md5=c585b65d6bbb2a4a15ebf02c229a1bd8
+SRC src\app\AppFacade.cpp md5=6db2ca379d9030127458d993d9d587e4
+SRC src\ui\main.cpp md5=b6f14e39667f958ac7f0e96c2b328595
+SRC src\ui\qml\LocationPage.qml md5=35868a6a756f62223cae1f29a80befde
+SRC src\ui\qml\MainWindow.qml md5=01bbf904adfc9dbee7f43b1b341f19b9
+exe = E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+exe size = 29086720 B   mtime = 2026-09-29T22:21:36.0061942+08:00
+exe md5  = 79F18B3D3D4A1764A3144091D2C51BA4
+SUITE locneg-a-run1  rc=0  elapsed=16.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-A run1: rc=0 judge=10/10 red=[] -> green (race did NOT reproduce; coin landed the other way)
+SUITE locneg-a-run2  rc=0  elapsed=16.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-A run2: rc=0 judge=10/10 red=[] -> green (race did NOT reproduce; coin landed the other way)
+SUITE locneg-a-run3  rc=0  elapsed=16.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-A run3: rc=0 judge=10/10 red=[] -> green (race did NOT reproduce; coin landed the other way)
+SUITE locneg-a-run4  rc=0  elapsed=16.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-A run4: rc=0 judge=10/10 red=[] -> green (race did NOT reproduce; coin landed the other way)
+SUITE locneg-a-run5  rc=0  elapsed=16.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-A run5: rc=0 judge=10/10 red=[] -> green (race did NOT reproduce; coin landed the other way)
+  LOC-NEG-A: INCONCLUSIVE -- race never reproduced in 5 run(s); no discriminating evidence this batch (not washed into PASS, not failed)
+SUITE locneg-b-run1  rc=0  elapsed=16.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-B run1: rc=0 judge=10/10 red=[] gateLines=3 -> OK (gate absorbed the race)
+SUITE locneg-b-run2  rc=0  elapsed=16.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-B run2: rc=0 judge=10/10 red=[] gateLines=3 -> OK (gate absorbed the race)
+SUITE locneg-b-run3  rc=0  elapsed=16.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-B run3: rc=0 judge=10/10 red=[] gateLines=3 -> OK (gate absorbed the race)
+SUITE locneg-c  rc=10  elapsed=18.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-C: rc=10 judge=8/10 red=[LC-05,LC-08] LC01green=True -> OK (gate call site removed, predicate still green => two legs are separate)
+SUITE locneg-d  rc=10  elapsed=17.2s  var=STELQUICK_LOC_CHECK  producer=
+  LOC-NEG-D: rc=10 judge=6/10 red=[LC-03a,LC-03b,LC-04,LC-04b] -> OK (live-engine legs are load-bearing)
+[done] 2026-09-29T22:40:19.6131247+08:00

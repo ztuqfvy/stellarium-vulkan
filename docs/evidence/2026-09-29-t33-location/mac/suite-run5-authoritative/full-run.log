@@ -1,0 +1,46 @@
+环境：已请求唤醒显示器并挂 caffeinate（pid=46118，2 小时）
+loccheck-mac pos-pass=5 env-skip=0 bad=0（共 5 跑；env-skip = 地点库前提不成立，**不洗成 PASS**）
+loccheck-mac 残留进程数=0（要求 0）
+negctl-A 竞态复现 4/5 跑，红项**恒为** LC-04/LC-04b（其余 1 跑硬币落反、全绿）；红项零越界 ⇒ OK
+negctl-B 5/5（要求 rc=0 ∧ 10/10 ∧ 零红）；其中门被唤醒 4/5 跑 —— 探测次数**只作信息、不作判据**；门承重的证据是 A↔B 这一对
+negctl-C negctl-C-OK（要求 rc=10 ∧ 8/10 ∧ 红恰好 LC-05/LC-08 ∧ LC-01 仍绿）
+negctl-D negctl-D-OK（要求 rc=10 ∧ 6/10 ∧ 红恰好 LC-03a/03b/04/04b）
+probe-loc-data-mac probe-OK（LOCPROBE: VERDICT=DONE；地点库规模行=1）
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-interactcheck rc=0（18/18，窗口已激活）
+regression-s3-stela3 rc=0
+regression-a2-metal rc=0
+regression-dyn-engine-metal 5/5 PASS
+regression-dyn-test-metal 5/5 PASS
+producer-readback OK
+loccheck-mac pos-pass=5 env-skip=0 bad=0（共 5 跑；env-skip = 地点库前提不成立，**不洗成 PASS**）
+loccheck-mac 残留进程数=0（要求 0）
+negctl-A 竞态复现 4/5 跑，红项**恒为** LC-04/LC-04b（其余 1 跑硬币落反、全绿）；红项零越界 ⇒ OK
+negctl-B 5/5（要求 rc=0 ∧ 10/10 ∧ 零红）；其中门被唤醒 4/5 跑 —— 探测次数**只作信息、不作判据**；门承重的证据是 A↔B 这一对
+negctl-C negctl-C-OK（要求 rc=10 ∧ 8/10 ∧ 红恰好 LC-05/LC-08 ∧ LC-01 仍绿）
+negctl-D negctl-D-OK（要求 rc=10 ∧ 6/10 ∧ 红恰好 LC-03a/03b/04/04b）
+probe-loc-data-mac probe-OK（LOCPROBE: VERDICT=DONE；地点库规模行=1）
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-interactcheck rc=0（18/18，窗口已激活）
+regression-s3-stela3 rc=0
+regression-a2-metal rc=0
+regression-dyn-engine-metal 5/5 PASS
+regression-dyn-test-metal 5/5 PASS
+producer-readback OK
+T33 证据已写入 docs/evidence/2026-09-29-t33-location/mac/（FAILED=0）

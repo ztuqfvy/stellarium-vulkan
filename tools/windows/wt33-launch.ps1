@@ -1,0 +1,46 @@
+# wt33-launch.ps1 -- launcher for the T33 Windows suite batch. ASCII-only.
+#
+# Why this file exists: the INTERACT probe needs T33_PROBE_EXPECT in the
+# environment, and the batch must run under schtasks /it (a GUI program started
+# from an SSH session has no desktop session). Stuffing "cmd /c set X=... && ..."
+# into schtasks /tr means three levels of quoting (zsh -> ssh -> schtasks), which
+# is exactly where the W-T31 rounds lost time. One tiny versioned launcher costs
+# nothing and is itself hashable for the evidence trail.
+#
+# The expectation below is a MEASURED platform fact, not a wish:
+# W-T31/W-T32 measured Windows crosses at IT-05,IT-06,IT-13,IT-16,IT-17,IT-18
+# (macOS: IT-06,IT-13,IT-14,IT-17,IT-18). With the window inactive,
+# forceActiveFocus() cannot give keySink active focus here, so an injected key
+# never reaches the QML chain. wt33-suites.ps1 treats an EMPTY expect list as
+# "no assertion" -- this launcher is what makes the probe a real assertion.
+#
+#   schtasks /create /tn StelQC_t33w_suites /sc once /st 23:59 /it /f ^
+#     /tr "powershell -NoProfile -ExecutionPolicy Bypass -File C:\temp\wt33-launch.ps1"
+#   schtasks /run /tn StelQC_t33w_suites
+#   schtasks /delete /tn StelQC_t33w_suites /f          <-- ALWAYS delete after
+#
+# !!! NAME PREFIX TRAP (measured 2026-09-29): the SCRIPTS in C:\temp are named
+#     wt33-*.ps1 but the OUTPUTS they write are named t33w-*.txt. Mixing the two
+#     cost a full round: `-File C:\temp\t33w-launch.ps1` (a name that does not
+#     exist) makes powershell die BEFORE the script's first line, so NOTHING is
+#     logged anywhere and schtasks only reports "last result = -196608". A
+#     missing -File target produces no log, no SUMMARY, no partial output --
+#     "$task ran and left zero evidence" is a MISSING FILE, check the path first.
+
+$ErrorActionPreference = "Continue"
+
+$env:T33_PROBE_EXPECT = "IT-05,IT-06,IT-13,IT-16,IT-17,IT-18"
+
+$SUITE = "C:\temp\wt33-suites.ps1"
+$LOG   = "C:\temp\t33w-launch.log"
+
+"wt33-launch.ps1 : suite=$SUITE  T33_PROBE_EXPECT=$($env:T33_PROBE_EXPECT)  at $(Get-Date -Format o)" |
+    Out-File -Encoding ascii $LOG
+if (-not (Test-Path $SUITE)) {
+    "FATAL suite script not found: $SUITE" | Out-File -Encoding ascii -Append $LOG
+    exit 96
+}
+
+& powershell -NoProfile -ExecutionPolicy Bypass -File $SUITE *>> $LOG
+"launcher exit=$LASTEXITCODE" | Out-File -Encoding ascii -Append $LOG
+exit $LASTEXITCODE

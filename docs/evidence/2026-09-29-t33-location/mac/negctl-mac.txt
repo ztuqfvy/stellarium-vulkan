@@ -1,0 +1,56 @@
+──────── 负控 A run 1/5（NODELAY+GATE_OFF）（rc=10）→ negctl-A-red（竞态复现：读到上一个地点的矩阵） ────────
+  只许红 LC-04/LC-04b；**不**要求每跑都红（竞态）；实测红=[LC-04,LC-04b,]
+LOCATIONCHECK: 判据 8/10
+LOCATIONCHECK: VERDICT=FAIL
+──────── 负控 A run 2/5（NODELAY+GATE_OFF）（rc=10）→ negctl-A-red（竞态复现：读到上一个地点的矩阵） ────────
+  只许红 LC-04/LC-04b；**不**要求每跑都红（竞态）；实测红=[LC-04,LC-04b,]
+LOCATIONCHECK: 判据 8/10
+LOCATIONCHECK: VERDICT=FAIL
+──────── 负控 A run 3/5（NODELAY+GATE_OFF）（rc=10）→ negctl-A-red（竞态复现：读到上一个地点的矩阵） ────────
+  只许红 LC-04/LC-04b；**不**要求每跑都红（竞态）；实测红=[LC-04,LC-04b,]
+LOCATIONCHECK: 判据 8/10
+LOCATIONCHECK: VERDICT=FAIL
+──────── 负控 A run 4/5（NODELAY+GATE_OFF）（rc=10）→ negctl-A-red（竞态复现：读到上一个地点的矩阵） ────────
+  只许红 LC-04/LC-04b；**不**要求每跑都红（竞态）；实测红=[LC-04,LC-04b,]
+LOCATIONCHECK: 判据 8/10
+LOCATIONCHECK: VERDICT=FAIL
+──────── 负控 A run 5/5（NODELAY+GATE_OFF）（rc=10）→ negctl-A-red（竞态复现：读到上一个地点的矩阵） ────────
+  只许红 LC-04/LC-04b；**不**要求每跑都红（竞态）；实测红=[LC-04,LC-04b,]
+LOCATIONCHECK: 判据 8/10
+LOCATIONCHECK: VERDICT=FAIL
+──────── 负控 B run 1/5（只 NODELAY，门兜底）（rc=0）→ negctl-B-OK ────────
+  期望：rc=0 ∧ 判据 10/10 ∧ 零红（**不**对探测次数设门 —— 竞态可能幸运转向）
+  实测：红=[]  探测次数之和=591（>0 ⇒ 门确实投过票；=0 ⇒ 帧泵抢先、门不需出手）
+LOCATIONCHECK: 判据 10/10
+LOCATIONCHECK: VERDICT=PASS
+──────── 负控 B run 2/5（只 NODELAY，门兜底）（rc=0）→ negctl-B-OK ────────
+  期望：rc=0 ∧ 判据 10/10 ∧ 零红（**不**对探测次数设门 —— 竞态可能幸运转向）
+  实测：红=[]  探测次数之和=2（>0 ⇒ 门确实投过票；=0 ⇒ 帧泵抢先、门不需出手）
+LOCATIONCHECK: 判据 10/10
+LOCATIONCHECK: VERDICT=PASS
+──────── 负控 B run 3/5（只 NODELAY，门兜底）（rc=0）→ negctl-B-OK ────────
+  期望：rc=0 ∧ 判据 10/10 ∧ 零红（**不**对探测次数设门 —— 竞态可能幸运转向）
+  实测：红=[]  探测次数之和=370（>0 ⇒ 门确实投过票；=0 ⇒ 帧泵抢先、门不需出手）
+LOCATIONCHECK: 判据 10/10
+LOCATIONCHECK: VERDICT=PASS
+──────── 负控 B run 4/5（只 NODELAY，门兜底）（rc=0）→ negctl-B-OK ────────
+  期望：rc=0 ∧ 判据 10/10 ∧ 零红（**不**对探测次数设门 —— 竞态可能幸运转向）
+  实测：红=[]  探测次数之和=55（>0 ⇒ 门确实投过票；=0 ⇒ 帧泵抢先、门不需出手）
+LOCATIONCHECK: 判据 10/10
+LOCATIONCHECK: VERDICT=PASS
+──────── 负控 B run 5/5（只 NODELAY，门兜底）（rc=0）→ negctl-B-OK ────────
+  期望：rc=0 ∧ 判据 10/10 ∧ 零红（**不**对探测次数设门 —— 竞态可能幸运转向）
+  实测：红=[]  探测次数之和=2（>0 ⇒ 门确实投过票；=0 ⇒ 帧泵抢先、门不需出手）
+LOCATIONCHECK: 判据 10/10
+LOCATIONCHECK: VERDICT=PASS
+──────── 负控 C（RANGE_GATE_OFF）（rc=10）→ negctl-C-OK ────────
+  期望：rc=10 ∧ 判据 8/10 ∧ 红项**恰好** [LC-05,LC-08] ∧ **LC-01 仍绿**（两腿分离）
+  实测：红=[LC-05,LC-08,]  LC-01 绿=1/1
+LOCATIONCHECK: 判据 8/10
+LOCATIONCHECK: VERDICT=FAIL
+──────── 负控 D（WRITE_NOOP）（rc=10）→ negctl-D-OK ────────
+  期望：rc=10 ∧ 判据 6/10 ∧ 红项**恰好** [LC-03a,LC-03b,LC-04,LC-04b]
+  （LC-04 的对照量若取 facade 纬度会同源自洽 ⇒ 假绿；取目录纬度才真红）
+  实测：红=[LC-03a,LC-03b,LC-04,LC-04b,]
+LOCATIONCHECK: 判据 6/10
+LOCATIONCHECK: VERDICT=FAIL

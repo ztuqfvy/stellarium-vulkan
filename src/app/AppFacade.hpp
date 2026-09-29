@@ -402,6 +402,73 @@ public:
     //! 空串一律判 false —— 宁可漏判，也不要把"名字取不到"当成"是家园行星"而误拒。
     static bool isHomePlanet(const QString &objectEnglishName, const QString &locationPlanetName);
 
+    // ══ T33：观察地点（观察者位置）写入面 ═══════════════════════════════════════
+    // 全部口径来自 T33-A 的地点数据面**探针**（证据 docs/evidence/2026-09-29-t33-location/）：
+    //   ① 地点库在合流形态下**加载正常**：33501 条 / 193 区域 / 496 时区名；
+    //      installDir 有编译期兜底（STELLARIUM_SOURCE_DIR）⇒ **不依赖 cwd**
+    //      （cwd=仓库根走 "."、cwd=别处走源码目录，两条都能加载）。
+    //   ② `locationForString(单名)` **既不报错也不命中**，而是返回一个 `role='!'`、
+    //      坐标全 0 的**无效地点**（StelLocationMgr.cpp:784 的兜底）
+    //      ⇒ 对外一律走 **ID**（`getID()` = `"name, region"`），不拿用户输入直接喂它。
+    //   ③ 引擎 `StelLocation::isValid()` **不校验经纬度范围**（StelLocation.cpp:296
+    //      只查 `role=='!'` 与"经纬不同时为 0"）⇒ 范围校验是**应用层的责任**。
+    //   ④ `moveObserverTo(loc, **0.0**)` 才走瞬时 `StelObserver` 分支（>0 是
+    //      `SpaceShipObserver` 飞行动画）；写后时区**联动**（`setObserver` 里
+    //      `setCurrentTimeZone(iana)`，StelCore.cpp:1543-1547）—— 探针实测
+    //      绵阳(Asia/Shanghai) → 巴黎(Europe/Paris)，UTCOffset +8h → +2h。
+
+    //! 当前观察地点名（引擎不可用 → 空串）。
+    Q_INVOKABLE QString locationName() const;
+    //! 当前观察地点的**完整 ID**（`"name, region"`）—— 与 setLocationById 配对。
+    Q_INVOKABLE QString locationId() const;
+    Q_INVOKABLE double locationLatitude() const;
+    Q_INVOKABLE double locationLongitude() const;
+    Q_INVOKABLE double locationAltitudeMeters() const;
+    Q_INVOKABLE QString locationPlanet() const;
+    //! 当前地点**自带**的时区（iana）。刻意与 `timeZoneId()` 区分：后者是 core 的
+    //! "当前时区"，可能被用户显式改过；这里是"地点给的默认值"。
+    Q_INVOKABLE QString locationTimeZone() const;
+
+    //! T33：坐标范围**纯谓词**。抽出来是为了让自检能在**不需要引擎**的情况下验证
+    //! 范围闸（照 isHomePlanet 的先例：守卫逻辑必须**恒可验**，不能因环境漏测）。
+    //! ⚠️ 写入路径**直接调**这三个谓词 —— 不是"判据另写一遍"（那会让判据与被测
+    //! 代码双轨，"规则正确"与"规则被调用"就又分家了）。
+    static bool isAcceptableLatitude(double deg);
+    static bool isAcceptableLongitude(double deg);
+    static bool isAcceptableAltitude(double meters);
+
+    //! T33：**唯一**的地点写入入口 —— 转发 `StelCore::moveObserverTo(loc, 0.0)`。
+    //! 刻意不暴露"动画时长"：A-alpha 要的是"写下去立刻能读到"，飞行动画会把"写完"
+    //! 变成跨帧过程、判据得跟着挂等待 —— 那是另一件事（T35 的时间链路脱钩线索同源）。
+    //! @p id 必须是 `locationId()` 那种完整 ID（探针 ②）。
+    Q_INVOKABLE bool setLocationById(const QString &id);
+    //! T33：按经纬度写。范围校验在**本层**做（引擎不校，探针 ③）：
+    //! lat ∈ [-90, 90]、lon ∈ [-180, 180]、alt ∈ [-1000, 100000] 米。
+    //! @p name 为空则由本层生成 `"观察点 39.90N 116.40E"`。
+    //! 时区**不动**（ad-hoc 地点的 iana 留空 ⇒ 引擎 `setObserver` 的
+    //! `!ianaTimeZone.isEmpty()` 条件直接跳过）—— 保守且可逆，文档写明。
+    Q_INVOKABLE bool setLocationByCoordinates(double latitudeDeg, double longitudeDeg,
+                                              double altitudeMeters,
+                                              const QString &name = QString());
+
+    //! T33：地点写入结果 token：`ok` / `invalid-latitude` / `invalid-longitude` /
+    //! `invalid-altitude` / `not-found` / `engine-unavailable` / `readback-mismatch`。
+    //! **必须是 Q_PROPERTY**（同 lastTimeRefusal 的理由）：QML 绑定里写
+    //! `appFacade.lastLocationRefusal === "ok"` 时，只有属性才拿得到字符串并建立依赖；
+    //! 声明成 Q_INVOKABLE 方法会读到**函数对象**，比较恒 false。
+    Q_PROPERTY(QString lastLocationRefusal READ lastLocationRefusal NOTIFY lastLocationRefusalChanged)
+    Q_INVOKABLE QString lastLocationRefusal() const { return m_locationRefusal; }
+    Q_INVOKABLE QString locationRefusalText() const;
+
+    //! T33：按关键词查地点（大小写不敏感的**子串**匹配 name/region/planet），
+    //! 返回**完整 ID** 列表（直接喂 `setLocationById`）。刻意不走 `locationForString`：
+    //! 它对单名返回无效地点（探针 ②）。
+    Q_INVOKABLE QStringList findLocations(const QString &query, int maxItems = 20) const;
+
+    // 观测量（自检用）
+    quint64 locationWriteCount() const { return m_locationWriteCount; }
+    quint64 locationRefusedCount() const { return m_locationRefusedCount; }
+
     // 观测量（自检用；不可作 UI 逻辑依据）
     quint64 locateCount() const { return m_locateCount; }
     quint64 locateRefusedCount() const { return m_locateRefusedCount; }
@@ -414,6 +481,8 @@ signals:
     void lastLocateRefusalChanged();
     //! T19：时间写入结果 token 变化时通知（QML 的状态行绑定靠它重算）。
     void lastTimeRefusalChanged();
+    //! T33：地点写入结果 token 变化时通知。
+    void lastLocationRefusalChanged();
 
 private:
     //! 引擎 StelMovementMgr 是否可用（已引导且 zoom 接口可达）。
@@ -422,6 +491,8 @@ private:
     void setRefusal(const char *reason);
     //! T19：记录时间写入拒绝理由（同时累加拒绝计数）。nullptr/空串 → "ok"。
     void setTimeRefusal(const char *reason);
+    //! T33：记录地点写入拒绝理由（同时累加拒绝计数）。nullptr/空串 → "ok"。
+    void setLocationRefusal(const char *reason);
     //! T19：把 JD 格式化为日历文本（`local` 为 true 时套 UTC 偏移）。引擎不可用 → 空串。
     QString formatJd(double jd, bool local) const;
     //! T23：懒连接引擎 flagTrackingChanged → 本类 trackingChanged（只连一次）。
@@ -451,6 +522,11 @@ private:
     quint64 m_timeZoneWriteCount = 0;
     //! 时区 id 列表缓存（600+ 项，构建一次）。
     mutable QStringList m_tzCache;
+
+    // T33
+    QString m_locationRefusal = QStringLiteral("ok");
+    quint64 m_locationWriteCount = 0;
+    quint64 m_locationRefusedCount = 0;
 };
 
 } // namespace stelapp

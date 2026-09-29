@@ -40,6 +40,19 @@
  *                                  真实原生捏合（捏合缩放 + 方向对照 + 页守卫负控）与
  *                                  真实输入法事件（preedit/commit 活链 + 组合期间按键
  *                                  不得抢 + Esc 走守卫不跳页 + 判别性对照）。
+ *   STELQUICK_LOC_PROBE=1        → T33-A **地点数据面探针**（见 app/LocationProbe.hpp）：
+ *                                  只报读数、**不下 PASS/FAIL** —— cwd/installDir/
+ *                                  findFile 命中、地点库条数、locationForString 解析、
+ *                                  瞬时写入后的回读与时区联动、引擎 isValid 边界。
+ *                                  目的：先证数据面在合流 bundle 布局下可用，再写 UI
+ *                                  （T24「翻译从未加载」潜伏 14 个任务的同款风险）。
+ *   STELQUICK_LOC_CHECK=1        → T33-C **地点写入面自检**（见 app/LocationCheck.hpp）：
+ *                                  范围闸纯谓词（恒可跑）+ 活引擎腿（写入生效/时区联动/
+ *                                  判别腿/天极高度 = 观测者纬度 的天文学恒等式/非法值无
+ *                                  副作用/not-found/往返/计数）。起始页切到 "location"。
+ *                                  10 条判据。负控开关：`STELQUICK_LOC_NODELAY=1`
+ *                                  （写入步不给延迟）+ `STELQUICK_LOC_GATE_OFF=1`
+ *                                  （关就绪门）——两个一起开复现间歇红，只开前者由门兜住。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -215,6 +228,8 @@ void ensureVulkanLoaderPath()
 #include "app/ObjectInfoModel.hpp"
 // T18：定位/跟踪（A4 固定流程的"定位"环）+ 自检。
 #include "app/LocateCheck.hpp"
+#include "app/LocationProbe.hpp"
+#include "app/LocationCheck.hpp"
 // T19：改时间（A4 固定流程的"改时间"环）+ 自检。
 #include "app/TimeCheck.hpp"
 // T16：单一仿真时钟。控制器是 core 层的纯逻辑类（无 GL / 无 QObject），
@@ -5120,6 +5135,14 @@ int main(int argc, char **argv)
     // （旧宿主 StelMainView → handleWheel）在合流形态 T25 前从未接过；键盘活链此前
     // 只有 C++ 直调证据。两者都需要"窗口真实事件"这一个观测面。
     const bool interactUiCheck = qEnvironmentVariableIsSet("STELQUICK_INTERACT_UI_CHECK");
+    // T33-A：地点数据面**探针**（见 app/LocationProbe.hpp）。**只报读数、不下结论** ——
+    // 它是"查事实"（数据面在合流 bundle 布局下加载得起来吗），不是判据。
+    // 断言的活儿在 T33-C 的 LocationCheck。分开的理由同"纯逻辑腿/活引擎腿"：
+    // 环境事实不该污染判据的通过率。
+    const bool locProbe = qEnvironmentVariableIsSet("STELQUICK_LOC_PROBE");
+    // T33-C：地点写入面自检（见 app/LocationCheck.hpp）。起始页切到 "location"，
+    // 故同时验证地点页 QML 可被实例化（页面有语法/引用错误时这一步就会暴露）。
+    const bool locCheck = qEnvironmentVariableIsSet("STELQUICK_LOC_CHECK");
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
     const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
@@ -5129,7 +5152,7 @@ int main(int argc, char **argv)
     // T20：返回环与 I-REP-02 回放都从**天空页**起步（前者要先从它切走再切回来，
     //   后者直接断言"开机态=天空页"）。
     const QString startPage = (a2Check || dynCheck || longRun || returnUiCheck || replayCheck
-                               || interactUiCheck
+                               || interactUiCheck || locProbe
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
@@ -5137,9 +5160,11 @@ int main(int argc, char **argv)
                                          ? QStringLiteral("search")
                                          : ((timeCheck || timeUiCheck)
                                                 ? QStringLiteral("time")
-                                                : qEnvironmentVariable(
-                                                      "STELQUICK_PAGE",
-                                                      QStringLiteral("diag"))));
+                                                : (locCheck
+                                                       ? QStringLiteral("location")
+                                                       : qEnvironmentVariable(
+                                                             "STELQUICK_PAGE",
+                                                             QStringLiteral("diag")))));
 
     // 3. 加载 QML
     // T15 命令通路装配（加载前注入，QML 命令栏/Keys 直接绑定）：
@@ -5553,6 +5578,121 @@ int main(int argc, char **argv)
                     return;
                 }
                 std::printf("SEARCHCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // ══ T33-A：地点数据面**探针**（STELQUICK_LOC_PROBE=1）════════════════════════
+    // 为什么它排在产品代码之前：T24 的血泪 —— 合流 bundle 布局下"翻译从未加载"
+    // 潜伏了 **14 个任务**才被逼出来，因为在它之前没有任何判据依赖翻译名。
+    // 地点库是**同款风险**：它依赖 `data/base_locations.bin.gz`，而 installDir 由
+    // `STELLARIUM_DATA_ROOT`（默认 "."）决定 ⇒ **依赖启动时的 cwd**。
+    // ⇒ **数据面不合格就不写 UI**（探针 = 第一相位）。
+    // 输出 `LOCPROBE:` 前缀，**只报读数、不下 PASS/FAIL**（断言在 T33-C）。
+    if (locProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("LOCPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "LOCPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("LOCPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "LOCPROBE: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("LOCPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::LocationProbe::run(
+            &app, &appFacade,
+            [&app](const stelapp::LocationProbe::Result &result) {
+                std::printf("LOCPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("LOCPROBE: %s\n", line.toUtf8().constData());
+                // 探针没有"通过/不通过"，只有"跑到了"与"环境不支持"。
+                // 刻意不打 PASS —— 免得有人把它当判据。
+                std::printf("LOCPROBE: VERDICT=%s\n",
+                            result.unavailable ? "UNAVAILABLE" : "DONE");
+                std::fflush(stdout);
+                app.exit(result.unavailable ? 6 : 0);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T33-C 地点写入面自检（STELQUICK_LOC_CHECK=1）：需要真实引擎（地点库、UTCOffset、
+    // Polaris 的 J2000 方向）。装配顺序与 LOCATE_CHECK 一致
+    // （暖机 → boot → start → attach → 判据）。起始页已切到 "location"。
+    if (locCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("LOCATIONCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "LOCATIONCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("LOCATIONCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "LOCATIONCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("LOCATIONCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::LocationCheck::run(
+            &app, &appFacade,
+            [&app](const stelapp::LocationCheck::Result &result) {
+                std::printf("LOCATIONCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("LOCATIONCHECK: %s\n", line.toUtf8().constData());
+                std::printf("LOCATIONCHECK: 判据 %d/%d\n", result.passed, result.total);
+                if (!result.ran || result.unavailable) {
+                    // 环境条件，不是逻辑缺陷——照实报 UNAVAILABLE，绝不伪装成 PASS。
+                    std::printf("LOCATIONCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("LOCATIONCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
                 std::fflush(stdout);
                 app.exit(result.pass ? 0 : 10);
             });

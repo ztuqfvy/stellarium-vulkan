@@ -1,0 +1,35 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.09176，时钟=HostDriven）
+LOCATIONCHECK: T33 观察地点写入面自检存在失败项（见明细）
+LOCATIONCHECK:   ✓ LC-01 坐标范围纯谓词（含边界 / 拒越界 / 拒 NaN / 拒 ±inf）：lat=过 lon=过 alt=过
+LOCATIONCHECK:   ✓ LC-02 读面非空且坐标在范围内：name="Mianyang (Sichuan)" id="Mianyang (Sichuan), Eastern Asia" planet="Earth" lat=31.4678 lon=104.6817 alt=471.0 时区=Asia/Shanghai
+LOCATIONCHECK:     起始 UTCOffset = 8.000 h
+LOCATIONCHECK:     目标：Paris="Paris, Western Europe" / Beijing="Beijing, Eastern Asia" / 同 Europe/Paris 时区的另一地点="Abbeville, Western Europe"
+LOCATIONCHECK:     目录纬度：Paris 48.8534° / Abbeville 50.1052° / Beijing 39.9075°
+LOCATIONCHECK:     写入 Paris ⇒ 成功 token=ok
+LOCATIONCHECK:     就绪门[Paris]：等 0 ms / 探测 0 次（上限 3000 ms）⇒ 天极高度角 48.853° （目标纬度 48.853°，容差 0.50°）
+LOCATIONCHECK:   ✗ LC-03a 写入跨时区地点生效（成对）：回读 id="Paris, Western Europe" lat=48.8534 ∧ UTCOffset 8.00 → 8.00（Δ=0.00 h）
+LOCATIONCHECK:     【主仪器·Paris】天极高度角 = 48.853°（目标纬度 48.853°，Δ=0.000°）方位 0.00°│facade 纬度 48.853° / 引擎纬度 48.853° / 引擎经度 2.349°
+LOCATIONCHECK:     【参考·Paris】与 Polaris 的夹角：轴0=131.26° 轴1=89.38° 轴2=41.27°（轴2 是天顶轴，应 ≈ 90−纬度 = 41.15°；抖动 ±0.74°）
+LOCATIONCHECK:     写入同巴黎时区地点 "Abbeville, Western Europe" ⇒ 成功 token=ok
+LOCATIONCHECK:     就绪门[Abbeville]：等 0 ms / 探测 0 次（上限 3000 ms）⇒ 天极高度角 50.105° （目标纬度 50.105°，容差 0.50°）
+LOCATIONCHECK:   ✓ LC-03b 判别腿（同时区换地点）：纬度 48.853° → 50.105°（确实变了）∧ UTCOffset 保持 8.00 h（未变）
+LOCATIONCHECK:     【主仪器·Abbeville】天极高度角 = 50.105°（目标纬度 50.105°，Δ=0.000°）│与 Paris 同 Europe/Paris 时区，纬度只差 1.252°
+LOCATIONCHECK:     写入 Beijing ⇒ 成功 token=ok
+LOCATIONCHECK:     就绪门[Beijing]：等 0 ms / 探测 0 次（上限 3000 ms）⇒ 天极高度角 39.908° （目标纬度 39.908°，容差 0.50°）
+LOCATIONCHECK:     【主仪器·Beijing】天极高度角 = 39.908°（目标纬度 39.908°，Δ=0.000°）方位 0.00°│facade 纬度 39.908° / 引擎纬度 39.908°
+LOCATIONCHECK:     【参考·Beijing】与 Polaris 的夹角：轴0=139.81° 轴1=90.56° 轴2=49.82°（轴2 应 ≈ 90−纬度 = 50.09°）
+LOCATIONCHECK:   ✓ LC-04 可验算物理量（天极高度 = 观测者纬度）：观测点 |Δ| vs **目录纬度**——Paris 0.000° / Abbeville 0.000° / Beijing 0.000°（容差 0.50°）
+LOCATIONCHECK:     LC-04 对照读数：Paris 仪器 48.853° vs 目录 48.853°（引擎回读 48.853°）│Abbeville 仪器 50.105° vs 目录 50.105°（回读 50.105°）│Beijing 仪器 39.908° vs 目录 39.908°（回读 39.908°）
+LOCATIONCHECK:   ✓ LC-04b 判别腿（三点差分）：读数差 Paris↔Beijing 8.946° vs 纬度差 8.946°（|Δ|=0.000°）；Paris↔Abbeville 1.252° vs 1.252°（|Δ|=0.000°）；容差 0.50°
+LOCATIONCHECK:   ✓ LC-05 非法值被拒 ∧ token 正确 ∧ **无副作用**：lat=91→拒(invalid-latitude) lon=200→拒(invalid-longitude) alt=1e6→拒(invalid-altitude) id "Beijing, Eastern Asia"→"Beijing, Eastern Asia"
+LOCATIONCHECK:   ✓ LC-06 不存在的 ID 被拒（token=not-found）∧ 无副作用（id 仍 "Beijing, Eastern Asia"）
+LOCATIONCHECK:     写回起始地点 ⇒ 成功 token=ok
+LOCATIONCHECK:   ✓ LC-07 往返：写回起始地点后 lat 差 0.00000° lon 差 0.00000°（容差 0.00100°）
+LOCATIONCHECK:   ✓ LC-08 计数增量：写入 4 次（期望 4）/ 拒绝 4 次（期望 4）
+LOCATIONCHECK: 判据 9/10
+LOCATIONCHECK: VERDICT=FAIL

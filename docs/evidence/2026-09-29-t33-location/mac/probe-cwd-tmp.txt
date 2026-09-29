@@ -1,0 +1,43 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.01825，时钟=HostDriven）
+LOCPROBE: 地点数据面探针：只报读数、不下结论（断言见 T33-C 的 LocationCheck）
+LOCPROBE: P1 cwd = "/private/tmp"
+LOCPROBE: P1 STELLARIUM_DATA_ROOT = ""（未设时引擎用 "."）
+LOCPROBE: P1 installDir = "/Users/ztuqfvy/qt_demo/stellarium_vulkan"
+LOCPROBE: P1 编译期兜底 STELLARIUM_SOURCE_DIR = "/Users/ztuqfvy/qt_demo/stellarium_vulkan"
+LOCPROBE: P1 findFile(data/ssystem_major.ini) [installDir 的判据文件] = "/Users/ztuqfvy/qt_demo/stellarium_vulkan/data/ssystem_major.ini"
+LOCPROBE: P1 findFile(data/base_locations.bin.gz) = "/Users/ztuqfvy/qt_demo/stellarium_vulkan/data/base_locations.bin.gz"
+LOCPROBE: P1 getLocaleDir() = "/Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release/src/ui/stelQuickUI.app/Contents/MacOS/../translations" [T24 血泪面：翻译曾经三候选全不命中]
+LOCPROBE: P2 地点库规模：地点 33501 条 / 区域 193 个 / 时区名 496 个
+LOCPROBE: P2 抽样[0] name="'Abasan al Kabirah" planet="Earth" lat=31.3191 lon=34.3400 alt=71 iana="Asia/Gaza" role='N'
+LOCPROBE: P2 抽样[1] name="'Afak" planet="Earth" lat=32.0643 lon=45.2474 alt=25 iana="Asia/Baghdad" role='N'
+LOCPROBE: P2 抽样[2] name="'Ain Abid" planet="Earth" lat=36.2319 lon=6.9433 alt=868 iana="Africa/Algiers" role='N'
+LOCPROBE: P2 时区名中含 "/" 的 IANA 形态：448 个
+LOCPROBE: P3 locationForString("Beijing") ⇒ name="Beijing" planet="Earth" lat=0.0000 lon=0.0000 alt=0 iana="" role='!'  [role='!' ⇒ **无效（认不出）**]
+LOCPROBE: P3 locationForString("Paris, Western Europe") ⇒ name="Paris" planet="Earth" lat=48.8534 lon=2.3488 alt=42 iana="Europe/Paris" role='C'  [role='C' ⇒ 有效]
+LOCPROBE: P3 locationForString("北京") ⇒ name="北京" planet="Earth" lat=0.0000 lon=0.0000 alt=0 iana="" role='!'  [role='!' ⇒ **无效（认不出）**]
+LOCPROBE: P3b 库内 Beijing 条目 name="Beijing" planet="Earth" lat=39.9075 lon=116.3972 alt=49 iana="Asia/Shanghai" role='C'
+LOCPROBE: P3b 其 getID()="Beijing, Eastern Asia" ⇒ 用完整 ID 再查一次
+LOCPROBE: P3b locationForString(完整 ID) ⇒ name="Beijing" planet="Earth" lat=39.9075 lon=116.3972 alt=49 iana="Asia/Shanghai" role='C'  [role='C']
+LOCPROBE: P4 写前 name="Mianyang (Sichuan)" planet="Earth" lat=31.4678 lon=104.6817 alt=471 iana="Asia/Shanghai" role='N'
+LOCPROBE: P4 写前 timeZone="Asia/Shanghai" UTCOffset=8.0000 h
+LOCPROBE: P4 目标 name="Paris" planet="Earth" lat=48.8534 lon=2.3488 alt=42 iana="Europe/Paris" role='C'
+LOCPROBE: P4 判别性前提：目标 iana="Europe/Paris" vs 写前 iana="Asia/Shanghai" ⇒ **不同**（判据有判别力）
+LOCPROBE: P5 moveObserverTo(target, 0.0) 已调用（瞬时分支）
+LOCPROBE: P6 写后 name="Paris" planet="Earth" lat=48.8534 lon=2.3488 alt=42 iana="Europe/Paris" role='C'
+LOCPROBE: P6 写后 timeZone="Europe/Paris" UTCOffset=2.0000 h
+LOCPROBE: P6 坐标位移：Δlat=17.3856° Δlon=-102.3329°
+LOCPROBE: P6 UTCOffset 位移：Δ=-6.0000 h
+LOCPROBE: P6 时区联动：目标 iana="Europe/Paris" ⇒ 引擎当前="Europe/Paris"（已落）
+LOCPROBE: P6 时区名单里是否含目标 iana：是（能落）
+LOCPROBE: P6 判别腿：写后时区已从 "Asia/Shanghai" 变为 "Europe/Paris" ⇒ 联动确实发生
+LOCPROBE: P7 引擎边界 isValid()：lat=91 ⇒ true / lon=200 ⇒ true / 正常(39.9,116.4) ⇒ true / (0,0) ⇒ true / role='!' ⇒ false
+LOCPROBE: P7 判读：引擎**不校验经纬度范围**（StelLocation.cpp:296 只查 role=='!' 与"经纬不同时为 0"）⇒ "非法纬度必须被拒"由应用层负责
+LOCPROBE: P7 注：(0,0) 的返回依赖 planetName 非空 ⇒ 本引擎判为合法
+LOCPROBE: VERDICT=DONE

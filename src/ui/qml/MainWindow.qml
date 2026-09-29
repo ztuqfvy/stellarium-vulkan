@@ -33,7 +33,7 @@ ApplicationWindow {
 
     // 页名 → StackLayout 索引（一处定义，切换器与 C++ 的 startPage 共用，
     // 避免"加了页面忘了改另一处"这类只在运行时才暴露的错位）。
-    readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2, "time": 3 })
+    readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2, "time": 3, "location": 4 })
 
     // ── T20「返回」环的唯一实现点 ─────────────────────────────────────────────
     //
@@ -207,6 +207,12 @@ ApplicationWindow {
                     text: "时间（T19）"
                     onClicked: stack.currentIndex = 3
                 }
+                // T33：观察地点页（搜索地点 / 按坐标设置 / 当前地点投影）
+                Button {
+                    objectName: "navLocationButton"
+                    text: "地点（T33）"
+                    onClicked: stack.currentIndex = 4
+                }
                 Item { Layout.fillWidth: true }
                 Label {
                     text: "渲染后端：" + BackendInfo.runtimeApiName
@@ -280,6 +286,7 @@ ApplicationWindow {
                 SkyTestPage { }
                 SearchPage { id: searchPage }   // T32：两段式 Esc 按对象同一性认它
                 TimePage { }
+                LocationPage { }                // T33：观察地点页（索引 4）
             }
         }
     }

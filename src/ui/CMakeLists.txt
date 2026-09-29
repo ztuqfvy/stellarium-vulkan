@@ -134,6 +134,16 @@ set(stelQuickUI_SOURCES
     ../app/SearchModelCheck.cpp
     ../app/LocateCheck.hpp
     ../app/LocateCheck.cpp
+    # T33-A 地点数据面探针：先证 StelLocationMgr 的城市库在合流 bundle 布局下
+    # 加载得起来（T24「翻译从未加载」的同款风险），再写地点页 UI。只报读数。
+    ../app/LocationProbe.hpp
+    ../app/LocationProbe.cpp
+    # T33-C 地点写入面自检：范围闸纯谓词（恒可跑）+ 活引擎腿（写入生效/时区联动/
+    # 判别腿/「天极高度 = 观测者纬度」绝对腿/非法值无副作用/往返/计数）。
+    # ⚠️ 仪器用**当日天极**，不是 Polaris（后者偏离天极 0.74°、抖动峰峰值 ~1.5°，
+    #    分辨不出巴黎↔阿布维尔这 1.25° 的差 —— 血泪见 LocationCheck.hpp）。
+    ../app/LocationCheck.hpp
+    ../app/LocationCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp
@@ -190,6 +200,9 @@ qt_add_qml_module(stelQuickUI
         qml/SkyTestPage.qml
         qml/SearchPage.qml
         qml/TimePage.qml
+        # T33：观察地点页（漏登记的症状：运行期 `LocationPage is not a type`，
+        # 编译期**不报错** —— 因为 QML 是运行时解析的）
+        qml/LocationPage.qml
     NO_PLUGIN
 )
 

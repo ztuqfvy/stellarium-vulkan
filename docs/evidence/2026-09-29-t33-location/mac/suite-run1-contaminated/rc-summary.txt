@@ -1,0 +1,21 @@
+loccheck-mac pos-pass=5 env-skip=0 bad=0（共 5 跑；env-skip = 地点库前提不成立，**不洗成 PASS**）
+loccheck-mac 残留进程数=0（要求 0）
+negctl-A 5/5（要求 rc=10 ∧ 8/10 ∧ 红恰好 LC-04/LC-04b）
+negctl-B 5/5（要求 rc=0 ∧ 10/10 ∧ 门探测 ≥1 ⇒ 门承重）
+negctl-C negctl-C-OK（要求 rc=10 ∧ 8/10 ∧ 红恰好 LC-05/LC-08 ∧ LC-01 仍绿）
+negctl-D negctl-D-OK（要求 rc=10 ∧ 6/10 ∧ 红恰好 LC-03a/03b/04/04b）
+probe-loc-data-mac probe-OK（LOCPROBE: VERDICT=DONE；地点库规模行=1）
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=10
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-interactcheck ENV-SKIP（INTERACTCHECK: 判据 11/11（另 8 条 UNAVAILABLE：IT-05,IT-06,IT-13,IT-14,IT-15,IT-16,IT-17,IT-18） ⇒ 窗口未获系统焦点，**不洗成 PASS**）
+regression-a2-metal rc=0
+regression-dyn-engine-metal 5/5 PASS
+regression-dyn-test-metal 5/5 PASS
+producer-readback OK

@@ -1,0 +1,26 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.09922，时钟=HostDriven）
+LOCATECHECK: T18 定位/跟踪自检全过（守卫/无选中不谎报/定位落地/跟踪跟随/放开不跟随/关跟踪/幂等重选/家园行星）
+LOCATECHECK: LOC-01 家园行星守卫谓词（同名拒绝/异名放行/空串不误拒/大小写严格）：OK
+LOCATECHECK: LOC-02 无选中时 setTracking(true) 拒绝（返回 false，理由 no-selection，isTracking=false）：OK
+LOCATECHECK: LOC-fixture 选中 Moon（stableId=Planet:Moon）：OK
+LOCATECHECK: LOC-info 基准 JD=2461313.09922，视口中心偏移等效 0.0000°（跟踪期望夹角=|偏移|）
+LOCATECHECK: LOC-03a locateSelected(true) 返回 true，理由 ok：OK
+LOCATECHECK: LOC-03b 自动移动结束后锁定夹角 0.0049°（期望 |0.0000|±0.50）：OK
+LOCATECHECK: LOC-04 (a) 跳 0.25 天后目标 AltAz 变化 113.09°（门槛 >5.0，证明世界确实动了）：OK
+LOCATECHECK: LOC-04 (b) 跟踪中目标到视向夹角 0.0000°（期望 |0.0000|±0.50）：OK
+LOCATECHECK: LOC-05a locateSelected(false) 只归中不跟踪（返回 true，isTracking=false）：OK
+LOCATECHECK: LOC-05b-note 归中等待的 2.5s 内天空自转 77.37°（自动移动 1.5s 追完之后视向即固定，余量即 off0 的来源）
+LOCATECHECK: LOC-05 (a2) 不跟踪时同样的跳变下目标 AltAz 变化 110.12°（门槛 >5.0，证明对照组的信号同样存在）：OK
+LOCATECHECK: LOC-05 (c) 不跟踪时夹角 34.3219° → 跳变后 129.58°（门槛 >5.0，与 LOC-04(b) 的 0.0000° 形成判别性对照）：OK
+LOCATECHECK: LOC-06 setTracking(false)（返回 true，isTracking=false，trackedName 空=true）：OK
+LOCATECHECK: LOC-07 幂等重选不打断跟踪（跟踪中「月球」→ 重选同一 stableId 返回 true → 跟踪 true）：OK
+LOCATECHECK: LOC-08 家园行星端到端（选中 "Earth" 后 locateSelected 返回 false，理由 home-planet，isTracking=false）：OK
+LOCATECHECK: LOC-08b 清选中后跟踪彻底归零（进入跟踪 true；清前 合取=true/引擎原始=true → 清后 合取=false/引擎原始=false）：OK
+LOCATECHECK: LOC-09 换选归零对照（进入跟踪 true，rawBefore=true → 换选「Jupiter」后 rawAfter=false）：OK
+LOCATECHECK: 判据 15/15
+LOCATECHECK: VERDICT=PASS
