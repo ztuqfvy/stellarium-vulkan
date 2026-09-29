@@ -8,6 +8,9 @@
 >
 > 判据数：`TIMEUICHECK` **19 → 27**（既有 19 条口径**一条未改**）。
 > 退出码沿用约定：0=PASS / 10=FAIL / 6=UNAVAILABLE。
+>
+> 提交：`d04ea31`（仪器 `src/ui/main.cpp` + `tools/t30-verify.sh` +
+> `tools/windows/wt30-*.ps1` + 证据 + 本文档）。
 
 ---
 

@@ -1,6 +1,6 @@
 # 证据索引：2026-09-29-t30-visual（T30 时间页视觉层判据组）
 
-> 交付文档：`docs/T30_TIME_VISUAL.zh_CN.md`
+> 交付文档：`docs/T30_TIME_VISUAL.zh_CN.md`｜提交：`d04ea31`
 > 改动面：`src/ui/main.cpp`（**纯仪器**：TIMEUICHECK 追加 UI-17..UI-24 + 负控开关
 > `STELQUICK_TIME_VISUAL_NEGCTL`）｜`tools/t30-verify.sh`｜`tools/windows/wt30-*.ps1`
 > **产品代码零改动**（页面/面板几何一律沿父链取；既有 19 条判据口径一条未改）。
