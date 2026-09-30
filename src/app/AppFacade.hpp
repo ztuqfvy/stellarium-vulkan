@@ -473,6 +473,36 @@ public:
     quint64 locateCount() const { return m_locateCount; }
     quint64 locateRefusedCount() const { return m_locateRefusedCount; }
 
+    // ---- T34 工具栏：显示开关状态面（读侧；写侧走 ActionRouter.trigger 透传）----
+    //!
+    //! 背景：桌面版这些开关挂在 StelGui 底栏，**合流形态根本不创建 StelGui**。
+    //! 开关本体是引擎 StelAction（连着各模块的 bool Q_PROPERTY），命令路径已经
+    //! 由 `ActionRouter::trigger(id)` 的**引擎透传**覆盖（T15 写的，T34 之前
+    //! 没有任何判据走过这条路）。这里只补**读侧**：QML 按钮的 checked 态。
+    //!
+    //! 为什么是"revision token"而不是每个开关一个 Q_PROPERTY：12 个开关是
+    //! **固定清单**，若逐个 Q_PROPERTY 会把通知矩阵翻 12 倍；而 QML 绑定真正
+    //! 需要的只是"引擎某处翻转了，去重读一次"这件事。于是：
+    //!   `checked: { appFacade.displayTogglesRevision;   // ← 绑定必须**真的读** token
+    //!               return appFacade.actionChecked(id) }`
+    //! （T15 铁律：**绑定只登记"绑定里实际读过"的属性**——只在绑定里调
+    //!   `actionChecked()` 而不读 token，token 变化时绑定不会重算。）
+    //@{
+    //! 引擎显示开关的**修订号**：`StelActionMgr::actionToggled` 每发射一次 +1。
+    //! 引擎未引导时恒 0。订阅在 `attachSimControl`（此刻引擎必已 boot、动作已注册）。
+    Q_PROPERTY(int displayTogglesRevision READ displayTogglesRevision NOTIFY
+                   displayTogglesRevisionChanged)
+    int displayTogglesRevision() const { return m_displayTogglesRevision; }
+
+    //! 引擎动作当前 checked 值（不存在 / 非 checkable / 引擎未引导 → false）。
+    Q_INVOKABLE bool actionChecked(const QString &actionId) const;
+    //! 引擎动作是否 checkable（连着 bool 属性；不存在 / 引擎未引导 → false）。
+    //! 工具栏用它把"动作存在但不是开关"挡在 UI 外（面板里只放 checkable 项）。
+    Q_INVOKABLE bool actionIsCheckable(const QString &actionId) const;
+    //! 引擎动作的英文短描述（StelAction::getText；不存在 → 空串）。
+    Q_INVOKABLE QString actionText(const QString &actionId) const;
+    //@}
+
 signals:
     void simulationPausedChanged(bool paused);
     void timeRateChanged(double ratePerJulianDaySecond);
@@ -483,6 +513,8 @@ signals:
     void lastTimeRefusalChanged();
     //! T33：地点写入结果 token 变化时通知。
     void lastLocationRefusalChanged();
+    //! T34：任一引擎显示开关翻转时通知（QML checked 绑定经 revision token 重算）。
+    void displayTogglesRevisionChanged();
 
 private:
     //! 引擎 StelMovementMgr 是否可用（已引导且 zoom 接口可达）。
@@ -498,6 +530,8 @@ private:
     //! T23：懒连接引擎 flagTrackingChanged → 本类 trackingChanged（只连一次）。
     //! 引擎侧自行改变跟踪状态（unSelect、Esc、旧 GUI 键位）时 QML 绑定才能收到通知。
     void ensureTrackingForwarding();
+    //! T34：懒连接引擎 actionToggled → displayTogglesRevision 自增（只连一次）。
+    void ensureDisplayForwarding();
 
     ISimPacing *m_sim = nullptr;
     bool m_simulationPaused = false;  // 与 LiveSkyRuntime 的 scale=1 默认一致（运行态）
@@ -527,6 +561,11 @@ private:
     QString m_locationRefusal = QStringLiteral("ok");
     quint64 m_locationWriteCount = 0;
     quint64 m_locationRefusedCount = 0;
+
+    // T34
+    int m_displayTogglesRevision = 0;
+    //! T34：引擎 actionToggled → revision 的转发是否已连接（只连一次）。
+    bool m_displayForwarded = false;
 };
 
 } // namespace stelapp

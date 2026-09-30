@@ -144,6 +144,11 @@ set(stelQuickUI_SOURCES
     #    分辨不出巴黎↔阿布维尔这 1.25° 的差 —— 血泪见 LocationCheck.hpp）。
     ../app/LocationCheck.hpp
     ../app/LocationCheck.cpp
+    # T34：工具栏探针 + 自检（引擎 StelAction 注册表/透传路径/checked 读侧）
+    ../app/ToolbarProbe.hpp
+    ../app/ToolbarProbe.cpp
+    ../app/ToolbarCheck.hpp
+    ../app/ToolbarCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp
@@ -203,6 +208,8 @@ qt_add_qml_module(stelQuickUI
         # T33：观察地点页（漏登记的症状：运行期 `LocationPage is not a type`，
         # 编译期**不报错** —— 因为 QML 是运行时解析的）
         qml/LocationPage.qml
+        # T34：真实工具栏（导航 + 12 个显示开关；同样运行时解析，漏登记必炸）
+        qml/Toolbar.qml
     NO_PLUGIN
 )
 

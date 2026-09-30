@@ -15,6 +15,7 @@
 
 #if defined(STELQUICK_HAS_ENGINE)
 #include "StelApp.hpp"
+#include "StelActionMgr.hpp"
 #include "StelCore.hpp"
 #include "StelLocation.hpp"      // T33：StelLocation 值对象（U-FAC-03 要求值语义）
 #include "StelLocationMgr.hpp"   // T22：getAllTimezoneNames()（引擎真正接受的时区名单）
@@ -41,6 +42,74 @@ AppFacade::AppFacade(QObject *parent)
 void AppFacade::attachSimControl(ISimPacing *sim)
 {
     m_sim = sim;
+    ensureDisplayForwarding();   // T34：此刻引擎必已 boot、动作已注册
+}
+
+// ── T34 工具栏：显示开关读侧 ─────────────────────────────────────────────────
+
+bool AppFacade::actionChecked(const QString &actionId) const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return false;
+    const StelAction *action =
+        StelApp::getInstance().getStelActionManager()->findAction(actionId);
+    return action && action->isCheckable() && action->isChecked();
+#else
+    Q_UNUSED(actionId)
+    return false;
+#endif
+}
+
+bool AppFacade::actionIsCheckable(const QString &actionId) const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return false;
+    const StelAction *action =
+        StelApp::getInstance().getStelActionManager()->findAction(actionId);
+    return action && action->isCheckable();
+#else
+    Q_UNUSED(actionId)
+    return false;
+#endif
+}
+
+QString AppFacade::actionText(const QString &actionId) const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return QString();
+    const StelAction *action =
+        StelApp::getInstance().getStelActionManager()->findAction(actionId);
+    return action ? action->getText() : QString();
+#else
+    Q_UNUSED(actionId)
+    return QString();
+#endif
+}
+
+//! T34：懒连接引擎 actionToggled → revision 自增（只连一次）。
+//! 为什么订阅 StelActionMgr 的**汇总信号**而不是 12 个 StelAction 的 toggled：
+//! 汇总信号带 id，一条连接覆盖全部开关；引擎侧任何路径（快捷键、旧 GUI、
+//! ActionRouter 透传）翻转都汇到同一处 ⇒ QML 不会漏刷。
+void AppFacade::ensureDisplayForwarding()
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    // 负控开关（T34-C，同 STELQUICK_LOC_NODELAY 先例，只用于证明判据承重）：
+    // 关掉订阅 ⇒ displayTogglesRevision 恒 0 ⇒ QML 按钮态停在首帧
+    // ⇒ ToolbarCheck 的 TB-07 必红（否则判据是摆设）。
+    if (qEnvironmentVariableIsSet("STELQUICK_TOOL_REV_OFF"))
+        return;
+    if (m_displayForwarded || !StelApp::isInitialized())
+        return;
+    m_displayForwarded = true;
+    connect(StelApp::getInstance().getStelActionManager(), &StelActionMgr::actionToggled,
+            this, [this](const QString &, bool) {
+                m_displayTogglesRevision++;
+                emit displayTogglesRevisionChanged();
+            });
+#endif
 }
 
 bool AppFacade::movementReady() const

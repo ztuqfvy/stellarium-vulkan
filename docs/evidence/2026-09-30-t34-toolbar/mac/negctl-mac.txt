@@ -1,0 +1,20 @@
+──────── 负控 A（REV_OFF）（rc=10）→ negctl-A-OK ────────
+  期望：rc=10 ∧ 判据 9/12 ∧ 红项**恰好** [TB-07,TB-09,TB-12]
+  实测：红=[TB-07,TB-09,TB-12,]
+TOOLBARCHECK: 判据 9/12  VERDICT=FAIL
+TOOLBARCHECK: VERDICT=FAIL
+──────── 负控 B（TOKEN_OFF）（rc=10）→ negctl-B-OK ────────
+  期望：rc=10 ∧ 判据 10/12 ∧ 红项**恰好** [TB-09,TB-12]（revision 照常涨 ⇒ TB-07 仍绿）
+  实测：红=[TB-09,TB-12,]
+TOOLBARCHECK: 判据 10/12  VERDICT=FAIL
+TOOLBARCHECK: VERDICT=FAIL
+──────── 负控 C（CLICK_OFF）（rc=10）→ negctl-C-OK ────────
+  期望：rc=10 ∧ 判据 11/12 ∧ 红项**恰好** [TB-10]（TB-12 不许被牵连）
+  实测：红=[TB-10,]
+TOOLBARCHECK: 判据 11/12  VERDICT=FAIL
+TOOLBARCHECK: VERDICT=FAIL
+──────── 负控 D（LAYOUT_BREAK）（rc=10）→ negctl-D-OK ────────
+  期望：rc=10 ∧ 判据 11/12 ∧ 红项**恰好** [TB-10] ∧ 落点覆盖行 covered=false
+  实测：红=[TB-10,]  覆盖=false 行=1/1  未覆盖的祖先=[QQuickColumnLayout,Toolbar_QMLTYPE_63]
+TOOLBARCHECK: 判据 11/12  VERDICT=FAIL
+TOOLBARCHECK: VERDICT=FAIL

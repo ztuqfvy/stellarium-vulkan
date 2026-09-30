@@ -31,6 +31,20 @@ class BackendInfo : public QObject
     Q_PROPERTY(QString runtimeApiName READ runtimeApiName NOTIFY runtimeApiNameChanged)
     // 后端校验判定：请求 Vulkan 且实际 Vulkan 才为 true
     Q_PROPERTY(bool backendOk READ backendOk NOTIFY backendOkChanged)
+    // T34-C 负控开关（同 STELQUICK_TOOL_REV_OFF 先例，只用于证明判据承重）：
+    // true ⇒ Toolbar.qml 的 engineOn 绑定**不读** revision token（QML 绑定铁律的
+    // 缺陷形态）⇒ 引擎翻转后按钮态停在首帧 ⇒ TOOLBARCHECK 的 TB-12 必红。
+    Q_PROPERTY(bool tbTokenBindingOff READ tbTokenBindingOff CONSTANT)
+    // T34-C 负控开关②：true ⇒ Toolbar.qml 的开关按钮 onClicked **不派发**
+    // ActionRouter.trigger ⇒ 真实点击不翻动引擎 ⇒ TB-10 必红（且只 TB-10 红，
+    // TB-12 不受影响——隔离良好的判别负控）。证明"点击→引擎"这条腿承重：
+    // 没有它，"点击没接上"这种缺陷只能靠 TB-09 的存在性判据碰运气。
+    Q_PROPERTY(bool tbClickOff READ tbClickOff CONSTANT)
+    // T34-C 负控开关③：true ⇒ Toolbar 根 Rectangle 的 implicitHeight 打回 **0**
+    // ⇒ 复现"工具栏高度 0、布局全乱但**不裁剪**"的**假绿掩护**缺陷形态。
+    // 期望：只有 TB-10 红（真实点击落在根内容控件上），其余 11 条照绿
+    // ——证明"落点覆盖"自证是这条假绿的唯一哨兵。
+    Q_PROPERTY(bool tbLayoutBreak READ tbLayoutBreak CONSTANT)
 
     // 说明：手动 qmlRegisterSingletonInstance 注册（main.cpp），不用 QML_ELEMENT 宏，
     // 避免与 qt_add_qml_module 的类型注册重复冲突。
@@ -45,6 +59,9 @@ public:
     bool portabilityDriver() const;
     QString runtimeApiName() const;
     bool backendOk() const;
+    bool tbTokenBindingOff() const;
+    bool tbClickOff() const;
+    bool tbLayoutBreak() const;
 
     // 填充探针结果（应用启动时调用一次）
     void applyProbe(const VulkanProbeResult &probe);

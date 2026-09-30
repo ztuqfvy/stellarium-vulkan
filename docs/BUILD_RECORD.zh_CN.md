@@ -3887,3 +3887,93 @@ untracked 文件，把 `git merge --ff-only` 顶回去（`Aborting`，`merge_rc=
 A2 1 + DYN 11 + `rc-summary.txt`）+ `windows/`（构建 4 份 + `suites/` 58 份）+ 该目录 `README.md`；
 `src/ui/main.cpp`（UI-17..UI-24 + 四个自写纯函数 + 三个几何/颜色辅助函数；
 头注与启动 printf 的判据总数 19 → 27）。
+
+## 2026-09-30｜T34 真实工具栏 + 显示开关（**A4 最后一项 ⇒ `A-alpha` 出口第一条成立**）（**新增 `TOOLBARCHECK` 12 条 TB-01..TB-12；正题 `12/12` ×5；四组负控红项 A `[TB-07,09,12]` / B `[TB-09,12]` / C `[TB-10]` / D `[TB-10]+covered=false`；探针 `505 动作 / 15 分组`、12/12 checkable；10 套回归 + `INTERACTCHECK 18/18`（本批拿到焦点）+ S3 + A2 + DYN 全 rc=0；`FAILED=0`；产品侧**零 C++ 语义复制**——命令路径全走 T15 写的引擎透传**）
+
+### 目标
+
+把 `MainWindow.qml:171` 的 **A2 开发期临时页切换器**换成真实工具栏，并补上 A-alpha 表里
+标"**基本开关**"的项所缺的 QML 承载面 —— §3 说明列要求"开关状态必须与引擎**双向同步**"，
+键位透传只能做到单向触达（能按 C 开星座线，但按钮上看不见状态）。
+
+### 探针先行（T34-A）：先把命令面摸清楚
+
+`STELQUICK_TOOL_PROBE=1`（`TOOLBARPROBE:` 前缀，**只报读数、不打 PASS**）：
+
+| # | 读数 | 结论 |
+|---|---|---|
+| Q1 | **505 个动作 / 15 个分组** | 注册表规模足够 |
+| Q2 | 12 候选**逐项** `checkable/checked/text/key` | **12/12 checkable**；`getText()` 返回**中文**（T24 红利）；快捷键 `C/V/R/E/Z/G/Q/A/D/Alt+P/O/Ctrl+N` |
+| Q3/Q3b | `trigger(id)` → **模块 getter** 回读（独立路径） | 4/4 翻转 |
+| Q4/Q4b | `actionToggled` 观测 + `AppFacade.displayTogglesRevision` | 发射 4 次；revision=4 |
+
+⇒ 开关点击**可以完全走已有透传路径** ⇒ **T34 产品侧零 C++ 语义复制**（新增 C++ 全是"读侧投影 + 仪器"）。
+
+### 产品（T34-B）
+
+- `Toolbar.qml`（新，两段式）：第一行导航（6 按钮 `objectName` **一字未动**）+ 渲染后端标签；
+  第二行 **12 个显示开关**（Flow，吃满宽度）。
+- 命令路径单点：按钮 → `ActionRouter.trigger(<引擎 action id>)` → 注册表未命中 → **引擎透传**
+  （`findAction → StelAction::trigger`）；快捷键走 `routeKey` 落**同一条** `StelAction`。
+- 回读用 **revision token**（`StelActionMgr::actionToggled` 每发射 +1）+ `Q_INVOKABLE actionChecked(id)`；
+  QML 绑定**必须真的读 token**（T15 铁律：只调方法不读 token ⇒ 绑定**永远不重算**）。
+- 按钮**不用** `checkable`（AbstractButton 会命令式写 `checked` ⇒ 销毁绑定，T32 同族坑）；
+  状态用 `●/○` 前缀 + `font.bold`（native macOS style **拒绝**控件定制，覆盖 `background`
+  会刷 12 条告警且**静默失效**）。
+
+### 判据（T34-C）：12 条
+
+写入腿（TB-01..05，模块 getter 回读）/ 信号腿（TB-06）/ 订阅腿（TB-07）/ not-found 负控（TB-08）/
+UI 腿（TB-09 12/12 找到 ∧ 态一致）/ **真实鼠标点击腿**（TB-10）/ 判别负控（TB-11 registry 命令不碰
+revision）/ **绑定重算腿**（TB-12，**双采样**）。
+
+### 🔴 本轮五条血泪（全是"判据全绿但界面是坏的"）
+
+| # | 现象 | 根因 | 修法/自证 |
+|---|---|---|---|
+| ① | TB-09 报 `0/12 找到` | **Repeater delegate 的 QObject parent = null**（只 `setParentItem(Flow)`）⇒ `QObject::findChild` **永远扫不到**；静态导航按钮却能扫到（同款 API 两种结果） | 视觉树 `QQuickItem::childItems()` 递归 |
+| ② | 布局全乱但判据全绿 | 裸 `Rectangle` 根 ⇒ `implicitHeight=0` ⇒ ColumnLayout 给 0（RowLayout 高 −12、Flow 宽 1263 溢出）；**Rectangle 默认不裁剪** ⇒ 按钮照画 | `implicitHeight: col.implicitHeight + 12`；**已固化为负控 D** |
+| ③ | `childAt` 判定"没砸中按钮" | 🔴 **`childAt` 会撒谎**：按钮确在 (48,58)、点击确生效，`contentItem()->childAt()` 仍一路返回根级 `ApplicationWindowContentControl`（返回 contentItem **自己**、不是后代） | 弃用；改**几何覆盖**自证（落点在按钮及**全部祖先**矩形内），D 下 `covered=false` 并**点名** `QQuickColumnLayout,Toolbar_QMLTYPE_1` |
+| ④ | 工具栏被撑到 446px（占窗口 70%） | `Flow.implicitWidth` 是**单行**宽度（1263）；与另一 `fillWidth` 项（filler）**对分**剩余宽度 ⇒ 开关区只剩 159px、竖成 12 行、`implicitHeight` **回喂** | 开关区 Flow 独占一行吃满宽度；导航行**只留一个** filler |
+| ⑤ | 跑批某跑**零判据输出** | 连续起停 ⇒ Metal 掉设备（`VK_ERROR_OUT_OF_DEVICE_MEMORY` / `kIOGPUCommandBufferCallbackErrorPageFault`） | 停几秒重跑即恢复；**无判据输出 ≠ 判据失败**（脚本按 rc + 判据行双判） |
+
+### 🔴 两条"撞车假绿"的口径修正
+
+1. **点击腿必须选初始为 false 的开关**：首版选 `actionShow_Ground`（boot=true），点击后引擎 false
+   而"冻结值"恰好也是 false ⇒ 负控**不红**。改选 boot=false 的星座连线 ⇒ 必红。
+2. **TB-12 必须双采样**：单次采样同样会撞车（REV_OFF 下实测假绿）。改为点两次（翻转后 + 复原后），
+   一个**冻结值**不可能同时等于 `true`/`false` ⇒ 必有一次不匹配。
+
+### 四组负控
+
+| 组 | env | 机制 | rc / 判据 | 红项 |
+|---|---|---|---|---|
+| A | `STELQUICK_TOOL_REV_OFF=1` | Facade **不订阅** `actionToggled` | 10 / 9-12 | `TB-07, TB-09, TB-12` |
+| B | `STELQUICK_TOOL_TOKEN_OFF=1` | 绑定**不读** revision token | 10 / 10-12 | `TB-09, TB-12` |
+| C | `STELQUICK_TOOL_CLICK_OFF=1` | `onClicked` **不派发** | 10 / 11-12 | `TB-10` |
+| D | `STELQUICK_TOOL_LAYOUT_BREAK=1` | `implicitHeight` 打回 0（复现②） | 10 / 11-12 | `TB-10` + `covered=false` |
+
+A↔B 分离（revision 是否增长）；C↔D 红项同集但**证据不同**（C 靠引擎读回真值、D 靠几何覆盖）
+⇒ "点击腿"与"落点自证"**各自承重**。
+
+### 定稿轮读数（macOS + Metal/MoltenVK，`tools/t34-verify.sh core 5`）
+
+- 正题 `TOOLBARCHECK` **5/5** `判据 12/12 VERDICT=PASS`；残留进程 0。
+- 负控 A/B/C/D 四项全部与期望**逐位一致**；探针 `VERDICT=DONE`（Q3b 对照 4/4、Q4 发射 4 次）。
+- 相邻回归 **10 套件全 rc=0**（time / returnui / search / action / locate / locate-ui / replay /
+  clock / timeui / **location**）；`INTERACTCHECK` **rc=0（18/18，窗口已激活，非 ENV-SKIP）**；
+  **S3 旧宿主** `STELA3_CHECK` rc=0（8 条）；A2 逐像素 rc=0；DYN 双路 rc=0。
+- **`FAILED=0`**。
+
+⚠️ 一条**仪器口径**修正：探针 Q3b 的**值**不能进判据 —— 引擎把开关态落盘，
+`写后 getter=false` 的**条数**在 1..4 间浮动（boot 初值逐跑可变）⇒ 判据只认"**4 条对照行**"
+这件结构性事实（与全套 TB-* 一律取**写前快照**当对照同理）。
+
+### 产物
+
+`src/ui/qml/Toolbar.qml`（新）、`src/ui/qml/MainWindow.qml`（挂载 + 删临时切换器）、
+`src/app/AppFacade.{hpp,cpp}`（revision token + 三个读侧 `Q_INVOKABLE` + `ensureDisplayForwarding`）、
+`src/ui/quick/BackendInfo.{hpp,cpp}`（三个负控开关）、`src/app/ToolbarProbe.{hpp,cpp}`、
+`src/app/ToolbarCheck.{hpp,cpp}`、`src/ui/main.cpp`（两段相位接线）、`src/ui/CMakeLists.txt`；
+`tools/t34-verify.sh`；`docs/T34_TOOLBAR.zh_CN.md`（9 节）；
+`docs/evidence/2026-09-30-t34-toolbar/mac/`（26 份 + `README.md`）。

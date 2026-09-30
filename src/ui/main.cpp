@@ -230,6 +230,8 @@ void ensureVulkanLoaderPath()
 #include "app/LocateCheck.hpp"
 #include "app/LocationProbe.hpp"
 #include "app/LocationCheck.hpp"
+#include "app/ToolbarProbe.hpp"
+#include "app/ToolbarCheck.hpp"
 // T19：改时间（A4 固定流程的"改时间"环）+ 自检。
 #include "app/TimeCheck.hpp"
 // T16：单一仿真时钟。控制器是 core 层的纯逻辑类（无 GL / 无 QObject），
@@ -5143,6 +5145,11 @@ int main(int argc, char **argv)
     // T33-C：地点写入面自检（见 app/LocationCheck.hpp）。起始页切到 "location"，
     // 故同时验证地点页 QML 可被实例化（页面有语法/引用错误时这一步就会暴露）。
     const bool locCheck = qEnvironmentVariableIsSet("STELQUICK_LOC_CHECK");
+    // T34-A：工具栏**数据面探针**（见 app/ToolbarProbe.hpp）。引擎 StelAction
+    // 注册表与透传路径在 T34 之前没有任何判据走过 ⇒ 先证可用再写 UI/判据。
+    const bool toolProbe = qEnvironmentVariableIsSet("STELQUICK_TOOL_PROBE");
+    // T34-C：工具栏自检（见 app/ToolbarCheck.hpp）。
+    const bool toolCheck = qEnvironmentVariableIsSet("STELQUICK_TOOL_CHECK");
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
     const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
@@ -5152,7 +5159,7 @@ int main(int argc, char **argv)
     // T20：返回环与 I-REP-02 回放都从**天空页**起步（前者要先从它切走再切回来，
     //   后者直接断言"开机态=天空页"）。
     const QString startPage = (a2Check || dynCheck || longRun || returnUiCheck || replayCheck
-                               || interactUiCheck || locProbe
+                               || interactUiCheck || locProbe || toolProbe || toolCheck
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
@@ -5637,6 +5644,115 @@ int main(int argc, char **argv)
                             result.unavailable ? "UNAVAILABLE" : "DONE");
                 std::fflush(stdout);
                 app.exit(result.unavailable ? 6 : 0);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // ══ T34-A：工具栏**数据面探针**（STELQUICK_TOOL_PROBE=1）════════════════════
+    // 排在产品代码之前（同 LOCPROBE 的理由）：引擎 StelAction 注册表与
+    // ActionRouter 的引擎透传路径是工具栏的**依赖面**，先证可用再写判据。
+    // 输出 `TOOLBARPROBE:` 前缀，只报读数、不下 PASS/FAIL。
+    if (toolProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("TOOLBARPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "TOOLBARPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TOOLBARPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "TOOLBARPROBE: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TOOLBARPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::ToolbarProbe::run(
+            &app, &appFacade, &actionRouter,
+            [&app](const stelapp::ToolbarProbe::Result &result) {
+                std::printf("TOOLBARPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("TOOLBARPROBE: %s\n", line.toUtf8().constData());
+                // 探针没有"通过/不通过"，只有"跑到了"与"环境不支持"。
+                std::printf("TOOLBARPROBE: VERDICT=%s\n",
+                            result.unavailable ? "UNAVAILABLE" : "DONE");
+                std::fflush(stdout);
+                app.exit(result.unavailable ? 6 : 0);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T34-C 工具栏自检（STELQUICK_TOOL_CHECK=1）：需要真实引擎（StelAction 注册
+    // 表、透传路径、模块 getter 回读）。装配顺序与 LOC_CHECK 一致
+    // （暖机 → boot → start → attach → 判据）。起始页已切到 "sky"。
+    if (toolCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("TOOLBARCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "TOOLBARCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TOOLBARCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "TOOLBARCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TOOLBARCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::ToolbarCheck::run(
+            &app, &appFacade, &actionRouter, window,
+            [&app](const stelapp::ToolbarCheck::Result &result) {
+                std::printf("TOOLBARCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("TOOLBARCHECK: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("TOOLBARCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("TOOLBARCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
             });
         const int rc = app.exec();
         if (liveSkyRuntime) {

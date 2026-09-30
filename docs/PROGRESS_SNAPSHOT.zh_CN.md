@@ -1,7 +1,8 @@
-# 进度总览（截至 2026-09-29 晚，T32 后盘点）
+# 进度总览（截至 2026-09-30 上午，**T34 后**盘点）
 
-> 口径基线：`main @ 3f7b4a0`（工作区干净、与 `origin/main` 逐字节同步）。
-> 环境口径与 T17–T32 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
+> 口径基线：`main @ <T34 提交>`（工作区干净、与 `origin/main` 同步）。上一版快照基线是
+> `3f7b4a0`（T32 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，**T34 见 `docs/T34_TOOLBAR.zh_CN.md`**。
+> 环境口径与 T17–T33 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
 
@@ -15,14 +16,14 @@
 | A1 Vulkan QML 宿主 | 显式后端、诊断页、后端校验（失败不静默回退） | ✅ 完成 |
 | A2 旧天空帧桥 | 静态 12/12 + 动态 7/7 + 30min 长跑 | ✅ 完成 |
 | A3 业务接口与输入路由 | AppFacade / ActionRouter / 模型 / 单一仿真时钟 / 键位路由 | ✅ 完成（T14–T17） |
-| **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | 🟡 **7 项里 6 项完成，1 项未做**（只差**真实工具栏**，见 §2） |
+| **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | ✅ **7/7 完成**（**T34 收口**，见 §2） |
 | A5 设置与完整个人版 UI | A-1.0 全部页面、配置迁移、夜视、错误页 | ⬜ 未开始 |
 | A6 回归与交接 | 全量回归、帧桥统计、资源打包、接口冻结 | ⬜ 未开始 |
 | A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置 A6 或真机 |
 
 ---
 
-## 2. 🔴 A4 逐项核对：`A-alpha` 尚未真正达成
+## 2. A4 逐项核对：**T34 后 `A-alpha` 出口第一条成立**
 
 **判据出处**（`开妇相关文档/2026-09-17-03-软件测试文档` §8 A-alpha 出口，第一条）：
 
@@ -40,20 +41,16 @@
 | 拖动缩放 | ✅ | T25（滚轮）+ T27（鼠标拖拽/点击/右键）+ T28（捏合） |
 | 焦点管理 | ✅ | T25（`inherits` 修守卫）+ T29（IME 组合态）+ T32（两段式 Esc） |
 | **地点** | ✅ **T33** | **先探针后写 UI**（T24 翻译从未加载的同款风险）：地点库 33501 条可加载。`LocationPage.qml`（搜索地点 / 按坐标写入 / 当前地点卡片）+ `AppFacade` 地点写入面（**单点入口** `moveObserverTo` + 范围闸 + **回读验证**）+ `LOCATIONCHECK` **10 条**（含**绝对腿**「天极高度 = 观测者纬度」，Δ=0.000°） |
-| **工具栏** | ❌ **仍是占位** | `MainWindow.qml:171` 自己的注释：`// 页头：A2 开发期的临时页切换器。A4 起由真实工具栏取代，届时删除本行。` —— 现在仍是 4 个跳页按钮（`navDiagButton` / `navSkyButton` / `navSearchButton` / `navTimeButton`） |
+| **工具栏** | ✅ **T34** | `Toolbar.qml` **取代** A2 临时页切换器（导航 6 按钮 `objectName` 原样保留 + 12 个显示开关）｜命令路径**单点**：按钮 → `ActionRouter.trigger(<引擎 action id>)` → **引擎透传**（T34 产品侧**零 C++ 语义复制**）｜状态回读走 `displayTogglesRevision` token + `actionChecked()`（T15 铁律）｜判据 `TOOLBARCHECK` **12 条**（含 UI 点击腿、绑定重算腿、落点几何自证）｜探针 Q1 实测注册表 **505 动作 / 15 分组**、12/12 checkable、`getText()` 中文 |
 
-**结论（T33 后更新）**：`地点` 这一项**已由 T33 补齐**（本节表格上一版把它记为"❌ 完全缺失"，
-现已改为 ✅）。A4 的 7 项里 **6 项完成**，**只剩 `工具栏`**（`MainWindow.qml:171` 的临时页切换器
-仍待 T34 取代）。
+**结论（T34 后）**：A4 的 7 项**全部完成** ⇒ 测试文档 §8 的 **A-alpha 出口第一条**
+（"标'必须'的 A-alpha 功能全部可操作"）**成立**。此前"何时算达成"的口径
+（T33 前"A4 主体完成、只差真实工具栏"）**到此结清**，不再有保留条款。
 
-⇒ 计划文档 §9.1 / §9.4.x 多处写的"A-alpha 达成"仍**超前**，正确读法是
-**"A4 主体完成，真实工具栏待补（T34）"**。**在 T34 落地前，A-alpha 出口判据第一条
-（"标'必须'的 A-alpha 功能全部可操作"）不成立。**
-
-> 另注：A-alpha 表里标"基本开关 / 基础"的项（星座线·名称、网格、地景、大气；亮度·星等、
-> 投影、主题·夜视、高 DPI）**没有 QML GUI**。引擎 `StelAction` 经 `ActionRouter.routeKey`
-> 键位透传**可触达**，但"开关状态必须与引擎双向同步"（§3 说明列）没有 UI 承载面。
-> 归 A4 收尾或 A5，需在下一步显式决策。
+> 仍**不属于** A4 的部分（留 A5）：A-alpha 表里标"**基本开关 / 基础**"的项（星座线·名称、
+> 网格、地景、大气；亮度·星等、投影、主题·夜视、高 DPI）。T34 已把其中 **12 个显示开关**
+> 做成 QML 承载面（含"状态与引擎双向同步"），但**亮度/星等/投影/主题/高 DPI 仍未覆盖**
+> —— 那几项归 A5 的设置页，**不在 A-alpha 出口第一条的"必须"清单里**。
 
 ---
 
@@ -74,11 +71,13 @@
 | `REPLAYCHECK` | 11（RP-01..RP-11） | `STELQUICK_REPLAY_CHECK` | **I-REP-02 固定流程回放 = A-alpha 出口测试** |
 | `INTERACTCHECK` | 18（IT-01..IT-18） | `STELQUICK_INTERACT_UI_CHECK` | 键盘/焦点/IME/两段式 Esc；含**第三态 UNAVAILABLE**（T31） |
 | `LOCATIONCHECK` | 10（LC-01..LC-08） | `STELQUICK_LOC_CHECK` | **T33** 地点写入面：范围纯谓词 / 读面 / 写入生效（成对）/ 时区联动（判别腿）/ **天极高度=纬度**（绝对腿）+ 三点差分 / 非法值无副作用 / not-found / 往返 / 计数。**五批正题均 `10/10`** |
+| `TOOLBARCHECK` | 12（TB-01..TB-12） | `STELQUICK_TOOL_CHECK` | **T34** 真实工具栏：写入腿（4 代表开关 trigger → **模块 getter** 翻转）/ 往返复原 / `actionToggled` 信号腿 / revision 订阅腿 / not-found 负控 / **判别负控**（registry 命令不碰 revision）/ UI 腿（12 按钮全找到 ∧ 态一致）/ **真实鼠标点击腿** / **绑定重算腿**（双采样）。**五批正题均 `12/12`** |
 | （探针）`LOCPROBE` | 只报读数、**不打 PASS** | `STELQUICK_LOC_PROBE` | T33-A 数据面探针（地点库规模 / `locationForString` 语义 / `isValid` 边界 / 时区联动） |
+| （探针）`TOOLBARPROBE` | 只报读数、**不打 PASS** | `STELQUICK_TOOL_PROBE` | **T34-A** 命令面探针（注册表规模 505/15 / 12 候选逐项 checkable·checked·text·key / trigger→getter 翻转 / `actionToggled` 观测 / revision 读数） |
 
-一键复跑：`tools/t16-verify.sh` … `tools/t33-verify.sh`（每个任务一个，用法 `all N`；
+一键复跑：`tools/t16-verify.sh` … **`tools/t34-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
-8 条判据、要求 `VERDICT=PASS`）；
+8 条判据、要求 `VERDICT=PASS`；**`t34-verify.sh` 含四组负控 + 探针 + 10 套件 + S3 + A2 + DYN**）；
 Windows 侧 `tools/windows/wt29…wt33-*.ps1`（`wt33-launch.ps1` 是给 `schtasks /it` 用的启动器，
 负责注入 `T33_PROBE_EXPECT`）。
 
@@ -146,17 +145,37 @@ Windows 侧 `tools/windows/wt29…wt33-*.ps1`（`wt33-launch.ps1` 是给 `schtas
 （负控 D 下仍绿）。改取**地点库目录纬度**后才真红（Paris |Δ|=17.386°）。
 **教训**：对照量必须**换来源**。
 
-### T34 真实工具栏 + 显示开关（A4 真收口，**现在只剩这一项**）
+### T34 真实工具栏 + 显示开关 —— ✅ **已完成**（`docs/T34_TOOLBAR.zh_CN.md`）
 
-- 取代 `MainWindow.qml:171` 的临时页切换器；显示开关（星座线·名称 / 网格 / 大气 / 地景）
-  优先走 `ActionRouter.trigger(<引擎 action id>)` 透传 —— **可能零 C++ 改动**，
-  但需先盘点引擎 action ID 台账（顺带履行 A4 计划里的"清点旧 action"要求）。
-- 依赖：无硬依赖，可与 T33 并行或串行。
+`MainWindow.qml` 的 A2 临时页切换器**已删除**（注释里承诺的那一句"届时删除本行"兑现），
+换成 `Toolbar.qml`：**第一行**导航（6 个按钮 `objectName` 一字未动，回归判据照旧锚着它们）
++ 渲染后端标签；**第二行** 12 个显示开关。
+
+- **产品侧零 C++ 语义复制**：点击 → `ActionRouter.trigger(<引擎 action id>)` → 注册表未命中
+  → **引擎透传**（`findAction → StelAction::trigger`）。快捷键走 `routeKey` 落**同一条**
+  `StelAction` ⇒ 按钮态 / 引擎态 / 快捷键态只有一份真源。
+- **状态回读**走 `displayTogglesRevision` token + `actionChecked()`（T15 铁律：
+  **只调方法不读 token 的绑定永远不重算**）；TB-12 就是这条铁律的直接判据。
+- 探针实测注册表 **505 动作 / 15 分组**、12/12 checkable、`getText()` **中文**、快捷键
+  `C/V/R/E/Z/G/Q/A/D/Alt+P/O/Ctrl+N`。
+- 判据 `TOOLBARCHECK` **12 条**；四组负控红项：A `REV_OFF`=[TB-07,09,12]、
+  B `TOKEN_OFF`=[TB-09,12]、C `CLICK_OFF`=[TB-10]、D `LAYOUT_BREAK`=[TB-10]+`covered=false`。
+- **定稿轮（mac）`FAILED=0` 全绿**：正题 5/5、四组负控全 OK、探针 OK、
+  10 套件 + `INTERACTCHECK` **18/18（本批拿到焦点）** + S3 + A2 + DYN 全 rc=0。
+
+⚠️ 本轮五条新血泪（详见 `docs/T34_TOOLBAR.zh_CN.md` §5 与 `TRAPS.md`）：
+① **Repeater delegate 的 QObject 父链是空的** ⇒ `QObject::findChild` **永远扫不到**
+（静态按钮却能扫到 —— 同款 API 两种结果）；② **裸 `Rectangle` 根 `implicitHeight=0`
++ 不裁剪 = 假绿掩护**（布局全乱、按钮照画、存在性判据全绿）；③ 🔴 **`childAt` 会撒谎**
+（按钮明明在落点上、点击也生效，仍一路返回根内容控件）⇒ 改用**几何覆盖**自证；
+④ `Flow` 的 `implicitWidth` 是单行宽度 ⇒ 与另一个 `fillWidth` 项**对分**后竖成 12 行、
+把工具栏撑到 446px；⑤ 连续起停会让 **Metal 掉设备**（无判据输出 ≠ 判据失败）。
 
 ### T35+ A4 线索类（择机）
 
-时间链路脱钩（影响时间类判据口径可信度，建议优先）→ `LOC-04 (b)` 帧延迟量化 →
-捏合后首击 → DYN 停摆根因。
+时间链路脱钩（**A4 线索类优先项**，它决定时间类判据口径是否可信）→ `LOC-04 (b)` 帧延迟量化
+→ `REPEATCHECK` 就绪门预算 → 捏合后首击 → DYN 停摆根因；另加 T33 移交的
+`findLocations` 排序（照 T21 完全匹配优先）与"负控 A 在 Windows 不复现"的定性。
 
 ### 之后
 

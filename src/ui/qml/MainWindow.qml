@@ -168,56 +168,18 @@ ApplicationWindow {
             anchors.fill: parent
             spacing: 0
 
-            // 页头：A2 开发期的临时页切换器。A4 起由真实工具栏取代，届时删除本行。
-            RowLayout {
+            // ── T34：真实工具栏（A4 的最后一项）──────────────────────────────────
+            // 取代 A2 开发期的临时页切换器（导航按钮 objectName **原样保留**——
+            // RETURNUICHECK / INTERACTCHECK / AppFacadeCheck 的注入判据锚着它们）。
+            // 新增 12 个显示开关：点击 → ActionRouter.trigger(引擎 action id)
+            // 的**引擎透传**路径；按钮态经 AppFacade.displayTogglesRevision
+            // 跟随引擎（机制见 Toolbar.qml 文件头）。
+            Toolbar {
                 Layout.fillWidth: true
-                Layout.margins: 6
-                spacing: 6
-
-                // T20：I-REP-02 的「返回」环入口。objectName 是"最外层注入"判据的锚点。
-                //   **始终可用**（即使已在天空页）——这样"在天空页点它必须什么都不发生"
-                //   才是一条有检验力的负控；若此处绑 `enabled: !onSky`，负控就退化成
-                //   "点了一个禁用按钮"，测不到 no-op 路径。
-                Button {
-                    objectName: "skyReturnButton"
-                    text: "🏠 返回天空"
-                    onClicked: root.returnToSky()
-                }
-                Rectangle { width: 1; height: 20; color: "#d0d0d0" }
-
-                Button {
-                    objectName: "navDiagButton"
-                    text: "诊断页（A1）"
-                    onClicked: stack.currentIndex = 0
-                }
-                Button {
-                    objectName: "navSkyButton"
-                    text: "天空视口（A2 静态图）"
-                    onClicked: stack.currentIndex = 1
-                }
-                // T17：搜索 / 信息页（搜索 → 选择 → 信息页纵向链路）
-                Button {
-                    objectName: "navSearchButton"
-                    text: "搜索天体（T17）"
-                    onClicked: stack.currentIndex = 2
-                }
-                // T19：时间页（"改时间"环：6 个写入路径 + 现在 + 步进）
-                Button {
-                    objectName: "navTimeButton"
-                    text: "时间（T19）"
-                    onClicked: stack.currentIndex = 3
-                }
-                // T33：观察地点页（搜索地点 / 按坐标设置 / 当前地点投影）
-                Button {
-                    objectName: "navLocationButton"
-                    text: "地点（T33）"
-                    onClicked: stack.currentIndex = 4
-                }
-                Item { Layout.fillWidth: true }
-                Label {
-                    text: "渲染后端：" + BackendInfo.runtimeApiName
-                    color: BackendInfo.backendOk ? "#2e7d32" : "#c62828"
-                }
+                pageIndex: root.pageIndex
+                currentPageIndex: stack.currentIndex
+                onNavigate: (page) => stack.currentIndex = root.pageIndex[page]
+                onReturnToSkyRequested: root.returnToSky()
             }
 
             // T15 命令栏：QML 按钮 → ActionRouter.trigger → AppFacade → 引擎。

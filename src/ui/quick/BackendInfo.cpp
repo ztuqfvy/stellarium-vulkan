@@ -16,6 +16,21 @@ bool BackendInfo::portabilityDriver() const { return m_portabilityDriver; }
 QString BackendInfo::runtimeApiName() const { return m_runtimeApiName; }
 bool BackendInfo::backendOk() const { return m_backendOk; }
 
+bool BackendInfo::tbTokenBindingOff() const
+{
+    return qEnvironmentVariableIsSet("STELQUICK_TOOL_TOKEN_OFF");
+}
+
+bool BackendInfo::tbClickOff() const
+{
+    return qEnvironmentVariableIsSet("STELQUICK_TOOL_CLICK_OFF");
+}
+
+bool BackendInfo::tbLayoutBreak() const
+{
+    return qEnvironmentVariableIsSet("STELQUICK_TOOL_LAYOUT_BREAK");
+}
+
 void BackendInfo::applyProbe(const VulkanProbeResult &probe)
 {
     m_deviceName = probe.deviceName;

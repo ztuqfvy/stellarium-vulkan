@@ -1,0 +1,20 @@
+toolbarcheck-mac pos-pass=5 env-skip=0 bad=0（共 5 跑；env-skip = 引擎前提不成立，**不洗成 PASS**）
+toolbarcheck-mac 残留进程数=0（要求 0）
+negctl-A negctl-A-OK（要求 rc=10 ∧ 9/12 ∧ 红恰好 TB-07/09/12）
+negctl-B negctl-B-OK（要求 rc=10 ∧ 10/12 ∧ 红恰好 TB-09/12）
+negctl-C negctl-C-OK（要求 rc=10 ∧ 11/12 ∧ 红恰好 TB-10）
+negctl-D negctl-D-OK（要求 rc=10 ∧ 11/12 ∧ 红恰好 TB-10 ∧ covered=false）
+probe-tool-data-mac probe-OK（TOOLBARPROBE: VERDICT=DONE；Q1 行=1 Q3b 对照行=4/4 Q4 发射 4 次行=1）
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-locationcheck rc=0
+regression-interactcheck rc=0（18/18，窗口已激活）
+regression-s3-stela3 rc=0
+regression-a2-metal rc=0
