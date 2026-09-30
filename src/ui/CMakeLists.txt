@@ -153,6 +153,13 @@ set(stelQuickUI_SOURCES
     ../app/TimeLinkProbe.cpp
     ../app/TimeLinkCheck.hpp
     ../app/TimeLinkCheck.cpp
+    # T36：个人版配置目录隔离 + 首次播种。**位置即判据** —— 引导序列里它必须紧跟
+    # StelFileMgr::init()、且在 StelLogger 与 config.ini 解析之前（晚一步就写穿到
+    # 原版 Stellarium 目录）。探针实测与设计取舍见头注与配套自检。
+    ../app/ConfigIsolation.hpp
+    ../app/ConfigIsolation.cpp
+    ../app/ConfigIsolationCheck.hpp
+    ../app/ConfigIsolationCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp

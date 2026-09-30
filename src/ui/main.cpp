@@ -53,6 +53,12 @@
  *                                  10 条判据。负控开关：`STELQUICK_LOC_NODELAY=1`
  *                                  （写入步不给延迟）+ `STELQUICK_LOC_GATE_OFF=1`
  *                                  （关就绪门）——两个一起开复现间歇红，只开前者由门兜住。
+ *   STELQUICK_CONFIG_CHECK=1     → T36-C **配置目录隔离自检**（见
+ *                                  app/ConfigIsolationCheck.hpp）：目录独立/配置与日志
+ *                                  落点/种子完整/写侧不触原版目录（哨兵成对 + 产品
+ *                                  路径成对）。8 条判据。**不启帧泵**。
+ *                                  负控开关：`STELQUICK_CFG_ISOLATE_OFF=1`（关隔离）
+ *                                  + `STELQUICK_CFG_MIGRATE_OFF=1`（关播种）。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -234,6 +240,9 @@ void ensureVulkanLoaderPath()
 #include "app/ToolbarCheck.hpp"
 #include "app/TimeLinkProbe.hpp"
 #include "app/TimeLinkCheck.hpp"
+// T36：配置目录隔离（引导期）与其自检。**引导期**那一半由 LiveSkyRuntime::boot()
+// 调用——位置即判据，别挪到 StelLogger / config.ini 之后。
+#include "app/ConfigIsolationCheck.hpp"
 // T19：改时间（A4 固定流程的"改时间"环）+ 自检。
 #include "app/TimeCheck.hpp"
 // T16：单一仿真时钟。控制器是 core 层的纯逻辑类（无 GL / 无 QObject），
@@ -5173,6 +5182,9 @@ int main(int argc, char **argv)
     const bool timeLinkProbe = qEnvironmentVariableIsSet("STELQUICK_TIMELINK_PROBE");
     // T35-C：时间链路自检（见 app/TimeLinkCheck.hpp）。
     const bool timeLinkCheck = qEnvironmentVariableIsSet("STELQUICK_TIMELINK_CHECK");
+    // T36-C：**配置目录隔离**自检（见 app/ConfigIsolationCheck.hpp）。它验的是
+    // 引导序列的**结果**（用户目录/落盘位置），所以不需要帧泵；引导一完成就能判。
+    const bool cfgCheck = qEnvironmentVariableIsSet("STELQUICK_CONFIG_CHECK");
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
     const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
@@ -5183,7 +5195,7 @@ int main(int argc, char **argv)
     //   后者直接断言"开机态=天空页"）。
     const QString startPage = (a2Check || dynCheck || longRun || returnUiCheck || replayCheck
                                || interactUiCheck || locProbe || toolProbe || toolCheck
-                               || timeLinkProbe || timeLinkCheck
+                               || timeLinkProbe || timeLinkCheck || cfgCheck
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
@@ -5775,6 +5787,52 @@ int main(int argc, char **argv)
                     return;
                 }
                 std::printf("TOOLBARCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T36-C 配置目录隔离自检（STELQUICK_CONFIG_CHECK=1）：验的是**引导序列的结果**
+    // ——用户目录切没切、config.ini/log.txt 落哪、写侧会不会穿到原版 Stellarium
+    // 目录去。装配只需 暖机 → boot（**不启帧泵**：本套不读渲染面，没有
+    // "等一帧"的需求，也就没有就绪门与竞态）。
+    if (cfgCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("CONFIGCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString cfgError;
+        if (!liveSkyRuntime->boot(&cfgError)) {
+            std::fprintf(stderr, "CONFIGCHECK: 引擎引导失败：%s\n",
+                         cfgError.toUtf8().constData());
+            std::printf("CONFIGCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::ConfigIsolationCheck::run(
+            &app, &actionRouter,
+            [&app](const stelapp::ConfigIsolationCheck::Result &result) {
+                std::printf("CONFIGCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("CONFIGCHECK: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("CONFIGCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("CONFIGCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
                 std::fflush(stdout);
                 app.exit(result.pass ? 0 : 10);
             });

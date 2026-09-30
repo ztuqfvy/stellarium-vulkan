@@ -4197,3 +4197,104 @@ Windows 侧：`tools/windows/wt35-{pull,build,suites,launch}.ps1`（新；`wt35-
 mac 侧：`docs/T34_TOOLBAR.zh_CN.md` §9、`docs/T35_TIMELINK.zh_CN.md` §10
 各补"W 支线已结清"；`docs/PROGRESS_SNAPSHOT.zh_CN.md` 加 W-T35 小节。
 
+---
+
+## 2026-09-30｜T36 个人版配置目录隔离 + 首次播种（**A5 第一项**）（**坐实并修掉一个真缺陷：合流形态此前直接写穿原版 Stellarium 用户目录**；顺带牵出第二条腿——空用户目录 ⇒ 引擎 **SIGSEGV rc=139**）（**新增 `CONFIGCHECK` 8 条 CFG-01..CFG-08；三场景正题均 `8/8`；两组负控红项 A `[CFG-01,02,03,04,06,07]`(2/8) / B `[CFG-05,08]`(6/8)——两两不同；12 套回归 + `INTERACTCHECK 18/18` + S3 + A2 + DYN 双路 3/3+3/3 全 rc=0；脚本层 23/0；**产品语义零改动**——只在引导期换了个用户目录**）**
+
+### 目标
+
+A-1.0 范围表：「资源路径、错误提示、渲染诊断、配置保存 | 最小 | **必须** |
+**配置使用独立个人版目录，避免修改原程序设置**」。
+
+### 一、探针先行：写穿是**实测**的
+
+对原目录做逐文件 `relpath|size|mtime|md5` 清单，跑一次合流形态后比对：
+
+| 文件 | 变化 |
+|---|---|
+| `config.ini` | mtime `1790740596` → `1790745245`（md5 **不变**） |
+| `log.txt` | `10308 B/579a81…` → `10387 B/611bcc…`（原版日志被顶掉） |
+| `modules/Oculars/ocular.ini` | mtime 变 |
+
+⚠️ `config.diff` **0 行** —— **"内容没变"≠"文件没被碰"**。按内容比对会得出错误结论。
+
+**三条写穿路径**：`immediateSave()`（本机 `immediate_save_details=true` ⇒ 翻个开关就落盘）／
+`StelLogger::init(userDir + "/log.txt")` 截断覆盖／模块 `findFile(..., Writable|File)` 原地改写。
+
+**为什么不能"原目录当只读回退"**：`findFile` 返回"第一个满足 flags 的路径"，
+而 `Writable` 只表示**那个文件**可写 ⇒ 模块会命中原版副本并改写。
+⇒ 必须先**播种**，让个人版目录里什么都有、原目录彻底退出搜索路径
+（`setUserDir` 是 `replace(0,…)`，不是 append）。
+
+### 二、第二条腿：空用户目录 ⇒ 引擎 **SIGSEGV（rc=139）**
+
+```
+STEL_USERDIR=/tmp/t36-empty …  ⇒ rc=139，stderr 停在
+"LandscapeMgr: initialized Cache for 100 MB."
+```
+
+**分块播种二分**：只放 `stars`/`modules`/`data` 都照崩（139），
+**只放 `config.ini` 就正常**（rc=10）⇒ 崩因是「**缺 `config.ini`**」，不是缺数据。
+
+上游本来就这么处理（`src/main.cpp:398-403` ⇒ `copyDefaultConfigFile()`，`:130-142`）；
+**合流形态此前没有这一步**，被"原目录里早就有 config.ini"一直掩盖着。
+⇒ 补**兜底腿**（从 `data/default_cfg.ini` 拷 + 补 `WriteOwner`），**不随** `MIGRATE_OFF` 关闭。
+
+### 三、产品
+
+- 落点 `<引擎默认用户目录>-quick`（**同级**，不是子目录）⇒ "原目录零改动"**结构性**成立；
+- 调用契约：**紧跟 `StelFileMgr::init()`、且在 `StelLogger::init()` 与任何
+  `findFile("config.ini")` 之前**（位置即判据）；幂等；
+- 首启播种：递归拷贝、跳过瞬态（`log.txt`/`output.txt`/`config.old`）、已存在不覆盖；
+- `note`（**降级/异常**，非空 ⇒ CFG-01 红）与 `info`（**正常信息**，不影响判据）**分开** —— 见血泪①。
+
+### 四、判据（T36-C）：8 条
+
+CFG-01 隔离读数自洽（**独立回读** `getUserDir()`）／CFG-02 目录独立（含"不是原目录子树"）／
+**CFG-03 配置写侧落点（`QSettings::fileName()` —— 引擎此刻真会写的文件，最强）**／
+CFG-04 日志落点／CFG-05 配置种子完整（有/无配置双叉）／
+**CFG-06 写侧不触原目录（三半成对）**／**CFG-07 产品路径落点（真走 `ActionRouter.trigger`）**／
+CFG-08 播种清单完整。**不启帧泵、无就绪门**（全同步事实）。
+
+### 五、负控跑在**替身用户目录**上（安全设计）
+
+负控 A **故意**写穿"原目录" ⇒ 用 `STEL_USERDIR=/tmp/t36-fake-original`（真实原目录的拷贝），
+真实原目录**全程零风险**。脚本硬安全门 `guard_paths()`：`PERSONAL` 必须匹配 `*/Stellarium-quick`、
+`≠ ORIG`、`ORIG` 非空非 `/`；`rm_*` 全先过门。
+
+### 六、🔴 本轮三条新血泪
+
+1. 🔴 **判据的条件必须与判据的名字同义** —— `note` 字段语义混用（异常 vs 正常信息）
+   ⇒ **CFG-01 在非首次启动和负控 B 下假红**（实测：负控 B 多红一条）。修法是**拆字段**不是删条件。
+2. 🔴 **外层判据的作用域必须等于被测对象的作用域** —— 收尾"全程零改动"把 **S3 旧宿主**圈了进去，
+   而旧宿主**不走**隔离引导、**它就是"原版程序"**，写原版目录是应有行为
+   ⇒ 4 个文件报红是**范围划错的假红**。修法：S3 挪到核对之后**单跑**（只验 rc），影响如实留证。
+3. 🔴 **判据在"缺前提"的机器上会退化成平凡真** —— 原目录无 `config.ini` 时 CFG-06/07 的
+   原目录侧"天然成立"（空串不含哨兵 / 两个 `<unreadable>` 相等）⇒ 补**第三半**
+   "原本不存在 ⇒ 跑完仍不许出现"。
+
+附两条仪器教训：⚠️ **stdout 块缓冲 / stderr 不缓冲** ⇒ 混流时"最后一行"不可信，
+判 crash 点必须**分流失**；⚠️ `findFile` 的 `Writable` **只保证"那个文件可写"**。
+
+### 七、定稿轮读数（macOS + Metal/MoltenVK，`tools/t36-verify.sh all 3`）
+
+产物 `stelQuickUI` **40096328 B / md5=dd1b0eb63669adc0a0ee7b623f9b23d8**。
+
+- **S1 首次**：`rc=0`、`8/8`；`migration=ran files=57 bytes=28405076`；
+  **原目录 60 文件逐位不变**；独立复算 57/57 文件、768/768 键全在。
+- **S2 非首次**：`rc=0`、`8/8`；`migration=skipped`；哨兵 `keep_me=12345` 原样保留。
+- **全新机器**（`STEL_USERDIR=/tmp/t36-empty`）：`rc=0`（**此前 139**）、`8/8`；
+  `files=0`、`defaultConfigSeeded=1`。
+- **负控 A**：`rc=10`、2/8、红项**恰好** `[CFG-01,CFG-02,CFG-03,CFG-04,CFG-06,CFG-07]`。
+- **负控 B**：`rc=10`、6/8、红项**恰好** `[CFG-05,CFG-08]`（配置缺 348 键、文件缺 49）。
+- **收尾**：**合流形态全程原目录零改动（0 差异）**；S3 旧宿主 16 行仅留证。
+- 12 套件 + `INTERACTCHECK 18/18` + S3 + A2 + DYN 双路 3/3+3/3 全 `rc=0`；
+  **脚本层判据 23 通过 / 0 失败，`SCRIPT-RC=0 FAILED=0`**。
+
+### 产物
+
+mac 侧：`src/app/ConfigIsolation.{hpp,cpp}`（新）｜`src/app/ConfigIsolationCheck.{hpp,cpp}`（新）｜
+`src/ui/LiveSkyRuntime.cpp`（引导序列插入一行）｜`src/ui/main.cpp`｜`src/ui/CMakeLists.txt`｜
+`tools/t36-verify.sh`（新）｜`docs/T36_CONFIG_ISOLATION.zh_CN.md`（新，9 节）｜
+`docs/evidence/2026-09-30-t36-config/{probe,mac}/`（新）；`docs/PROGRESS_SNAPSHOT.zh_CN.md` 加 T36 小节。
+

@@ -5,6 +5,9 @@
 
 #include "render/legacy/FrameMailbox.hpp"
 
+// T36：个人版配置目录隔离 + 首次播种（唯一调用点，见下方 boot()）
+#include "app/ConfigIsolation.hpp"
+
 // 引擎头（使用面照抄 src/main.cpp 与 A3 前置探针）
 #include "StelMainView.hpp"
 #include "core/StelApp.hpp"
@@ -48,6 +51,11 @@ bool LiveSkyRuntime::boot(QString *errorOut)
 
     // ── 引擎前置：照抄 src/main.cpp 的顺序（缺一不可）──────────────────────
     StelFileMgr::init();
+    // T36：**位置是判据的一部分** —— 必须紧跟 init()、且在 StelLogger 与
+    // `findFile("config.ini")` **之前**。它把用户目录切到个人版目录
+    // （`<引擎默认目录>-quick`）并做首次播种。晚一步，日志与配置就落到
+    // **原版 Stellarium 的目录**里（实测写穿，见 app/ConfigIsolation.hpp 头注）。
+    bootstrapPersonalConfigDir();
     const QString userDir = StelFileMgr::getUserDir();
     StelLogger::init(userDir + QStringLiteral("/log.txt"));
 
@@ -60,6 +68,10 @@ bool LiveSkyRuntime::boot(QString *errorOut)
         return fail(QStringLiteral("既找不到也建不出 config.ini（StelFileMgr::findFile 双路失败）。"));
 
     m_confSettings = new QSettings(configFileFullPath, StelIniFormat, nullptr);
+    // T36：把**实际解析到**的配置文件路径也报出来 —— 这是"隔离真的生效了"的
+    // 直接读数（自检另有 `QSettings::fileName()` 的独立回读路径，不复述这一行）。
+    std::printf("CONFIGISO: config=%s\n", qPrintable(configFileFullPath));
+    std::fflush(stdout);
     StelTranslator::init(StelFileMgr::getInstallationDir() + QStringLiteral("/data/languages.tab"));
 
     // ── 引擎无头引导（A3-C01 同一路径；QML 窗口此时可以同时存在——探针已验证）──

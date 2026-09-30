@@ -1,0 +1,206 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 95 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+StelFileMgr found install location "."
+CONFIGISO: original=/Users/ztuqfvy/Library/Application Support/Stellarium
+CONFIGISO: personal=/Users/ztuqfvy/Library/Application Support/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=个人版目录已存在 config.ini，跳过播种（用户改过的值优先）
+CONFIGISO: config=/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini
+System language (ISO 639 / ISO 3166): zh_CN
+Couldn't load translations for language  "en" in section "stellarium"
+Empty translation file for language  "en" in section "stellarium"
+Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+OpenGL module type: desktop OpenGL
+StelGLWidget constructor
+StelGraphicsScene constructor
+qt.qpa.openglcontext: Could not create NSOpenGLContext with shared context, falling back to unshared context.
+initializeGL(windowWidth = 1280, windowHeight = 720)
+OpenGL supported version:  "4.1 Metal - 91.7"
+Current Format:  QSurfaceFormat(version 4.1, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 32, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize -1, stencilBufferSize 8, samples 0, swapBehavior QSurfaceFormat::DoubleBuffer, swapInterval 0, colorSpace QColorSpace(), profile  QSurfaceFormat::CoreProfile)
+Initializing StelMainView
+Luminance textures are not supported
+Running in High Graphics Mode
+Maximum texture anisotropy: 16
+Maximum 2D texture size: 16384
+Driver version string: 4.1 Metal - 91.7
+GL vendor: Apple
+GL renderer: Apple M3
+GL Shading Language version: 4.10
+stel.OpenGLArray: Vertex Array Objects are supported
+Initial high-DPI scaling factor: 2
+Application language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures"
+Couldn't load translations for language  "zh_CN" in section "stellarium-sky"
+Empty translation file for language  "zh_CN" in section "stellarium-sky"
+Empty skyculture-independent translation file for language  "zh_CN"
+Sky language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-planetary-features"
+Empty translation file for language  "zh_CN" in section "stellarium-planetary-features"
+Planetary features language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-scripts"
+Empty translation file for language  "zh_CN" in section "stellarium-scripts"
+Scripts language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Sky culture description language: zh_CN
+Cache directory: /Users/ztuqfvy/Library/Caches/stellarium-vulkan/stelQuickUI
+Loaded 252 countries
+Loaded 193 regions
+Loading Solar System data (1: planets and moons) ...
+Loading from: ./data/ssystem_major.ini
+Loaded 83 Solar System bodies from  ./data/ssystem_major.ini
+Solar System now has 83 entries.
+Loading Solar System data (2: minor bodies) ...
+Loading from: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 152637(152637)
+Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 66146(66146)
+minor body  "(66146)" has no IAU code in section  "66146(66146)"
+minor body  "(152637)" has no IAU code in section  "152637(152637)"
+Loaded 477 Solar System bodies from  /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Solar System now has 560 entries.
+File ssystem_minor.ini is loaded successfully...
+ExtendedElements: loaded epoch tables for 4 asteroids from "./data/asteroid_elements.json" ( 0 not matched in ssystem_minor.ini)
+SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+qt.gui.imageio: libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Loading nomenclature for Solar system bodies ...
+Loaded 16058 / 16094 items of planetary surface nomenclature
+Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
+Loading star data ...
+Loading star catalog: ./stars/hip_gaia3/stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+Loading star catalog: ./stars/hip_gaia3/stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+Loading star catalog: ./stars/hip_gaia3/stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+Loading star catalog: ./stars/hip_gaia3/stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+Finished loading star catalogue data, max_geodesic_level: 3
+Loading scientific star designations from ./stars/hip_gaia3/name.fab
+Loaded 5060 / 5060 scientific designations
+Loading scientific star designations from ./stars/hip_gaia3/extra_name.fab
+Loaded 26200 / 26200 scientific designations
+Loading variable stars data from ./stars/hip_gaia3/gcvs.cat
+[...] GCVS 5.1-20250615
+Loaded 47323 / 47323 variable stars
+Loading double stars from ./stars/hip_gaia3/wds_hip_part.dat
+Loaded 22992 / 22992 double stars
+Loading cross-identification data from ./stars/hip_gaia3/cross-id.cat
+Loaded 327097 / 327097 cross-identification data records for stars
+Loading orbital parameters data for binary system from ./stars/hip_gaia3/binary_orbitparam.dat
+Loaded 15 / 15 orbital parameters data for binary system
+Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 159 Barium stars, and 220 have PM>1000mas/yr.
+navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+Loading DSO data ...
+[...] Stellarium DSO Catalog, version 3.23 (standard edition)
+Loaded 94899 DSO records
+Loading DSO name data ...
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+Loaded 1361 / 1388 DSO name records successfully
+No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+Loading DSO outline data ...
+Loaded 100 DSO outline records successfully
+Loading DSO discovery data ...
+Loaded 183 / 183 DSO discovery records successfully
+LandscapeMgr: initialized Cache for 100 MB.
+Loading star names from ./skycultures/common_star_names.fab
+Loaded 411 / 411 common star names
+Loaded 88 / 88 constellation records successfully for culture modern
+Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+Loading constellation boundary data ... 
+Loaded 781 constellation boundary segments
+Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install more star catalogs
+Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install more star catalogs
+Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
+Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
+Loaded 88 / 92 asterism records successfully for culture modern
+Initializing basic GL shaders... 
+Creating GUI ...
+Loading style file: :/graphicGui/normalStyle.css
+Loaded plugin "Exoplanets"
+[Exoplanets] Version of the format of the catalog: 1
+[Exoplanets] loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Exoplanets/exoplanets.json
+Loaded plugin "MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/MeteorShowers/MeteorShowers.json
+[MeteorShowersMgr] Version of the format of the catalog: 2
+Loaded plugin "Novae"
+[Novae] version of the catalog: 1
+[Novae] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Novae/novae.json
+Loaded plugin "Oculars"
+Oculars::validateAndLoadIniFile() ocular.ini exists at: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Oculars/ocular.ini . Checking version...
+Oculars::validateAndLoadIniFile() found existing ini file version 3.1
+Loaded plugin "Satellites"
+[Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Satellites/satellites.json
+Satellite has invalid orbit: "STARLINK-38358" "100560"
+Loaded plugin "SolarSystemEditor"
+Using the ssystem_minor.ini file that already exists in the user directory...
+Loaded 895910 discovery circumstances records for minor planets...
+SSE: Comet cross-index data: Overwriting entry for "453P"
+SSE: Comet cross-index data: Overwriting entry for "467P"
+SSE: Comet cross-index data: Overwriting entry for "465P"
+SSE: Comet cross-index data: Overwriting entry for "466P"
+SSE: Comet cross-index data: Overwriting entry for "468P"
+SSE: Comet cross-index data: Overwriting entry for "470P"
+SSE: Comet cross-index data: Overwriting entry for "472P"
+SSE: Comet cross-index data: Overwriting entry for "475P"
+SSE: Comet cross-index data: Overwriting entry for "477P"
+SSE: Comet cross-index data: Overwriting entry for "473P"
+SSE: Comet cross-index data: Overwriting entry for "476P"
+SSE: Comet cross-index data: Overwriting entry for "479P"
+SSE: Comet cross-index data: Overwriting entry for "480P"
+SSE: Comet cross-index data: Overwriting entry for "481P"
+Loaded 2570 discovery circumstances records for comets...
+OpenGL viewport size: 2560 x 1440
+Creating scene FBO with size 2560x1440
+LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461313.73811"
+StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.73811，时钟=HostDriven）
+TIMEUICHECK: 开始（最外层注入：objectName 定位控件 + 窗口真实鼠标事件，共 27 条判据 = 数据面 19（T19/T22）+ 视觉层 8（T30），每相位 500ms）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+AppFacade: simulationPaused = true 
+TIMEUICHECK: UI-01 时间页锚点可寻且可见（6 个自旋框找到 6/6；应用/重置/现在/−1天/+1天 找到 5/5；状态行=有 JD 行=有；年框 visible=true）：OK
+TIMEUICHECK: UI-12 T22 新控件锚点可寻（MJD 行/历法行/速率行/方向行/时区组合框/自定义时区勾选/速率「+」按钮）找到 7/7；MJD 行可见=true、组合框可见=true：OK
+TIMEUICHECK: TIMEUICHECK-note 已暂停时钟（scale=0），全部 JD 断言在冻结区执行；tick=500ms
+TIMEUICHECK: UI-02-prep C++ setLocalDateTime(2030-06-15 09:30:00) → true（token=ok）
+TIMEUICHECK: UI-02 C++ 写入后 QML 自旋框跟着回填（框内=2030-06-15 09:30:00，目标=2030-06-15 09:30:00）：OK
+TIMEUICHECK: UI-03 判别性：换写 1999-01-01 00:00:00（与上组不同）后框内=1999-01-01 00:00:00 —— 排除"某字段写死/回填只回一部分"：OK
+TIMEUICHECK: UI-04-prep 已在 QML 里把 6 个框改成 2011-11-11 11:11:11，此刻引擎 JD=2451179.166667（**还没点应用**）
+TIMEUICHECK: UI-04 改框后等 500ms（≥ 400ms 自动回填周期），框内仍=2011-11-11 11:11:11（dirty 守卫挡住了回填）：OK
+TIMEUICHECK: UI-05-note 向窗口投递真实点击 @(52.5,506.0)——「应用」按钮尺寸 69×32，窗口 960×640，窗口受理=true
+TIMEUICHECK: UI-05 真实点击「应用」→ 引擎 JD=2455876.632766203，期望 2455876.632766203（差 0.00e+00 天，容差 1e-6；引擎本地读回=2011-11-11 11:11:11，目标 2011-11-11 11:11:11）：OK
+TIMEUICHECK: UI-06-note 框已改成 2022-02-22 22:22:22；负控靶点 = 状态行中心 @(223.0,552.5)，Label 尺寸 410.0×13.0（非按钮，无交互处理器）
+TIMEUICHECK: UI-06 负控：改了框（2022-02-22 22:22:22）但**不点应用**、只点非按钮控件 → JD 位移 0.00e+00 天（要求 <1e-12）；框内仍=2022-02-22 22:22:22：OK
+TIMEUICHECK: UI-07 真实点击「重置」→ 框内=2011-11-11 11:11:11 回到引擎当前值=2011-11-11 11:11:11，且 JD 位移 0.00e+00 天（<1e-12，即重置**不写时钟**）：OK
+TIMEUICHECK: UI-08-prep 已跳到 JD=2415020.5000（1900-01-01），与系统时刻差 46293.24 天 —— 判别性前提
+TIMEUICHECK: UI-08 真实点击「现在」→ 与系统时刻差 6.192e-06 天（容差 1e-3；跳转前是 46293.24 天，判别性成立=true）：OK
+TIMEUICHECK: UI-09a 写入成功后状态行文案="时间已按写入生效。"（token=ok，要求非空且声称已生效）：OK
+TIMEUICHECK: UI-09b-prep setLocalDateTime(2026-13-01 …) → false（token=invalid-date）
+TIMEUICHECK: UI-09b 非法写入后状态行文案="日期/时间字段超出范围（如 13 月、32 日、25 时）——已忽略。"（token=invalid-date，不得再声称已生效）；JD 位移 0.00e+00 天（<1e-12）：OK
+TIMEUICHECK: UI-10a JD 投影行文本="2461313.738169"（解析 2461313.738169，C++ 侧 2461313.738169，差 2.71e-07 天；容差 1e-3）：OK
+TIMEUICHECK: UI-10b 时钟 +365.25 天后投影行=2461678.988169（期望 2461678.988169，差 0.00e+00 天）—— 证明它是活的投影而不是常量：OK
+TIMEUICHECK: UI-11-note 向窗口投递真实点击 @(573.5,408.0)——「+1 天」按钮尺寸 73×32（ActionRouter 透传 actionAdd_Solar_Day）
+TIMEUICHECK: UI-11 真实点击「+1 天」→ JD 位移 0.999999960 天（期望 1，容差 1e-6）—— QML→ActionRouter→引擎 透传链是活的：OK
+TIMEUICHECK: UI-13 MJD 投影行="61679.488169"（解析 61679.488169；C++ 侧 61679.488169；差 2.31e-07 天，容差 1e-6）—— 且它与 JD 行同源（JD=2461679.988169）：OK
+TIMEUICHECK: UI-14a-prep 时钟跳到 JD=2299160.5（1582-10-04，儒略历区间）
+TIMEUICHECK: UI-14a 历法行="儒略历"（token=julian）—— 跳进 1582 年区间后必须自报儒略历：OK
+TIMEUICHECK: UI-14b 历法行="格里高利历"（token=gregorian）—— 与 UI-14a 的文案不同⇒ 它是活的投影，不是常量：OK
+TIMEUICHECK: UI-15-note 向窗口投递真实点击 @(911.5,448.0)——速率「+」按钮（ActionRouter 透传 actionIncrease_Time_Speed）；点击前引擎速率 1.000000e-01、速率行="x8640（2.40 时/秒）"
+TIMEUICHECK: UI-15 真实点击「+」→ 引擎速率 1.000000e-01 → 1.000000e+00（确实变了=true）；速率行 "x8640（2.40 时/秒）" → "x86400（1.00 天/秒）"（跟着变了=true）：OK
+TIMEUICHECK: UI-16-prep setTimeZoneId("Africa/Abidjan") → true（当前 Africa/Abidjan）
+TIMEUICHECK: UI-16 组合框当前项="Africa/Abidjan"（目标="Africa/Abidjan"，C++ 侧 timeZoneId="Africa/Abidjan"）—— 命令写入后轮询把控件带回实况：OK
+TIMEUICHECK: UI-17 视觉层：20 个可交互靶控件几何非退化（找到 20/20；零尺寸 0 个；最小 w×h=51.0×24.0；窗口 960×640）：OK
+TIMEUICHECK: UI-18 视觉层：20 个靶控件都不被任何祖先裁掉（越界 0 个；页容器=pageStack，960×480）：OK
+TIMEUICHECK: UI-19 视觉层：27 项（20 可交互 + 7 文本行）两两不重叠（比对 351 对；重叠 0 对；最大交叠面积 0.0 px²）—— 贴边不算重叠，容差 1 px²：OK
+TIMEUICHECK: UI-20 视觉层：可见性成对 —— 靶控件不可见 0/20；反例 searchQueryField（页栈 currentIndex=3，非时间页）找到=true 可见=false（要求 false）：OK
+TIMEUICHECK: UI-21 视觉层：七个文本行都画出了内容（空/占位 0 个）—— UT="2026-09-30 05:43:02"  JD="2461313.738219"  MJD="61313.238219"  历法="格里高利历"  速率="x86400（1.00 天/秒）"  方向="前进"  状态="时间已按写入生效。"：OK
+TIMEUICHECK: VIS-note 单行文本余量 px（宽度−contentWidth）：**只作读数、不判** —— 它立不了阈值。宽度未被布局约束时它是 ceil(contentWidth)−contentWidth，落在 [0,1) 的取整区间里（这种小值没有信息量）；一旦该行被布局挤压或拉伸，它就跳到**任意量级**（负值 = 文本宽于自身 item、会被裁；正的偏大值 = item 被拉开）⇒ 正常态没有分辨力、被破坏时又没边。见 docs/T30_TIME_VISUAL.zh_CN.md §4.2：UT:0.9 JD:0.4 MJD:0.2 历法:0.3 速率:0.4 方向:0.7
+TIMEUICHECK: UI-22 视觉层：20 个可交互靶控件的中心点命中测试都落回自己（落空 0 个）—— 透明覆盖层/z 序错/被兄弟盖住这三类只有这条看得见：OK
+TIMEUICHECK: UI-23 视觉层：文本对比度 ≥ 2.0（低于下限 0 项、读不到色 0 项）—— UT=5.75:1(#1565c0/#ffffff) JD=21.00:1(#000000/#ffffff) MJD=21.00:1(#000000/#ffffff) 历法=9.39:1(#6a1b9a/#ffffff) 速率=21.00:1(#000000/#ffffff) 方向=5.13:1(#2e7d32/#ffffff) 状态=5.13:1(#2e7d32/#ffffff)；最小 5.13:1；参考：≥4.5 的 7 项、≥3.0 的 7 项：OK
+TIMEUICHECK: UI-24 视觉层纯逻辑腿（判别性对照）：对比度 黑白=21.000000（期望 21）、同色=1.000000000（期望 1）、对称差=0.0e+00；矩形包含 真=true/右移 10000px=false/放大越界=false（期望 true/false/false）；交叠面积=25.000（期望 25）、贴边=0.000（期望 0）；命中判定 交叠处=1（期望 1=上层）、无子项命中=-1（期望 −1）、父外=-1（期望 −1）：OK
+TIMEUICHECK: 判据 27/27
+TIMEUICHECK: VERDICT=PASS

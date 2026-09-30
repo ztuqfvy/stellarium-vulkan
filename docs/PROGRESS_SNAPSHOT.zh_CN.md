@@ -1,9 +1,10 @@
-# 进度总览（截至 2026-09-30 下午，**W-T35 后**盘点）
+# 进度总览（截至 2026-09-30 下午，**T36 后**盘点）
 
-> 口径基线：T34 收口提交 `9b04cdd` + T35 提交 `d68cc32` + 本轮 W 支线件（工作区干净、与 `origin/main` 同步）。
+> 口径基线：T34 收口提交 `9b04cdd` + T35 提交 `d68cc32` + W 支线 + **T36（A5 第一项）**。
 > 上一版快照基线是 `9b04cdd`（T34 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，
 > **T34 见 `docs/T34_TOOLBAR.zh_CN.md`**，**T35 见 `docs/T35_TIMELINK.zh_CN.md`**，
-> **W-T34/W-T35 跨平台复验见 `docs/WT35_WINDOWS_RECHECK.zh_CN.md`**。
+> **W-T34/W-T35 跨平台复验见 `docs/WT35_WINDOWS_RECHECK.zh_CN.md`**，
+> **T36 配置目录隔离见 `docs/T36_CONFIG_ISOLATION.zh_CN.md`**。
 > 环境口径与 T17–T34 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
@@ -19,7 +20,7 @@
 | A2 旧天空帧桥 | 静态 12/12 + 动态 7/7 + 30min 长跑 | ✅ 完成 |
 | A3 业务接口与输入路由 | AppFacade / ActionRouter / 模型 / 单一仿真时钟 / 键位路由 | ✅ 完成（T14–T17） |
 | **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | ✅ **7/7 完成**（**T34 收口**，见 §2） |
-| A5 设置与完整个人版 UI | A-1.0 全部页面、配置迁移、夜视、错误页 | ⬜ 未开始 |
+| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36 完成**配置隔离/播种；余 T37–T42，见 §6） |
 | A6 回归与交接 | 全量回归、帧桥统计、资源打包、接口冻结 | ⬜ 未开始 |
 | A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置 A6 或真机 |
 
@@ -77,12 +78,16 @@
 | （探针）`LOCPROBE` | 只报读数、**不打 PASS** | `STELQUICK_LOC_PROBE` | T33-A 数据面探针（地点库规模 / `locationForString` 语义 / `isValid` 边界 / 时区联动） |
 | （探针）`TOOLBARPROBE` | 只报读数、**不打 PASS** | `STELQUICK_TOOL_PROBE` | **T34-A** 命令面探针（注册表规模 505/15 / 12 候选逐项 checkable·checked·text·key / trigger→getter 翻转 / `actionToggled` 观测 / revision 读数） |
 | `TIMELINKCHECK` | 7（TL-01..TL-07） | `STELQUICK_TIMELINK_CHECK` | **T35** 仿真时间链路定性：读面同源 / **链路自洽**（ΔJD==窗口×rate×scale）/ rate 多档线性 / 窗口线性（**真实墙钟**，非按帧固定步长）/ 冻结不补 / 速率阶梯跟变 / **恒星时绝对腿**（ΔLST==ΔJD×360.9856° + 下游 `j2000ToAltAz` 落点重算）。**五批正题均 `7/7`** |
+| `CONFIGCHECK` | 8（CFG-01..CFG-08） | `STELQUICK_CONFIG_CHECK` | **T36** 个人版配置目录隔离：隔离读数自洽 / 目录独立 / **配置写侧落点（`QSettings::fileName()`，最强）** / 日志落点 / 配置种子完整（双叉）/ 写侧不触原目录（**三半成对**）/ 产品路径落点（`ActionRouter.trigger` 真路径）/ 播种清单完整。**不启帧泵、无就绪门**（全同步事实）。**三场景正题均 `8/8`**（首次 / 非首次 / **全新机器**） |
 | （探针）`TIMELINKPROBE` | 只报读数、**不打 PASS** | `STELQUICK_TIMELINK_PROBE` | **T35-A** 时间链路探针（Q1 三个读面同源 / Q2·Q3 窗口原始读数 / Q4 阶梯台账 0.1→1→10→100 / Q5·Q5b 冻结与恢复 / Q6b 恒星时恒等式 / Q6c 下游重算 / Q6d **视线随 JD 转的机理核验**） |
 
-一键复跑：`tools/t16-verify.sh` … **`tools/t35-verify.sh`**（每个任务一个，用法 `all N`；
+一键复跑：`tools/t16-verify.sh` … **`tools/t36-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
 8 条判据、要求 `VERDICT=PASS`；**`t34-verify.sh` 含四组负控 + 探针 + 10 套件 + S3 + A2 + DYN**；
-**`t35-verify.sh` 含三组负控 + 探针 + **11 套件**（多了 `toolbarcheck`）+ INTERACTCHECK + S3 + A2 + DYN**，
+**`t35-verify.sh` 含三组负控 + 探针 + **11 套件**（多了 `toolbarcheck`）+ INTERACTCHECK + S3 + A2 + DYN**；
+**`t36-verify.sh` 含 S1/S2 两场景 + 两组负控 + **12 套件**（多了 `timelinkcheck`）
++ INTERACTCHECK + A2 + DYN 双路；⑤ 收尾做"**合流形态**全程原目录零改动"核对，
+⑥ **把 S3 旧宿主挪到核对之后单独跑**（写原版目录是它应有的行为，见 §6 T36 血泪②）**，
 `core N` 段即含以上全部）；Windows 侧 `tools/windows/wt29…wt33-*.ps1`
 （`wt33-launch.ps1` 是给 `schtasks /it` 用的启动器，负责注入 `T33_PROBE_EXPECT`）。
 
@@ -229,13 +234,52 @@ T33 证明过"换平台复验能逼出真缺陷"，这是**两条线索的跨平
 ④ ⚠️ `win.sh -ps '多行脚本'` 静默失效 / `*>>` 把子进程输出绞成 NUL（技能里记过，照样再踩）；
 ⑤ ⚠️ 收尾必须扫**全部**计划任务残留；⑥ ⚠️ 探针冒号后空格宽度**逐探针不同**（1 vs 3），锚点用 `\s+`。
 
+### T36 个人版配置目录隔离 + 首次播种（**A5 第一项**）—— ✅ **已完成**（`docs/T36_CONFIG_ISOLATION.zh_CN.md`）
+
+进 A5 前先探针，结果坐实**真缺陷**：合流形态直接用引擎**默认**用户目录 = **原版 Stellarium 的目录**。
+
+- **探针实测 3 处变化**：`config.ini` mtime（**md5 不变**）、`log.txt` `10308→10387 B`
+  （原版日志被顶掉）、`modules/Oculars/ocular.ini` mtime。⚠️ `config.diff` **0 行**
+  ⇒ **"内容没变"≠"文件没被碰"**，按内容比对会得出错误结论。
+- **三条写穿路径**：`immediateSave()`（本机 `immediate_save_details=true` ⇒ 翻个开关就落盘）／
+  `StelLogger::init(userDir + "/log.txt")` 截断覆盖／模块 `findFile(..., Writable|File)` 原地改写。
+- **不能靠"原目录当只读回退"**：`Writable` 只表示**那个文件**可写，模块会命中原版副本并改写
+  ⇒ 必须先**播种**，让个人版目录里什么都有、原目录彻底退出搜索路径
+  （`setUserDir` 是 `replace(0,…)` 不是 append）。
+- **落点** `<引擎默认目录>-quick`（**同级**，不是子目录）⇒ "原目录零改动"是**结构性**成立。
+- 🔴 **修的过程中牵出第二条腿**：空用户目录 ⇒ 引擎 **SIGSEGV（rc=139）**，
+  崩在 `LandscapeMgr: initialized Cache` 之后。**分块播种二分**证明崩因是"缺 `config.ini`"
+  （只放 `stars`/`modules`/`data` 都崩，只放 `config.ini` 就正常）⇒ 补**兜底腿**
+  （从 `data/default_cfg.ini` 拷，对齐上游 `src/main.cpp:398-403`），且**不随** `MIGRATE_OFF` 关闭。
+- 判据 `CONFIGCHECK` **8 条**；两组负控红项**两两不同**：A `ISOLATE_OFF`=
+  `[CFG-01,02,03,04,06,07]`（2/8）、B `MIGRATE_OFF`=`[CFG-05,08]`（6/8）。
+- **定稿轮（mac）`FAILED=0` 全绿**：S1 首次 8/8、S2 非首次 8/8、**全新机器 8/8（rc=0，此前 139）**、
+  12 套件 + `INTERACTCHECK` **18/18** + S3 + A2 + DYN 双路 3/3+3/3 全 rc=0、
+  **收尾"合流形态全程原目录零改动 = 0 差异"**；脚本层 **23/0**。
+
+⚠️ 本轮三条新血泪（详见 `docs/T36_CONFIG_ISOLATION.zh_CN.md` §7 与 `TRAPS.md` 65–67）：
+① 🔴 **判据的条件必须与判据的名字同义** —— `note` 字段语义混用（异常 vs 正常信息）
+⇒ CFG-01 在**非首次启动和负控 B 下假红**；修法是**拆字段**不是删条件；
+② 🔴 **外层判据的作用域必须等于被测对象的作用域** —— 收尾"全程零改动"把 **S3 旧宿主**
+圈了进去，而旧宿主**不走**隔离引导、**它就是"原版程序"**，写原版目录是应有行为
+⇒ 4 个文件报红是**范围划错的假红**（修法：S3 挪到核对之后单跑，只验 rc，影响如实留证）；
+③ 🔴 **判据在"缺前提"的机器上会退化成平凡真** —— 原目录无 `config.ini` 时，
+CFG-06/07 的原目录侧"天然成立"（空串不含哨兵 / 两个 `<unreadable>` 相等）
+⇒ 补**第三半**"原本不存在 ⇒ 跑完仍不许出现"。
+附两条仪器教训：⚠️ **stdout 块缓冲 / stderr 不缓冲** ⇒ 混流时"最后一行"不可信，
+判 crash 点必须**分流失**；⚠️ `findFile` 的 `Writable` **只保证"那个文件可写"**。
+
 ### 之后（按优先级）
 
 `LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算 → 捏合后首击 → DYN 停摆根因；
 另加 T33 移交的 `findLocations` 排序（照 T21 完全匹配优先）、
 "负控 A 在 Windows 不复现"的定性。
 
-再往后：A5（设置与完整个人版 UI：夜视、配置迁移、错误页）→ A6（回归与交接、接口冻结）。
+**A5 剩余**（T36 之后）：**T37 设置页骨架 + 夜视闭环**（⚠️ 夜视效果**从未验证**：
+`StelApp::draw()` 直接画模块、`QGraphicsEffect` 在 QGraphicsScene 层 ⇒ 红色滤镜**很可能不在
+读回帧里**，需先探针定性）→ T38 显示参数（星等/亮度 + 视场 + 投影）→ T39 高 DPI + 渲染诊断
+→ T40 快捷键编辑 → T41 帮助/版本/许可证 → T42 错误页 + "未支持项"清单。
+再往后：A6（回归与交接、接口冻结）。
 
 ---
 
