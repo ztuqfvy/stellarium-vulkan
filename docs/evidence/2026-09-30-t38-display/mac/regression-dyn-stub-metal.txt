@@ -1,0 +1,33 @@
+──────── DYN(stub) run 1/3（rc=0）────────
+DYNCHECK: 生产者=test(替身场景)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[5.3s起]稳态 51.5 fps（下限 36.0）；全程累计 330 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 51.5 fps（下限 24.0）；全程推进 277 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=330 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 184ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=318 mean=0.36ms max=2.56ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS
+──────── DYN(stub) run 2/3（rc=0）────────
+DYNCHECK: 生产者=test(替身场景)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[5.3s起]稳态 52.4 fps（下限 36.0）；全程累计 327 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 52.4 fps（下限 24.0）；全程推进 275 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=327 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 182ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=312 mean=0.36ms max=2.80ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS
+──────── DYN(stub) run 3/3（rc=0）────────
+DYNCHECK: 生产者=test(替身场景)
+DYNCHECK: 动态帧通路自检：7 判据，0 失败
+DYNCHECK: D1-C01 PASS 生产者 failed=0，尾窗[5.3s起]稳态 52.0 fps（下限 36.0）；全程累计 337 帧（含 warmup）
+DYNCHECK: D1-C02 PASS 显示 尾窗稳态 52.0 fps（下限 24.0）；全程推进 285 帧
+DYNCHECK: D1-C03 PASS 邮箱 published=337 dropped=0（≤5%）
+DYNCHECK: D1-C04 PASS 邮箱帧龄最大 178ms（<500ms；降速段含 ~200ms 属预期）
+DYNCHECK: D1-C05 PASS 上传 count=319 mean=0.28ms max=1.64ms（<100ms）
+DYNCHECK: D1-C06 PASS 相隔 700ms 两次抓帧不同（内容动态）（1920x1280）
+DYNCHECK: D1-C07 PASS 降速窗内 degraded=true（须 true）/ 恢复后 degraded=false（须 false）
+DYNCHECK: VERDICT=PASS

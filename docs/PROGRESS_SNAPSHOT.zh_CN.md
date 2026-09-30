@@ -1,12 +1,13 @@
-# 进度总览（截至 2026-09-30 傍晚，**T37 后**盘点）
+# 进度总览（截至 2026-09-30 傍晚，**T38 后**盘点）
 
 > 口径基线：T34 收口提交 `9b04cdd` + T35 提交 `d68cc32` + W 支线 + **T36（A5 第一项）**
-> + **T37（A5 第二项：夜视闭环）**。
+> + **T37（A5 第二项：夜视闭环）** + **T38（显示参数：亮度/星等 · 视场 · 投影）**。
 > 上一版快照基线是 `9b04cdd`（T34 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，
 > **T34 见 `docs/T34_TOOLBAR.zh_CN.md`**，**T35 见 `docs/T35_TIMELINK.zh_CN.md`**，
 > **W-T34/W-T35 跨平台复验见 `docs/WT35_WINDOWS_RECHECK.zh_CN.md`**，
 > **T36 配置目录隔离见 `docs/T36_CONFIG_ISOLATION.zh_CN.md`**，
-> **T37 夜视闭环见 `docs/T37_NIGHTMODE.zh_CN.md`**。
+> **T37 夜视闭环见 `docs/T37_NIGHTMODE.zh_CN.md`**，
+> **T38 显示参数见 `docs/T38_DISPLAY.zh_CN.md`**。
 > 环境口径与 T17–T34 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
@@ -22,7 +23,7 @@
 | A2 旧天空帧桥 | 静态 12/12 + 动态 7/7 + 30min 长跑 | ✅ 完成 |
 | A3 业务接口与输入路由 | AppFacade / ActionRouter / 模型 / 单一仿真时钟 / 键位路由 | ✅ 完成（T14–T17） |
 | **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | ✅ **7/7 完成**（**T34 收口**，见 §2） |
-| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 完成；余 T38–T42，见 §6） |
+| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 完成；余 T39–T42，见 §6） |
 | A6 回归与交接 | 全量回归、帧桥统计、资源打包、接口冻结 | ⬜ 未开始 |
 | A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置 A6 或真机 |
 
@@ -54,8 +55,9 @@
 
 > 仍**不属于** A4 的部分（留 A5）：A-alpha 表里标"**基本开关 / 基础**"的项（星座线·名称、
 > 网格、地景、大气；亮度·星等、投影、主题·夜视、高 DPI）。T34 已把其中 **12 个显示开关**
-> 做成 QML 承载面（含"状态与引擎双向同步"），但**亮度/星等/投影/主题/高 DPI 仍未覆盖**
-> —— 那几项归 A5 的设置页，**不在 A-alpha 出口第一条的"必须"清单里**。
+> 做成 QML 承载面（含"状态与引擎双向同步"），**T37** 补上主题·夜视（Qt Quick 侧效果层），
+> **T38** 补上亮度·星等 / 视场 / 投影 —— **只剩高 DPI**（T39）。
+> 这些项归 A5 的设置页，**不在 A-alpha 出口第一条的"必须"清单里**。
 
 ---
 
@@ -84,15 +86,19 @@
 | `NIGHTCHECK` | 6（NC-01..NC-05） | `STELQUICK_NIGHT_CHECK` | **T37** 夜视闭环：状态面（**引擎 getter 独立回读**）/ 噪声底门（**低于噪声容差**，非逐位相同；超限 ⇒ 整套 UNAVAILABLE）/ 效果面**成对**（① 上游低于噪声容差 —— 大气已关 ⇒ 引擎夜视反应成 no-op；② 下游视口 ≥90% ∧ 均值>1.0，**伪证守门=①**）/ 判别对照（承重）/ 往返复原（无全帧级红移；异常帧 ⇒ INCONCLUSIVE）。**负控**：`STELQUICK_NIGHT_EFFECT_OFF=1` ⇒ 恰好红 `[NC-03②]`。**正题 3/3 `6/6`、负控 3/3 恰中** |
 | （探针）`TIMELINKPROBE` | 只报读数、**不打 PASS** | `STELQUICK_TIMELINK_PROBE` | **T35-A** 时间链路探针（Q1 三个读面同源 / Q2·Q3 窗口原始读数 / Q4 阶梯台账 0.1→1→10→100 / Q5·Q5b 冻结与恢复 / Q6b 恒星时恒等式 / Q6c 下游重算 / Q6d **视线随 JD 转的机理核验**） |
 | （探针）`NIGHTPROBE` | 只报读数、**不打 PASS** | `STELQUICK_NIGHT_PROBE` | **T37-A** 夜视链路数据面探针（引擎状态面 / 宿主链面 `property("nightMode")` / 帧静定噪声底 / 上游·下游两条独立读回路径 OFF↔ON 差异 / 判别性对照）。⚠️ 探针头条"上游逐位相同"事后被证伪（等待挂读步，TRAPS 69）—— 但**帧号留痕**才使翻案成为可能 |
+| `DISPLAYCHECK` | **14**（DP-00..DP-11） | `STELQUICK_DISPLAY_CHECK` | **T38** 显示参数：噪声底门 / 状态面往返（**引擎 getter 独立回读**）/ **范围闸**（引擎 setter 不夹取 ⇒ 闸门在 façade）/ 投影 12 key 往返 + **maxFov 活属性**（随投影取到 6 个不同值）/ **投影白名单闸** / `lastDisplayRefusal` 必须是 Q_PROPERTY / UI 控件齐备（**视觉树递归**，陷阱 45）/ 绑定腿 / 视场生效（成对）+ **判别对照** / 投影生效（成对）/ **DP-10a 静置对照 + DP-10b LOW↔HIGH 方向量** / 复原。**两组负控**：`STELQUICK_DISPLAY_GATE_OFF=1` ⇒ 恰红 `[DP-02,DP-04]`；`STELQUICK_DISPLAY_FWD_OFF=1` ⇒ 恰红 `[DP-07]`。**正题 3/3 `14/14`、负控各 2/2 恰中** |
+| （探针）`DISPLAYPROBE` | 只报读数、**不打 PASS** | `STELQUICK_DISPLAY_PROBE` | **T38-A** 显示参数命令面探针（初值台账 / 四个 setter 的**夹取语义** / 星等语义四问 / 步进动作 / `setFov` 夹取边界 / 12 投影 key 往返 + maxFov 随投影 / **非法 key 落点** / NOTIFY 静置增量）。7 条实测结论见 `docs/T38_DISPLAY.zh_CN.md` §2 |
 
-一键复跑：`tools/t16-verify.sh` … **`tools/t37-verify.sh`**（每个任务一个，用法 `all N`；
+一键复跑：`tools/t16-verify.sh` … **`tools/t38-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
 8 条判据、要求 `VERDICT=PASS`；**`t34-verify.sh` 含四组负控 + 探针 + 10 套件 + S3 + A2 + DYN**；
 **`t35-verify.sh` 含三组负控 + 探针 + **11 套件**（多了 `toolbarcheck`）+ INTERACTCHECK + S3 + A2 + DYN**；
 **`t36-verify.sh` 含 S1/S2 两场景 + 两组负控 + **12 套件**（多了 `timelinkcheck`）
 + INTERACTCHECK + A2 + DYN 双路；⑤ 收尾做"**合流形态**全程原目录零改动"核对，
 ⑥ **把 S3 旧宿主挪到核对之后单独跑**（写原版目录是它应有的行为，见 §6 T36 血泪②）**，
-`core N` 段即含以上全部）；Windows 侧 `tools/windows/wt29…wt33-*.ps1`
+`core N` 段即含以上全部）；**`t37-verify.sh` 含正题×3 + 负控×3 + **13 套件**（多了 `nightcheck`）**；
+**`t38-verify.sh` 含正题×3 + **两组负控×2** + **14 套件** + INTERACTCHECK + S3 + A2 + DYN 双路**。
+Windows 侧 `tools/windows/wt29…wt33-*.ps1`
 （`wt33-launch.ps1` 是给 `schtasks /it` 用的启动器，负责注入 `T33_PROBE_EXPECT`）。
 
 ---
@@ -305,17 +311,51 @@ CFG-06/07 的原目录侧"天然成立"（空串不含哨兵 / 两个 `<unreadab
 
 
 
+### T38 显示参数（亮度/星等 · 视场 · 投影）—— ✅ **已完成**（`docs/T38_DISPLAY.zh_CN.md`）
+
+**A-1.0 范围表「亮度/星等、视场、投影 | 基础 | 必须」这一格落地。** 先探针再写 UI：
+
+- **T38-A 探针 7 条实测结论**（决定产品落点与判据口径）：
+  ① 四个数值 setter **一个都不夹取**（原样落库 + `immediateSave`）⇒ **范围闸必须在 façade**；
+  ② `setFov` **自带夹取**，且 **maxFov 是投影的函数**（120/180/185/235/270/360 六种）
+  ⇒ `maxFieldOfView` 必须是**活属性**，滑块上限跟着投影走；
+  ③ 投影非法 key **不报错**、静默落到 Stereographic **并落盘** ⇒ 必须**白名单闸**；
+  ④ 🔴 `getLimitMagnitude()` **不是**用户设定值（是引擎按大气/光污染/自适应的**有效**限制，
+  白天实测 -4.44）⇒ 判据只读写 `customStarMagLimit` + `flag`；
+  ⑤ 星等/亮度的**视觉**效应只在星星可见时存在 ⇒ 布场必须**大气置关**；
+  ⑥ 静置期 NOTIFY 增量 **0** ⇒ 这些量**可以安全绑定**。
+- **产品**：`AppFacade` 显示面（10 个 `Q_PROPERTY` 共用一个 NOTIFY + 8 个范围常量 +
+  范围闸 + 白名单闸 + 6 条引擎转发）+ `DisplayPage.qml`（星点亮度 / 极限星等 / 视场 / 投影）
+  + 工具栏 `navDisplayButton` + 路由；范围照抄原版 `ViewDialog`。
+- 🔴 **判据抓出一个真产品缺陷**（本轮最有价值的产出）：`AppFacade::projectionTypeKeys()`
+  原本是 **`Q_INVOKABLE`**，而合流形态**先 `engine.load()`、后 `boot()`** ⇒ QML 里
+  `model: facade.projectionTypeKeys()` 这种**函数式绑定不读任何属性 ⇒ 只求值一次**，
+  那一次引擎还没起来 ⇒ 拿到空表 ⇒ **12 个投影按钮一个都不出现且永不自愈**。
+  已改 `Q_PROPERTY + NOTIFY` + 引导完成时"**开机唤醒**"emit（TRAPS 71）。
+- 判据 `DISPLAYCHECK` **14 条**（DP-00..DP-11）；**两组负控**红项 `[DP-02,DP-04]` / `[DP-07]`
+  **两两不同**；负控读数**自带证据**（"写 99 ⇒ 引擎收到 99"、"乱码 ⇒ 引擎真的被兜底改 key"）。
+- **另一条口径修正**：冻结下的亚 LSB 抖动**面积会随场景状态变、幅度不会**
+  （实测 0.079%/Δ1 vs 0.557%/Δ2）⇒ 噪声判据**只能取幅度**（TRAPS 74；T37 旧口径同时作废）。
+- **定稿轮（mac）`FAILED=0` 全绿**：正题 3/3 `14/14 PASS`、负控各 2/2 恰中、
+  14 套件 + `INTERACTCHECK 18/18` + S3 + A2 + DYN 双路 3/3+3/3 全 rc=0
+  （产物 `40637720 B / md5=30f4e313eb382615792ca2b1866e0176`）。
+- 本轮新血泪：`TRAPS.md` **71–76**（求值时机型绑定失效 / 参考帧基准必须干净 /
+  `delayAfter` 只能挂写步 / 噪声只取幅度 / 判据只验被声称的命题 / 近名 getter 语义差）。
+
+
+
 ### 之后（按优先级）
 
 `LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算 → 捏合后首击 → DYN 停摆根因；
 另加 T33 移交的 `findLocations` 排序（照 T21 完全匹配优先）、
 "负控 A 在 Windows 不复现"的定性、**T37-X4**（仿真冻结期间 fader 动画停摆，
 NC-05 的有界容忍来源）、**T37-X1**（夜视翻转引起 5 个工具栏按钮重绘，功能正确、
-纯性能线索）。
+纯性能线索）、**`NightModeCheck` 的噪声口径并入 T39 统一**（它仍持"占比<0.1% ∧ Δ≤2"
+的旧式；风险有界 —— NC-02 是环境门，误触退化成 rc=6 而非 FAIL）。
 
-**A5 剩余**（T37 之后）：T38 显示参数（星等/亮度 + 视场 + 投影）→ T39 高 DPI + 渲染诊断
-→ T40 快捷键编辑 → T41 帮助/版本/许可证 → T42 错误页 + "未支持项"清单。
-再往后：A6（回归与交接、接口冻结）。**W-T37 Windows 复验待排期**
+**A5 剩余**（T38 之后）：**T39 高 DPI + 渲染诊断** → T40 快捷键编辑 →
+T41 帮助/版本/许可证 → T42 错误页 + "未支持项"清单。
+再往后：A6（回归与交接、接口冻结）。**W-T37 / W-T38 Windows 复验待排期**
 （T33/W-T35 已证明跨平台复验能逼出真缺陷）。
 
 ---

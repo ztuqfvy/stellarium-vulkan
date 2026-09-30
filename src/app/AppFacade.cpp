@@ -23,6 +23,7 @@
 #include "StelObject.hpp"
 #include "StelObjectMgr.hpp"
 #include "StelProjector.hpp"   // T27：skyEnginePos 读投影视口尺寸（比例映射基准）
+#include "StelSkyDrawer.hpp"   // T38：显示参数（亮度/星等）读写面
 #include "StelUtils.hpp"
 
 #include <QDate>
@@ -43,6 +44,7 @@ void AppFacade::attachSimControl(ISimPacing *sim)
 {
     m_sim = sim;
     ensureDisplayForwarding();   // T34：此刻引擎必已 boot、动作已注册
+    ensureDisplayParamsForwarding();  // T38：显示参数 NOTIFY 转发（同上，位置即判据）
 }
 
 // ── T34 工具栏：显示开关读侧 ─────────────────────────────────────────────────
@@ -109,6 +111,360 @@ void AppFacade::ensureDisplayForwarding()
                 m_displayTogglesRevision++;
                 emit displayTogglesRevisionChanged();
             });
+#endif
+}
+
+// ── T38 显示参数：亮度/星等 · 视场 · 投影 ─────────────────────────────────────
+//
+// 设计依据全部来自 T38-A 探针（见 app/DisplayProbe.hpp 的"实测结论"段）：
+//   ① StelSkyDrawer 四个 setter **不夹取** ⇒ 范围闸在下面每个 setter 里做；
+//   ② setFov 自带夹取，但 **maxFov 随投影变** ⇒ maxFieldOfView 是活属性；
+//   ③ 投影非法 key 会**静默兜底** Stereographic ⇒ 必须白名单闸；
+//   ④ `getLimitMagnitude()` ≠ 用户设定值 ⇒ 只读写 `customStarMagLimit`；
+//   ⑥ 引擎 NOTIFY 静置期 0 发射 ⇒ 可以安全绑定，不是"每帧连续量"。
+
+namespace {
+
+//! 数值属性的范围闸：越界**夹取后照写**（不静默丢弃），并告诉调用方是否被夹。
+//! 返回 true = 原值合法；false = 被夹取过。
+bool clampInto(double &v, double lo, double hi)
+{
+    // 负控开关（T38-C，只用于证明判据承重）：关掉范围闸 ⇒ DP-02 必红。
+    if (qEnvironmentVariableIsSet("STELQUICK_DISPLAY_GATE_OFF"))
+        return true;
+    if (v < lo)
+    {
+        v = lo;
+        return false;
+    }
+    if (v > hi)
+    {
+        v = hi;
+        return false;
+    }
+    return true;
+}
+
+} // namespace
+
+void AppFacade::setDisplayRefusal(const char *reason)
+{
+    const QString next = (reason && *reason) ? QString::fromLatin1(reason)
+                                             : QStringLiteral("ok");
+    if (next != QStringLiteral("ok"))
+        m_displayRefusedCount++;
+    if (next == m_displayRefusal)
+        return;
+    m_displayRefusal = next;
+    emit lastDisplayRefusalChanged();
+}
+
+QString AppFacade::displayRefusalText() const
+{
+    if (m_displayRefusal == QStringLiteral("ok"))
+        return QString();
+    if (m_displayRefusal == QStringLiteral("not-engine"))
+        return QStringLiteral("引擎未就绪，显示参数未写入");
+    if (m_displayRefusal == QStringLiteral("out-of-range"))
+        return QStringLiteral("数值超出允许范围（已夹取到边界）");
+    if (m_displayRefusal == QStringLiteral("unknown-projection"))
+        return QStringLiteral("未知的投影类型（已拒绝，未改动引擎）");
+    return m_displayRefusal;
+}
+
+void AppFacade::ensureDisplayParamsForwarding()
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (m_displayParamsForwarded || !StelApp::isInitialized())
+        return;
+    m_displayParamsForwarded = true;
+
+    // **开机唤醒**（**刻意放在 FWD_OFF 旁路之前** —— 两个负控各管一件事）。
+    //
+    // 为什么必须有这一下：合流形态**先加载 QML、后引导引擎**，所以设置页里所有
+    // "读引擎值"的绑定在首次求值时拿到的是空表 / -1（`isInitialized()` 为假）。
+    // 而绑定只登记**它真正读过的属性**，那次求值什么属性都没读 ⇒ **没有依赖 ⇒
+    // 永不再算**（T38-C DP-06 实测：投影按钮 0/12；T19 血泪的"求值时机"版）。
+    // 引导一完成就主动发一次，让全部显示参数绑定重算落回真值。
+    emit displayParametersChanged();
+
+    // 负控开关（证明判据承重）：关掉**订阅** ⇒ 引擎侧改动不刷 QML ⇒ 面板停在首帧。
+    // 只断"引擎侧改动"这条来路，**不影响**上面那次开机唤醒（否则负控会连 DP-06 一起
+    // 打红，"恰好红 [DP-07]"这个口径就不成立了）。
+    if (qEnvironmentVariableIsSet("STELQUICK_DISPLAY_FWD_OFF"))
+        return;
+
+    StelSkyDrawer *sd = StelApp::getInstance().getCore()->getSkyDrawer();
+    auto bump = [this] { emit displayParametersChanged(); };
+    connect(sd, &StelSkyDrawer::relativeStarScaleChanged, this, [bump](double) { bump(); });
+    connect(sd, &StelSkyDrawer::absoluteStarScaleChanged, this, [bump](double) { bump(); });
+    connect(sd, &StelSkyDrawer::lightPollutionLuminanceChanged, this, [bump](double) { bump(); });
+    connect(sd, &StelSkyDrawer::customStarMagLimitChanged, this, [bump](double) { bump(); });
+    connect(sd, &StelSkyDrawer::flagStarMagnitudeLimitChanged, this, [bump](bool) { bump(); });
+    // 投影：key 变了 ⇒ 显示参数（含 maxFieldOfView）全部重算。
+    connect(StelApp::getInstance().getCore(), &StelCore::currentProjectionTypeKeyChanged,
+            this, [bump](const QString &) { bump(); });
+    // 视场：**只转发现有信号**（既有 fieldOfViewChanged 是 Q_PROPERTY 的通知，
+    // 时长页/捏合判据都在用它，这里只是补一条"引擎自己改 FOV"的来路）。
+    connect(StelApp::getInstance().getCore()->getMovementMgr(),
+            &StelMovementMgr::currentFovChanged, this, [this](double) {
+                emit fieldOfViewChanged(fieldOfView());
+                emit displayParametersChanged();
+            });
+#endif
+}
+
+double AppFacade::starRelativeScale() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return -1.0;
+    return StelApp::getInstance().getCore()->getSkyDrawer()->getRelativeStarScale();
+#else
+    return -1.0;
+#endif
+}
+
+void AppFacade::setStarRelativeScale(double v)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setDisplayRefusal("not-engine");
+        return;
+    }
+    const bool ok = clampInto(v, starRelativeScaleMin(), starRelativeScaleMax());
+    StelApp::getInstance().getCore()->getSkyDrawer()->setRelativeStarScale(v);
+    m_displayWriteCount++;
+    setDisplayRefusal(ok ? nullptr : "out-of-range");
+#else
+    Q_UNUSED(v)
+#endif
+}
+
+double AppFacade::starAbsoluteScale() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return -1.0;
+    return StelApp::getInstance().getCore()->getSkyDrawer()->getAbsoluteStarScale();
+#else
+    return -1.0;
+#endif
+}
+
+void AppFacade::setStarAbsoluteScale(double v)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setDisplayRefusal("not-engine");
+        return;
+    }
+    const bool ok = clampInto(v, starAbsoluteScaleMin(), starAbsoluteScaleMax());
+    StelApp::getInstance().getCore()->getSkyDrawer()->setAbsoluteStarScale(v);
+    m_displayWriteCount++;
+    setDisplayRefusal(ok ? nullptr : "out-of-range");
+#else
+    Q_UNUSED(v)
+#endif
+}
+
+double AppFacade::starMagnitudeLimit() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return -1.0;
+    return StelApp::getInstance().getCore()->getSkyDrawer()->getCustomStarMagnitudeLimit();
+#else
+    return -1.0;
+#endif
+}
+
+void AppFacade::setStarMagnitudeLimit(double v)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setDisplayRefusal("not-engine");
+        return;
+    }
+    const bool ok = clampInto(v, starMagnitudeLimitMin(), starMagnitudeLimitMax());
+    StelApp::getInstance().getCore()->getSkyDrawer()->setCustomStarMagnitudeLimit(v);
+    m_displayWriteCount++;
+    setDisplayRefusal(ok ? nullptr : "out-of-range");
+#else
+    Q_UNUSED(v)
+#endif
+}
+
+bool AppFacade::starMagnitudeLimitEnabled() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return false;
+    return StelApp::getInstance().getCore()->getSkyDrawer()->getFlagStarMagnitudeLimit();
+#else
+    return false;
+#endif
+}
+
+void AppFacade::setStarMagnitudeLimitEnabled(bool on)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setDisplayRefusal("not-engine");
+        return;
+    }
+    StelApp::getInstance().getCore()->getSkyDrawer()->setFlagStarMagnitudeLimit(on);
+    m_displayWriteCount++;
+    setDisplayRefusal(nullptr);
+#else
+    Q_UNUSED(on)
+#endif
+}
+
+double AppFacade::lightPollutionLuminance() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return -1.0;
+    return StelApp::getInstance().getCore()->getSkyDrawer()->getLightPollutionLuminance();
+#else
+    return -1.0;
+#endif
+}
+
+void AppFacade::setLightPollutionLuminance(double v)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setDisplayRefusal("not-engine");
+        return;
+    }
+    const bool ok = clampInto(v, lightPollutionMin(), lightPollutionMax());
+    StelApp::getInstance().getCore()->getSkyDrawer()->setLightPollutionLuminance(v);
+    m_displayWriteCount++;
+    setDisplayRefusal(ok ? nullptr : "out-of-range");
+#else
+    Q_UNUSED(v)
+#endif
+}
+
+double AppFacade::minFieldOfView() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return -1.0;
+    return StelApp::getInstance().getCore()->getMovementMgr()->getMinFov();
+#else
+    return -1.0;
+#endif
+}
+
+double AppFacade::maxFieldOfView() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return -1.0;
+    return StelApp::getInstance().getCore()->getMovementMgr()->getMaxFov();
+#else
+    return -1.0;
+#endif
+}
+
+QString AppFacade::projectionTypeKey() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return QString();
+    return StelApp::getInstance().getCore()->getCurrentProjectionTypeKey();
+#else
+    return QString();
+#endif
+}
+
+QString AppFacade::projectionTypeName() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return QString();
+    return StelApp::getInstance().getCore()->getCurrentProjectionNameI18n();
+#else
+    return QString();
+#endif
+}
+
+QStringList AppFacade::projectionTypeKeys() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return QStringList();
+    return StelApp::getInstance().getCore()->getAllProjectionTypeKeys();
+#else
+    return QStringList();
+#endif
+}
+
+QString AppFacade::projectionKeyName(const QString &key) const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return key;
+    // 引擎的 key→中文名映射只对**当前**投影暴露（getCurrentProjectionNameI18n），
+    // 所以这里临时借道：查表用 StelCore 内部的投影名映射表。
+    return StelApp::getInstance().getCore()->projectionTypeKeyToNameI18n(key);
+#else
+    Q_UNUSED(key)
+    return key;
+#endif
+}
+
+bool AppFacade::setProjectionTypeKey(const QString &key)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setDisplayRefusal("not-engine");
+        return false;
+    }
+    // 🔴 白名单闸：引擎对非法 key **不报错**，会静默落到 Stereographic 并落盘
+    // （T38-A 探针③）⇒ 在这里挡住，宁可拒绝也不改引擎。
+    // 负控开关（T38-C）：`STELQUICK_DISPLAY_GATE_OFF=1` 关掉闸门 ⇒ DP-04 必红。
+    if (!qEnvironmentVariableIsSet("STELQUICK_DISPLAY_GATE_OFF")
+        && !projectionTypeKeys().contains(key))
+    {
+        setDisplayRefusal("unknown-projection");
+        return false;
+    }
+    StelApp::getInstance().getCore()->setCurrentProjectionTypeKey(key);
+    m_displayWriteCount++;
+    setDisplayRefusal(nullptr);
+    return true;
+#else
+    Q_UNUSED(key)
+    return false;
+#endif
+}
+
+void AppFacade::setFieldOfViewNow(double degrees)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!movementReady())
+    {
+        setDisplayRefusal("not-engine");
+        return;
+    }
+    // 直接 setFov（自带 qBound 夹取）；**不走 zoomTo 动画** —— 滑块拖一次发一次
+    // 动画会互相打架（既有 setFieldOfView 保留给捏合/滚轮，语义不同）。
+    StelApp::getInstance().getCore()->getMovementMgr()->setFov(degrees);
+    m_displayWriteCount++;
+    setDisplayRefusal(nullptr);
+    emit fieldOfViewChanged(fieldOfView());
+#else
+    Q_UNUSED(degrees)
 #endif
 }
 

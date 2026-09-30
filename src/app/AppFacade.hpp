@@ -503,6 +503,107 @@ public:
     Q_INVOKABLE QString actionText(const QString &actionId) const;
     //@}
 
+    // ---- T38 显示参数：亮度/星等 · 视场 · 投影（读写双向）----
+    //!
+    //! 🔴 **范围闸在本层**（T38-A 探针①实测：`StelSkyDrawer` 的四个 setter
+    //!   **一个都不夹取**，写 4/3/5/12.5 全部原样落库、还会顺手 `immediateSave`
+    //!   落盘）⇒ 越界值在这里夹取后才写引擎，并记 refusal（不静默吞掉）。
+    //! ⚠️ 视场**相反**：`StelMovementMgr::setFov` 自带 `qBound(min,max)` 夹取，
+    //!   而 **maxFov 是投影的函数**（探针②实测 Perspective=120 / Stereographic=235 /
+    //!   Fisheye=360）⇒ `maxFieldOfView` 是**活属性**，切投影后必须重读，
+    //!   否则滑块拖到 300 会被静默夹回 235（"拖了没反应"）。
+    //! ⚠️ 投影写入**必须白名单闸**：探针③实测 `setCurrentProjectionTypeKey("乱码")`
+    //!   **不报错**，而是 `qWarning` 后静默落到 `ProjectionStereographic` 并落盘。
+    //!
+    //! 通知：全部显示参数共用一个 `displayParametersChanged` —— 这五项是**固定小
+    //!   集合**、设置页一屏全见，且引擎自带 NOTIFY（探针⑥：静置 1.5s 发射 0 次，
+    //!   不是"每帧都变的连续量"）⇒ 可安全绑定，不会重算风暴。
+    //@{
+    Q_PROPERTY(double starRelativeScale READ starRelativeScale WRITE setStarRelativeScale
+                   NOTIFY displayParametersChanged)
+    Q_PROPERTY(double starAbsoluteScale READ starAbsoluteScale WRITE setStarAbsoluteScale
+                   NOTIFY displayParametersChanged)
+    //! ⚠️ 这是**用户设定值**（`customStarMagLimit`）。别拿 `getLimitMagnitude()` 当它 ——
+    //! 那个是引擎按大气/光污染算出的**有效限制**（探针④：白天实测 -4.44，与设定无关）。
+    Q_PROPERTY(double starMagnitudeLimit READ starMagnitudeLimit WRITE setStarMagnitudeLimit
+                   NOTIFY displayParametersChanged)
+    //! 手动极限星等的**总开关**（照原版 ViewDialog 的 starLimitMagnitudeCheckBox 语义）。
+    //! 关着时 `customStarMagLimit` 不生效（生效点在 `ZoneArray.cpp:449` 的星表截断）。
+    Q_PROPERTY(bool starMagnitudeLimitEnabled READ starMagnitudeLimitEnabled
+                   WRITE setStarMagnitudeLimitEnabled NOTIFY displayParametersChanged)
+    Q_PROPERTY(double lightPollutionLuminance READ lightPollutionLuminance
+                   WRITE setLightPollutionLuminance NOTIFY displayParametersChanged)
+    //! 视场上下限：**上限随投影变**（见上）；QML 滑块直接绑这两个值。
+    Q_PROPERTY(double minFieldOfView READ minFieldOfView NOTIFY displayParametersChanged)
+    Q_PROPERTY(double maxFieldOfView READ maxFieldOfView NOTIFY displayParametersChanged)
+    Q_PROPERTY(QString projectionTypeKey READ projectionTypeKey NOTIFY displayParametersChanged)
+    Q_PROPERTY(QString projectionTypeName READ projectionTypeName NOTIFY displayParametersChanged)
+
+    //! 滑块范围常量（照原版 `viewDialog.ui` 的 spin box：relative [0.25,5]、
+    //! absolute [0.05,10]、magLimit [0,21]）；光污染是对数滑块，QML 用 min/max 取幂。
+    Q_PROPERTY(double starRelativeScaleMin READ starRelativeScaleMin CONSTANT)
+    Q_PROPERTY(double starRelativeScaleMax READ starRelativeScaleMax CONSTANT)
+    Q_PROPERTY(double starAbsoluteScaleMin READ starAbsoluteScaleMin CONSTANT)
+    Q_PROPERTY(double starAbsoluteScaleMax READ starAbsoluteScaleMax CONSTANT)
+    Q_PROPERTY(double starMagnitudeLimitMin READ starMagnitudeLimitMin CONSTANT)
+    Q_PROPERTY(double starMagnitudeLimitMax READ starMagnitudeLimitMax CONSTANT)
+    Q_PROPERTY(double lightPollutionMin READ lightPollutionMin CONSTANT)
+    Q_PROPERTY(double lightPollutionMax READ lightPollutionMax CONSTANT)
+
+    double starRelativeScale() const;
+    void setStarRelativeScale(double v);
+    double starAbsoluteScale() const;
+    void setStarAbsoluteScale(double v);
+    double starMagnitudeLimit() const;
+    void setStarMagnitudeLimit(double v);
+    bool starMagnitudeLimitEnabled() const;
+    void setStarMagnitudeLimitEnabled(bool on);
+    double lightPollutionLuminance() const;
+    void setLightPollutionLuminance(double v);
+    double minFieldOfView() const;
+    double maxFieldOfView() const;
+    QString projectionTypeKey() const;
+    QString projectionTypeName() const;
+
+    double starRelativeScaleMin() const { return 0.25; }
+    double starRelativeScaleMax() const { return 5.0; }
+    double starAbsoluteScaleMin() const { return 0.05; }
+    double starAbsoluteScaleMax() const { return 10.0; }
+    double starMagnitudeLimitMin() const { return 0.0; }
+    double starMagnitudeLimitMax() const { return 21.0; }
+    double lightPollutionMin() const { return 1e-6; }
+    double lightPollutionMax() const { return 1e-1; }
+
+    //! 12 个投影 key（枚举名，照引擎顺序）。引擎不可用 → 空表。
+    //!
+    //! 🔴 **必须是 Q_PROPERTY，不能是 Q_INVOKABLE**（T38-C DP-06 抓到的**产品缺陷**）：
+    //!   合流形态的加载顺序是**先 `engine.load()`（QML 起来）→ 后 `LiveSkyRuntime::boot()`
+    //!   （引擎起来）**。QML 里 `model: appFacade.projectionTypeKeys()` 这种**函数式绑定**
+    //!   不读任何属性 ⇒ 没有依赖 ⇒ **只求值一次**，而那一次正好在引擎起来之前
+    //!   （`isInitialized()` 为假 ⇒ 返回空表）⇒ **12 个投影按钮一个都不出现**，且永不
+    //!   自愈。改成带 NOTIFY 的属性后，由 `ensureDisplayParamsForwarding()` 末尾发一次
+    //!   "开机唤醒"信号驱动重算（见 .cpp 同名函数）。
+    //!   ⚠️ 同族但**不同病**：T19 那个是"Q_INVOKABLE 在绑定里读到函数对象、比较恒 false"
+    //!   （**类型**坑）；这个是"求值时机"坑 —— 属性类型、返回类型全对，结果照样空。
+    Q_PROPERTY(QStringList projectionTypeKeys READ projectionTypeKeys
+                   NOTIFY displayParametersChanged)
+    QStringList projectionTypeKeys() const;
+    //! 某个投影 key 的中文名（引擎查不到 → 原样返回 key）。
+    Q_INVOKABLE QString projectionKeyName(const QString &key) const;
+    //! 写投影（**白名单闸**：不在清单里 ⇒ 拒绝且不落盘）。返回是否写入。
+    Q_INVOKABLE bool setProjectionTypeKey(const QString &key);
+    //! 视场**立即**落定（滑块用）。与既有 `setFieldOfView()` 的区别：后者走
+    //! `zoomTo(deg, 0.4s)` 动画（T28 捏合/滚轮拍的），滑块拖一次发一次动画会打架。
+    Q_INVOKABLE void setFieldOfViewNow(double degrees);
+
+    //! 上一次显示参数写入的拒绝理由（`ok` / `not-engine` / `out-of-range` /
+    //! `unknown-projection`）。**必须是 Q_PROPERTY**（同 lastTimeRefusal 的理由：
+    //! Q_INVOKABLE 在 QML 里读到的是函数对象，比较恒 false）。
+    Q_PROPERTY(QString lastDisplayRefusal READ lastDisplayRefusal NOTIFY lastDisplayRefusalChanged)
+    Q_INVOKABLE QString lastDisplayRefusal() const { return m_displayRefusal; }
+    Q_INVOKABLE QString displayRefusalText() const;
+    //@}
+
 signals:
     void simulationPausedChanged(bool paused);
     void timeRateChanged(double ratePerJulianDaySecond);
@@ -515,6 +616,10 @@ signals:
     void lastLocationRefusalChanged();
     //! T34：任一引擎显示开关翻转时通知（QML checked 绑定经 revision token 重算）。
     void displayTogglesRevisionChanged();
+    //! T38：任一显示参数（亮度/星等/视场/投影）变化时通知。
+    void displayParametersChanged();
+    //! T38：显示参数写入被拒理由变化时通知（同 lastTimeRefusal 的用法）。
+    void lastDisplayRefusalChanged();
 
 private:
     //! 引擎 StelMovementMgr 是否可用（已引导且 zoom 接口可达）。
@@ -532,6 +637,11 @@ private:
     void ensureTrackingForwarding();
     //! T34：懒连接引擎 actionToggled → displayTogglesRevision 自增（只连一次）。
     void ensureDisplayForwarding();
+    //! T38：懒连接引擎显示参数 NOTIFY → displayParametersChanged / fieldOfViewChanged
+    //! （只连一次）。引擎侧自行改动（快捷键改星等限、切投影夹 FOV）也要刷 QML。
+    void ensureDisplayParamsForwarding();
+    //! T38：记录显示参数写入拒绝理由（同时累加拒绝计数）。nullptr/空串 → "ok"。
+    void setDisplayRefusal(const char *reason);
 
     ISimPacing *m_sim = nullptr;
     bool m_simulationPaused = false;  // 与 LiveSkyRuntime 的 scale=1 默认一致（运行态）
@@ -566,6 +676,14 @@ private:
     int m_displayTogglesRevision = 0;
     //! T34：引擎 actionToggled → revision 的转发是否已连接（只连一次）。
     bool m_displayForwarded = false;
+
+    // T38
+    //! 显示参数写入拒绝理由（`ok` / `not-engine` / `out-of-range` / `unknown-projection`）。
+    QString m_displayRefusal = QStringLiteral("ok");
+    quint64 m_displayWriteCount = 0;
+    quint64 m_displayRefusedCount = 0;
+    //! T38：引擎显示参数 NOTIFY → 本类信号的转发是否已连接（只连一次）。
+    bool m_displayParamsForwarded = false;
 };
 
 } // namespace stelapp

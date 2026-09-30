@@ -172,6 +172,15 @@ set(stelQuickUI_SOURCES
     # （上游零差异 + 下游视口内显著变红，成对）/ 判别对照 / 往返复原。
     ../app/NightModeCheck.hpp
     ../app/NightModeCheck.cpp
+    # T38-A 显示参数命令面探针：A-1.0 把"亮度/星等、视场、投影"列为必须（基础级），
+    # 三者在合流形态从未验证过；审计的三个陷阱（setter 不夹取 / setFov 有夹取 /
+    # 投影非法 key 静默兜底）必须先实测坐实。只报读数。
+    ../app/DisplayProbe.hpp
+    ../app/DisplayProbe.cpp
+    # T38-C 显示参数自检：状态面往返 / 范围闸 / 投影白名单 / UI 控件与绑定 / 视场与
+    # 投影的帧效果（含判别对照）/ 星等截断 / 全量复原。判据 DP-00..DP-11。
+    ../app/DisplayCheck.hpp
+    ../app/DisplayCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp
@@ -233,6 +242,8 @@ qt_add_qml_module(stelQuickUI
         qml/LocationPage.qml
         # T34：真实工具栏（导航 + 12 个显示开关；同样运行时解析，漏登记必炸）
         qml/Toolbar.qml
+        # T38：显示参数页（亮度/星等 · 视场 · 投影；同样运行时解析，漏登记必炸）
+        qml/DisplayPage.qml
     NO_PLUGIN
 )
 

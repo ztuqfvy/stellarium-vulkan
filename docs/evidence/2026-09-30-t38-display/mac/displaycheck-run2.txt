@@ -1,0 +1,205 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 83 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+StelFileMgr found install location "."
+CONFIGISO: original=/Users/ztuqfvy/Library/Application Support/Stellarium
+CONFIGISO: personal=/Users/ztuqfvy/Library/Application Support/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=个人版目录已存在 config.ini，跳过播种（用户改过的值优先）
+CONFIGISO: config=/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini
+System language (ISO 639 / ISO 3166): zh_CN
+Couldn't load translations for language  "en" in section "stellarium"
+Empty translation file for language  "en" in section "stellarium"
+Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+OpenGL module type: desktop OpenGL
+StelGLWidget constructor
+StelGraphicsScene constructor
+qt.qpa.openglcontext: Could not create NSOpenGLContext with shared context, falling back to unshared context.
+initializeGL(windowWidth = 1280, windowHeight = 720)
+OpenGL supported version:  "4.1 Metal - 91.7"
+Current Format:  QSurfaceFormat(version 4.1, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 32, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize -1, stencilBufferSize 8, samples 0, swapBehavior QSurfaceFormat::DoubleBuffer, swapInterval 0, colorSpace QColorSpace(), profile  QSurfaceFormat::CoreProfile)
+Initializing StelMainView
+Luminance textures are not supported
+Running in High Graphics Mode
+Maximum texture anisotropy: 16
+Maximum 2D texture size: 16384
+Driver version string: 4.1 Metal - 91.7
+GL vendor: Apple
+GL renderer: Apple M3
+GL Shading Language version: 4.10
+stel.OpenGLArray: Vertex Array Objects are supported
+Initial high-DPI scaling factor: 2
+Application language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures"
+Couldn't load translations for language  "zh_CN" in section "stellarium-sky"
+Empty translation file for language  "zh_CN" in section "stellarium-sky"
+Empty skyculture-independent translation file for language  "zh_CN"
+Sky language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-planetary-features"
+Empty translation file for language  "zh_CN" in section "stellarium-planetary-features"
+Planetary features language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-scripts"
+Empty translation file for language  "zh_CN" in section "stellarium-scripts"
+Scripts language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Sky culture description language: zh_CN
+Cache directory: /Users/ztuqfvy/Library/Caches/stellarium-vulkan/stelQuickUI
+Using HTTP proxy: "" "" "127.0.0.1" "64074"
+Loaded 252 countries
+Loaded 193 regions
+Loading Solar System data (1: planets and moons) ...
+Loading from: ./data/ssystem_major.ini
+Loaded 83 Solar System bodies from  ./data/ssystem_major.ini
+Solar System now has 83 entries.
+Loading Solar System data (2: minor bodies) ...
+Loading from: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 152637(152637)
+Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 66146(66146)
+minor body  "(66146)" has no IAU code in section  "66146(66146)"
+minor body  "(152637)" has no IAU code in section  "152637(152637)"
+Loaded 477 Solar System bodies from  /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Solar System now has 560 entries.
+File ssystem_minor.ini is loaded successfully...
+ExtendedElements: loaded epoch tables for 4 asteroids from "./data/asteroid_elements.json" ( 0 not matched in ssystem_minor.ini)
+SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+qt.gui.imageio: libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Loading nomenclature for Solar system bodies ...
+Loaded 16058 / 16094 items of planetary surface nomenclature
+Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
+Loading star data ...
+Loading star catalog: ./stars/hip_gaia3/stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+Loading star catalog: ./stars/hip_gaia3/stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+Loading star catalog: ./stars/hip_gaia3/stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+Loading star catalog: ./stars/hip_gaia3/stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+Finished loading star catalogue data, max_geodesic_level: 3
+Loading scientific star designations from ./stars/hip_gaia3/name.fab
+Loaded 5060 / 5060 scientific designations
+Loading scientific star designations from ./stars/hip_gaia3/extra_name.fab
+Loaded 26200 / 26200 scientific designations
+Loading variable stars data from ./stars/hip_gaia3/gcvs.cat
+[...] GCVS 5.1-20250615
+Loaded 47323 / 47323 variable stars
+Loading double stars from ./stars/hip_gaia3/wds_hip_part.dat
+Loaded 22992 / 22992 double stars
+Loading cross-identification data from ./stars/hip_gaia3/cross-id.cat
+Loaded 327097 / 327097 cross-identification data records for stars
+Loading orbital parameters data for binary system from ./stars/hip_gaia3/binary_orbitparam.dat
+Loaded 15 / 15 orbital parameters data for binary system
+Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 159 Barium stars, and 220 have PM>1000mas/yr.
+navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+Loading DSO data ...
+[...] Stellarium DSO Catalog, version 3.23 (standard edition)
+Loaded 94899 DSO records
+Loading DSO name data ...
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+Loaded 1361 / 1388 DSO name records successfully
+No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+Loading DSO outline data ...
+Loaded 100 DSO outline records successfully
+Loading DSO discovery data ...
+Loaded 183 / 183 DSO discovery records successfully
+LandscapeMgr: initialized Cache for 100 MB.
+Loading star names from ./skycultures/common_star_names.fab
+Loaded 411 / 411 common star names
+Loaded 88 / 88 constellation records successfully for culture modern
+Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+Loading constellation boundary data ... 
+Loaded 781 constellation boundary segments
+Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install more star catalogs
+Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install more star catalogs
+Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
+Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
+Loaded 88 / 92 asterism records successfully for culture modern
+Initializing basic GL shaders... 
+Creating GUI ...
+Loading style file: :/graphicGui/normalStyle.css
+Loaded plugin "Exoplanets"
+[Exoplanets] Version of the format of the catalog: 1
+[Exoplanets] loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Exoplanets/exoplanets.json
+Loaded plugin "MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/MeteorShowers/MeteorShowers.json
+[MeteorShowersMgr] Version of the format of the catalog: 2
+Loaded plugin "Novae"
+[Novae] version of the catalog: 1
+[Novae] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Novae/novae.json
+Loaded plugin "Oculars"
+Oculars::validateAndLoadIniFile() ocular.ini exists at: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Oculars/ocular.ini . Checking version...
+Oculars::validateAndLoadIniFile() found existing ini file version 3.1
+Loaded plugin "Satellites"
+[Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Satellites/satellites.json
+Satellite has invalid orbit: "STARLINK-38358" "100560"
+Loaded plugin "SolarSystemEditor"
+Using the ssystem_minor.ini file that already exists in the user directory...
+Loaded 895910 discovery circumstances records for minor planets...
+SSE: Comet cross-index data: Overwriting entry for "453P"
+SSE: Comet cross-index data: Overwriting entry for "467P"
+SSE: Comet cross-index data: Overwriting entry for "465P"
+SSE: Comet cross-index data: Overwriting entry for "466P"
+SSE: Comet cross-index data: Overwriting entry for "468P"
+SSE: Comet cross-index data: Overwriting entry for "470P"
+SSE: Comet cross-index data: Overwriting entry for "472P"
+SSE: Comet cross-index data: Overwriting entry for "475P"
+SSE: Comet cross-index data: Overwriting entry for "477P"
+SSE: Comet cross-index data: Overwriting entry for "473P"
+SSE: Comet cross-index data: Overwriting entry for "476P"
+SSE: Comet cross-index data: Overwriting entry for "479P"
+SSE: Comet cross-index data: Overwriting entry for "480P"
+SSE: Comet cross-index data: Overwriting entry for "481P"
+Loaded 2570 discovery circumstances records for comets...
+OpenGL viewport size: 2560 x 1440
+Creating scene FBO with size 2560x1440
+LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461313.96209"
+StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.96209，时钟=HostDriven）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+AppFacade: simulationPaused = true 
+LIVESKY: simScale -> 1.000（引擎仿真时钟）
+AppFacade: simulationPaused = false 
+DISPLAYCHECK: 显示参数自检：判据 14/14
+DISPLAYCHECK: 初值：relativeStarScale=1 absoluteStarScale=1 lightPollutionLuminance=0.000143438 customStarMagLimit=0 flagStarMagnitudeLimit=false fov=60 projection=ProjectionStereographic
+DISPLAYCHECK: 布场：已冻结仿真 + 大气置关（原值 开）—— 星等/亮度的视觉效应只在星星可见时存在
+DISPLAYCHECK: 参考帧A（上游）：有效 帧号=166 尺寸=1280x720 非黑=0.8717 哈希=cb3d91b1190f998e
+DISPLAYCHECK: 噪声底读数（同状态两帧）：差异像素=878/921600（0.095%） 最大通道差=1 平均通道差=0.0010 哈希不同 包围盒=(10,0)-(1279,712) 高度8带=165/102/78/70/114/89/207/53
+DISPLAYCHECK:   [PASS] DP-00 噪声底门：冻结后同状态两帧**静定**（实测 差异像素=878/921600（0.095%） 最大通道差=1 平均通道差=0.0010 哈希不同 包围盒=(10,0)-(1279,712) 高度8带=165/102/78/70/114/89/207/53；噪声判据取 **幅度** Δ≤2，不取面积 —— 实测抖动面积会随场景状态变）—— 后续像素判据的口径有效
+DISPLAYCHECK:   [PASS] DP-01 状态面往返：5 项 façade 写 → **引擎 getter 独立回读**一致（rel=2.5 abs=2 lp=0.001 mag=8 flag=true）
+DISPLAYCHECK:   [PASS] DP-02 范围闸：写 99 ⇒ 引擎收到上界 5（不是 99）∧ refusal=out-of-range；写回合法值 ⇒ refusal=ok —— 引擎 setter 不夹取，闸门在 façade
+DISPLAYCHECK: DP-03 逐 key 读数：ProjectionPerspective=ProjectionPerspective(maxFov 120.0); ProjectionStereographic=ProjectionStereographic(maxFov 235.0); ProjectionFisheye=ProjectionFisheye(maxFov 360.0); ProjectionOrthographic=ProjectionOrthographic(maxFov 180.0); ProjectionEqualArea=ProjectionEqualArea(maxFov 360.0); ProjectionHammer=ProjectionHammer(maxFov 185.0); ProjectionMollweide=ProjectionMollweide(maxFov 185.0); ProjectionSinusoidal=ProjectionSinusoidal(maxFov 185.0); ProjectionMercator=ProjectionMercator(maxFov 270.0); ProjectionMiller=ProjectionMiller(maxFov 270.0); ProjectionCylinder=ProjectionCylinder(maxFov 185.0); ProjectionCylinderFill=ProjectionCylinderFill(maxFov 180.0)
+DISPLAYCHECK:   [PASS] DP-03 投影：12/12 个 key 往返一致 ∧ maxFov 取到 6 个不同值（235.0/180.0/185.0/120.0/270.0/360.0）⇒ 上限是**投影的函数**，滑块上限必须跟着它走
+DISPLAYCHECK:   [PASS] DP-04 白名单闸：写乱码 ⇒ accepted=false ∧ 引擎 key ProjectionCylinderFill→ProjectionCylinderFill（未变）∧ refusal=unknown-projection —— 引擎自己会**静默兜底 Stereographic**，闸门挡住它
+DISPLAYCHECK:   [PASS] DP-05 lastDisplayRefusal 是 Q_PROPERTY=true ∧ 有 NOTIFY=true（QML 绑定才比得出字符串）
+DISPLAYCHECK: DP-06 视觉树扫描：单件 7/7 找到；proj_* 共 12 个；displayProjectionRepeater.count=12
+DISPLAYCHECK:   [PASS] DP-06 UI 控件齐备：7 个单件全找到 ∧ 12 个投影按钮全找到（**走视觉树递归** —— Repeater delegate 的 QObject 父链是空的，findChild 扫不到）
+DISPLAYCHECK: DP-07 已由**引擎侧**把 relativeStarScale 写成 3.25（不经 façade）⇒ 下一拍看 UI 滑块跟不跟
+DISPLAYCHECK:   [PASS] DP-07 绑定腿：引擎侧改 3.25 ⇒ UI 滑块 value=3.25（UI 必须跟引擎，否则面板停在首帧）
+DISPLAYCHECK: DP-07 后已**全量还原**显示参数到初值台账（帧级判据的基准必须干净）
+DISPLAYCHECK: 参考帧A'（**全量还原后**）：有效 帧号=245 尺寸=1280x720 非黑=0.8717 哈希=63b3a19eb5aaf494 亮像素(≥96)=2607
+DISPLAYCHECK: DP-08 已 setFieldOfViewNow(30)（原 60）
+DISPLAYCHECK: DP-08 帧读数（视场 60→30）：差异像素=620782/921600（67.359%） 最大通道差=255 平均通道差=2.6135 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=58646/67885/76112/82429/84186/82116/80835/88573
+DISPLAYCHECK:   [PASS] DP-08 视场生效（成对）：改视场后上游帧差异占比 0.6736 ≥ 门 0.01
+DISPLAYCHECK: 判别对照：已 trigger(actionShow_Atmosphere)（回读放下一步）
+DISPLAYCHECK: 判别对照帧读数：差异像素=921600/921600（100.000%） 最大通道差=254 平均通道差=16.2390 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=115200/115200/115200/115200/115200/115200/115200/115200
+DISPLAYCHECK:   [PASS] DP-08b 判别对照（承重）：同一方法对 actionShow_Atmosphere 测出差异占比 1.0000 ≥ 门 0.01 ⇒ 方法活着，DP-08 的差异不是「测不出东西」的假绿
+DISPLAYCHECK: 对照量还原核对（大气回原值，基线=触发前帧 fov30）：差异像素=452553/921600（49.105%） 最大通道差=2 平均通道差=0.4911 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=48726/49966/51031/54046/57898/61249/63812/65825 亮像素=3839 （**非判据**，只报读数）
+DISPLAYCHECK: DP-09 已还原视场并切 ProjectionFisheye（抓帧放下一步）
+DISPLAYCHECK: DP-09 帧读数（投影 ProjectionStereographic→Fisheye）：差异像素=200947/921600（21.804%） 最大通道差=255 平均通道差=1.3699 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=14344/14648/16971/16136/18386/24550/36992/58920
+DISPLAYCHECK:   [PASS] DP-09 投影生效（成对）：key 已是 Fisheye ∧ 上游帧差异占比 0.2180 ≥ 门 0.01
+DISPLAYCHECK: DP-10 LOW：已开手动极限星等并压到下界 0（原设定 0，原开关 false）
+DISPLAYCHECK: DP-10 LOW 帧(1)：亮像素(≥96)=0
+DISPLAYCHECK:   [PASS] DP-10a 静置对照（承重）：**状态不变**时连抓两帧，亮像素 0→0（漂移 0 ≤ 门 100）⇒ 计数在噪声下稳定 ⇒ 下一步的跳变不是抖动凑出来的
+DISPLAYCHECK: DP-10 HIGH 帧：亮像素=2607（LOW=0，差=2607）；HIGH vs 参考帧A'：差异像素=0（逐位相同，哈希相同） ⇒ 初值本身即「全开」；LOW vs 参考帧A'：差异像素=12269/921600（1.331%） 最大通道差=255 平均通道差=0.7262 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=1466/1328/2970/1355/1157/1327/1529/1137
+DISPLAYCHECK:   [PASS] DP-10b 星等截断生效（成对 · 方向量）：极限星等 0↔15 使亮像素0↔2607（差 2607 ≥ 门 500）⇒ 星表截断确实跟着设定值走。用**方向量**而不是全图占比：星点像素占比天然小、会被地面/背景稀释；LOW↔HIGH 成对**不依赖初值长什么样**，方向单一
+DISPLAYCHECK: 收尾：已全量还原（核对放下一步）
+DISPLAYCHECK: DP-11 复原帧读数：差异像素=0（逐位相同，哈希相同）
+DISPLAYCHECK:   [PASS] DP-11 复原：引擎 getter 全回初值=true ∧ 复原帧 vs 参考帧A' 差异占比 0.0000（低于噪声容差=true）
+DISPLAYCHECK: 收尾：大气还原=1 仿真暂停还原=1
+DISPLAYCHECK: VERDICT=PASS

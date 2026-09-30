@@ -66,6 +66,21 @@
  *                                  差异，并以星座线 OFF↔ON 作**判别性对照**。目的：先证
  *                                  "引擎旧夜视后处理在合流形态的读回帧上可不可见"，
  *                                  再决定夜视是复用引擎还是在 Qt Quick 侧自实现。
+ *   STELQUICK_DISPLAY_PROBE=1    → T38-A **显示参数命令面探针**（见
+ *                                  app/DisplayProbe.hpp）：亮度/星等（StelSkyDrawer
+ *                                  Q_PROPERTY 群）/ 视场（StelMovementMgr）/ 投影
+ *                                  （StelCore 12 个 key）的**写读往返 + 夹取语义 +
+ *                                  非法值落点**，只报读数、**不下 PASS/FAIL**
+ *                                  （断言在 T38-C 的 DisplayCheck）。
+ *   STELQUICK_DISPLAY_CHECK=1    → T38-C **显示参数自检**（见 app/DisplayCheck.hpp）：
+ *                                  判据 DP-00..DP-11 —— 状态面写读往返 / 范围闸（含
+ *                                  视场上限随投影变化）/ 投影 12 key + 白名单闸 / UI
+ *                                  控件存在性与绑定 / 视场与投影的**帧效果**（含判别
+ *                                  对照）/ 星等截断 / 全量复原。起始页停在 "sky"。
+ *                                  负控：`STELQUICK_DISPLAY_GATE_OFF=1`（范围闸与
+ *                                  白名单闸旁路）⇒ 预期恰红 [DP-02,DP-04]；
+ *                                  `STELQUICK_DISPLAY_FWD_OFF=1`（断引擎→façade
+ *                                  转发）⇒ 预期恰红 [DP-07]。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -251,6 +266,12 @@ void ensureVulkanLoaderPath()
 // 只报读数、不下 PASS/FAIL —— 断言在 T37-C 的 NightModeCheck。
 #include "app/NightModeProbe.hpp"
 #include "app/NightModeCheck.hpp"
+// T38-A：显示参数命令面探针（亮度/星等 · 视场 · 投影 —— 写读往返 / 夹取语义 /
+// 非法值落点）。只报读数、不下 PASS/FAIL（断言在 T38-C 的 DisplayCheck）。
+#include "app/DisplayProbe.hpp"
+// T38-C：显示参数自检（判据 DP-00..DP-11 —— 状态面往返 / 范围闸 / 投影白名单 /
+// UI 控件存在性与绑定 / 视场与投影的**帧效果** + 判别对照 / 星等截断 / 复原）。
+#include "app/DisplayCheck.hpp"
 // T36：配置目录隔离（引导期）与其自检。**引导期**那一半由 LiveSkyRuntime::boot()
 // 调用——位置即判据，别挪到 StelLogger / config.ini 之后。
 #include "app/ConfigIsolationCheck.hpp"
@@ -5201,10 +5222,19 @@ int main(int argc, char **argv)
     // 探针要先回答"引擎旧夜视（挂在 QGraphicsItem 上的纯 GL effect）在我们的
     // 读回帧上到底可不可见"，再决定夜视在 Qt Quick 侧怎么实现。只报读数。
     const bool nightProbe = qEnvironmentVariableIsSet("STELQUICK_NIGHT_PROBE");
+    // T38-A：**显示参数命令面探针**（见 app/DisplayProbe.hpp）。A-1.0 把"亮度/星等、
+    // 视场、投影"列为必须（基础级）—— 这三项在合流形态从未验证过；审计发现三个
+    // 陷阱（setter 不夹取 / setFov 有夹取 / 投影非法 key 静默兜底），必须先实测坐实。
+    const bool displayProbe = qEnvironmentVariableIsSet("STELQUICK_DISPLAY_PROBE");
     // T37-C：**夜视自检**（见 app/NightModeCheck.hpp）。判据 NC-01..NC-05。
     // 负控开关：`STELQUICK_NIGHT_EFFECT_OFF=1`（QML layer.enabled 强制 false）
     // ⇒ NC-03② 必红且只它红（证明"效果面"判据承重）。
     const bool nightCheck = qEnvironmentVariableIsSet("STELQUICK_NIGHT_CHECK");
+    const bool displayCheck = qEnvironmentVariableIsSet("STELQUICK_DISPLAY_CHECK");
+    // T38-C 显示参数自检（见 app/DisplayCheck.hpp）：判据 DP-00..DP-11。装配顺序同其他
+    // 自检，运行块在下方紧邻 displayProbe。负控：STELQUICK_DISPLAY_GATE_OFF=1
+    // （关范围闸/白名单闸）/ STELQUICK_DISPLAY_FWD_OFF=1（断引擎→façade 转发）。
+
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
     const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
@@ -5216,7 +5246,7 @@ int main(int argc, char **argv)
     const QString startPage = (a2Check || dynCheck || longRun || returnUiCheck || replayCheck
                                || interactUiCheck || locProbe || toolProbe || toolCheck
                                || timeLinkProbe || timeLinkCheck || cfgCheck || nightProbe
-                               || nightCheck
+                               || nightCheck || displayProbe || displayCheck
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
@@ -5970,6 +6000,127 @@ int main(int argc, char **argv)
                 std::printf("NIGHTPROBE: VERDICT=DONE\n");
                 std::fflush(stdout);
                 app.exit(0);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T38-A 显示参数命令面探针（STELQUICK_DISPLAY_PROBE=1）：A-1.0 表里"亮度/星等、
+    // 视场、投影"三项（T37 只做掉了同一格的"主题/夜视"）在合流形态从未验证过。
+    // 装配顺序与 NIGHT_PROBE 一致（暖机 → boot → start → attach）。
+    // 输出 `DISPLAYPROBE:` 前缀，只报读数、不下 PASS/FAIL。
+    if (displayProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("DISPLAYPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "DISPLAYPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("DISPLAYPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "DISPLAYPROBE: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("DISPLAYPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::DisplayProbe::run(
+            &app, &appFacade,
+            [&app](const stelapp::DisplayProbe::Result &result) {
+                std::printf("DISPLAYPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("DISPLAYPROBE: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("DISPLAYPROBE: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("DISPLAYPROBE: VERDICT=DONE\n");
+                std::fflush(stdout);
+                app.exit(0);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T38-C 显示参数自检（STELQUICK_DISPLAY_CHECK=1）：判据 DP-00..DP-11。装配顺序同上。
+    // 输出 `DISPLAYCHECK:` 前缀。负控：STELQUICK_DISPLAY_GATE_OFF=1（范围闸/白名单闸旁路）
+    // ⇒ 预期恰红 [DP-02,DP-04]；STELQUICK_DISPLAY_FWD_OFF=1（断引擎→façade 转发）
+    // ⇒ 预期恰红 [DP-07]。
+    if (displayCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("DISPLAYCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "DISPLAYCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("DISPLAYCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "DISPLAYCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("DISPLAYCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::DisplayCheck::run(
+            &app, &appFacade, &actionRouter, window, &frameMailbox,
+            [&app](const stelapp::DisplayCheck::Result &result) {
+                std::printf("DISPLAYCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("DISPLAYCHECK: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("DISPLAYCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                // 同 T37 口径：INCONCLUSIVE（竞态型读数/异常帧）不硬判 FAIL，rc=6。
+                if (result.inconclusive) {
+                    std::printf("DISPLAYCHECK: VERDICT=INCONCLUSIVE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("DISPLAYCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
             });
         const int rc = app.exec();
         if (liveSkyRuntime) {

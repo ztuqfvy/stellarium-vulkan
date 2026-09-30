@@ -115,6 +115,14 @@ Rectangle {
                 text: "地点"
                 onClicked: toolbar.navigate("location")
             }
+            // T38：显示参数页（亮度/星等 · 视场 · 投影）。
+            // ⚠️ 上面 6 个导航按钮的 objectName **一个都没动** ——
+            //   RETURNUICHECK / INTERACTCHECK / AppFacadeCheck 的注入判据锚着它们。
+            Button {
+                objectName: "navDisplayButton"
+                text: "显示"
+                onClicked: toolbar.navigate("display")
+            }
 
             // 唯一 filler：把右侧信息顶到最右（见文件头坑②，别再加第二个）。
             Item { Layout.fillWidth: true }
