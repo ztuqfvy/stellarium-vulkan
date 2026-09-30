@@ -45,6 +45,11 @@ class BackendInfo : public QObject
     // 期望：只有 TB-10 红（真实点击落在根内容控件上），其余 11 条照绿
     // ——证明"落点覆盖"自证是这条假绿的唯一哨兵。
     Q_PROPERTY(bool tbLayoutBreak READ tbLayoutBreak CONSTANT)
+    // T37-C 负控开关：true ⇒ MainWindow.qml 的夜视 layer.enabled 绑定强制 false
+    // ⇒ 夜视效果物理不生效 ⇒ NIGHTCHECK 的 NC-03② 必红（且只它红）。
+    // 证明"效果面"判据承重：没有它，"QML 滤镜被悄悄删掉/shader 路径写错"这种
+    // 缺陷只能靠 NC-03① 的上游零差异碰运气（那是"引擎侧没画"，测不出"UI 侧没画"）。
+    Q_PROPERTY(bool nightEffectOff READ nightEffectOff CONSTANT)
 
     // 说明：手动 qmlRegisterSingletonInstance 注册（main.cpp），不用 QML_ELEMENT 宏，
     // 避免与 qt_add_qml_module 的类型注册重复冲突。
@@ -62,6 +67,7 @@ public:
     bool tbTokenBindingOff() const;
     bool tbClickOff() const;
     bool tbLayoutBreak() const;
+    bool nightEffectOff() const;
 
     // 填充探针结果（应用启动时调用一次）
     void applyProbe(const VulkanProbeResult &probe);

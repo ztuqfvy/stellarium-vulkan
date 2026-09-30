@@ -160,6 +160,18 @@ set(stelQuickUI_SOURCES
     ../app/ConfigIsolation.cpp
     ../app/ConfigIsolationCheck.hpp
     ../app/ConfigIsolationCheck.cpp
+    # T37-A 夜视链路数据面探针：先证"引擎旧夜视后处理（NightModeGraphicsEffect，
+    # 挂在 QGraphicsItem 上、纯 GL）在合流形态的读回帧上到底可不可见"，再决定
+    # 夜视是在 Qt Quick 侧自实现还是复用引擎。只报读数（断言见 T37-C）。
+    ../app/NightModeProbe.hpp
+    ../app/NightModeProbe.cpp
+    # T37 提炼：帧采样/逐像素比较共用工具（探针与判据必须同一把尺子，防口径漂移）。
+    ../app/FrameCompare.hpp
+    ../app/FrameCompare.cpp
+    # T37-C 夜视自检：状态面往返（引擎 getter 独立回读）/ 噪声底门 / 效果面
+    # （上游零差异 + 下游视口内显著变红，成对）/ 判别对照 / 往返复原。
+    ../app/NightModeCheck.hpp
+    ../app/NightModeCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp
@@ -247,6 +259,25 @@ qt_add_resources(stelQuickUI "stelquickui_pinyin"
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/assets"
     FILES assets/pinyin-lite.txt
 )
+
+# ── T37：夜视滤镜（qsb 预编译）─────────────────────────────────────────────
+# Qt 6.11 的 ShaderEffect 不再接受内联 GLSL（fragmentShader 只认 .qsb URL），
+# 内联源码的失败形态是"整个 layer 不渲染 ⇒ 全白屏"（见 shaders/nightmode.frag 头注）。
+# qt6_add_shaders 在构建期自动调 qsb 生成 .qsb 并入资源 /StelQuickUI/shaders/。
+# ShaderTools 缺失（最小 Qt 发行版可能不带）时给显式告警 —— 夜视会在运行期静默
+# 全白，这条告警是唯一线索。
+find_package(Qt6 QUIET COMPONENTS ShaderTools)
+if(TARGET Qt6::ShaderTools)
+    qt6_add_shaders(stelQuickUI "stelquickui_nightmode_shader"
+        PREFIX "/StelQuickUI"
+        FILES shaders/nightmode.frag
+    )
+else()
+    message(WARNING
+        "未找到 Qt6::ShaderTools → 夜视滤镜的 .qsb 无法生成。\n"
+        "  运行期 MainWindow 的夜视 layer 会渲染失败（全白屏）。\n"
+        "  需要安装 Qt Shader Tools（Homebrew: brew install qtshadertools）。")
+endif()
 
 # T24：引擎 StelFileMgr::getLocaleDir() 按 applicationDirPath/../translations 找
 # .qm（StelFileMgr.cpp:459-487）。合流形态 bundle 布局下三个候选路径全不命中

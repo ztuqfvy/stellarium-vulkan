@@ -1,10 +1,12 @@
-# 进度总览（截至 2026-09-30 下午，**T36 后**盘点）
+# 进度总览（截至 2026-09-30 傍晚，**T37 后**盘点）
 
-> 口径基线：T34 收口提交 `9b04cdd` + T35 提交 `d68cc32` + W 支线 + **T36（A5 第一项）**。
+> 口径基线：T34 收口提交 `9b04cdd` + T35 提交 `d68cc32` + W 支线 + **T36（A5 第一项）**
+> + **T37（A5 第二项：夜视闭环）**。
 > 上一版快照基线是 `9b04cdd`（T34 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，
 > **T34 见 `docs/T34_TOOLBAR.zh_CN.md`**，**T35 见 `docs/T35_TIMELINK.zh_CN.md`**，
 > **W-T34/W-T35 跨平台复验见 `docs/WT35_WINDOWS_RECHECK.zh_CN.md`**，
-> **T36 配置目录隔离见 `docs/T36_CONFIG_ISOLATION.zh_CN.md`**。
+> **T36 配置目录隔离见 `docs/T36_CONFIG_ISOLATION.zh_CN.md`**，
+> **T37 夜视闭环见 `docs/T37_NIGHTMODE.zh_CN.md`**。
 > 环境口径与 T17–T34 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
@@ -20,7 +22,7 @@
 | A2 旧天空帧桥 | 静态 12/12 + 动态 7/7 + 30min 长跑 | ✅ 完成 |
 | A3 业务接口与输入路由 | AppFacade / ActionRouter / 模型 / 单一仿真时钟 / 键位路由 | ✅ 完成（T14–T17） |
 | **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | ✅ **7/7 完成**（**T34 收口**，见 §2） |
-| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36 完成**配置隔离/播种；余 T37–T42，见 §6） |
+| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 完成；余 T38–T42，见 §6） |
 | A6 回归与交接 | 全量回归、帧桥统计、资源打包、接口冻结 | ⬜ 未开始 |
 | A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置 A6 或真机 |
 
@@ -79,9 +81,11 @@
 | （探针）`TOOLBARPROBE` | 只报读数、**不打 PASS** | `STELQUICK_TOOL_PROBE` | **T34-A** 命令面探针（注册表规模 505/15 / 12 候选逐项 checkable·checked·text·key / trigger→getter 翻转 / `actionToggled` 观测 / revision 读数） |
 | `TIMELINKCHECK` | 7（TL-01..TL-07） | `STELQUICK_TIMELINK_CHECK` | **T35** 仿真时间链路定性：读面同源 / **链路自洽**（ΔJD==窗口×rate×scale）/ rate 多档线性 / 窗口线性（**真实墙钟**，非按帧固定步长）/ 冻结不补 / 速率阶梯跟变 / **恒星时绝对腿**（ΔLST==ΔJD×360.9856° + 下游 `j2000ToAltAz` 落点重算）。**五批正题均 `7/7`** |
 | `CONFIGCHECK` | 8（CFG-01..CFG-08） | `STELQUICK_CONFIG_CHECK` | **T36** 个人版配置目录隔离：隔离读数自洽 / 目录独立 / **配置写侧落点（`QSettings::fileName()`，最强）** / 日志落点 / 配置种子完整（双叉）/ 写侧不触原目录（**三半成对**）/ 产品路径落点（`ActionRouter.trigger` 真路径）/ 播种清单完整。**不启帧泵、无就绪门**（全同步事实）。**三场景正题均 `8/8`**（首次 / 非首次 / **全新机器**） |
+| `NIGHTCHECK` | 6（NC-01..NC-05） | `STELQUICK_NIGHT_CHECK` | **T37** 夜视闭环：状态面（**引擎 getter 独立回读**）/ 噪声底门（**低于噪声容差**，非逐位相同；超限 ⇒ 整套 UNAVAILABLE）/ 效果面**成对**（① 上游低于噪声容差 —— 大气已关 ⇒ 引擎夜视反应成 no-op；② 下游视口 ≥90% ∧ 均值>1.0，**伪证守门=①**）/ 判别对照（承重）/ 往返复原（无全帧级红移；异常帧 ⇒ INCONCLUSIVE）。**负控**：`STELQUICK_NIGHT_EFFECT_OFF=1` ⇒ 恰好红 `[NC-03②]`。**正题 3/3 `6/6`、负控 3/3 恰中** |
 | （探针）`TIMELINKPROBE` | 只报读数、**不打 PASS** | `STELQUICK_TIMELINK_PROBE` | **T35-A** 时间链路探针（Q1 三个读面同源 / Q2·Q3 窗口原始读数 / Q4 阶梯台账 0.1→1→10→100 / Q5·Q5b 冻结与恢复 / Q6b 恒星时恒等式 / Q6c 下游重算 / Q6d **视线随 JD 转的机理核验**） |
+| （探针）`NIGHTPROBE` | 只报读数、**不打 PASS** | `STELQUICK_NIGHT_PROBE` | **T37-A** 夜视链路数据面探针（引擎状态面 / 宿主链面 `property("nightMode")` / 帧静定噪声底 / 上游·下游两条独立读回路径 OFF↔ON 差异 / 判别性对照）。⚠️ 探针头条"上游逐位相同"事后被证伪（等待挂读步，TRAPS 69）—— 但**帧号留痕**才使翻案成为可能 |
 
-一键复跑：`tools/t16-verify.sh` … **`tools/t36-verify.sh`**（每个任务一个，用法 `all N`；
+一键复跑：`tools/t16-verify.sh` … **`tools/t37-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
 8 条判据、要求 `VERDICT=PASS`；**`t34-verify.sh` 含四组负控 + 探针 + 10 套件 + S3 + A2 + DYN**；
 **`t35-verify.sh` 含三组负控 + 探针 + **11 套件**（多了 `toolbarcheck`）+ INTERACTCHECK + S3 + A2 + DYN**；
@@ -269,17 +273,50 @@ CFG-06/07 的原目录侧"天然成立"（空串不含哨兵 / 两个 `<unreadab
 附两条仪器教训：⚠️ **stdout 块缓冲 / stderr 不缓冲** ⇒ 混流时"最后一行"不可信，
 判 crash 点必须**分流失**；⚠️ `findFile` 的 `Writable` **只保证"那个文件可写"**。
 
+### T37 设置页骨架 + 夜视闭环 —— ✅ **已完成**（`docs/T37_NIGHTMODE.zh_CN.md`）
+
+**A-1.0 的前提性假设被证伪并重新落地**（「夜视仍由旧后处理负责、避免叠加两次」）：
+
+- **引擎旧夜视后处理物理不可达**：`NightModeGraphicsEffect` 是挂 QGraphicsItem 的
+  **纯 GL** effect，只在 QGraphicsView 场景渲染循环里被调；合流宿主 `WA_DontShowOnScreen`
+  + 帧走 `LegacySkyHost` 自建 FBO + Metal RHI ⇒ 实验：禁用该 effect **行为不变**。
+- **三轮反转才定案**（⚠️ 第一轮探针头条是假绿、第二轮把引擎正常语义误判成缺陷）：
+  ① 探针"上游 OFF↔ON 逐位相同"= 等待挂读步读到旧帧（帧号 178==178 实锤，TRAPS 69）；
+  ② 修掉等待后见"翻转夜视 ⇒ 上游黑帧"，初判"引擎夜视反应有害"（用户拍板方案 A）；
+  ③ **判别实验**（对照量换 `actionShow_Atmosphere`）证明：黑天空 = 夜视 → **大气整层
+  退场**（三处 `if (getVisionModeNight()) return;`，**原版语义**）+ 白昼亮度模型压住
+  星星；**夜视开 + 大气关 = 漂亮星空+银河** ⇒ 引擎无病，**方案 A 不需要执行**。
+- **产品落点**：`keySink.layer` + ShaderEffect（`.qsb` 预编译，公式逐字复刻引擎
+  `lum=max(r,g,b)→(lum,0.3lum,0)`）—— 夜视由 Qt Quick 侧承担**唯一一次**红移。
+  🔴 Qt 6.11 的 ShaderEffect **只认 `.qsb`**，内联 GLSL 的失败形态是**整个 layer
+  不渲染 ⇒ 全白屏**（不是"效果不生效"）。
+- 判据 `NIGHTCHECK` **6 条**；负控 `NIGHT_EFFECT_OFF` 恰好红 `[NC-03②]`。
+  关键口径：噪声底用"**低于噪声容差**"（冻结下引擎渲染有亚 LSB 抖动）、NC-03②
+  均值门 **1.0**（暗星空下滤镜均值实测 ~14.5，不能用 50）、NC-05 用"无全帧级红移"
+  （fader 余辉有界容忍）。
+- **定稿轮（mac）`FAILED=0` 全绿**：正题 3/3 `6/6 PASS`、负控 3/3 恰中、
+  13 套件 + `INTERACTCHECK 18/18` + S3 + A2 + DYN 双路 3/3+3/3 全 rc=0；脚本层 2/0。
+
+⚠️ 本轮新血泪（`TRAPS.md` **69/70**）：① 🔴 **"效果判据"的三种伪装**——等待挂读步
+⇒ 旧帧假绿（效果帧必须打帧号并断言推进）；黑帧差异（~157）与滤镜效果（~162）同量级
+⇒ 效果判据可被"内容消失"伪装（伪证守门 = 上游不变）；冻结 ≠ 逐位相同（亚 LSB 抖动）。
+② 🔴 **ad-hoc 内联命令漏传模式变量** ⇒ app 落回普通 GUI 模式 ⇒ "引导挂死"幻影
+（T37-X3）；铁证手法 = 用日志行反推运行模式；**跑自检一律走 verify 脚本**。
+
+
+
 ### 之后（按优先级）
 
 `LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算 → 捏合后首击 → DYN 停摆根因；
 另加 T33 移交的 `findLocations` 排序（照 T21 完全匹配优先）、
-"负控 A 在 Windows 不复现"的定性。
+"负控 A 在 Windows 不复现"的定性、**T37-X4**（仿真冻结期间 fader 动画停摆，
+NC-05 的有界容忍来源）、**T37-X1**（夜视翻转引起 5 个工具栏按钮重绘，功能正确、
+纯性能线索）。
 
-**A5 剩余**（T36 之后）：**T37 设置页骨架 + 夜视闭环**（⚠️ 夜视效果**从未验证**：
-`StelApp::draw()` 直接画模块、`QGraphicsEffect` 在 QGraphicsScene 层 ⇒ 红色滤镜**很可能不在
-读回帧里**，需先探针定性）→ T38 显示参数（星等/亮度 + 视场 + 投影）→ T39 高 DPI + 渲染诊断
+**A5 剩余**（T37 之后）：T38 显示参数（星等/亮度 + 视场 + 投影）→ T39 高 DPI + 渲染诊断
 → T40 快捷键编辑 → T41 帮助/版本/许可证 → T42 错误页 + "未支持项"清单。
-再往后：A6（回归与交接、接口冻结）。
+再往后：A6（回归与交接、接口冻结）。**W-T37 Windows 复验待排期**
+（T33/W-T35 已证明跨平台复验能逼出真缺陷）。
 
 ---
 

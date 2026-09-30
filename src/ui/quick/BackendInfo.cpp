@@ -31,6 +31,11 @@ bool BackendInfo::tbLayoutBreak() const
     return qEnvironmentVariableIsSet("STELQUICK_TOOL_LAYOUT_BREAK");
 }
 
+bool BackendInfo::nightEffectOff() const
+{
+    return qEnvironmentVariableIsSet("STELQUICK_NIGHT_EFFECT_OFF");
+}
+
 void BackendInfo::applyProbe(const VulkanProbeResult &probe)
 {
     m_deviceName = probe.deviceName;

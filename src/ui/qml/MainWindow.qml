@@ -93,6 +93,50 @@ ApplicationWindow {
         anchors.fill: parent
         focus: true
 
+        // ── T37：夜视（**Qt Quick 侧**实现，effect 覆盖 keySink = 全部内容）────
+        //
+        // 为什么在 UI 侧而不是引擎（T37-A 探针 STELQUICK_NIGHT_PROBE=1 实测定论）：
+        //   引擎旧夜视 = NightModeGraphicsEffect（**挂在 QGraphicsItem 上的纯 GL
+        //   effect**，StelMainView.cpp:166，setGraphicsEffect 于 :994）。虽然
+        //   connect 链活着（探针 Q2：宿主 property("nightMode") 随翻转 0→1，
+        //   即 updateNightModeProperty → setEnabled(true) 确实执行了），但：
+        //   ① 合流形态的 StelMainView 是 WA_DontShowOnScreen（LiveSkyRuntime.cpp:79），
+        //     QGraphicsEffect::draw() 只在 QGraphicsView 的 scene 渲染循环里被调；
+        //   ② 帧根本不经它 —— 由 LegacySkyHost 自建 FBO + StelApp::draw() 产出
+        //     （该路径**没有任何夜视分支**，已逐行核过）；
+        //   ③ effect 是 QOpenGLShaderProgram/QOpenGLFramebufferObject，与 Qt Quick
+        //     的 Metal RHI 是两条独立图形栈。
+        //   ⇒ 实验：禁用该 effect 行为不变（零影响）⇒ A-1.0 表里"天空夜视效果仍由
+        //     旧后处理负责，避免叠加两次"在合流形态**不成立**（旧后处理物理不可达，
+        //     "叠加两次"的顾虑不存在；红移只能由 UI 侧承担一次）。
+        //   ⚠️ 别把"上游帧 OFF↔ON 逐位相同"写进结论 —— 那是 T37-A 首轮的**假绿**
+        //     （等待挂在读步，抓到旧帧，TRAPS 69）。真实情况：**引擎自己对夜视有
+        //     既有反应**（三处大气类 `if (getVisionModeNight()) return;` ⇒ 夜视开启时
+        //     大气整层退场，原版语义），上游**会**随之变化；那不是"夜视滤镜"，
+        //     与"红移归谁做"无关。T37-C 自检因此在 S1 把大气置关来隔离这一项。
+        //
+        // 公式**逐字复刻**引擎 shader（StelMainView.cpp:186-194）：
+        //   lum = max(max(r,g), b);  out = (lum, lum*0.3, 0)
+        // 红光暗视：只保留亮度线索、把全部色彩压进红/暗红 —— 保护暗适应。
+        // 挂在 keySink 上 = 与引擎"挂 rootItem（整个视图）"同语义：天空与 UI 一起变红。
+        //
+        // ⚠️ enabled 绑定必须**真的读** displayTogglesRevision（T15 铁律）：
+        //   actionChecked() 是 Q_INVOKABLE 方法，只调它不读 token 的话，
+        //   引擎翻转后这个绑定永远不会重算 —— 效果就会停在首帧。
+        // BackendInfo.nightEffectOff 是 T37-C 负控开关（证明 NC-03② 承重）。
+        layer.enabled: {
+            appFacade.displayTogglesRevision;
+            if (BackendInfo.nightEffectOff)
+                return false;
+            return appFacade.actionChecked("actionShow_Night_Mode");
+        }
+        layer.effect: ShaderEffect {
+            // ⚠️ 必须是 .qsb URL —— Qt 6.11 的 ShaderEffect 不接受内联 GLSL 源码，
+            // 内联的失败形态是"整个 layer 不渲染 ⇒ 全白屏"（不是"效果不生效"）。
+            // .qsb 由构建侧 qt6_add_shaders 生成（见 shaders/nightmode.frag 头注）。
+            fragmentShader: "qrc:/StelQuickUI/shaders/nightmode.frag.qsb"
+        }
+
         Keys.onPressed: (event) => {
             // T20「返回」环：Esc 在**非天空页** = 返回天空（走 root.returnToSky，
             // 与「返回天空」按钮**同一条路径**，见该函数的注释）。

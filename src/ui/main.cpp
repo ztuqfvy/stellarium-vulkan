@@ -59,6 +59,13 @@
  *                                  路径成对）。8 条判据。**不启帧泵**。
  *                                  负控开关：`STELQUICK_CFG_ISOLATE_OFF=1`（关隔离）
  *                                  + `STELQUICK_CFG_MIGRATE_OFF=1`（关播种）。
+ *   STELQUICK_NIGHT_PROBE=1      → T37-A **夜视链路数据面探针**（见
+ *                                  app/NightModeProbe.hpp）：只报读数、**不下 PASS/FAIL**。
+ *                                  冻结仿真后，用**两条独立读回路径**（FrameMailbox 原始
+ *                                  RGBA / QQuickWindow::grabWindow）测夜视 OFF↔ON 的像素
+ *                                  差异，并以星座线 OFF↔ON 作**判别性对照**。目的：先证
+ *                                  "引擎旧夜视后处理在合流形态的读回帧上可不可见"，
+ *                                  再决定夜视是复用引擎还是在 Qt Quick 侧自实现。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -240,6 +247,10 @@ void ensureVulkanLoaderPath()
 #include "app/ToolbarCheck.hpp"
 #include "app/TimeLinkProbe.hpp"
 #include "app/TimeLinkCheck.hpp"
+// T37-A：夜视链路数据面探针（引擎旧后处理在合流形态的读回帧上到底可不可见）。
+// 只报读数、不下 PASS/FAIL —— 断言在 T37-C 的 NightModeCheck。
+#include "app/NightModeProbe.hpp"
+#include "app/NightModeCheck.hpp"
 // T36：配置目录隔离（引导期）与其自检。**引导期**那一半由 LiveSkyRuntime::boot()
 // 调用——位置即判据，别挪到 StelLogger / config.ini 之后。
 #include "app/ConfigIsolationCheck.hpp"
@@ -5185,6 +5196,15 @@ int main(int argc, char **argv)
     // T36-C：**配置目录隔离**自检（见 app/ConfigIsolationCheck.hpp）。它验的是
     // 引导序列的**结果**（用户目录/落盘位置），所以不需要帧泵；引导一完成就能判。
     const bool cfgCheck = qEnvironmentVariableIsSet("STELQUICK_CONFIG_CHECK");
+    // T37-A：**夜视链路数据面探针**（见 app/NightModeProbe.hpp）。A-1.0 表里
+    // "天空夜视仍由旧后处理负责、避免叠加两次"这句话在合流形态从未验证过 ——
+    // 探针要先回答"引擎旧夜视（挂在 QGraphicsItem 上的纯 GL effect）在我们的
+    // 读回帧上到底可不可见"，再决定夜视在 Qt Quick 侧怎么实现。只报读数。
+    const bool nightProbe = qEnvironmentVariableIsSet("STELQUICK_NIGHT_PROBE");
+    // T37-C：**夜视自检**（见 app/NightModeCheck.hpp）。判据 NC-01..NC-05。
+    // 负控开关：`STELQUICK_NIGHT_EFFECT_OFF=1`（QML layer.enabled 强制 false）
+    // ⇒ NC-03② 必红且只它红（证明"效果面"判据承重）。
+    const bool nightCheck = qEnvironmentVariableIsSet("STELQUICK_NIGHT_CHECK");
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
     const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
@@ -5195,7 +5215,8 @@ int main(int argc, char **argv)
     //   后者直接断言"开机态=天空页"）。
     const QString startPage = (a2Check || dynCheck || longRun || returnUiCheck || replayCheck
                                || interactUiCheck || locProbe || toolProbe || toolCheck
-                               || timeLinkProbe || timeLinkCheck || cfgCheck
+                               || timeLinkProbe || timeLinkCheck || cfgCheck || nightProbe
+                               || nightCheck
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
@@ -5892,6 +5913,127 @@ int main(int argc, char **argv)
                 std::printf("TIMELINKPROBE: VERDICT=DONE\n");
                 std::fflush(stdout);
                 app.exit(0);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T37-A 夜视链路数据面探针（STELQUICK_NIGHT_PROBE=1）：A-1.0 表里"天空夜视
+    // 仍由旧后处理负责、避免叠加两次"这句话在合流形态从未验证过；夜视又是"设置页"
+    // 第一个要闭环的项。装配顺序与 TIMELINK_PROBE 一致（暖机 → boot → start → attach）。
+    // 输出 `NIGHTPROBE:` 前缀，只报读数、不下 PASS/FAIL。
+    if (nightProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("NIGHTPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "NIGHTPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("NIGHTPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "NIGHTPROBE: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("NIGHTPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::NightModeProbe::run(
+            &app, &appFacade, &actionRouter, window, &frameMailbox,
+            [&app](const stelapp::NightModeProbe::Result &result) {
+                std::printf("NIGHTPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("NIGHTPROBE: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("NIGHTPROBE: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("NIGHTPROBE: VERDICT=DONE\n");
+                std::fflush(stdout);
+                app.exit(0);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T37-C 夜视自检（STELQUICK_NIGHT_CHECK=1）：判据 NC-01..NC-05。装配顺序同上。
+    // 输出 `NIGHTCHECK:` 前缀。负控 STELQUICK_NIGHT_EFFECT_OFF=1 ⇒ NC-03② 必红。
+    if (nightCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("NIGHTCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "NIGHTCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("NIGHTCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "NIGHTCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("NIGHTCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::NightModeCheck::run(
+            &app, &appFacade, &actionRouter, window, &frameMailbox,
+            [&app](const stelapp::NightModeCheck::Result &result) {
+                std::printf("NIGHTCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("NIGHTCHECK: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("NIGHTCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                // T37 口径：INCONCLUSIVE（竞态型读数，如 NC-05 抓到撕裂帧）
+                // 不许硬判 FAIL——与 INTERACTCHECK 的环境门同款，rc=6 让
+                // 跑批脚本走 ENV-SKIP（不洗成 PASS，也不计失败）。
+                if (result.inconclusive) {
+                    std::printf("NIGHTCHECK: VERDICT=INCONCLUSIVE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("NIGHTCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
             });
         const int rc = app.exec();
         if (liveSkyRuntime) {

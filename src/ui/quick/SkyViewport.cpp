@@ -105,9 +105,14 @@ QSGNode *SkyViewport::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         node->setFiltering(QSGTexture::Linear);
     }
 
-    // 开发期跟踪（STELQUICK_A2_TRACE=1）：场景图线程内部状态，stdout 打印在 GUI 侧看不到
+    // 开发期跟踪（STELQUICK_A2_TRACE=1）：场景图线程内部状态，stdout 打印在 GUI 侧看不到。
+    // 上限可用 STELQUICK_A2_TRACE_LIMIT 调大（T37-X2 取证：需要覆盖整套自检全程）。
     static int traceCalls = 0;
-    const bool trace = qEnvironmentVariableIsSet("STELQUICK_A2_TRACE") && traceCalls < 12;
+    static const int traceLimit =
+        qEnvironmentVariableIntValue("STELQUICK_A2_TRACE_LIMIT", nullptr) > 0
+            ? qEnvironmentVariableIntValue("STELQUICK_A2_TRACE_LIMIT", nullptr)
+            : 12;
+    const bool trace = qEnvironmentVariableIsSet("STELQUICK_A2_TRACE") && traceCalls < traceLimit;
 
     // 节点刚被重建（缩放/抓帧/隐藏显示都会触发）时，旧节点连同纹理一起没了。
     // 若帧号已上传过（frameNumber == m_uploadedFrameNumber），下面的大分支不会进，

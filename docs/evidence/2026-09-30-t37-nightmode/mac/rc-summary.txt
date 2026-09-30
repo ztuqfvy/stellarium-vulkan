@@ -1,0 +1,80 @@
+环境：18:03  up 5 days, 19:46, 1 user, load averages: 4.48 5.68 5.12
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：40304760 B  Sep 30 18:02  md5=2c900daa33540b46f753f05ef3509db2
+──────── 正题 NIGHTCHECK ×3（预期 rc=0 / 判据 6/6 / 红项空）────────
+  · run1 rc=0（NIGHTCHECK: VERDICT=PASS；红项 []）
+  · run2 rc=0（NIGHTCHECK: VERDICT=PASS；红项 []）
+  · run3 rc=0（NIGHTCHECK: VERDICT=PASS；红项 []）
+  ✓ 正题 3/3 全绿（判据 6/6 × 3）
+  · run1 判据全文（见 docs/evidence/2026-09-30-t37-nightmode/mac/nightcheck-run1.txt）：
+      NIGHTCHECK: 夜视自检：判据 6/6
+      NIGHTCHECK:   初值：夜视=0 对照量(actionShow_Constellation_Lines)=0 大气=1；已冻结仿真 + 对照量置关 + **大气置关**（隔离引擎夜视反应里的『大气层退场』项，NC-03① 的前提）
+      NIGHTCHECK:   T37-X2 冻结静置 #0：帧号=119 JD=2461313.918888 非黑=1.0000 哈希=830b31e4a523927d（首采定基）
+      NIGHTCHECK:   T37-X2 冻结静置 #1：帧号=135 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   T37-X2 冻结静置 #2：帧号=151 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   T37-X2 冻结静置 #3：帧号=166 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   T37-X2 冻结静置 #4：帧号=182 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   T37-X2 冻结静置 #5：帧号=197 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   参考帧A 上游：有效 帧号=213 尺寸=1280x720 非黑=1.0000 哈希=830b31e4a523927d
+      NIGHTCHECK:   参考帧A 下游：有效 帧号=—（下游无帧号概念） 尺寸=1920x1280 非黑=1.0000 哈希=3b1b9ff24f07b20b  视口矩形=(0,320)-(1919,1279)
+      NIGHTCHECK:   NC-02 读数：上游 [差异像素=0（逐位相同，哈希相同）]；下游 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   [PASS] NC-02 噪声底低于容差（占比<0.1% ∧ 通道差≤2；实测上游 0.029%/Δ1、下游 0.019%/Δ1 —— 引擎渲染在冻结下有亚 LSB 抖动）—— 后续像素判据的口径有效
+      NIGHTCHECK:   [PASS] NC-01(开) trigger(actionShow_Night_Mode) ⇒ executed=1 引擎 getter 0→1（getter 独立回读，非 actionChecked 复述）
+      NIGHTCHECK:   T37-X2 夜视翻转后 #6：帧号=260 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   T37-X2 夜视翻转后 #7：帧号=275 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   T37-X2 夜视翻转后 #8：帧号=290 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   T37-X2 夜视翻转后 #9：帧号=306 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   T37-X2 夜视翻转后 #10：帧号=322 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   T37-X2 夜视翻转后 #11：帧号=330 JD=2461313.918888 非黑=1.0000 vs首采 [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   NC-03 读数：上游 [差异像素=0（逐位相同，哈希相同）]；下游视口内 [差异像素=1843200/1843200（100.000%） 最大通道差=255 平均通道差=14.1773 哈希不同 包围盒=(0,320)-(1919,1279) 高度8带=230400/230400/230400/230400/230400/230400/230400/230400]
+      NIGHTCHECK:   [PASS] NC-03① 上游引擎帧低于噪声容差（夜视是 Qt Quick 侧实现，引擎渲染路径未被触碰）
+      NIGHTCHECK:   [PASS] NC-03② 下游视口内差异像素比例=1.0000（门 0.90）平均通道差=14.18（门 1.0）—— 效果真的生效了（伪证守门 = NC-03①）
+      NIGHTCHECK:   判别对照量 actionShow_Constellation_Lines 已置开（原值 0）；**夜视仍保持开启**
+      NIGHTCHECK:   NC-04 读数：对照 OFF↔ON 上游 [差异像素=8606/921600（0.934%） 最大通道差=149 平均通道差=1.1261 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=763/452/267/671/1739/1776/1492/1446]
+      NIGHTCHECK:   [PASS] NC-04 判别对照：同一方法对 actionShow_Constellation_Lines 开关测出**超出噪声容差**的差异（差异像素=8606，占比 0.0093 ≥ 门 0.0010）—— 证明比较方法活着，NC-03① 不是假绿
+      NIGHTCHECK:   写入步：对照量还原=1 夜视还原（getter 现值 0）
+      NIGHTCHECK:   NC-05 读数：复原帧上游 [有效 帧号=480 尺寸=1280x720 非黑=1.0000 哈希=830b31e4a523927d]
+      NIGHTCHECK:   NC-05 定位：复原帧上游 vs 参考帧B [差异像素=0（逐位相同，哈希相同）]
+      NIGHTCHECK:   NC-05 定位：复原帧上游 vs 对照ON帧 [差异像素=8606/921600（0.934%） 最大通道差=149 平均通道差=1.1261 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=763/452/267/671/1739/1776/1492/1446]
+      NIGHTCHECK:   NC-05 定位：对照量现值=0（期望 0） 夜视现值=0（期望 0）
+      NIGHTCHECK:   NC-05 读数：复原帧下游 [有效 帧号=—（下游无帧号概念） 尺寸=1920x1280 非黑=1.0000 哈希=15a17512cdee74e9]
+      NIGHTCHECK:   NC-05 读数：复原帧 vs 参考帧B（视口内）[差异像素=0（逐位相同，哈希不同）]
+      NIGHTCHECK:   [PASS] NC-05 复原：引擎 getter 回初值 ∧ 视口内无全帧级红移（占比 0.0000 < 0.5，均值 0.00 < 20）—— 效果可逆，一次夜视不是永久损伤（星线 fader 余辉有界容忍，T37-X4）
+      NIGHTCHECK:   收尾：对照量还原（见 S9） 大气还原=1 仿真暂停还原=1
+      NIGHTCHECK: VERDICT=PASS
+──────── 负控 STELQUICK_NIGHT_EFFECT_OFF=1 ×3（预期 rc=10 / 判据 5/6 / 红项 [NC-03②]）────────
+  · run1 rc=10（NIGHTCHECK: VERDICT=FAIL；红项 [NC-03②]）
+  · run2 rc=10（NIGHTCHECK: VERDICT=FAIL；红项 [NC-03②]）
+  · run3 rc=10（NIGHTCHECK: VERDICT=FAIL；红项 [NC-03②]）
+  ✓ 负控 3/3 命中恰好 [NC-03②]（NC-03② 承重证明）
+  负控的红是**预期**结果（效果被关掉 ⇒ 效果判据必须红）；读数：
+      NIGHTCHECK:   [PASS] NC-02 噪声底低于容差（占比<0.1% ∧ 通道差≤2；实测上游 0.029%/Δ1、下游 0.019%/Δ1 —— 引擎渲染在冻结下有亚 LSB 抖动）—— 后续像素判据的口径有效
+      NIGHTCHECK:   [PASS] NC-01(开) trigger(actionShow_Night_Mode) ⇒ executed=1 引擎 getter 0→1（getter 独立回读，非 actionChecked 复述）
+      NIGHTCHECK:   [PASS] NC-03① 上游引擎帧低于噪声容差（夜视是 Qt Quick 侧实现，引擎渲染路径未被触碰）
+      NIGHTCHECK:   [FAIL] NC-03② 下游视口内差异像素比例=0.0000（门 0.90）平均通道差=0.00（门 1.0）—— 效果真的生效了（伪证守门 = NC-03①）
+      NIGHTCHECK:   [PASS] NC-04 判别对照：同一方法对 actionShow_Constellation_Lines 开关测出**超出噪声容差**的差异（差异像素=8614，占比 0.0093 ≥ 门 0.0010）—— 证明比较方法活着，NC-03① 不是假绿
+      NIGHTCHECK:   [PASS] NC-05 复原：引擎 getter 回初值 ∧ 视口内无全帧级红移（占比 0.0000 < 0.5，均值 0.00 < 20）—— 效果可逆，一次夜视不是永久损伤（星线 fader 余辉有界容忍，T37-X4）
+      NIGHTCHECK: VERDICT=FAIL
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-locationcheck rc=0
+regression-toolbarcheck rc=0
+regression-timelinkcheck rc=0
+regression-configcheck rc=0
+regression-interactcheck rc=0（18/18，窗口已激活）
+regression-a2-metal rc=0
+regression-dyn-engine-metal 3/3 PASS
+regression-dyn-stub-metal 3/3 PASS
+regression-s3-stela3 rc=0（旧形态）
+════════════════════════════════════════
+脚本层判据：2 通过 / 0 失败
+环境：18:10  up 5 days, 19:53, 1 user, load averages: 2.75 3.89 4.47
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：40304760 B  Sep 30 18:02  md5=2c900daa33540b46f753f05ef3509db2
