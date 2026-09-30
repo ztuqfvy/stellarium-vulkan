@@ -123,6 +123,12 @@ Rectangle {
                 text: "显示"
                 onClicked: toolbar.navigate("display")
             }
+            // T40：快捷键编辑页。上面 7 个导航按钮的 objectName **一个都没动**。
+            Button {
+                objectName: "navShortcutsButton"
+                text: "快捷键"
+                onClicked: toolbar.navigate("shortcuts")
+            }
 
             // 唯一 filler：把右侧信息顶到最右（见文件头坑②，别再加第二个）。
             Item { Layout.fillWidth: true }

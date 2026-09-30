@@ -185,6 +185,12 @@ set(stelQuickUI_SOURCES
     ../app/HiDpiProbe.cpp
     ../app/HiDpiCheck.hpp
     ../app/HiDpiCheck.cpp
+    ../app/ShortcutProbe.hpp
+    ../app/ShortcutProbe.cpp
+    ../app/ShortcutModel.hpp
+    ../app/ShortcutModel.cpp
+    ../app/ShortcutCheck.hpp
+    ../app/ShortcutCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp
@@ -248,6 +254,8 @@ qt_add_qml_module(stelQuickUI
         qml/Toolbar.qml
         # T38：显示参数页（亮度/星等 · 视场 · 投影；同样运行时解析，漏登记必炸）
         qml/DisplayPage.qml
+        # T40：快捷键编辑页（同样运行时解析，漏登记必炸）
+        qml/ShortcutsPage.qml
     NO_PLUGIN
 )
 

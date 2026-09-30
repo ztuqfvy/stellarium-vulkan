@@ -33,7 +33,7 @@ ApplicationWindow {
 
     // 页名 → StackLayout 索引（一处定义，切换器与 C++ 的 startPage 共用，
     // 避免"加了页面忘了改另一处"这类只在运行时才暴露的错位）。
-    readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2, "time": 3, "location": 4, "display": 5 })
+    readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2, "time": 3, "location": 4, "display": 5, "shortcuts": 6 })
 
     // ── T20「返回」环的唯一实现点 ─────────────────────────────────────────────
     //
@@ -294,6 +294,7 @@ ApplicationWindow {
                 TimePage { }
                 LocationPage { }                // T33：观察地点页（索引 4）
                 DisplayPage { }                 // T38：显示参数页（索引 5）
+                ShortcutsPage { }                // T40：快捷键编辑页（索引 6）
             }
         }
     }

@@ -1,0 +1,90 @@
+环境：21:46  up 5 days, 23:29, 1 user, load averages: 3.13 3.23 4.00
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：41329752 B  2026-09-30 21:37 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=de8b47d940aafc82c12b4d6c0bbdd8dd
+──────── 正题 SHORTCUTCHECK ×3（预期 rc=0 / 判据 15/15 / 红项空）────────
+  · run1 rc=0（SHORTCUTCHECK: VERDICT=PASS；红项 []）
+  · run2 rc=0（SHORTCUTCHECK: VERDICT=PASS；红项 []）
+  · run3 rc=0（SHORTCUTCHECK: VERDICT=PASS；红项 []）
+  ✓ 正题 3/3 全绿（判据 15/15 × 3）
+  · run1 判据全文（见 docs/evidence/2026-09-30-t40-shortcuts/mac/shortcutcheck-run1.txt）：
+      SHORTCUTCHECK: 快捷键自检：判据 15/15
+      SHORTCUTCHECK: 布场：模型 505 行（引擎 505 动作）｜配置 /Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini｜shortcuts 组基线 0 项
+      SHORTCUTCHECK: 布场：SC 靶 row0=actionSwitch_Equatorial_Mount｜row1=actionSave_Copy_Object_Information_Global
+      SHORTCUTCHECK: [PASS] SC-01 表完整性：模型 505 vs 引擎 505 动作｜分组 15 vs 15
+      SHORTCUTCHECK: [PASS] SC-02 行数据抽样（10 行）：逐项一致
+      SHORTCUTCHECK: [PASS] SC-03 customized 口径（全表 505 行）：与引擎判据一致
+      SHORTCUTCHECK: SC-04 判别对照：QKeySequence("PageUp") 直构=「∅空」⇒ 别名键名确实静默变空，生成器口径成立
+      SHORTCUTCHECK: [PASS] SC-04 键名生成：6 样本恒等｜修饰键中间态=✓｜别名对照=✓
+      SHORTCUTCHECK: SC-05 写入步：setKey(row0, 主, 「Ctrl+Alt+Shift+F9」) 返回 true｜模型状态=「「赤道仪/经纬仪切换」主键 → Ctrl+Alt+Shift+F9」
+      SHORTCUTCHECK: [PASS] SC-05a 改键写引擎：引擎「Ctrl+Alt+Shift+F9」== 新键 ✓
+      SHORTCUTCHECK: [PASS] SC-05b 改键落盘：磁盘原样「Ctrl+Alt+Shift+F9 ""」⇒ 首段「Ctrl+Alt+Shift+F9」序列语义 == 新键 ✓
+      SHORTCUTCHECK: [PASS] SC-06 不写穿：改键后非 shortcuts 组差异数 = 0（基线 770 键）
+      SHORTCUTCHECK: SC-07 冲突写入步：setKey(row1, 主, 同键) 返回 true
+      SHORTCUTCHECK: [PASS] SC-07 冲突检测：撞键后 count=2（row0=红 row1=红）｜消解后 count=0 ⇒ 检出与消解都成立
+      SHORTCUTCHECK: [PASS] SC-08 恢复默认：row0 的 conf 项被剔除=是｜row1 自定义键「Ctrl+Alt+Shift+F8」保留=是 ⇒ 单个恢复不冲别人（探针⑦产品级复验）
+      SHORTCUTCHECK: [PASS] SC-09 空串移除：引擎键空=是｜磁盘项在=是 原样「"" ""」(2 段)｜复刻构造解析全部回解为空=是
+      SHORTCUTCHECK: SC-10 物证：QKeySequence("PageUp") count=1｜toString=「∅空」
+      SHORTCUTCHECK: [PASS] SC-10 非法键名闸：「PageUp」被拒=是｜引擎键「」未变=是｜状态文本非空=是（防止手拼键名静默变删除）
+      SHORTCUTCHECK: [PASS] SC-11 全部恢复：此前 2 个被改 ⇒ 之后 0 个｜磁盘 shortcuts 组 0 项 ⇒ 清干净
+      SHORTCUTCHECK: SC-12 切页步：真实点击 navShortcutsButton ⇒ 已投递
+      SHORTCUTCHECK: [PASS] SC-12 UI 控件齐备：9 个控件全部在场（已真实点击导航切页）
+      SHORTCUTCHECK: SC-13 写入步：点击前引擎键=「Ctrl+M」
+      SHORTCUTCHECK: SC-13 写入步：已真实点击 shortcutPrimary_0 并注入 Ctrl+Alt+Shift+F7（读 UI 放下一步）
+      SHORTCUTCHECK: [PASS] SC-13 UI 交互端到端：引擎键=「Ctrl+Alt+Shift+F7」✓｜UI 按钮文字=「Ctrl+Alt+Shift+F7」✓
+      SHORTCUTCHECK: [PASS] SC-14 复原：整本指纹 vs 基线差异数 = 0（含 shortcuts 组） ⇒ 用户配置零污染 ✓
+      SHORTCUTCHECK: VERDICT=PASS
+──────── 负控 A STELQUICK_SHORTCUT_WRITE_OFF=1 ×3（预期 rc=10 / 8/15 / 红项 [SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13]）────────
+  · run1 rc=10（SHORTCUTCHECK: VERDICT=FAIL；红项 [SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13]）
+  · run2 rc=10（SHORTCUTCHECK: VERDICT=FAIL；红项 [SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13]）
+  · run3 rc=10（SHORTCUTCHECK: VERDICT=FAIL；红项 [SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13]）
+  ✓ 负控 A 3/3 命中 [SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13]（写入腿承重证明）
+  负控 A 的红是**预期**结果（引擎写入被关 ⇒ 凡经 setKey 承重/依赖前序写入态的判据必红）；读数：
+      SHORTCUTCHECK: [FAIL] SC-05a 改键写引擎：引擎「Ctrl+M」≠ 新键（期望 Ctrl+Alt+Shift+F9）
+      SHORTCUTCHECK: [FAIL] SC-05b 改键落盘：磁盘原样「（无此项）」⇒ 首段「」≠ 新键
+      SHORTCUTCHECK: [FAIL] SC-07 冲突检测：撞键后 count=0（row0=绿 row1=绿）｜消解后 count=0 ⇒ ⚠️ 检出或消解失败
+      SHORTCUTCHECK: [FAIL] SC-08 恢复默认：row0 的 conf 项被剔除=是｜row1 自定义键「Ctrl+Shift+C」保留=否 ⇒ ⚠️ 恢复默认有全局副作用
+      SHORTCUTCHECK: [FAIL] SC-09 空串移除：引擎键空=否｜磁盘项在=否 原样「」(1 段)｜复刻构造解析全部回解为空=是
+      SHORTCUTCHECK: [FAIL] SC-11 全部恢复：此前 0 个被改 ⇒ 之后 0 个｜磁盘 shortcuts 组 0 项 ⇒ ⚠️ 有残留
+      SHORTCUTCHECK: [FAIL] SC-13 UI 交互端到端：引擎键=「Ctrl+M」✗｜UI 按钮文字=「Ctrl+M」✓
+      SHORTCUTCHECK: VERDICT=FAIL
+──────── 负控 B STELQUICK_SHORTCUT_SAVE_OFF=1 ×3（预期 rc=10 / 12/15 / 红项 [SC-05b,SC-09,SC-11]）────────
+  · run1 rc=10（SHORTCUTCHECK: VERDICT=FAIL；红项 [SC-05b,SC-09,SC-11]）
+  · run2 rc=10（SHORTCUTCHECK: VERDICT=FAIL；红项 [SC-05b,SC-09,SC-11]）
+  · run3 rc=10（SHORTCUTCHECK: VERDICT=FAIL；红项 [SC-05b,SC-09,SC-11]）
+  ✓ 负控 B 3/3 命中 [SC-05b,SC-09,SC-11]（落盘腿承重证明）
+  负控 B 的红是**预期**结果（落盘被关 ⇒ 断言磁盘态的判据读不到内容）；读数：
+      SHORTCUTCHECK: [FAIL] SC-05b 改键落盘：磁盘原样「（无此项）」⇒ 首段「」≠ 新键
+      SHORTCUTCHECK: [FAIL] SC-09 空串移除：引擎键空=是｜磁盘项在=否 原样「」(1 段)｜复刻构造解析全部回解为空=是
+      SHORTCUTCHECK: [FAIL] SC-11 全部恢复：此前 1 个被改 ⇒ 之后 0 个｜磁盘 shortcuts 组 0 项 ⇒ ⚠️ 有残留
+      SHORTCUTCHECK: VERDICT=FAIL
+──────── 两腿正交定位（A\B = 引擎写入生效组；B\A 应空）────────
+  · A\B = [SC-05a,SC-07,SC-08,SC-13]（期望 SC-05a,SC-07,SC-08,SC-13）
+  · B\A = []（期望：空 —— B 的每一项都同时被 A 打中）
+  ✓ 两腿正交定位成立（写入腿 Δ=A\B｜落盘腿 B）
+  ✓ 三组红项集合两两不同（正题 [∅] ｜ A [SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13] ｜ B [SC-05b,SC-09,SC-11]）
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-locationcheck rc=0
+regression-toolbarcheck rc=0
+regression-timelinkcheck rc=0
+regression-configcheck rc=0
+regression-nightcheck rc=0
+regression-displaycheck rc=0
+regression-hidpicheck rc=0
+regression-interactcheck rc=0（18/18，窗口已激活）
+regression-a2-metal rc=0
+regression-dyn-engine-metal 3/3 PASS
+regression-dyn-stub-metal 3/3 PASS
+regression-s3-stela3 rc=0（旧形态）
+════════════════════════════════════════
+脚本层判据：5 通过 / 0 失败
+环境：21:54  up 5 days, 23:37, 1 user, load averages: 3.37 3.83 4.07
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：41329752 B  2026-09-30 21:37 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=de8b47d940aafc82c12b4d6c0bbdd8dd

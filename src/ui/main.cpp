@@ -295,6 +295,18 @@ void ensureVulkanLoaderPath()
 // 派生量算术验算 / UI 控件与绑定（含"交互后绑定仍活"）/ 字号帧效应成对 + 判别
 // 对照 / 诊断数据面独立验算 / 复原）。
 #include "app/HiDpiCheck.hpp"
+// T40-A：快捷键编辑命令面探针（QKeySequence 往返恒等 / setShortcut 即时性与信号 /
+// saveShortcuts 落盘语义与"不写穿" / 空串=移除 / 新 QSettings 实例重读（等价重启）/
+// restoreDefaultShortcut 的波及面 / 冲突数据面两支语义相反 / actionsEnabled 门 /
+// 平台键位格式 / 收尾还原）。只报读数。
+#include "app/ShortcutProbe.hpp"
+// T40-B：快捷键编辑的模型与命令面（读表 / 改键 / 冲突 / 持久化；键名生成的单一真源）。
+#include "app/ShortcutModel.hpp"
+// T40-C：快捷键编辑自检（判据 SC-01..SC-14 —— 表完整性与行数据一致性 / 键名生成
+// 单点（含"PageUp 别名静默变空"的判别对照）/ 改键写引擎与落盘（新 QSettings 实例 +
+// 序列语义）/ 不写穿 / 冲突检出与消解 / 恢复默认不冲别人 / 空串移除 / 非法键名闸 /
+// 全部恢复 / UI 控件与真实点击+真实按键的交互端到端 / 复原）。
+#include "app/ShortcutCheck.hpp"
 // T36：配置目录隔离（引导期）与其自检。**引导期**那一半由 LiveSkyRuntime::boot()
 // 调用——位置即判据，别挪到 StelLogger / config.ini 之后。
 #include "app/ConfigIsolationCheck.hpp"
@@ -5267,6 +5279,19 @@ int main(int argc, char **argv)
     // [HP-07,HP-08]。
     const bool hiDpiCheck = qEnvironmentVariableIsSet("STELQUICK_HIDPI_CHECK");
 
+    // T40-A：**快捷键编辑命令面探针**（见 app/ShortcutProbe.hpp）。A-1.0 范围表
+    // 倒数第二格第一列「快捷键编辑」——第三列的约束（中文输入焦点不触发天空快捷键）
+    // 已由 T29 兜住，本格要交付的是**页面本体**。引擎侧面（setShortcut/saveShortcuts/
+    // restoreDefaultShortcut/findActionFromShortcut/routeKey）全现成，先探清落盘语义、
+    // 不写穿、空串=移除、冲突两支语义相反等事实。只报读数。
+    // ⚠️ 刻意不启帧泵：快捷键是纯命令面，与 GPU 无关（少一个 Metal 环节少一份风险）。
+    const bool shortcutProbe = qEnvironmentVariableIsSet("STELQUICK_SHORTCUT_PROBE");
+    // T40-C：**快捷键编辑自检**（见 app/ShortcutCheck.hpp）。判据 SC-01..SC-14。
+    // 负控：STELQUICK_SHORTCUT_WRITE_OFF=1（改键不写引擎不落盘）⇒ 预期恰红
+    // [SC-05a,SC-05b,SC-07]；STELQUICK_SHORTCUT_SAVE_OFF=1（写引擎不落盘）⇒ 预期恰红
+    // [SC-05b]。B ⊂ A —— 只有 SC-05b 红 = 保存环节坏；SC-05a 也红 = 写入环节坏。
+    const bool shortcutCheck = qEnvironmentVariableIsSet("STELQUICK_SHORTCUT_CHECK");
+
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
     const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
@@ -5285,7 +5310,8 @@ int main(int argc, char **argv)
                                       || interactUiCheck || locProbe || toolProbe || toolCheck
                                       || timeLinkProbe || timeLinkCheck || cfgCheck || nightProbe
                                       || nightCheck || displayProbe || displayCheck
-                                      || hiDpiProbe || hiDpiCheck
+                                      || hiDpiProbe || hiDpiCheck || shortcutProbe
+                                      || shortcutCheck
                                       || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                       || liveEngine)
                                          ? QStringLiteral("sky")
@@ -5310,6 +5336,9 @@ int main(int argc, char **argv)
 #endif
     stelapp::AppFacade appFacade;
     stelapp::ActionRouter actionRouter;
+    // T40-B：快捷键编辑的模型 + 命令面。**引擎是延迟引导的**（A3）⇒ 这里先创建空模型，
+    // 引导完成后在下方调用 `refresh()` 拉注册表（否则 QML 在引导前实例化只会看到空表）。
+    stelapp::ShortcutModel shortcutModel;
     actionRouter.registerAction(QStringLiteral("app.togglePause"),
                                 { [&appFacade]() { appFacade.togglePause(); },
                                   nullptr,
@@ -5343,6 +5372,8 @@ int main(int argc, char **argv)
                                              appFacade.searchResults());
     engine.rootContext()->setContextProperty(QStringLiteral("objectInfo"),
                                              appFacade.objectInfo());
+    // T40-B：快捷键编辑模型（同上惯例：上下文属性，不做类型注册）。
+    engine.rootContext()->setContextProperty(QStringLiteral("ShortcutModel"), &shortcutModel);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      []() { std::exit(2); }, Qt::QueuedConnection);
     engine.load(QUrl(QStringLiteral("qrc:/StelQuickUI/qml/MainWindow.qml")));
@@ -6288,6 +6319,124 @@ int main(int argc, char **argv)
 #endif
     }
 
+    // T40-A 快捷键编辑命令面探针（STELQUICK_SHORTCUT_PROBE=1）：A-1.0 范围表
+    // 倒数第二格第一列「快捷键编辑」（第三列的约束已由 T29 兜住 ⇒ 本格交付页面本体）。
+    // ⚠️ **刻意不启帧泵**：快捷键是纯命令面（QObject 注册表），与 GPU 无关 ——
+    // 少一个 Metal 环节少一份掉设备的风险。boot 之后直接查注册表规模自证引导完整。
+    // 输出 `SHORTCUTPROBE:` 前缀，只报读数、不下 PASS/FAIL（断言在 T40-C）。
+    if (shortcutProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("SHORTCUTPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "SHORTCUTPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("SHORTCUTPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        // 引导完整性自证：动作注册表非空才说明 StelApp::init() 跑到位。
+        if (StelApp::getInstance().getStelActionManager()->getActionList().isEmpty()) {
+            std::fprintf(stderr, "SHORTCUTPROBE: 动作注册表为空（boot 未完整引导）\n");
+            std::printf("SHORTCUTPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+
+        stelapp::ShortcutProbe::run(
+            &app, &actionRouter,
+            [&app](const stelapp::ShortcutProbe::Result &result) {
+                std::printf("SHORTCUTPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("SHORTCUTPROBE: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("SHORTCUTPROBE: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("SHORTCUTPROBE: VERDICT=DONE\n");
+                std::fflush(stdout);
+                app.exit(0);
+            });
+        const int rc = app.exec();
+        liveSkyRuntime.reset();
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T40-C 快捷键编辑自检（STELQUICK_SHORTCUT_CHECK=1）：判据 SC-01..SC-14。
+    // 装配与 T39-C 一致（暖机 → boot → start）—— SC-12/13 要真实点击，窗口必须
+    // 完整渲染。输出 `SHORTCUTCHECK:` 前缀；负控 WRITE_OFF / SAVE_OFF（见上方注释）。
+    if (shortcutCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("SHORTCUTCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "SHORTCUTCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("SHORTCUTCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "SHORTCUTCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("SHORTCUTCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        // 🔴 必须给 **QML 绑定的那个** model 喂数据（正常路径末尾那行 `refresh()` 在
+        // 自检块里走不到）。漏了的形态很隐蔽：判据自建的实例有 505 行（SC-01 照样绿），
+        // 但 ListView 的 model 是空表 ⇒ **一个 delegate 都不创建** ⇒ SC-12/13 报
+        // "按钮缺失"。首轮就栽在这（T40-C 第一轮 SC-12 红）。
+        shortcutModel.refresh();
+
+        stelapp::ShortcutCheck::run(
+            &app, &appFacade, window, &frameMailbox,
+            [&app](const stelapp::ShortcutCheck::Result &result) {
+                std::printf("SHORTCUTCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("SHORTCUTCHECK: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("SHORTCUTCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                if (result.inconclusive) {
+                    std::printf("SHORTCUTCHECK: VERDICT=INCONCLUSIVE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("SHORTCUTCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
     // T37-C 夜视自检（STELQUICK_NIGHT_CHECK=1）：判据 NC-01..NC-05。装配顺序同上。
     // 输出 `NIGHTCHECK:` 前缀。负控 STELQUICK_NIGHT_EFFECT_OFF=1 ⇒ NC-03② 必红。
     if (nightCheck) {
@@ -7038,6 +7187,11 @@ int main(int argc, char **argv)
     // 自检路径各自 exit，不需要诊断页；`refresh()` 在没接时只发信号、不假装 0 是读数。
     if (liveSkyRuntime)
         backendInfo->setFrameMailbox(&frameMailbox);
+
+    // T40-B：快捷键表同理 —— 引擎延迟引导（A3）⇒ 引导完成后才能拉到动作注册表。
+    // 放在这里 = 同一个共同点；未引导时 `refresh()` 是空操作（表保持空、UI 显示空态）。
+    if (liveSkyRuntime)
+        shortcutModel.refresh();
 
     const int rc = app.exec();
     liveSource.stop();   // 生产者停机先于邮箱析构（析构顺序：liveSource 在 frameMailbox 之后声明）

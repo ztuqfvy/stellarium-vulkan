@@ -1,14 +1,16 @@
-# 进度总览（截至 2026-09-30 深夜，**T39 后**盘点）
+# 进度总览（截至 2026-09-30 深夜，**T40 后**盘点）
 
 > 口径基线：T34 收口提交 `9b04cdd` + T35 提交 `d68cc32` + W 支线 + **T36（A5 第一项）**
-> + **T37（A5 第二项：夜视闭环）** + **T38（显示参数）** + **T39（高 DPI + 渲染诊断）**。
+> + **T37（A5 第二项：夜视闭环）** + **T38（显示参数）** + **T39（高 DPI + 渲染诊断）**
+> + **T40（快捷键编辑）**。
 > 上一版快照基线是 `9b04cdd`（T34 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，
 > **T34 见 `docs/T34_TOOLBAR.zh_CN.md`**，**T35 见 `docs/T35_TIMELINK.zh_CN.md`**，
 > **W-T34/W-T35 跨平台复验见 `docs/WT35_WINDOWS_RECHECK.zh_CN.md`**，
 > **T36 配置目录隔离见 `docs/T36_CONFIG_ISOLATION.zh_CN.md`**，
 > **T37 夜视闭环见 `docs/T37_NIGHTMODE.zh_CN.md`**，
 > **T38 显示参数见 `docs/T38_DISPLAY.zh_CN.md`**，
-> **T39 高 DPI + 渲染诊断见 `docs/T39_HIDPI.zh_CN.md`**。
+> **T39 高 DPI + 渲染诊断见 `docs/T39_HIDPI.zh_CN.md`**，
+> **T40 快捷键编辑见 `docs/T40_SHORTCUTS.zh_CN.md`**。
 > 环境口径与 T17–T34 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
@@ -24,7 +26,7 @@
 | A2 旧天空帧桥 | 静态 12/12 + 动态 7/7 + 30min 长跑 | ✅ 完成 |
 | A3 业务接口与输入路由 | AppFacade / ActionRouter / 模型 / 单一仿真时钟 / 键位路由 | ✅ 完成（T14–T17） |
 | **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | ✅ **7/7 完成**（**T34 收口**，见 §2） |
-| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 + **T39** 高 DPI/渲染诊断 完成；余 T40–T42，见 §6） |
+| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 + **T39** 高 DPI/渲染诊断 + **T40** 快捷键编辑 完成；余 T41–T42，见 §6） |
 | A6 回归与交接 | 全量回归、帧桥统计、资源打包、接口冻结 | ⬜ 未开始 |
 | A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置 A6 或真机 |
 
@@ -92,8 +94,10 @@
 | （探针）`DISPLAYPROBE` | 只报读数、**不打 PASS** | `STELQUICK_DISPLAY_PROBE` | **T38-A** 显示参数命令面探针（初值台账 / 四个 setter 的**夹取语义** / 星等语义四问 / 步进动作 / `setFov` 夹取边界 / 12 投影 key 往返 + maxFov 随投影 / **非法 key 落点** / NOTIFY 静置增量）。7 条实测结论见 `docs/T38_DISPLAY.zh_CN.md` §2 |
 | `HIDPICHECK` | **12**（HP-00..HP-11） | `STELQUICK_HIDPI_CHECK` | **T39** 高 DPI + 渲染诊断：噪声底门（环境门）/ 引擎面往返（**引擎 getter 独立回读**）/ **三处范围闸**（`screenFontSize` [5,50]、`guiFontSize` [7,50]、`screenButtonScale` [50,200] 产品自定；各含上沿+下沿）/ **派生量算术验算** / UI 控件齐备（**视觉树递归**）/ 绑定腿 / **交互后绑定仍活**（**真实点击**验 `onMoved` ⇒ 再引擎侧改 ⇒ UI 仍跟随）/ **字号帧效应**（成对 + 判别对照）/ **诊断数据面健康**（`bytesPerFrame` 用抓帧 `FrameSample` **独立验算**）/ 复原。**两组负控**：`STELQUICK_DISPLAY_GATE_OFF=1` ⇒ 恰红 `[HP-02,HP-03,HP-04]`（9/12）；`STELQUICK_DISPLAY_FWD_OFF=1` ⇒ 恰红 `[HP-07,HP-08]`（10/12）。**正题 3/3 `12/12`、负控各 2/2 恰中** |
 | （探针）`HIDPIPROBE` | 只报读数、**不打 PASS** | `STELQUICK_HIDPI_PROBE` | **T39-A** 高 DPI + 渲染诊断数据面探针（三个 setter 的**夹取语义** / 派生量独立验算 / config 来源 / 🔴 `getGuiFontSize()` 读的是**全局字体** / 🔴 `setGuiFontSize` 对 QML 视觉树 **325 项零跟随**〔**三重仪器正控**〕/ `screenFontSize` **帧效应 4.054%** + 还原逐位复原 / `FrameMailbox::Stats` 全字段 / NOTIFY 静置增量）。7 条实测结论见 `docs/T39_HIDPI.zh_CN.md` §2 |
+| `SHORTCUTCHECK` | **15 个 id / 14 条**（SC-01..SC-14，05 拆 a/b） | `STELQUICK_SHORTCUT_CHECK` | **T40** 快捷键编辑：表完整性（模型 505 vs 引擎 505） / 行数据抽样（逐项 vs 引擎）/ `customized` 口径（全表 505 行 vs `conf->contains`）/ **键名生成单点**（含**别名判别对照** `PageUp` 直构=空序列）/ **改键写引擎**（引擎 getter 独立回读）/ **改键落盘**（**另开 `QSettings` 实例**读磁盘 + 按构造解析路径取首段 + **比序列语义**）/ **不写穿**（整本指纹跳过 `shortcuts/` 差异=0）/ 冲突检测（制造 ⇄ **判别消解**）/ 单恢复不冲别人（**两个不同动作**）/ 空串移除（磁盘 `"" ""` 形态 + 复刻构造解析）/ **非法键名闸**（`PageUp` 被拒 + 引擎未变 + 状态文本非空）/ 全部恢复 / UI 控件齐备（**视觉树递归**，陷阱 45）/ **UI 交互端到端**（真实点击导航 → 真实点击主键按钮 → **注入真实 `QKeyEvent`** ⇒ 引擎 + UI 按钮文字双确认）/ 复原（整本指纹=0）。**两组负控**：`STELQUICK_SHORTCUT_WRITE_OFF=1` ⇒ 红 `[SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13]`（8/15）；`STELQUICK_SHORTCUT_SAVE_OFF=1` ⇒ 红 `[SC-05b,SC-09,SC-11]`（12/15）。**正题 3/3 `15/15`、负控各 3/3 命中且两腿正交（`A\B`=引擎写入生效组）** |
+| （探针）`SHORTCUTPROBE` | 只报读数、**不打 PASS** | `STELQUICK_SHORTCUT_PROBE` | **T40-A** 快捷键命令面探针（Q1 `QKeySequence` 往返恒等 14/15 + **键名别名对照** + 组合个数 / Q2 `setShortcut` 即时性 + **信号面**（只发 `changed`）+ `routeKey` 真触发 / Q3·Q3b·Q4 **落盘 + 不写穿 + 多键序列规范化** / Q5 空串移除 / Q6 重启等价（**比序列语义**）/ Q7 单恢复波及面 / Q8 出厂无重复键 / Q9 `actionsEnabled` 门只挡 `pushKey` / Q10 注册表 505·15 / Q11 平台键名格式 / Q12 还原）。**12 条实测结论见 `docs/T40_SHORTCUTS.zh_CN.md` §2** |
 
-一键复跑：`tools/t16-verify.sh` … **`tools/t39-verify.sh`**（每个任务一个，用法 `all N`；
+一键复跑：`tools/t16-verify.sh` … **`tools/t40-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
 8 条判据、要求 `VERDICT=PASS`；**`t34-verify.sh` 含四组负控 + 探针 + 10 套件 + S3 + A2 + DYN**；
 **`t35-verify.sh` 含三组负控 + 探针 + **11 套件**（多了 `toolbarcheck`）+ INTERACTCHECK + S3 + A2 + DYN**；
@@ -104,7 +108,12 @@
 **`t38-verify.sh` 含正题×3 + **两组负控×2** + **14 套件**（多了 `displaycheck`）+ INTERACTCHECK + S3 + A2 + DYN 双路**；
 **`t39-verify.sh` 含正题×3 + **两组负控×2** + **15 套件** + INTERACTCHECK + S3 + A2 + DYN 双路**
 （⚠️ T39 把 **T38 的 `displaycheck`** 纳入回归：T39 就在 `AppFacade` 显示参数段落里加东西、
-同一个 `ensureDisplayParamsForwarding()` 末尾补连接 ⇒ 它是最紧的**最近邻**）。
+同一个 `ensureDisplayParamsForwarding()` 末尾补连接 ⇒ 它是最紧的**最近邻**）；
+**`t40-verify.sh` 含正题×3 + **两组负控×3** + **16 套件**（多了 `hidpicheck`）
++ INTERACTCHECK + S3 + A2 + DYN 双路，并多一条 **两腿正交定位**断言
+（`A\B` = 引擎写入生效组、`B\A` 应为空 ⇒ 红项集合不只是"不同"，还指向不同的腿）**
+（⚠️ T40 把 **T39 的 `hidpicheck`** 纳入回归：T40 在 `main.cpp` 自检装配段落插了一段、
+且动了 `Toolbar.qml` ⇒ 必须证明 T39 那 12 条没被碰坏）。
 Windows 侧 `tools/windows/wt29…wt33-*.ps1`
 （`wt33-launch.ps1` 是给 `schtasks /it` 用的启动器，负责注入 `T33_PROBE_EXPECT`）。
 
@@ -396,6 +405,55 @@ CFG-06/07 的原目录侧"天然成立"（空串不含哨兵 / 两个 `<unreadab
   〔+隐藏页·视口裁剪·DFS 找 Flickable〕/ **否定性结论必须自己先被验证** /
   **噪声门限不能跨布场搬** / **诊断不得污染被诊断的量** / UI 只提供被验证过真的有效的控件）。
 
+### T40 快捷键编辑 —— ✅ **已完成**（`docs/T40_SHORTCUTS.zh_CN.md`）
+
+**A-1.0 范围表**：`|快捷键编辑、帮助、版本与许可证页面 | 可延后 | 必须 | 中文输入焦点不能触发天空快捷键|`。
+第三列那条约束**已由 T29 兜住**（`keySink` 的 Esc 分支先问 `ActionRouter::canDispatchToSky()`）
+⇒ 本轮交付**第一列那个页面本体**（「帮助/版本/许可证」归 T41）。先探针再写 UI：
+
+- **T40-A 探针 12 条实测结论**（全现成，引擎一行不改）：① `QKeySequence` 往返恒等 **14/15**，
+  唯一不等的 `PageUp` 是 **Qt 键名别名**（正名 `PgUp`；`PageUp`/`PageDown` 解析成**空序列**）
+  ⇒ 🔴 **键名一律由 C++ 生成**、QML 绝不自拼；② 判"多键序列"**只能用 `count()`**
+  （注册表有动作的主键就是 `,`，用"串里有逗号"判会误计）；③ `setShortcut()` **即时生效**但
+  **只发 `changed()`、不发 `shortcutsChanged()`** ⇒ 下游自己刷新；④ `saveShortcuts()`
+  **只动 `shortcuts` 组**（非该组零差异=不写穿物证）；⑤ **空串 = 移除**；
+  ⑥ 🔴 **落盘会规范化字符串**（`Ctrl+E, Ctrl+2`→`Ctrl+E,Ctrl+2`）⇒ 比"改没改成功"
+  要**比序列语义**不能比字符串；⑦ 单恢复**不冲别人的键**（⚠️ 探针首轮因两靶撞成同一动作
+  得出过相反结论）；⑧ 出厂注册表**无重复键**；⑨ `actionsEnabled` 门**只挡 `pushKey`**、
+  `routeKey` 不查它 ⇒ 捕获态必须**自己吃键**；⑩ 注册表 **505 动作 / 15 分组**、
+  `getGroup()` 是英文 ⇒ 分组中文标题产品侧映射；⑪ "是否被改过"真源 =
+  `conf->contains("shortcuts/"+id)`（与引擎构造同判据），`defaultKeySequence` 私有 ⇒ **不显示"默认值"列**；
+  ⑫ 落点 = T36 个人版目录。**探针首轮四类方法缺陷**（靶撞车 / 比较口径错 / 无效现场 /
+  无真组合键）已逐处修，**含一条结论翻案**。
+- **产品**：`ShortcutModel`（`QAbstractListModel`，**唯一数据面+命令面**：读表 / 改键 /
+  冲突计算 / 恢复 / 落盘；含 11 个 role、8 个属性、9 个可调方法）
+  + `ShortcutsPage.qml`（**只做展示 + 键事件采集**；三条硬规矩：绝不自己拼键名 /
+  捕获态必须吃键 / Esc 捕获态=取消·非捕获态=返回天空）+ 导航按钮 + 路由 + context property。
+- 🔴 **判据抓出一个真产品缺陷**（本轮最有价值的产出）：**非法键名闸漏了"解析后为空"这一半** ——
+  `QKeySequence("PageUp").count()` 是 **1**、`toString()` 却是**空** ⇒ 闸放行、`norm` 变空串
+  ⇒ 引擎侧等于**静默删除该快捷键**（正是探针①警告的形态）。修法：闸加 `|| norm.isEmpty()`。
+  ⚠️ **只有判别对照抓得到**：普通"设个键、读回来"的正测**永远绿**。
+- 🔴 **判据自身五处方法缺陷**（非产品）：① `Ctx::finish()` 用的 `Ctx::onDone` **漏赋值**
+  ⇒ 14 步全跑完、收尾 `std::bad_function_call`、**零判据输出**（RC=134）；② 台账 id
+  `arg(i)` 生成 `SC-1` ≠ note 首词 `SC-01` ⇒ **前 9 条 mark 静默丢失**（症状：
+  "判据 5/5 却 VERDICT=FAIL"）；③ 判据**自建 model 副本**与被 QML 绑定的那个是**两个实例**
+  ⇒ 自检刷新了副本、**UI 是空表**、delegate 一个都不创建；④ `StackLayout` 隐藏页 `ListView`
+  **尺寸 0** ⇒ 切页后必须**等 ≥1 帧**才有 delegate（T39 同款）；⑤ 交互腿的产物要去
+  **UI 自己能观测的地方**读（按钮 `text`），别拿孤立副本当参照。
+- 判据 `SHORTCUTCHECK` **15 个 id / 14 条**（SC-01..SC-14，05 拆 a/b）；
+  **两组负控**：A `WRITE_OFF` 红 `[SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13]`（8/15）、
+  B `SAVE_OFF` 红 `[SC-05b,SC-09,SC-11]`（12/15），正题 `∅` ⇒ **两两不同**。
+  🔴 **红项比靶心大是步骤链的事实、不是判据缺陷**（写腿一断 ⇒ 后步前提态不存在 ⇒ 连锁红），
+  且**两腿正交可定位**：`A\B = {SC-05a,SC-07,SC-08,SC-13}`（引擎写入生效组）、
+  `B\A = ∅`、`B = 磁盘态组`。**首版负控期望值是"推理填的"，实测全错 —— 已按实跑读数改写**。
+- **定稿轮（mac）`FAILED=0` 全绿**：正题 3/3 `15/15 PASS`、负控各 3/3 命中、
+  **16 套件**（含 **`hidpicheck`** 最近邻回归）+ `INTERACTCHECK 18/18` + S3 + A2 +
+  DYN 双路 3/3+3/3 全 rc=0（脚本层 **5/0**；产物 `41329752 B /
+  md5=de8b47d940aafc82c12b4d6c0bbdd8dd`；批次期 `mdbulkimport` 在跑，仍全绿）。
+- 本轮新血泪：`TRAPS.md` **83–87**（`count()==1` ≠ 可用 / **收尾回调必须是成员** /
+  **台账 id 必须与 note 首词逐字一致** / **判据自建副本 ≠ 被测接线实例** /
+  **负控期望值必须实跑出来再写死**）。陷阱 45/46（delegate 父链为空、隐藏页尺寸 0）
+  **本轮又各踩一次** —— 编号不新加，但说明是高频坑。
 
 
 ### 之后（按优先级）
@@ -407,11 +465,10 @@ NC-05 的有界容忍来源）、**T37-X1**（夜视翻转引起 5 个工具栏�
 纯性能线索）、**`NightModeCheck` 的噪声口径并入 T39 统一**（⚠️ **顺带项，本轮未做** ——
 它仍持"占比<0.1% ∧ Δ≤2"的旧式；风险有界：NC-02 是环境门，误触退化成 rc=6 而非 FAIL）。
 
-**A5 剩余**（T39 之后）：T40 快捷键编辑 →
-T41 帮助/版本/许可证 → T42 错误页 + "未支持项"清单。
-再往后：A6（回归与交接、接口冻结）。**W-T37 / W-T38 / W-T39 Windows 复验待排期**
-（T33/W-T35 已证明跨平台复验能逼出真缺陷 —— **T39 抓到的是一条 QML 侧真缺陷，
-正是跨平台复验最可能再抓出东西的地方**）。
+**A5 剩余**（T40 之后）：**T41 帮助/版本/许可证** → T42 错误页 + "未支持项"清单。
+再往后：A6（回归与交接、接口冻结）。**W-T37 / W-T38 / W-T39 / W-T40 Windows 复验待排期**
+（T33/W-T35 已证明跨平台复验能逼出真缺陷 —— **T39 抓到的是 QML 侧真缺陷、T40 抓到的
+是在纯 Qt 行为面上的真缺陷（键名别名），跨平台复验最可能再抓出东西的地方**）。
 
 ---
 

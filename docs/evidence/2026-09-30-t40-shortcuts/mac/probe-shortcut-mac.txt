@@ -1,0 +1,217 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 84 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+StelFileMgr found install location "."
+CONFIGISO: original=/Users/ztuqfvy/Library/Application Support/Stellarium
+CONFIGISO: personal=/Users/ztuqfvy/Library/Application Support/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=个人版目录已存在 config.ini，跳过播种（用户改过的值优先）
+CONFIGISO: config=/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini
+System language (ISO 639 / ISO 3166): zh_CN
+Couldn't load translations for language  "en" in section "stellarium"
+Empty translation file for language  "en" in section "stellarium"
+Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+OpenGL module type: desktop OpenGL
+StelGLWidget constructor
+StelGraphicsScene constructor
+qt.qpa.openglcontext: Could not create NSOpenGLContext with shared context, falling back to unshared context.
+initializeGL(windowWidth = 1280, windowHeight = 720)
+OpenGL supported version:  "4.1 Metal - 91.7"
+Current Format:  QSurfaceFormat(version 4.1, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 32, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize -1, stencilBufferSize 8, samples 0, swapBehavior QSurfaceFormat::DoubleBuffer, swapInterval 0, colorSpace QColorSpace(), profile  QSurfaceFormat::CoreProfile)
+Initializing StelMainView
+Luminance textures are not supported
+Running in High Graphics Mode
+Maximum texture anisotropy: 16
+Maximum 2D texture size: 16384
+Driver version string: 4.1 Metal - 91.7
+GL vendor: Apple
+GL renderer: Apple M3
+GL Shading Language version: 4.10
+stel.OpenGLArray: Vertex Array Objects are supported
+Initial high-DPI scaling factor: 2
+Application language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures"
+Couldn't load translations for language  "zh_CN" in section "stellarium-sky"
+Empty translation file for language  "zh_CN" in section "stellarium-sky"
+Empty skyculture-independent translation file for language  "zh_CN"
+Sky language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-planetary-features"
+Empty translation file for language  "zh_CN" in section "stellarium-planetary-features"
+Planetary features language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-scripts"
+Empty translation file for language  "zh_CN" in section "stellarium-scripts"
+Scripts language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Sky culture description language: zh_CN
+Cache directory: /Users/ztuqfvy/Library/Caches/stellarium-vulkan/stelQuickUI
+Using HTTP proxy: "" "" "127.0.0.1" "64074"
+Loaded 252 countries
+Loaded 193 regions
+Loading Solar System data (1: planets and moons) ...
+Loading from: ./data/ssystem_major.ini
+Loaded 83 Solar System bodies from  ./data/ssystem_major.ini
+Solar System now has 83 entries.
+Loading Solar System data (2: minor bodies) ...
+Loading from: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 152637(152637)
+Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 66146(66146)
+minor body  "(66146)" has no IAU code in section  "66146(66146)"
+minor body  "(152637)" has no IAU code in section  "152637(152637)"
+Loaded 477 Solar System bodies from  /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Solar System now has 560 entries.
+File ssystem_minor.ini is loaded successfully...
+ExtendedElements: loaded epoch tables for 4 asteroids from "./data/asteroid_elements.json" ( 0 not matched in ssystem_minor.ini)
+SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+qt.gui.imageio: libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Loading nomenclature for Solar system bodies ...
+Loaded 16058 / 16094 items of planetary surface nomenclature
+Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
+Loading star data ...
+Loading star catalog: ./stars/hip_gaia3/stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+Loading star catalog: ./stars/hip_gaia3/stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+Loading star catalog: ./stars/hip_gaia3/stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+Loading star catalog: ./stars/hip_gaia3/stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+Finished loading star catalogue data, max_geodesic_level: 3
+Loading scientific star designations from ./stars/hip_gaia3/name.fab
+Loaded 5060 / 5060 scientific designations
+Loading scientific star designations from ./stars/hip_gaia3/extra_name.fab
+Loaded 26200 / 26200 scientific designations
+Loading variable stars data from ./stars/hip_gaia3/gcvs.cat
+[...] GCVS 5.1-20250615
+Loaded 47323 / 47323 variable stars
+Loading double stars from ./stars/hip_gaia3/wds_hip_part.dat
+Loaded 22992 / 22992 double stars
+Loading cross-identification data from ./stars/hip_gaia3/cross-id.cat
+Loaded 327097 / 327097 cross-identification data records for stars
+Loading orbital parameters data for binary system from ./stars/hip_gaia3/binary_orbitparam.dat
+Loaded 15 / 15 orbital parameters data for binary system
+Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 159 Barium stars, and 220 have PM>1000mas/yr.
+navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+Loading DSO data ...
+[...] Stellarium DSO Catalog, version 3.23 (standard edition)
+Loaded 94899 DSO records
+Loading DSO name data ...
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+Loaded 1361 / 1388 DSO name records successfully
+No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+Loading DSO outline data ...
+Loaded 100 DSO outline records successfully
+Loading DSO discovery data ...
+Loaded 183 / 183 DSO discovery records successfully
+LandscapeMgr: initialized Cache for 100 MB.
+Loading star names from ./skycultures/common_star_names.fab
+Loaded 411 / 411 common star names
+Loaded 88 / 88 constellation records successfully for culture modern
+Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+Loading constellation boundary data ... 
+Loaded 781 constellation boundary segments
+Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install more star catalogs
+Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install more star catalogs
+Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
+Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
+Loaded 88 / 92 asterism records successfully for culture modern
+Initializing basic GL shaders... 
+Creating GUI ...
+Loading style file: :/graphicGui/normalStyle.css
+Loaded plugin "Exoplanets"
+[Exoplanets] Version of the format of the catalog: 1
+[Exoplanets] loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Exoplanets/exoplanets.json
+Loaded plugin "MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/MeteorShowers/MeteorShowers.json
+[MeteorShowersMgr] Version of the format of the catalog: 2
+Loaded plugin "Novae"
+[Novae] version of the catalog: 1
+[Novae] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Novae/novae.json
+Loaded plugin "Oculars"
+Oculars::validateAndLoadIniFile() ocular.ini exists at: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Oculars/ocular.ini . Checking version...
+Oculars::validateAndLoadIniFile() found existing ini file version 3.1
+Loaded plugin "Satellites"
+[Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Satellites/satellites.json
+Satellite has invalid orbit: "STARLINK-38358" "100560"
+Loaded plugin "SolarSystemEditor"
+Using the ssystem_minor.ini file that already exists in the user directory...
+Loaded 895910 discovery circumstances records for minor planets...
+SSE: Comet cross-index data: Overwriting entry for "453P"
+SSE: Comet cross-index data: Overwriting entry for "467P"
+SSE: Comet cross-index data: Overwriting entry for "465P"
+SSE: Comet cross-index data: Overwriting entry for "466P"
+SSE: Comet cross-index data: Overwriting entry for "468P"
+SSE: Comet cross-index data: Overwriting entry for "470P"
+SSE: Comet cross-index data: Overwriting entry for "472P"
+SSE: Comet cross-index data: Overwriting entry for "475P"
+SSE: Comet cross-index data: Overwriting entry for "477P"
+SSE: Comet cross-index data: Overwriting entry for "473P"
+SSE: Comet cross-index data: Overwriting entry for "476P"
+SSE: Comet cross-index data: Overwriting entry for "479P"
+SSE: Comet cross-index data: Overwriting entry for "480P"
+SSE: Comet cross-index data: Overwriting entry for "481P"
+Loaded 2570 discovery circumstances records for comets...
+OpenGL viewport size: 2560 x 1440
+Creating scene FBO with size 2560x1440
+LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
+SHORTCUTPROBE: 快捷键命令面读数完毕（动作 505 / 分组 15 / 靶 actionShow_Constellation_Lines）
+SHORTCUTPROBE: Q10 注册表：动作 505 个｜分组 15 个｜非空快捷键串 133 条
+SHORTCUTPROBE: Q10 分组名：Miscellaneous / Selected object information / Display Options / Movement and Selection / Field of View / Date and Time / Specific Time / Scripts / Windows / Exoplanets / Meteor Showers / Bright Novae / Oculars / Satellites / Solar System Editor
+SHORTCUTPROBE: Q10 多键序列（count()>1）**12 个**；actionScript/solar_system_screensaver.ssc=「Ctrl+D, 0」(count=2)｜actionScript/modern_constellations_tour.ssc=「Ctrl+D, 1」(count=2)｜actionScript/screensaver.ssc=「Ctrl+D, 3」(count=2)｜另有「纯逗号键」1 个（`toString()` 就是「,」⇒ 用逗号判多键序列会误计）
+SHORTCUTPROBE: Q10 样本 actionToggle_Selected_Object_Pointer[Miscellaneous]「切换是否显示选定天体的指标」主=∅ 备=∅ checkable
+SHORTCUTPROBE: Q10 样本 actionShow_Narration[Selected object information]「开始叙述（语音合成）」主=Shift+R 备=∅ slot
+SHORTCUTPROBE: Q10 样本 actionShow_Hips_Surveys[Display Options]「分层累进式巡天」主=Ctrl+Alt+D 备=∅ checkable
+SHORTCUTPROBE: Q10 样本 actionShow_Hips_Surveys_dialog[Display Options]「切换HiPS对话框」主=∅ 备=∅ slot
+SHORTCUTPROBE: Q10 样本 actionShow_Planets[Display Options]「行星」主=P 备=∅ checkable
+SHORTCUTPROBE: Q11 配置文件：/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini｜组数 32
+SHORTCUTPROBE: S1 基线：整本配置 770 键｜shortcuts 组 **0 项**（= 已被改过的动作数）
+SHORTCUTPROBE: S1 改键靶=actionShow_Constellation_Lines（Display Options）｜routeKey 靶=actionShow_Asterism_Lines（Display Options）
+SHORTCUTPROBE: S1 改键靶原始：actionShow_Constellation_Lines[Display Options]「星座连线」主=C 备=∅ checkable
+SHORTCUTPROBE: S1 路由靶原始：actionShow_Asterism_Lines[Display Options]「星群连线」主=Alt+A 备=∅ checkable
+SHORTCUTPROBE: Q1 往返恒等 14/15；不等：「PageUp」→toString「」→再解析「」
+SHORTCUTPROBE: Q1 键名别名对照：「PgUp」→「PgUp」｜「PgDown」→「PgDown」｜「PageUp」→「∅空」｜「PageDown」→「∅空」｜「Del」→「Del」｜「Escape」→「Esc」
+SHORTCUTPROBE: Q1 组合个数：「C」count=1｜「,」count=1｜「Ctrl+E, Ctrl+2」count=2｜「Ctrl+Shift+A」count=1
+SHORTCUTPROBE: Q1 注册表现存键往返 8/8
+SHORTCUTPROBE: Q11 平台：cocoa
+SHORTCUTPROBE: Q11 「Ctrl+N」: Portable=「Ctrl+N」｜Native=「⌘N」
+SHORTCUTPROBE: Q11 「Meta+N」: Portable=「Meta+N」｜Native=「⌃N」
+SHORTCUTPROBE: Q11 「Alt+P」: Portable=「Alt+P」｜Native=「⌥P」
+SHORTCUTPROBE: Q11 「Ctrl+Shift+A」: Portable=「Ctrl+Shift+A」｜Native=「⇧⌘A」
+SHORTCUTPROBE: Q11 NativeText 往返（按 NativeText 解析）4/4
+SHORTCUTPROBE: Q2 setShortcut(「Ctrl+Alt+Shift+F9」)：回读=「Ctrl+Alt+Shift+F9」✓｜findActionFromShortcut=actionShow_Constellation_Lines (命中本动作)
+SHORTCUTPROBE: Q2 信号：changed()=1｜shortcutsChanged()=0（⇒ setShortcut 只发自己那个 changed，**不发**组级 shortcutsChanged ⇒ 下游要自己转发）
+SHORTCUTPROBE: Q2 原始键保留在 origMain 里：C
+SHORTCUTPROBE: Q2 routeKey(F8, Ctrl+Alt+Shift)：改键后=「Ctrl+Alt+Shift+F8」命中=true｜dispatchCount 0→1｜toggle 状态动过=是 已按回=是｜(原键「Alt+A」)
+SHORTCUTPROBE: Q3 saveShortcuts()：shortcuts 组 0 项 → 2 项
+SHORTCUTPROBE: Q3 落盘内容：actionShow_Asterism_Lines=Ctrl+Alt+Shift+F8 ""｜actionShow_Constellation_Lines=Ctrl+Alt+Shift+F9 ""
+SHORTCUTPROBE: Q2 saveShortcuts 期间信号增量：changed() +0｜shortcutsChanged() +1（⇒ setShortcut 自己不 emit shortcutsChanged）
+SHORTCUTPROBE: Q4 整本指纹（saveShortcuts 前后）：新增 2｜删除 0｜值变 0 ⇒ [新增:shortcuts/actionShow_Asterism_Lines, shortcuts/actionShow_Constellation_Lines][删除:无][值变:无]
+SHORTCUTPROBE: Q4 其中**非 shortcuts 组**：新增 0｜删除 0｜值变 0 ⇒ [新增:无][删除:无][值变:无]
+SHORTCUTPROBE: Q3 文件：size=42844 ｜ mtime=2026-09-30T21:09:57
+SHORTCUTPROBE: Q3b 多键序列「Ctrl+E, Ctrl+2」：内存=「Ctrl+E, Ctrl+2」｜磁盘原样=「Ctrl+E,Ctrl+2 ""」｜split 2 段 ⇒ 首段「Ctrl+E,Ctrl+2」回解=「Ctrl+E, Ctrl+2」 ✓ 恒等
+SHORTCUTPROBE: Q3b 说明：saveShortcuts 里 `.toString().replace(" ", "")` 把分隔空格删掉 ⇒ 落盘是 `Ctrl+E,Ctrl+2`（逗号分隔、无空格），重启时 split(\s+) **切不开** ⇒ 整段喂回 QKeySequence 正是多键序列
+SHORTCUTPROBE: Q6 目标「actionShow_Constellation_Lines」内存=「Ctrl+E, Ctrl+2」
+SHORTCUTPROBE: Q6 磁盘原样（sync **前**）=「Ctrl+E,Ctrl+2 ""」｜（sync 后）=「Ctrl+E,Ctrl+2 ""」（⚠️ 是「主键 备键」拼接串）
+SHORTCUTPROBE: Q6 sync 前 == sync 后：是（⇒ QSettings 无需显式 sync）
+SHORTCUTPROBE: Q6 按构造解析路径取首段：磁盘「Ctrl+E,Ctrl+2」vs 内存「Ctrl+E, Ctrl+2」｜字符串恒等=否｜**序列语义恒等=是** ⇒ 重启读回同一序列 ✓（字符串形态可能被规范化）
+SHORTCUTPROBE: Q5 setShortcut("") 后：磁盘项存在=是｜原样值=「"" ""」（5 字符）
+SHORTCUTPROBE: Q5 复刻构造解析：split → 2 段 ⇒ 「""」→空序列｜「""」→空序列
+SHORTCUTPROBE: Q5 直接解析对照：QKeySequence("").toString()=「」｜QKeySequence("\"\"").toString()=「」
+SHORTCUTPROBE: Q5 内存回读（setShortcut("") 后）=「」
+SHORTCUTPROBE: Q7 单个恢复 subject：键「Ctrl+Alt+Shift+F9」→「C」（默认）
+SHORTCUTPROBE: Q7 现场：shortcuts 组 2 项 → 1 项
+SHORTCUTPROBE: Q7 **被恢复者在组里**=否（等于默认 ⇒ 应被 saveShortcuts 剔除）｜**另一个自定义项在组里**=是（键=「Ctrl+Alt+Shift+F8」，值=Ctrl+Alt+Shift+F8 ""）
+SHORTCUTPROBE: Q7 结论：单个恢复**保留**其它自定义项（整组重写但按默认值剔除）
+SHORTCUTPROBE: Q8 全量扫描：非空键 133 种｜**重复键 0 种**
+SHORTCUTPROBE: Q8 出厂注册表**无重复键**
+SHORTCUTPROBE: Q9 pushKey(F24)：actionsEnabled=false → false｜true → false（两者都应为 false —— 该键不该命中任何动作）
+SHORTCUTPROBE: Q9 成对：pushKey(「Ctrl+Alt+Shift+F8」) 门关=false（状态冻结=是）｜门开=true（状态动了=是，已按回=是） ⇒ 门确实挡在 pushKey 最前（:248-249）
+SHORTCUTPROBE: Q9 ⚠️ routeKey **不查** actionsEnabled（ActionRouter.cpp:141-160）⇒ 编辑期间想屏蔽动作不能只靠它
+SHORTCUTPROBE: Q12 还原动作 2 个：actionShow_Constellation_Lines, actionShow_Asterism_Lines
+SHORTCUTPROBE: Q12 还原后整本指纹 vs S1 基线：新增 0｜删除 0｜值变 0 ⇒ [新增:无][删除:无][值变:无]
+SHORTCUTPROBE: Q12 shortcuts 组：基线 0 项 → 现在 0 项 （项数一致）
+SHORTCUTPROBE: VERDICT=DONE
