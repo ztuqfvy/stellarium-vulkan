@@ -1,8 +1,9 @@
-# 进度总览（截至 2026-09-30 上午，**T34 后**盘点）
+# 进度总览（截至 2026-09-30 下午，**T35 后**盘点）
 
-> 口径基线：`main @ 9b04cdd`（T34 收口提交；工作区干净、与 `origin/main` 同步）。上一版快照基线是
-> `3f7b4a0`（T32 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，**T34 见 `docs/T34_TOOLBAR.zh_CN.md`**。
-> 环境口径与 T17–T33 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
+> 口径基线：T34 收口提交 `9b04cdd` + 本轮 T35 提交（工作区干净、与 `origin/main` 同步）。
+> 上一版快照基线是 `9b04cdd`（T34 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，
+> **T34 见 `docs/T34_TOOLBAR.zh_CN.md`**，**T35 见 `docs/T35_TIMELINK.zh_CN.md`**。
+> 环境口径与 T17–T34 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
 
@@ -74,12 +75,15 @@
 | `TOOLBARCHECK` | 12（TB-01..TB-12） | `STELQUICK_TOOL_CHECK` | **T34** 真实工具栏：写入腿（4 代表开关 trigger → **模块 getter** 翻转）/ 往返复原 / `actionToggled` 信号腿 / revision 订阅腿 / not-found 负控 / **判别负控**（registry 命令不碰 revision）/ UI 腿（12 按钮全找到 ∧ 态一致）/ **真实鼠标点击腿** / **绑定重算腿**（双采样）。**五批正题均 `12/12`** |
 | （探针）`LOCPROBE` | 只报读数、**不打 PASS** | `STELQUICK_LOC_PROBE` | T33-A 数据面探针（地点库规模 / `locationForString` 语义 / `isValid` 边界 / 时区联动） |
 | （探针）`TOOLBARPROBE` | 只报读数、**不打 PASS** | `STELQUICK_TOOL_PROBE` | **T34-A** 命令面探针（注册表规模 505/15 / 12 候选逐项 checkable·checked·text·key / trigger→getter 翻转 / `actionToggled` 观测 / revision 读数） |
+| `TIMELINKCHECK` | 7（TL-01..TL-07） | `STELQUICK_TIMELINK_CHECK` | **T35** 仿真时间链路定性：读面同源 / **链路自洽**（ΔJD==窗口×rate×scale）/ rate 多档线性 / 窗口线性（**真实墙钟**，非按帧固定步长）/ 冻结不补 / 速率阶梯跟变 / **恒星时绝对腿**（ΔLST==ΔJD×360.9856° + 下游 `j2000ToAltAz` 落点重算）。**五批正题均 `7/7`** |
+| （探针）`TIMELINKPROBE` | 只报读数、**不打 PASS** | `STELQUICK_TIMELINK_PROBE` | **T35-A** 时间链路探针（Q1 三个读面同源 / Q2·Q3 窗口原始读数 / Q4 阶梯台账 0.1→1→10→100 / Q5·Q5b 冻结与恢复 / Q6b 恒星时恒等式 / Q6c 下游重算 / Q6d **视线随 JD 转的机理核验**） |
 
-一键复跑：`tools/t16-verify.sh` … **`tools/t34-verify.sh`**（每个任务一个，用法 `all N`；
+一键复跑：`tools/t16-verify.sh` … **`tools/t35-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
-8 条判据、要求 `VERDICT=PASS`；**`t34-verify.sh` 含四组负控 + 探针 + 10 套件 + S3 + A2 + DYN**）；
-Windows 侧 `tools/windows/wt29…wt33-*.ps1`（`wt33-launch.ps1` 是给 `schtasks /it` 用的启动器，
-负责注入 `T33_PROBE_EXPECT`）。
+8 条判据、要求 `VERDICT=PASS`；**`t34-verify.sh` 含四组负控 + 探针 + 10 套件 + S3 + A2 + DYN**；
+**`t35-verify.sh` 含三组负控 + 探针 + **11 套件**（多了 `toolbarcheck`）+ INTERACTCHECK + S3 + A2 + DYN**，
+`core N` 段即含以上全部）；Windows 侧 `tools/windows/wt29…wt33-*.ps1`
+（`wt33-launch.ps1` 是给 `schtasks /it` 用的启动器，负责注入 `T33_PROBE_EXPECT`）。
 
 ---
 
@@ -104,7 +108,7 @@ Windows 侧 `tools/windows/wt29…wt33-*.ps1`（`wt33-launch.ps1` 是给 `schtas
 | 项 | 现状 | 定性 |
 |---|---|---|
 | `LOC-04 (b)` 帧延迟量化 | macOS `0.5826° > 0.50°` 红（回归里唯一一项） | 三组对照（B T32 全量 / C 仅回退两 QML / **D 全部回退到 T31 源**）**同分布** ⇒ 与 T32 无因果。机理 = 采样点在"跳变后 0ms"⇒ 残余角 ≈ 一次事件循环内的天球转角（≈30°/s ⇒ 一帧≈0.3°），读数**双峰**（0.05 / 0.32），阈值无余量 |
-| 时间链路脱钩 | HostDriven 帧泵 **400ms 推 0.61 天**（≈1.5 天/秒）与 `getTimeRate()` 读数 10 **脱钩** | T27 发现；**待定性**（若属设计需文档说明，否则独立缺陷） |
+| 时间链路脱钩 | ✅ **已结清（T35，2026-09-30）** | **不是缺陷、也不是"设计需说明"——是测量口径问题**。同刻量齐三个量后 `ΔJD == 真实窗口 × rate × scale` 成立（TL-01 偏差 **0.19%..1.40%**／5 跑，恒星时绝对腿残差 **+0.0000°**）。三个数各有出处：①`getTimeRate()` 单位是 **JDay/sec**（`StelCore.hpp:595`），README 的 `× JD_SECOND` 是凭空引入的 1/86400；②`engineRate=10` 是**套件自己的 IT-05 注入 L 键**（`increaseTimeSpeed()`）抬上去的**移动靶**；③"400ms"是相位**名义** delay，从未与 ΔJD 同刻测过。⇒ **时间类判据口径可信**。见 `docs/T35_TIMELINK.zh_CN.md` |
 | 捏合后首击失灵 | `QQuickPinchHandler` native 分支不清理 `currentPoints` | T28 发现；真实用户不在同点连做两事，**未定性为缺陷** |
 | DYN 显示侧停摆 | 环境敏感，与 T18 无关（替身路径同样失败） | 倾向"窗口未被暴露"；`caffeinate -dims/-dimsu` **已试过无效，别再试** |
 | 上游引擎缺陷（记录在案不改） | `listMatchingObjects` 不去重；聚合层 `std::sort` 抹掉模块级相关性 | 本层已各自绕过；将来报上游时是素材 |
@@ -171,15 +175,39 @@ Windows 侧 `tools/windows/wt29…wt33-*.ps1`（`wt33-launch.ps1` 是给 `schtas
 ④ `Flow` 的 `implicitWidth` 是单行宽度 ⇒ 与另一个 `fillWidth` 项**对分**后竖成 12 行、
 把工具栏撑到 446px；⑤ 连续起停会让 **Metal 掉设备**（无判据输出 ≠ 判据失败）。
 
-### T35+ A4 线索类（择机）
+### T35 仿真时间链路"脱钩"定性 —— ✅ **已完成**（`docs/T35_TIMELINK.zh_CN.md`）
 
-时间链路脱钩（**A4 线索类优先项**，它决定时间类判据口径是否可信）→ `LOC-04 (b)` 帧延迟量化
-→ `REPEATCHECK` 就绪门预算 → 捏合后首击 → DYN 停摆根因；另加 T33 移交的
-`findLocations` 排序（照 T21 完全匹配优先）与"负控 A 在 Windows 不复现"的定性。
+T27 移交的**优先级最高**的线索（它决定所有时间类判据口径是否可信）**已结清**：
 
-### 之后
+- **结论**：不存在"推进量与 rate 脱钩"。`ΔJD == 真实墙钟 × rate × scale` 成立
+  （TL-01 相对偏差 **0.19%..1.40%**／5 跑，恒星时**绝对腿**残差 **+0.0000°**）。产品侧**零语义改动**。
+- **三处口径污染**逐一定位（单位 / 移动靶 / 名义窗口），并把 T27 文档、T27 证据 README、
+  `main.cpp` IT-07 注释三处**就地标注**（不删原文：观察是真的，解释是错的）。
+- 顺带定性：**T27"视线锁地平 ⇒ 随 JD 漂"的机理是对的**——真机理在 `updateVisionVector`
+  的 mountFrame 锁定分支（探针 Q6d 实测 ΔRA 与 ΔLST 同阶）；错的只是速率读数。
+- 判据 `TIMELINKCHECK` **7 条**；三组负控红项**两两不同**：A `BREAK`=[TL-01]、
+  B `RATE_IGNORED`=[TL-01,02,05]、C `FREEZE_LEAK`=[TL-04] ⇒ 三条腿各自承重。
+- **定稿轮（mac）`FAILED=0` 全绿**：正题 5/5、三组负控全 OK、探针 OK、
+  11 套件 + `INTERACTCHECK` **18/18（本批拿到焦点）** + S3 + A2 + DYN 双路 5/5 + `producer-readback`。
 
-A5（设置与完整个人版 UI：夜视、配置迁移、错误页）→ A6（回归与交接、接口冻结）。
+⚠️ 本轮六条新血泪（详见 `docs/T35_TIMELINK.zh_CN.md` §8 与 `TRAPS.md`）：
+① 🔴 Qt **`.arg()` 与 printf 风格混用** ⇒ `%.4f` **静默原样输出**（探针/判据首跑全线踩中）；
+② 🔴 macOS awk 里 **`exp` 是内建函数名**，不能当变量 ⇒ **语法错误、零输出**，
+脚本自证门"静默变空"看起来像"没输出"而不是"算错了"；
+③ 🔴 **负控的"落点"和"形状"一样重要**——第一版负控 C（解冻后补回冻结期）形状完全正确，
+但"补"的那一脚落在 `arm()` **开窗之前** ⇒ 判据照绿；
+④ 🔴 **就绪门太紧 ⇒ 假红**：批次连跑 11 套件时 `REPLAYCHECK` 的 `RP-04` 读 `207×0` 假红，
+单独复跑两次都 `11/11` ⇒ `kUiLayoutWaitTries` 2.5s → **6s**（**断言不动**，只放就绪门）。
+⑤ 🔴 **断言里不许塞"受调度影响"的量**：TL-02 初版把"两窗长度差 ≤20%"当断言，定稿轮被调度抖动打红（档A 名义 1.5s → 实测 **2.19s**）⇒ 假红 1/5 跑；改成**速率归一化**比较后免疫（长度差降为读数）。
+⑥ 🔴 **治本：给"窗口型"读数加有界就绪门** —— 事件循环被饿住时**定时器与帧泵同源停摆**，窗口被拖长、ΔJD 又少涨（两量被同一抖动污染）⇒ 该窗无分辨力。**W 超名义 25% ⇒ 本窗不可判 ⇒ 重起窗重测**（预算 3 次；`if (r.suspect) return;`）。门是**单边**的、且**真缺陷不改墙钟** ⇒ 不掩护真缺陷。
+
+### 之后（按优先级）
+
+`LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算 → 捏合后首击 → DYN 停摆根因；
+另加 T33 移交的 `findLocations` 排序（照 T21 完全匹配优先）、
+"负控 A 在 Windows 不复现"的定性、以及 **W-T35 Windows 跨平台复验**（T33 证明过它能逼出真缺陷）。
+
+再往后：A5（设置与完整个人版 UI：夜视、配置迁移、错误页）→ A6（回归与交接、接口冻结）。
 
 ---
 

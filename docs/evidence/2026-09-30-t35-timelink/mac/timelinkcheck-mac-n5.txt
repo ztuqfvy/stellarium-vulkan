@@ -1,0 +1,115 @@
+──────── TIMELINKCHECK run 1/5（rc=0）→ PASS（✗=0/0 占位符漏=0/0 还原行=1/1 脚本复算TL-01=0 脚本复算TL-07=0）────────
+  脚本独立复算 TL-01：W=3.0596 ΔJD=0.617600 rate=0.2 复算比值=1.0093 复算偏差=0.93%
+  脚本独立复算 TL-07：ΔJD=0.211600 ΔLST=+76.3846 期望=76.3846° 复算残差=0.0000°（容差 1.00°）
+TIMELINKCHECK: 判据 7/7  VERDICT=PASS
+TIMELINKCHECK:   ✓ TL-06 读面同源：模式=HostDriven HostDriven=true |getJD−simClockJD|=0.000e+00（≤2.000e-02）|facade.julianDay−simClockJD|=0.000e+00（≤1e-9）
+TIMELINKCHECK:     TL-06 语义：getJD() 是**上一帧快照**（T16），允许落后一帧；facade.julianDay() 必须与真源逐位同源（防「第二个时间源」）
+TIMELINKCHECK:   ✓ TL-01 链路自洽：窗口 W=3.0596s ΔJD=0.617600 天 rate=0.2 scale=1 ⇒ 应走 0.611912 天 比值=1.0093 反推窗口=3.0880s ⇒ 相对偏差=0.93%（≤15%）
+TIMELINKCHECK:     TL-01 ⇒ **这就是 T27 那条线索的反命题**：同一时刻量齐三个量时，「ΔJD == W × rate × scale」成立 ⇒ 不存在「推进量与 rate 脱钩」。
+TIMELINKCHECK:     TL-01 ⇒ T27 那个数字的对账：把「0.61 天」除以**任何**一个真实的 rate 读数，得到的都是**某个真实窗口长度**（÷0.1 = 6.1s、÷0.2 = 3.06s、÷1 = 0.61s）——而「1.5 天/秒」这个数只能由「0.61 天 ÷ 名义 0.4s」得到：它既不是任何时刻的 rate 读数，也不是任何速率的物理量，是「用错窗口 + 读错单位」的商。
+TIMELINKCHECK:     TL-02 档A（rate=0.2）：W=1.5066s ΔJD=0.300400；档B（rate=0.8）：W=1.5137s ΔJD=1.218400；两窗口长度差=0.5%（**只作读数**：断言已按速率归一化）
+TIMELINKCHECK:   ✓ TL-02 rate 多档线性：**速率归一化**后之比=4.0369（=(ΔJD_B/W_B)/(ΔJD_A/W_A)，期望 4.0，±30%；裸 ΔJD 之比=4.0559、窗口长度差=0.5%）⇒ rate **真的进了链路**
+TIMELINKCHECK:     TL-03 短窗 W=0.8174s ΔJD=0.325200；长窗 W=2.5033s ΔJD=1.003600；ΔJD 之比=3.0861 vs W 之比=3.0626（固定步长假设下 ΔJD 之比≈1）
+TIMELINKCHECK:   ✓ TL-03 窗口线性：ΔJD 之比/W 之比=1.0077（±35%）⇒ 推进量与**真实墙钟**成正比，不是「按帧数固定步长」
+TIMELINKCHECK:     TL-04 冻结窗口 W=1.2100s scale=0 ⇒ ΔJD=0.000000000000 天
+TIMELINKCHECK:   ✓ TL-04 冻结/恢复不补：冻结窗 ΔJD=0.000000000000（≤1e-9）∧ 恢复窗 W=1.5363s ΔJD=0.305200 比值=0.9933（∈[0.4,1.6]；补冻结期会 →≈2，链路死掉会 →≈0）
+TIMELINKCHECK:     TL-05 increaseTimeSpeed（= INTERACTCHECK IT-05 注入的 L 键那条路）：0.1 ⇒ 1
+TIMELINKCHECK:     TL-05 阶梯台账：0.1 → 1 → 10（×10 阶梯，低档吸附 JD_SECOND）；同长窗口 ΔJD：0.104600 → 1.005000
+TIMELINKCHECK:     TL-05 ⇒ 这条解释了 T27 的「engineRate 读数=10」：INTERACTCHECK 的 IT-05 注入 L 键把 rate 从 0.1 提到 1（第 2 次到 10），所以 DIAG9 打出来的读数与相位设计速率本就不是一个东西。
+TIMELINKCHECK:   ✓ TL-05 速率阶梯 + 链路跟变：阶梯 {0.1,1,10} 成立 ∧ ΔJD 之比/rate 之比=0.9608（±40%）
+TIMELINKCHECK:   ✓ TL-07 恒星时腿：W=4.2322s ΔJD=0.211600 天 ⇒ ΔLST=+76.3846° 期望 ΔJD×360.9856=+76.3846°（残差=+0.0000° ≤1.00°）∧ 固定 J2000 方向经引擎 j2000ToAltAz 落点转过 76.384°（>10°，证明下游真的重算了）
+TIMELINKCHECK:     TL-07 语义：这是**绝对腿**——恒星时是 JD 的天文函数（走 Planet::getSiderealTime 这条路，不是复述 simClock），360.9856°/天 把「天」这个单位钉死在画面上（T30 铁律）。
+TIMELINKCHECK:     收尾：已还原 rate=0.1 scale=1 ⇒ 回读 rate=0.1 scale=1
+TIMELINKCHECK: VERDICT=PASS
+──────── TIMELINKCHECK run 2/5（rc=0）→ PASS（✗=0/0 占位符漏=0/0 还原行=1/1 脚本复算TL-01=0 脚本复算TL-07=0）────────
+  脚本独立复算 TL-01：W=3.0493 ΔJD=0.611000 rate=0.2 复算比值=1.0019 复算偏差=0.19%
+  脚本独立复算 TL-07：ΔJD=0.204100 ΔLST=+73.6772 期望=73.6772° 复算残差=0.0000°（容差 1.00°）
+TIMELINKCHECK: 判据 7/7  VERDICT=PASS
+TIMELINKCHECK:   ✓ TL-06 读面同源：模式=HostDriven HostDriven=true |getJD−simClockJD|=0.000e+00（≤2.000e-02）|facade.julianDay−simClockJD|=0.000e+00（≤1e-9）
+TIMELINKCHECK:     TL-06 语义：getJD() 是**上一帧快照**（T16），允许落后一帧；facade.julianDay() 必须与真源逐位同源（防「第二个时间源」）
+TIMELINKCHECK:   ✓ TL-01 链路自洽：窗口 W=3.0493s ΔJD=0.611000 天 rate=0.2 scale=1 ⇒ 应走 0.609869 天 比值=1.0019 反推窗口=3.0550s ⇒ 相对偏差=0.19%（≤15%）
+TIMELINKCHECK:     TL-01 ⇒ **这就是 T27 那条线索的反命题**：同一时刻量齐三个量时，「ΔJD == W × rate × scale」成立 ⇒ 不存在「推进量与 rate 脱钩」。
+TIMELINKCHECK:     TL-01 ⇒ T27 那个数字的对账：把「0.61 天」除以**任何**一个真实的 rate 读数，得到的都是**某个真实窗口长度**（÷0.1 = 6.1s、÷0.2 = 3.06s、÷1 = 0.61s）——而「1.5 天/秒」这个数只能由「0.61 天 ÷ 名义 0.4s」得到：它既不是任何时刻的 rate 读数，也不是任何速率的物理量，是「用错窗口 + 读错单位」的商。
+TIMELINKCHECK:     TL-02 档A（rate=0.2）：W=1.5061s ΔJD=0.301600；档B（rate=0.8）：W=1.5299s ΔJD=1.232800；两窗口长度差=1.6%（**只作读数**：断言已按速率归一化）
+TIMELINKCHECK:   ✓ TL-02 rate 多档线性：**速率归一化**后之比=4.0239（=(ΔJD_B/W_B)/(ΔJD_A/W_A)，期望 4.0，±30%；裸 ΔJD 之比=4.0875、窗口长度差=1.6%）⇒ rate **真的进了链路**
+TIMELINKCHECK:     TL-03 短窗 W=0.8238s ΔJD=0.326800；长窗 W=2.3849s ΔJD=0.955200；ΔJD 之比=2.9229 vs W 之比=2.8948（固定步长假设下 ΔJD 之比≈1）
+TIMELINKCHECK:   ✓ TL-03 窗口线性：ΔJD 之比/W 之比=1.0097（±35%）⇒ 推进量与**真实墙钟**成正比，不是「按帧数固定步长」
+TIMELINKCHECK:     TL-04 冻结窗口 W=1.2015s scale=0 ⇒ ΔJD=0.000000000000 天
+TIMELINKCHECK:   ✓ TL-04 冻结/恢复不补：冻结窗 ΔJD=0.000000000000（≤1e-9）∧ 恢复窗 W=1.5557s ΔJD=0.307000 比值=0.9867（∈[0.4,1.6]；补冻结期会 →≈2，链路死掉会 →≈0）
+TIMELINKCHECK:     TL-05 increaseTimeSpeed（= INTERACTCHECK IT-05 注入的 L 键那条路）：0.1 ⇒ 1
+TIMELINKCHECK:     TL-05 阶梯台账：0.1 → 1 → 10（×10 阶梯，低档吸附 JD_SECOND）；同长窗口 ΔJD：0.104900 → 1.006000
+TIMELINKCHECK:     TL-05 ⇒ 这条解释了 T27 的「engineRate 读数=10」：INTERACTCHECK 的 IT-05 注入 L 键把 rate 从 0.1 提到 1（第 2 次到 10），所以 DIAG9 打出来的读数与相位设计速率本就不是一个东西。
+TIMELINKCHECK:   ✓ TL-05 速率阶梯 + 链路跟变：阶梯 {0.1,1,10} 成立 ∧ ΔJD 之比/rate 之比=0.9590（±40%）
+TIMELINKCHECK:   ✓ TL-07 恒星时腿：W=4.0835s ΔJD=0.204100 天 ⇒ ΔLST=+73.6772° 期望 ΔJD×360.9856=+73.6772°（残差=+0.0000° ≤1.00°）∧ 固定 J2000 方向经引擎 j2000ToAltAz 落点转过 73.677°（>10°，证明下游真的重算了）
+TIMELINKCHECK:     TL-07 语义：这是**绝对腿**——恒星时是 JD 的天文函数（走 Planet::getSiderealTime 这条路，不是复述 simClock），360.9856°/天 把「天」这个单位钉死在画面上（T30 铁律）。
+TIMELINKCHECK:     收尾：已还原 rate=0.1 scale=1 ⇒ 回读 rate=0.1 scale=1
+TIMELINKCHECK: VERDICT=PASS
+──────── TIMELINKCHECK run 3/5（rc=0）→ PASS（✗=0/0 占位符漏=0/0 还原行=1/1 脚本复算TL-01=0 脚本复算TL-07=0）────────
+  脚本独立复算 TL-01：W=3.0996 ΔJD=0.628600 rate=0.2 复算比值=1.0140 复算偏差=1.40%
+  脚本独立复算 TL-07：ΔJD=0.208350 ΔLST=+75.2114 期望=75.2114° 复算残差=0.0000°（容差 1.00°）
+TIMELINKCHECK: 判据 7/7  VERDICT=PASS
+TIMELINKCHECK:   ✓ TL-06 读面同源：模式=HostDriven HostDriven=true |getJD−simClockJD|=0.000e+00（≤2.000e-02）|facade.julianDay−simClockJD|=0.000e+00（≤1e-9）
+TIMELINKCHECK:     TL-06 语义：getJD() 是**上一帧快照**（T16），允许落后一帧；facade.julianDay() 必须与真源逐位同源（防「第二个时间源」）
+TIMELINKCHECK:   ✓ TL-01 链路自洽：窗口 W=3.0996s ΔJD=0.628600 天 rate=0.2 scale=1 ⇒ 应走 0.619914 天 比值=1.0140 反推窗口=3.1430s ⇒ 相对偏差=1.40%（≤15%）
+TIMELINKCHECK:     TL-01 ⇒ **这就是 T27 那条线索的反命题**：同一时刻量齐三个量时，「ΔJD == W × rate × scale」成立 ⇒ 不存在「推进量与 rate 脱钩」。
+TIMELINKCHECK:     TL-01 ⇒ T27 那个数字的对账：把「0.61 天」除以**任何**一个真实的 rate 读数，得到的都是**某个真实窗口长度**（÷0.1 = 6.1s、÷0.2 = 3.06s、÷1 = 0.61s）——而「1.5 天/秒」这个数只能由「0.61 天 ÷ 名义 0.4s」得到：它既不是任何时刻的 rate 读数，也不是任何速率的物理量，是「用错窗口 + 读错单位」的商。
+TIMELINKCHECK:     TL-02 档A（rate=0.2）：W=1.5247s ΔJD=0.304000；档B（rate=0.8）：W=1.5049s ΔJD=1.216000；两窗口长度差=1.3%（**只作读数**：断言已按速率归一化）
+TIMELINKCHECK:   ✓ TL-02 rate 多档线性：**速率归一化**后之比=4.0527（=(ΔJD_B/W_B)/(ΔJD_A/W_A)，期望 4.0，±30%；裸 ΔJD 之比=4.0000、窗口长度差=1.3%）⇒ rate **真的进了链路**
+TIMELINKCHECK:     TL-03 短窗 W=0.8005s ΔJD=0.319600；长窗 W=2.4441s ΔJD=0.975200；ΔJD 之比=3.0513 vs W 之比=3.0533（固定步长假设下 ΔJD 之比≈1）
+TIMELINKCHECK:   ✓ TL-03 窗口线性：ΔJD 之比/W 之比=0.9994（±35%）⇒ 推进量与**真实墙钟**成正比，不是「按帧数固定步长」
+TIMELINKCHECK:     TL-04 冻结窗口 W=1.2052s scale=0 ⇒ ΔJD=0.000000000000 天
+TIMELINKCHECK:   ✓ TL-04 冻结/恢复不补：冻结窗 ΔJD=0.000000000000（≤1e-9）∧ 恢复窗 W=1.5406s ΔJD=0.305800 比值=0.9925（∈[0.4,1.6]；补冻结期会 →≈2，链路死掉会 →≈0）
+TIMELINKCHECK:     TL-05 increaseTimeSpeed（= INTERACTCHECK IT-05 注入的 L 键那条路）：0.1 ⇒ 1
+TIMELINKCHECK:     TL-05 阶梯台账：0.1 → 1 → 10（×10 阶梯，低档吸附 JD_SECOND）；同长窗口 ΔJD：0.103000 → 1.013000
+TIMELINKCHECK:     TL-05 ⇒ 这条解释了 T27 的「engineRate 读数=10」：INTERACTCHECK 的 IT-05 注入 L 键把 rate 从 0.1 提到 1（第 2 次到 10），所以 DIAG9 打出来的读数与相位设计速率本就不是一个东西。
+TIMELINKCHECK:   ✓ TL-05 速率阶梯 + 链路跟变：阶梯 {0.1,1,10} 成立 ∧ ΔJD 之比/rate 之比=0.9835（±40%）
+TIMELINKCHECK:   ✓ TL-07 恒星时腿：W=4.1678s ΔJD=0.208350 天 ⇒ ΔLST=+75.2114° 期望 ΔJD×360.9856=+75.2114°（残差=+0.0000° ≤1.00°）∧ 固定 J2000 方向经引擎 j2000ToAltAz 落点转过 75.211°（>10°，证明下游真的重算了）
+TIMELINKCHECK:     TL-07 语义：这是**绝对腿**——恒星时是 JD 的天文函数（走 Planet::getSiderealTime 这条路，不是复述 simClock），360.9856°/天 把「天」这个单位钉死在画面上（T30 铁律）。
+TIMELINKCHECK:     收尾：已还原 rate=0.1 scale=1 ⇒ 回读 rate=0.1 scale=1
+TIMELINKCHECK: VERDICT=PASS
+──────── TIMELINKCHECK run 4/5（rc=0）→ PASS（✗=0/0 占位符漏=0/0 还原行=1/1 脚本复算TL-01=0 脚本复算TL-07=0）────────
+  脚本独立复算 TL-01：W=3.1482 ΔJD=0.634600 rate=0.2 复算比值=1.0079 复算偏差=0.79%
+  脚本独立复算 TL-07：ΔJD=0.210300 ΔLST=+75.9153 期望=75.9153° 复算残差=0.0000°（容差 1.00°）
+TIMELINKCHECK: 判据 7/7  VERDICT=PASS
+TIMELINKCHECK:   ✓ TL-06 读面同源：模式=HostDriven HostDriven=true |getJD−simClockJD|=0.000e+00（≤2.000e-02）|facade.julianDay−simClockJD|=0.000e+00（≤1e-9）
+TIMELINKCHECK:     TL-06 语义：getJD() 是**上一帧快照**（T16），允许落后一帧；facade.julianDay() 必须与真源逐位同源（防「第二个时间源」）
+TIMELINKCHECK:   ✓ TL-01 链路自洽：窗口 W=3.1482s ΔJD=0.634600 天 rate=0.2 scale=1 ⇒ 应走 0.629640 天 比值=1.0079 反推窗口=3.1730s ⇒ 相对偏差=0.79%（≤15%）
+TIMELINKCHECK:     TL-01 ⇒ **这就是 T27 那条线索的反命题**：同一时刻量齐三个量时，「ΔJD == W × rate × scale」成立 ⇒ 不存在「推进量与 rate 脱钩」。
+TIMELINKCHECK:     TL-01 ⇒ T27 那个数字的对账：把「0.61 天」除以**任何**一个真实的 rate 读数，得到的都是**某个真实窗口长度**（÷0.1 = 6.1s、÷0.2 = 3.06s、÷1 = 0.61s）——而「1.5 天/秒」这个数只能由「0.61 天 ÷ 名义 0.4s」得到：它既不是任何时刻的 rate 读数，也不是任何速率的物理量，是「用错窗口 + 读错单位」的商。
+TIMELINKCHECK:     TL-02 档A（rate=0.2）：W=1.5325s ΔJD=0.306200；档B（rate=0.8）：W=1.5197s ΔJD=1.223200；两窗口长度差=0.8%（**只作读数**：断言已按速率归一化）
+TIMELINKCHECK:   ✓ TL-02 rate 多档线性：**速率归一化**后之比=4.0285（=(ΔJD_B/W_B)/(ΔJD_A/W_A)，期望 4.0，±30%；裸 ΔJD 之比=3.9948、窗口长度差=0.8%）⇒ rate **真的进了链路**
+TIMELINKCHECK:     TL-03 短窗 W=0.8011s ΔJD=0.320000；长窗 W=2.3887s ΔJD=0.954400；ΔJD 之比=2.9825 vs W 之比=2.9817（固定步长假设下 ΔJD 之比≈1）
+TIMELINKCHECK:   ✓ TL-03 窗口线性：ΔJD 之比/W 之比=1.0003（±35%）⇒ 推进量与**真实墙钟**成正比，不是「按帧数固定步长」
+TIMELINKCHECK:     TL-04 冻结窗口 W=1.2006s scale=0 ⇒ ΔJD=0.000000000000 天
+TIMELINKCHECK:   ✓ TL-04 冻结/恢复不补：冻结窗 ΔJD=0.000000000000（≤1e-9）∧ 恢复窗 W=1.5561s ΔJD=0.312000 比值=1.0025（∈[0.4,1.6]；补冻结期会 →≈2，链路死掉会 →≈0）
+TIMELINKCHECK:     TL-05 increaseTimeSpeed（= INTERACTCHECK IT-05 注入的 L 键那条路）：0.1 ⇒ 1
+TIMELINKCHECK:     TL-05 阶梯台账：0.1 → 1 → 10（×10 阶梯，低档吸附 JD_SECOND）；同长窗口 ΔJD：0.107400 → 1.026000
+TIMELINKCHECK:     TL-05 ⇒ 这条解释了 T27 的「engineRate 读数=10」：INTERACTCHECK 的 IT-05 注入 L 键把 rate 从 0.1 提到 1（第 2 次到 10），所以 DIAG9 打出来的读数与相位设计速率本就不是一个东西。
+TIMELINKCHECK:   ✓ TL-05 速率阶梯 + 链路跟变：阶梯 {0.1,1,10} 成立 ∧ ΔJD 之比/rate 之比=0.9553（±40%）
+TIMELINKCHECK:   ✓ TL-07 恒星时腿：W=4.2054s ΔJD=0.210300 天 ⇒ ΔLST=+75.9153° 期望 ΔJD×360.9856=+75.9153°（残差=+0.0000° ≤1.00°）∧ 固定 J2000 方向经引擎 j2000ToAltAz 落点转过 75.915°（>10°，证明下游真的重算了）
+TIMELINKCHECK:     TL-07 语义：这是**绝对腿**——恒星时是 JD 的天文函数（走 Planet::getSiderealTime 这条路，不是复述 simClock），360.9856°/天 把「天」这个单位钉死在画面上（T30 铁律）。
+TIMELINKCHECK:     收尾：已还原 rate=0.1 scale=1 ⇒ 回读 rate=0.1 scale=1
+TIMELINKCHECK: VERDICT=PASS
+──────── TIMELINKCHECK run 5/5（rc=0）→ PASS（✗=0/0 占位符漏=0/0 还原行=1/1 脚本复算TL-01=0 脚本复算TL-07=0）────────
+  脚本独立复算 TL-01：W=2.9770 ΔJD=0.596800 rate=0.2 复算比值=1.0024 复算偏差=0.24%
+  脚本独立复算 TL-07：ΔJD=0.211700 ΔLST=+76.4207 期望=76.4207° 复算残差=0.0000°（容差 1.00°）
+TIMELINKCHECK: 判据 7/7  VERDICT=PASS
+TIMELINKCHECK:   ✓ TL-06 读面同源：模式=HostDriven HostDriven=true |getJD−simClockJD|=0.000e+00（≤2.000e-02）|facade.julianDay−simClockJD|=0.000e+00（≤1e-9）
+TIMELINKCHECK:     TL-06 语义：getJD() 是**上一帧快照**（T16），允许落后一帧；facade.julianDay() 必须与真源逐位同源（防「第二个时间源」）
+TIMELINKCHECK:   ✓ TL-01 链路自洽：窗口 W=2.9770s ΔJD=0.596800 天 rate=0.2 scale=1 ⇒ 应走 0.595393 天 比值=1.0024 反推窗口=2.9840s ⇒ 相对偏差=0.24%（≤15%）
+TIMELINKCHECK:     TL-01 ⇒ **这就是 T27 那条线索的反命题**：同一时刻量齐三个量时，「ΔJD == W × rate × scale」成立 ⇒ 不存在「推进量与 rate 脱钩」。
+TIMELINKCHECK:     TL-01 ⇒ T27 那个数字的对账：把「0.61 天」除以**任何**一个真实的 rate 读数，得到的都是**某个真实窗口长度**（÷0.1 = 6.1s、÷0.2 = 3.06s、÷1 = 0.61s）——而「1.5 天/秒」这个数只能由「0.61 天 ÷ 名义 0.4s」得到：它既不是任何时刻的 rate 读数，也不是任何速率的物理量，是「用错窗口 + 读错单位」的商。
+TIMELINKCHECK:     TL-02 档A（rate=0.2）：W=1.5416s ΔJD=0.308600；档B（rate=0.8）：W=1.5384s ΔJD=1.227200；两窗口长度差=0.2%（**只作读数**：断言已按速率归一化）
+TIMELINKCHECK:   ✓ TL-02 rate 多档线性：**速率归一化**后之比=3.9849（=(ΔJD_B/W_B)/(ΔJD_A/W_A)，期望 4.0，±30%；裸 ΔJD 之比=3.9767、窗口长度差=0.2%）⇒ rate **真的进了链路**
+TIMELINKCHECK:     TL-03 短窗 W=0.8168s ΔJD=0.327600；长窗 W=2.3326s ΔJD=0.930400；ΔJD 之比=2.8400 vs W 之比=2.8557（固定步长假设下 ΔJD 之比≈1）
+TIMELINKCHECK:   ✓ TL-03 窗口线性：ΔJD 之比/W 之比=0.9945（±35%）⇒ 推进量与**真实墙钟**成正比，不是「按帧数固定步长」
+TIMELINKCHECK:     TL-04 冻结窗口 W=1.2008s scale=0 ⇒ ΔJD=0.000000000000 天
+TIMELINKCHECK:   ✓ TL-04 冻结/恢复不补：冻结窗 ΔJD=0.000000000000（≤1e-9）∧ 恢复窗 W=1.5008s ΔJD=0.300000 比值=0.9995（∈[0.4,1.6]；补冻结期会 →≈2，链路死掉会 →≈0）
+TIMELINKCHECK:     TL-05 increaseTimeSpeed（= INTERACTCHECK IT-05 注入的 L 键那条路）：0.1 ⇒ 1
+TIMELINKCHECK:     TL-05 阶梯台账：0.1 → 1 → 10（×10 阶梯，低档吸附 JD_SECOND）；同长窗口 ΔJD：0.105100 → 1.036000
+TIMELINKCHECK:     TL-05 ⇒ 这条解释了 T27 的「engineRate 读数=10」：INTERACTCHECK 的 IT-05 注入 L 键把 rate 从 0.1 提到 1（第 2 次到 10），所以 DIAG9 打出来的读数与相位设计速率本就不是一个东西。
+TIMELINKCHECK:   ✓ TL-05 速率阶梯 + 链路跟变：阶梯 {0.1,1,10} 成立 ∧ ΔJD 之比/rate 之比=0.9857（±40%）
+TIMELINKCHECK:   ✓ TL-07 恒星时腿：W=4.2338s ΔJD=0.211700 天 ⇒ ΔLST=+76.4207° 期望 ΔJD×360.9856=+76.4207°（残差=+0.0000° ≤1.00°）∧ 固定 J2000 方向经引擎 j2000ToAltAz 落点转过 76.420°（>10°，证明下游真的重算了）
+TIMELINKCHECK:     TL-07 语义：这是**绝对腿**——恒星时是 JD 的天文函数（走 Planet::getSiderealTime 这条路，不是复述 simClock），360.9856°/天 把「天」这个单位钉死在画面上（T30 铁律）。
+TIMELINKCHECK:     收尾：已还原 rate=0.1 scale=1 ⇒ 回读 rate=0.1 scale=1
+TIMELINKCHECK: VERDICT=PASS

@@ -1,0 +1,18 @@
+──────── 负控 A（BREAK，帧泵半速）（rc=10）→ negctl-A-OK ────────
+  期望：rc=10 ∧ 判据 6/7 ∧ 红项**恰好** [TL-01]
+  实测：红=[TL-01,]
+TIMELINKCHECK: 判据 6/7  VERDICT=FAIL
+TIMELINKCHECK: VERDICT=FAIL
+──────── 负控 B（RATE_IGNORED，链路 rate 钉死）（rc=10）→ negctl-B-OK ────────
+  期望：rc=10 ∧ 判据 4/7 ∧ 红项**恰好** [TL-01,TL-02,TL-05]
+  （TL-03 是同 rate 下两窗口之比 ⇒ 整体缩放不变 ⇒ 照绿；TL-06/TL-07 照绿；
+    TL-04 恢复腿比值 0.5 落在带宽 [0.4,1.6] 内 ⇒ 照绿 —— TL-04 由负控 C 独家咬）
+  实测：红=[TL-01,TL-02,TL-05,]
+TIMELINKCHECK: 判据 4/7  VERDICT=FAIL
+TIMELINKCHECK: VERDICT=FAIL
+──────── 负控 C（FREEZE_LEAK，冻结漏推进）（rc=10）→ negctl-C-OK ────────
+  期望：rc=10 ∧ 判据 6/7 ∧ 红项**恰好** [TL-04]
+  （冻结窗 ΔJD=0.5·W·rate ≠ 0 触发 TL-04 的冻结腿；其余窗口都在冻结之前）
+  实测：红=[TL-04,]
+TIMELINKCHECK: 判据 6/7  VERDICT=FAIL
+TIMELINKCHECK: VERDICT=FAIL

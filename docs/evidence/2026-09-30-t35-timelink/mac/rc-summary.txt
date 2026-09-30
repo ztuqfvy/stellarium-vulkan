@@ -1,0 +1,23 @@
+timelinkcheck-mac pos-pass=5 env-skip=0 bad=0（共 5 跑；env-skip = 引擎前提不成立，**不洗成 PASS**）
+timelinkcheck-mac 残留进程数=0（要求 0）
+negctl-A negctl-A-OK（要求 rc=10 ∧ 6/7 ∧ 红恰好 TL-01）
+negctl-B negctl-B-OK（要求 rc=10 ∧ 4/7 ∧ 红恰好 TL-01/02/05）
+negctl-C negctl-C-OK（要求 rc=10 ∧ 6/7 ∧ 红恰好 TL-04）
+probe-timelink-mac probe-OK（TIMELINKPROBE: VERDICT=DONE；Q1读面=1 Q2=1 Q3=1 Q4阶梯第3次=1 Q5=1 Q6b=1 Q6c=1 占位符漏=0）
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-locationcheck rc=0
+regression-toolbarcheck rc=0
+regression-interactcheck rc=0（18/18，窗口已激活）
+regression-s3-stela3 rc=0
+regression-a2-metal rc=0
+regression-dyn-engine-metal 5/5 PASS
+regression-dyn-test-metal 5/5 PASS
+producer-readback OK

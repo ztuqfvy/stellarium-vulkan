@@ -149,6 +149,10 @@ set(stelQuickUI_SOURCES
     ../app/ToolbarProbe.cpp
     ../app/ToolbarCheck.hpp
     ../app/ToolbarCheck.cpp
+    ../app/TimeLinkProbe.hpp
+    ../app/TimeLinkProbe.cpp
+    ../app/TimeLinkCheck.hpp
+    ../app/TimeLinkCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp

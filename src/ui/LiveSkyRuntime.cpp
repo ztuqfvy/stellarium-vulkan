@@ -20,6 +20,7 @@
 #include <QSettings>
 #include <QThread>
 #include <QTimer>
+#include <cmath>
 #include <cstdio>
 
 namespace stelapp {
@@ -160,7 +161,53 @@ bool LiveSkyRuntime::start(FrameMailbox *mailbox, const Config &config, QString 
         // T16：宿主只负责**推进**，不再直接写时钟值（T15 是 core->setJD(m_jdAccum)）。
         // JD 真源在 core 的仿真时钟里；updateTime 会从那里取，且与插件/脚本的
         // core->setJD 写的是同一个值——外部跳转不再被下一帧覆盖。
-        core->advanceSimClock(dt);
+        //
+        // ── T35 三组负控（**只用于证明 TimeLinkCheck 的判据承重**；正题恒 false）──
+        //   A `STELQUICK_TIMELINK_BREAK=1`：帧泵按**半速**推进 ⇒ 推进量与墙钟脱钩
+        //     ⇒ 只有 TL-01（链路自洽）该红；比值型判据 TL-02/03/05 整体缩放不变、
+        //     TL-07 是恒等式（ΔJD 与 ΔLST 一起缩放）。TL-04 也**刻意保持绿**：
+        //     它的职责是"冻结必须真零 + 不许补"，不是"比值必须=1"（那是 TL-01 的活）。
+        //     ⚠️ 因此 TL-04 的带宽下界必须**远离 0.5**：A/B 两组负控在该窗口的
+        //     比值都恰好是 0.5，下界写 0.5 会让红/绿随计时噪声漂（实测 0.4990 ↔ 0.5002）。
+        //   B `STELQUICK_TIMELINK_RATE_IGNORED=1`：链路用**钉死的 0.1 天/秒**推进，
+        //     而 `core->getTimeRate()` 仍返回用户设的值 —— 这正是 T27 证据 README
+        //     里假设过的那个缺陷形态（"帧推进走固定步长，rate 只管别的语义"），
+        //     本轮把它**实现出来**当负控，好让"rate 真的进了链路"这条腿可被证伪。
+        //   C `STELQUICK_TIMELINK_FREEZE_LEAK=1`：scale=0（冻结）期间**照旧推进**
+        //     ——做法是"只在推进的那一瞬间把 scale 解成 1，推完立刻写回 0"，所以
+        //     `getSimClockScale()` 的**读数**仍然是 0（冻结看起来还在），链路却漏了。
+        //     这正是 TL-04 冻结腿要守的东西："scale 真的进链路"。
+        //     ⇒ 只有 TL-04 该红（冻结窗 ΔJD = 0.5·W·rate ≠ 0），其余窗口都在冻结之前。
+        //     ⚠️ 为什么不用"解冻后把冻结期一次性补回来"当负控？实测不可靠：解冻后
+        //     检查还要等 300ms 才 `arm()`，补的那一脚恰好落在开窗**之前**（比值
+        //     仍是 0.9947，判据照绿 —— 负控形状对、落点不对）。冻结漏推进没有
+        //     落点问题，且同样是真实缺陷形态。
+        static const bool tlBreak = qEnvironmentVariableIsSet("STELQUICK_TIMELINK_BREAK");
+        static const bool tlRateIgnored =
+            qEnvironmentVariableIsSet("STELQUICK_TIMELINK_RATE_IGNORED");
+        static const bool tlFreezeLeak =
+            qEnvironmentVariableIsSet("STELQUICK_TIMELINK_FREEZE_LEAK");
+        const double advanceDt = tlBreak ? dt * 0.5 : dt;
+        if (tlRateIgnored)
+        {
+            const double keep = core->getTimeRate();
+            if (std::fabs(keep - 0.1) > 1e-12)
+            {
+                core->setTimeRate(0.1);          // 注入：链路 rate 钉死
+                core->advanceSimClock(advanceDt);
+                core->setTimeRate(keep);         // 还原读数，制造"读数与链路脱钩"
+            }
+            else
+                core->advanceSimClock(advanceDt);
+        }
+        else if (tlFreezeLeak && core->getSimClockScale() == 0.0)
+        {
+            core->setSimClockScale(1.0);         // 注入：推进的瞬间解开 scale
+            core->advanceSimClock(advanceDt * 0.5);
+            core->setSimClockScale(0.0);         // 读数写回 0 ⇒ "冻结"看着还在
+        }
+        else
+            core->advanceSimClock(advanceDt);
         stelApp.update(dt);
         stelApp.draw();
     });

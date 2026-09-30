@@ -232,6 +232,8 @@ void ensureVulkanLoaderPath()
 #include "app/LocationCheck.hpp"
 #include "app/ToolbarProbe.hpp"
 #include "app/ToolbarCheck.hpp"
+#include "app/TimeLinkProbe.hpp"
+#include "app/TimeLinkCheck.hpp"
 // T19：改时间（A4 固定流程的"改时间"环）+ 自检。
 #include "app/TimeCheck.hpp"
 // T16：单一仿真时钟。控制器是 core 层的纯逻辑类（无 GL / 无 QObject），
@@ -569,9 +571,14 @@ QPointF uiLocateCenter(QQuickItem *item)
     return item->mapToScene(QPointF(item->width() / 2.0, item->height() / 2.0));
 }
 
-// ── 布局就绪门（T22 新增）─────────────────────────────────────────────────────
+// ── 布局就绪门（T22 新增；T35 放宽一档）───────────────────────────────────────
 //! 有界等待上限：25 × 100ms = 2.5s。超过就**明确判红**，不静默放行。
-constexpr int kUiLayoutWaitTries = 25;
+//! ⚠️ T35 实测：**批次连跑**（11 套件背靠背，每个都要新建 Metal 上下文）时 polish
+//! 滞后会超过 2.5s —— `regression-replaycheck` 出现过 RP-04 假红（读数 **207×0**），
+//! 而**单独复跑同一条命令两次都 11/11**。假红与假绿一样有害（都会浪费判据的可信度），
+//! 故按 T22 先例把**就绪门**放宽到 60 × 100ms = 6s。断言本身**不动**：真坏了（布局
+//! 永远不完成）6s 后照样判红，门仍然有牙。
+constexpr int kUiLayoutWaitTries = 60;
 
 //! 该控件是否"已经完成布局"：有正尺寸、且在场景里可见。
 //! **为什么需要这个门**：Qt Quick 的布局/polish 由**渲染循环**驱动。`StackLayout`
@@ -3436,6 +3443,16 @@ void uiInteractStep(QGuiApplication *app, std::shared_ptr<UiInteractCheck> c)
         // （负控下仍绿，实测 46°）。处置：①段内冻结仿真时间（simScale=0，段尾
         // 还原）；②同相位内做**反向**拖拽对照——共模漂移在两次增量中同向叠加，
         // 反向断言抵抗残余漂移。这是血泪第 4 条（孤立断言可假绿）的又一实例。
+        //
+        // ✅ **T35（2026-09-30）把上面括注里的"与 rate 读数脱钩"定性推翻了**：
+        // **观察对、解释错**。同刻量齐三个量后 `ΔJD == 真实窗口 × rate × scale`
+        // 成立（TL-01 相对偏差 0.01%，恒星时绝对腿残差 0.0000°；见
+        // `docs/T35_TIMELINK.zh_CN.md`）。三个数各有出处：①`getTimeRate()` 单位是
+        // **JDay/sec**（`src/core/StelCore.hpp:595`）；②`engineRate=10` 是**本套件
+        // 自己的 IT-05 注入 L 键**（`increaseTimeSpeed()` ×10 阶梯）抬上去的**移动靶**；
+        // ③"400ms" 是相位名义 delay，从未与 ΔJD 同刻测过。
+        // ⚠️ 但**本步的两条处置不受影响**——视线随时间漂是**真**的（T35 探针 Q6d
+        // 实测 `getViewDirectionJ2000` 的 ΔRA 与 ΔLST 同阶），只是速率读数需换算。
         auto viewNow = []() {
             if (!StelApp::isInitialized() || !StelApp::getInstance().getCore()->getMovementMgr())
                 return Vec3d(0., 0., 0.);
@@ -5150,6 +5167,12 @@ int main(int argc, char **argv)
     const bool toolProbe = qEnvironmentVariableIsSet("STELQUICK_TOOL_PROBE");
     // T34-C：工具栏自检（见 app/ToolbarCheck.hpp）。
     const bool toolCheck = qEnvironmentVariableIsSet("STELQUICK_TOOL_CHECK");
+    // T35-A：**仿真时间链路数据面探针**（见 app/TimeLinkProbe.hpp）。T27 留档的
+    // "帧泵推进与 getTimeRate() 脱钩"线索悬了六个任务，且决定所有时间类判据的
+    // 口径是否可信 ⇒ 先探针把三个量（ΔJD / 实测墙钟 / rate）在同一时刻量齐。
+    const bool timeLinkProbe = qEnvironmentVariableIsSet("STELQUICK_TIMELINK_PROBE");
+    // T35-C：时间链路自检（见 app/TimeLinkCheck.hpp）。
+    const bool timeLinkCheck = qEnvironmentVariableIsSet("STELQUICK_TIMELINK_CHECK");
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
     const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
@@ -5160,6 +5183,7 @@ int main(int argc, char **argv)
     //   后者直接断言"开机态=天空页"）。
     const QString startPage = (a2Check || dynCheck || longRun || returnUiCheck || replayCheck
                                || interactUiCheck || locProbe || toolProbe || toolCheck
+                               || timeLinkProbe || timeLinkCheck
                                || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                || liveEngine)
                                   ? QStringLiteral("sky")
@@ -5751,6 +5775,118 @@ int main(int argc, char **argv)
                     return;
                 }
                 std::printf("TOOLBARCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T35-A 仿真时间链路数据面探针（STELQUICK_TIMELINK_PROBE=1）：T27 留档的
+    // "帧泵推进与 getTimeRate() 脱钩"线索悬了六个任务，且决定所有时间类判据的
+    // 口径是否可信。装配顺序与 TOOL_PROBE 一致（暖机 → boot → start → attach）。
+    // 输出 `TIMELINKPROBE:` 前缀，只报读数、不下 PASS/FAIL。
+    if (timeLinkProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("TIMELINKPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "TIMELINKPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TIMELINKPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "TIMELINKPROBE: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TIMELINKPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::TimeLinkProbe::run(
+            &app, &appFacade,
+            [&app](const stelapp::TimeLinkProbe::Result &result) {
+                std::printf("TIMELINKPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("TIMELINKPROBE: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("TIMELINKPROBE: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("TIMELINKPROBE: VERDICT=DONE\n");
+                std::fflush(stdout);
+                app.exit(0);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T35-C 仿真时间链路自检（STELQUICK_TIMELINK_CHECK=1）：判据 TL-01..TL-07。
+    // 装配顺序同上。起始页已切到 "sky"。
+    if (timeLinkCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("TIMELINKCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "TIMELINKCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TIMELINKCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "TIMELINKCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("TIMELINKCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::TimeLinkCheck::run(
+            &app, &appFacade,
+            [&app](const stelapp::TimeLinkCheck::Result &result) {
+                std::printf("TIMELINKCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("TIMELINKCHECK: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("TIMELINKCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("TIMELINKCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
                 std::fflush(stdout);
                 app.exit(result.pass ? 0 : 10);
             });

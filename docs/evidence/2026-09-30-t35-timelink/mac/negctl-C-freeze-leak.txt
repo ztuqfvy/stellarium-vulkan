@@ -1,0 +1,191 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 111 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+StelFileMgr found install location "."
+System language (ISO 639 / ISO 3166): zh_CN
+Couldn't load translations for language  "en" in section "stellarium"
+Empty translation file for language  "en" in section "stellarium"
+Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+OpenGL module type: desktop OpenGL
+StelGLWidget constructor
+StelGraphicsScene constructor
+qt.qpa.openglcontext: Could not create NSOpenGLContext with shared context, falling back to unshared context.
+initializeGL(windowWidth = 1280, windowHeight = 720)
+OpenGL supported version:  "4.1 Metal - 91.7"
+Current Format:  QSurfaceFormat(version 4.1, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 32, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize -1, stencilBufferSize 8, samples 0, swapBehavior QSurfaceFormat::DoubleBuffer, swapInterval 0, colorSpace QColorSpace(), profile  QSurfaceFormat::CoreProfile)
+Initializing StelMainView
+Luminance textures are not supported
+Running in High Graphics Mode
+Maximum texture anisotropy: 16
+Maximum 2D texture size: 16384
+Driver version string: 4.1 Metal - 91.7
+GL vendor: Apple
+GL renderer: Apple M3
+GL Shading Language version: 4.10
+stel.OpenGLArray: Vertex Array Objects are supported
+Initial high-DPI scaling factor: 2
+Application language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures"
+Couldn't load translations for language  "zh_CN" in section "stellarium-sky"
+Empty translation file for language  "zh_CN" in section "stellarium-sky"
+Empty skyculture-independent translation file for language  "zh_CN"
+Sky language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-planetary-features"
+Empty translation file for language  "zh_CN" in section "stellarium-planetary-features"
+Planetary features language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-scripts"
+Empty translation file for language  "zh_CN" in section "stellarium-scripts"
+Scripts language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Sky culture description language: zh_CN
+Cache directory: /Users/ztuqfvy/Library/Caches/stellarium-vulkan/stelQuickUI
+Loaded 252 countries
+Loaded 193 regions
+Loading Solar System data (1: planets and moons) ...
+Loading from: ./data/ssystem_major.ini
+Loaded 83 Solar System bodies from  ./data/ssystem_major.ini
+Solar System now has 83 entries.
+Loading Solar System data (2: minor bodies) ...
+Loading from: /Users/ztuqfvy/Library/Application Support/Stellarium/data/ssystem_minor.ini
+Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium/data/ssystem_minor.ini section 152637(152637)
+Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium/data/ssystem_minor.ini section 66146(66146)
+minor body  "(66146)" has no IAU code in section  "66146(66146)"
+minor body  "(152637)" has no IAU code in section  "152637(152637)"
+Loaded 477 Solar System bodies from  /Users/ztuqfvy/Library/Application Support/Stellarium/data/ssystem_minor.ini
+Solar System now has 560 entries.
+File ssystem_minor.ini is loaded successfully...
+ExtendedElements: loaded epoch tables for 4 asteroids from "./data/asteroid_elements.json" ( 0 not matched in ssystem_minor.ini)
+SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+qt.gui.imageio: libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Loading nomenclature for Solar system bodies ...
+Loaded 16058 / 16094 items of planetary surface nomenclature
+Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
+Loading star data ...
+Loading star catalog: ./stars/hip_gaia3/stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+Loading star catalog: ./stars/hip_gaia3/stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+Loading star catalog: ./stars/hip_gaia3/stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+Loading star catalog: ./stars/hip_gaia3/stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+Finished loading star catalogue data, max_geodesic_level: 3
+Loading scientific star designations from ./stars/hip_gaia3/name.fab
+Loaded 5060 / 5060 scientific designations
+Loading scientific star designations from ./stars/hip_gaia3/extra_name.fab
+Loaded 26200 / 26200 scientific designations
+Loading variable stars data from ./stars/hip_gaia3/gcvs.cat
+[...] GCVS 5.1-20250615
+Loaded 47323 / 47323 variable stars
+Loading double stars from ./stars/hip_gaia3/wds_hip_part.dat
+Loaded 22992 / 22992 double stars
+Loading cross-identification data from ./stars/hip_gaia3/cross-id.cat
+Loaded 327097 / 327097 cross-identification data records for stars
+Loading orbital parameters data for binary system from ./stars/hip_gaia3/binary_orbitparam.dat
+Loaded 15 / 15 orbital parameters data for binary system
+Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 159 Barium stars, and 220 have PM>1000mas/yr.
+navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+Loading DSO data ...
+[...] Stellarium DSO Catalog, version 3.23 (standard edition)
+Loaded 94899 DSO records
+Loading DSO name data ...
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+Loaded 1361 / 1388 DSO name records successfully
+No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+Loading DSO outline data ...
+Loaded 100 DSO outline records successfully
+Loading DSO discovery data ...
+Loaded 183 / 183 DSO discovery records successfully
+LandscapeMgr: initialized Cache for 100 MB.
+Loading star names from ./skycultures/common_star_names.fab
+Loaded 411 / 411 common star names
+Loaded 88 / 88 constellation records successfully for culture modern
+Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+Loading constellation boundary data ... 
+Loaded 781 constellation boundary segments
+Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install more star catalogs
+Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install more star catalogs
+Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
+Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
+Loaded 88 / 92 asterism records successfully for culture modern
+Initializing basic GL shaders... 
+Creating GUI ...
+Loading style file: :/graphicGui/normalStyle.css
+Loaded plugin "Exoplanets"
+[Exoplanets] Version of the format of the catalog: 1
+[Exoplanets] loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Exoplanets/exoplanets.json
+Loaded plugin "MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/MeteorShowers/MeteorShowers.json
+[MeteorShowersMgr] Version of the format of the catalog: 2
+Loaded plugin "Novae"
+[Novae] version of the catalog: 1
+[Novae] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Novae/novae.json
+Loaded plugin "Oculars"
+Oculars::validateAndLoadIniFile() ocular.ini exists at: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Oculars/ocular.ini . Checking version...
+Oculars::validateAndLoadIniFile() found existing ini file version 3.1
+Loaded plugin "Satellites"
+[Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium/modules/Satellites/satellites.json
+Satellite has invalid orbit: "STARLINK-38358" "100560"
+Loaded plugin "SolarSystemEditor"
+Using the ssystem_minor.ini file that already exists in the user directory...
+Loaded 895910 discovery circumstances records for minor planets...
+SSE: Comet cross-index data: Overwriting entry for "453P"
+SSE: Comet cross-index data: Overwriting entry for "467P"
+SSE: Comet cross-index data: Overwriting entry for "465P"
+SSE: Comet cross-index data: Overwriting entry for "466P"
+SSE: Comet cross-index data: Overwriting entry for "468P"
+SSE: Comet cross-index data: Overwriting entry for "470P"
+SSE: Comet cross-index data: Overwriting entry for "472P"
+SSE: Comet cross-index data: Overwriting entry for "475P"
+SSE: Comet cross-index data: Overwriting entry for "477P"
+SSE: Comet cross-index data: Overwriting entry for "473P"
+SSE: Comet cross-index data: Overwriting entry for "476P"
+SSE: Comet cross-index data: Overwriting entry for "479P"
+SSE: Comet cross-index data: Overwriting entry for "480P"
+SSE: Comet cross-index data: Overwriting entry for "481P"
+Loaded 2570 discovery circumstances records for comets...
+OpenGL viewport size: 2560 x 1440
+Creating scene FBO with size 2560x1440
+LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
+StelCore: 仿真时钟模式 -> "HostDriven" JD = "2461313.66028"
+StelMainView: 旧宿主帧节拍器已停止（合流形态由宿主帧泵单点驱动）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.66028，时钟=HostDriven）
+Initializing planets GL shaders... 
+StelPainter: Warnings while linking transformShaderProgram shader program:
+WARNING: Could not find vertex shader attribute 'texCoord' to match BindAttributeLocation request.
+WARNING: Could not find vertex shader attribute 'normalIn' to match BindAttributeLocation request.
+
+Satellite has invalid orbit: "DONGPO 01" "53453"
+Satellite has invalid orbit: "SAR Lupe 5" "33244"
+Satellite has invalid orbit: "STARLINK-1068" "44772"
+Satellite has invalid orbit: "STARLINK-11228 [DTC]" "60398"
+Satellite has invalid orbit: "STARLINK-1448" "45665"
+Satellite has invalid orbit: "STARLINK-1797" "46698"
+Satellite has invalid orbit: "STARLINK-1828" "46725"
+Satellite has invalid orbit: "STARLINK-2185" "47767"
+Satellite has invalid orbit: "STARLINK-4390" "53653"
+Satellite has invalid orbit: "STARLINK-4442" "53480"
+Satellite has invalid orbit: "STARLINK-2273" "47993"
+TIMELINKCHECK: 判据 6/7  VERDICT=FAIL
+TIMELINKCHECK:   ✓ TL-06 读面同源：模式=HostDriven HostDriven=true |getJD−simClockJD|=0.000e+00（≤2.000e-02）|facade.julianDay−simClockJD|=0.000e+00（≤1e-9）
+TIMELINKCHECK:     TL-06 语义：getJD() 是**上一帧快照**（T16），允许落后一帧；facade.julianDay() 必须与真源逐位同源（防「第二个时间源」）
+TIMELINKCHECK:   ✓ TL-01 链路自洽：窗口 W=3.0126s ΔJD=0.611000 天 rate=0.2 scale=1 ⇒ 应走 0.602510 天 比值=1.0141 反推窗口=3.0550s ⇒ 相对偏差=1.41%（≤15%）
+TIMELINKCHECK:     TL-01 ⇒ **这就是 T27 那条线索的反命题**：同一时刻量齐三个量时，「ΔJD == W × rate × scale」成立 ⇒ 不存在「推进量与 rate 脱钩」。
+TIMELINKCHECK:     TL-01 ⇒ T27 那个数字的对账：把「0.61 天」除以**任何**一个真实的 rate 读数，得到的都是**某个真实窗口长度**（÷0.1 = 6.1s、÷0.2 = 3.06s、÷1 = 0.61s）——而「1.5 天/秒」这个数只能由「0.61 天 ÷ 名义 0.4s」得到：它既不是任何时刻的 rate 读数，也不是任何速率的物理量，是「用错窗口 + 读错单位」的商。
+TIMELINKCHECK:     TL-02 档A（rate=0.2）：W=1.5203s ΔJD=0.304000；档B（rate=0.8）：W=1.5202s ΔJD=1.224800；两窗口长度差=0.0%（**只作读数**：断言已按速率归一化）
+TIMELINKCHECK:   ✓ TL-02 rate 多档线性：**速率归一化**后之比=4.0291（=(ΔJD_B/W_B)/(ΔJD_A/W_A)，期望 4.0，±30%；裸 ΔJD 之比=4.0289、窗口长度差=0.0%）⇒ rate **真的进了链路**
+TIMELINKCHECK:     TL-03 短窗 W=0.8056s ΔJD=0.326000；长窗 W=2.4310s ΔJD=0.970000；ΔJD 之比=2.9755 vs W 之比=3.0178（固定步长假设下 ΔJD 之比≈1）
+TIMELINKCHECK:   ✓ TL-03 窗口线性：ΔJD 之比/W 之比=0.9860（±35%）⇒ 推进量与**真实墙钟**成正比，不是「按帧数固定步长」
+TIMELINKCHECK:     TL-04 冻结窗口 W=1.2188s scale=0 ⇒ ΔJD=0.121400000528 天
+TIMELINKCHECK:   ✗ TL-04 冻结/恢复不补：冻结窗 ΔJD=0.121400000528（≤1e-9）∧ 恢复窗 W=1.5407s ΔJD=0.307200 比值=0.9970（∈[0.4,1.6]；补冻结期会 →≈2，链路死掉会 →≈0）
+TIMELINKCHECK:     TL-05 increaseTimeSpeed（= INTERACTCHECK IT-05 注入的 L 键那条路）：0.1 ⇒ 1
+TIMELINKCHECK:     TL-05 阶梯台账：0.1 → 1 → 10（×10 阶梯，低档吸附 JD_SECOND）；同长窗口 ΔJD：0.102400 → 1.015000
+TIMELINKCHECK:     TL-05 ⇒ 这条解释了 T27 的「engineRate 读数=10」：INTERACTCHECK 的 IT-05 注入 L 键把 rate 从 0.1 提到 1（第 2 次到 10），所以 DIAG9 打出来的读数与相位设计速率本就不是一个东西。
+TIMELINKCHECK:   ✓ TL-05 速率阶梯 + 链路跟变：阶梯 {0.1,1,10} 成立 ∧ ΔJD 之比/rate 之比=0.9912（±40%）
+TIMELINKCHECK:   ✓ TL-07 恒星时腿：W=4.2080s ΔJD=0.210450 天 ⇒ ΔLST=+75.9694° 期望 ΔJD×360.9856=+75.9694°（残差=+0.0000° ≤1.00°）∧ 固定 J2000 方向经引擎 j2000ToAltAz 落点转过 75.969°（>10°，证明下游真的重算了）
+TIMELINKCHECK:     TL-07 语义：这是**绝对腿**——恒星时是 JD 的天文函数（走 Planet::getSiderealTime 这条路，不是复述 simClock），360.9856°/天 把「天」这个单位钉死在画面上（T30 铁律）。
+TIMELINKCHECK:     收尾：已还原 rate=0.1 scale=1 ⇒ 回读 rate=0.1 scale=1
+TIMELINKCHECK: VERDICT=FAIL
