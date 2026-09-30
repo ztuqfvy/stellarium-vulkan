@@ -1,0 +1,17 @@
+STELA3: frame=1 sim=0.0 jd=2451545.00000 num=32 hash=0x82b49bb8997e89fc mean=0.0450 colors=650 render=3ms readback=1ms
+STELA3: frame=2 sim=600.0 jd=2452145.00000 num=34 hash=0x6af9b22469e0fceb mean=0.2619 colors=1024 render=4ms readback=1ms
+STELA3: frame=3 sim=1200.0 jd=2452745.00000 num=36 hash=0x37feb1e5ec5652bb mean=0.2185 colors=1024 render=3ms readback=1ms
+STELA3: frame=4 sim=1800.0 jd=2453345.00000 num=38 hash=0xd157460fcd4696a0 mean=0.0466 colors=693 render=4ms readback=1ms
+STELA3: frame=5 sim=2400.0 jd=2453945.00000 num=40 hash=0x804b47c13e0a2ff3 mean=0.3473 colors=1024 render=3ms readback=1ms
+STELA3: frame=6 sim=3000.0 jd=2454545.00000 num=42 hash=0x9af7f7b9c4af6fbb mean=0.1046 colors=1024 render=4ms readback=1ms
+STELA3: frame=7 sim=3600.0 jd=2455145.00000 num=44 hash=0x9a267205fd6b2973 mean=0.0484 colors=983 render=3ms readback=1ms
+STELA3: frame=8 sim=4200.0 jd=2455745.00000 num=46 hash=0x2b5946e98de4218d mean=0.3741 colors=1024 render=4ms readback=0ms
+STELA3: A3-C01 PASS 引擎无头初始化成功：StelApp::init 由 initializeGL 触发，耗时 0ms，全程 WA_DontShowOnScreen（窗口不上屏）、未进入 exec。
+STELA3: A3-C02 PASS 引擎主上下文：version=3.3 core=1 highGraphics=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"
+STELA3: A3-C03 PASS 帧桥装配成功（借用引擎上下文）：离屏 FBO 1280x720，读回行步长 5120
+STELA3: A3-C04 PASS 测量段请求 16 帧（双绘）→ 投递 16，有效帧 8（丢失 0，失败 0）；预热 30 帧不计入。mailbox published=46 dropped=0
+STELA3: A3-C05 PASS 8 帧得到 8 个互不相同的指纹——真实天空内容随 JD 推进变化，不是静态残留（时间流速=0，JD 由本自检注入）
+STELA3: A3-C06 PASS 同 JD（sim=4200.0）紧邻重渲染：A=0x2b5946e98de4218d R1=0x2b5946e98de4218d R2=0x2b5946e98de4218d——引擎对同一状态出同一像素（确定性成立）diff(A,R1)=0px maxΔ=0 meanΔ=0.000；diff(R1,R2)=0px maxΔ=0
+STELA3: A3-C07 PASS 帧内容非平凡：最少颜色数=650（≥16），最小平均亮度=0.0450（>0）——不是黑屏也不是纯色
+STELA3: A3-C08 PASS 耗时统计可用（render=4ms readback=0ms，T9 长跑基础量）；GL 错误栈=0x0（NO_ERROR 才合格）
+STELA3: VERDICT=PASS A3 旧宿主进程内集成自检：8/8 项通过

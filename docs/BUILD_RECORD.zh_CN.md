@@ -4101,3 +4101,99 @@ TL-07 是恒等式（两边同源）⇒ 残差恒 0，不受影响。
 
 产物指纹：`stellarium_vulkan-20260920.bundle` 无关；`stelQuickUI` **40055912 B /
 md5=526a5241235d73a5ba8ddfb280fed55a**（⚠️ macOS 链接产物非位级可复现 ⇒ 判"同源"看源文件 md5）。
+
+---
+
+## 2026-09-30｜W-T34 + W-T35 Windows 跨平台复验（**并批**，W 支线）（**Windows 侧全绿：`launcher exit=0`、零 FATAL；T34 `TOOLBARCHECK` 正题 3/3 `12/12 PASS` + 四组负控红项与 mac 逐位一致；T35 `TIMELINKCHECK` 正题 3/3 `7/7 PASS` + 三组负控红项与 mac 逐位一致；11 邻套件 + S3 + A2 + 探针 2/2 + `INTERACTCHECK` 3×18/18 + DYN 双路 6/6 + 就绪门 0 次；⚠️ **首轮 13 条期望校验失败是纯仪器缺陷**——`$judge` 覆盖拼正则用的 `$JUDGE`（PS 变量名大小写不敏感，**陷阱 32② 的第二次实测**），类级修复 + 三方闭环证明**）
+
+### 结论
+
+| 项目 | 结果 |
+|---|---|
+| 全量自检套件（Windows） | **全绿**，`launcher exit=0`，`[done]` 后**零 FATAL** |
+| T34 正题 ×3 | `12/12 VERDICT=PASS`，`red=[]`，`TB-09 自证`，`covered=true`；`bad=0 of 3` |
+| T34 负控 A/B/C/D | rc=10，判据 `9/12` `10/12` `11/12` `11/12`；红项 `[TB-07,TB-09,TB-12]` / `[TB-09,TB-12]` / `[TB-10]` / `[TB-10]`+`coveredFalse` ⇒ **与 mac 逐位一致** |
+| T35 正题 ×3 | `7/7 VERDICT=PASS`，`red=[]`，`leak=0`，`restore=1`，`gate=0`，独立复算 TL-01/TL-07 `True`；`bad=0 of 3` |
+| T35 负控 A/B/C | rc=10，判据 `6/7` `4/7` `6/7`；红项 `[TL-01]` / `[TL-01,TL-02,TL-05]` / `[TL-04]` ⇒ **与 mac 逐位一致** |
+| 相邻回归 | **11 套件全 rc=0**；`S3 旧宿主` rc=0（`verdictPASS=True`）；`A2 逐像素` rc=0 |
+| 探针 | `TOOLBARPROBE` OK（`Q1=1` / `Q2=12`）；`TIMELINKPROBE` OK（漏 0 / `missingAnchors=[]`） |
+| `INTERACTCHECK` | 3× rc=0 `18/18`，`armed=1`，`degraded=False` |
+| `INTERACT` 失活探针（**仪器回归断言**） | 红项 `[IT-05,IT-06,IT-13,IT-16,IT-17,IT-18]` = 期望（W-T31/W-T32 实测边界） |
+| DYN 双路 | `engine` ×3 / `test` ×3 全 rc=0，`producer-readback OK` |
+| 就绪门 | `window-gate hits=0` |
+| 送源同源 | **94 项 / 90 同源 / 0 内容不同 / 4 缺失**（4 个全是 mac 专用 `.sh`） |
+
+### 首轮：13 条失败是**仪器缺陷**，不是产品缺陷
+
+```
+  TOOLBAR run1: rc=0 judge=12/12|PASS red=[] tb09found=1(>=1) covered=1(>=1) -> pos-pass
+  TOOLBAR run2: rc=0 judge=|PASS      red=[] ... -> BAD
+  TOOLBAR run3: rc=0 judge=/|PASS     red=[] ... -> BAD
+  TIMELINK summary: pos-pass=0 env-skip=0 bad=3 of 3
+FATAL 13 expectation check(s) failed
+```
+
+**鉴别特征**：① 只有"靠运行时变量拼正则"的**那一个字段**坏（`rc`/`red=`/探针/独立复算全对）；
+② **从第 2 次调用起**才坏。
+
+**根因**：`$JUDGE = [char]0x5224 + [char]0x636E`（拼判据行正则用的 token）与调用点
+`$judge = Get-Judge …` **是同一个变量**（PS 变量名大小写不敏感）⇒ 第 2 次调用正则退化成
+`^TOOLBARCHECK:\s*12/12|PASS\s*([0-9]+)/([0-9]+)…`（**右分支无锚定的交替式**）⇒ 捕获组为空。
+
+> ⚠️ **陷阱 32② 的第二次实测**：W-T31 已踩过 `$ok` 覆盖 `$OK`，当时的修法是把**符号**前缀
+> 改成 `$MARK_OK`/`$MARK_BAD` —— **实例级**。同一文件里另一个非 ASCII token 没被推广到，
+> 同一个坑换个门又进来。**教训是"修法的粒度"。**
+
+**类级修法（两条腿，故意独立）**：
+1. 正则里**零非 ASCII** —— `$reJ = "^" + $TagName + ":\s+[^\s]+\s+([0-9]+)/([0-9]+)(\s+VERDICT=([A-Z]+))?"`；
+2. 调用点结果变量改名 **`$judgeTxt`**（4 处）。
+
+**三方闭环（宣布"修好"的最低证据）**：
+| # | 断言 | 证据 |
+|---|---|---|
+| a | 旧仪器在 mac 上**照样坏** | `negctl-judge.ps1` 复现**逐字相同**的 `12/12\|PASS → \|PASS → /\|PASS`（pwsh 7.6.6）⇒ 是**语义**问题，非版本怪癖 |
+| b | 新仪器对全部真实日志全绿 | `test.ps1` **97/97 PASS**（正题 5×2 套 + 7 负控 + 探针 + 邻套件 + 负向输入） |
+| c | 新断言**承重** | (a) 同时证明 `REPEATED CALLS` 段在旧代码上会红 |
+
+同轮还修掉一个**尚未造成真机损失**的同源缺陷：探针门硬编码单空格，而实测 `TOOLBARPROBE:` 后
+**1 个空格**、`TIMELINKPROBE:` 后 **3 个** ⇒ 改 `\s+`（**由本地真值测试抓到，零真机往返**）。
+
+### 构建与产物（Windows）
+
+- 检出 `E:\Qt_demo\stellarium-vulkan`（⚠️ **不是** `E:\stellarium`），构建目录 **`build-win`**
+  （非 `build-release`），VS 自带 cmake，PowerShell **5.1**。
+- 增量构建 `rc=0`，`elapsed_min=5.42`；`stelQuickUI.exe` **29282816 B /
+  md5=7687513E293BAA23298231B4E7B46348**（跑批轮未重编，mtime 一致）；
+  `stellarium.exe` **27634176 B / md5=39C503D901BF20FB3C2EE0FA4227C538**。
+- 18 项 SRC md5 **逐项 MATCH**；`C:\temp` 与仓库两份 `wt35-suites.ps1` **同哈希**
+  最终为 `d53c59586f51ee22bfdb1b597441baa0`（首轮坏版为 `d2800b278bed32a18daa9c33bd93ad95`）。
+
+### 送源同源判据：`git hash-object`（**不是裸 MD5**）
+
+Windows 是 git 检出（**CRLF**），mac 侧是 scp 送的（**LF**）⇒ 裸 MD5 比的是**行尾**。
+实测 `ActionRouter.cpp`：raw `46ad9286…`(mac) vs `5f0a0c3b…`(win) 不同，
+`tr -d '\r'` 后逐位相同（`win 5810B/171 CR` vs `mac 5639B/0 CR`）。
+⇒ 改用 `git hash-object`（应用 `git add` 同款 clean filter）：两侧都返回
+`fef39003087ff09584b8f46bf893fc8395f68269`。
+
+⚠️ 那台 **`repo HEAD = cf738bb` 是撒谎的**（`git fetch` 报 `Recv failure: Connection was reset` /
+`Empty reply from server`，树靠 scp 更新）⇒ **权威是逐文件哈希自证，不是 HEAD。**
+
+### 收尾（计划任务残留）
+
+`schtasks /query /fo csv` 拉全量、**按任务名**筛（状态字段本地化会乱码）。
+除自建的两个外，扫出并清掉 **3 个僵尸任务**：
+`StelQuickT17Build` / `StelQuickT18LongRun`（2026-09-24 起的一次性任务）与 `t17winbuild`。
+清后扫描为空。定义与删除日志存档于
+`docs/evidence/2026-09-30-t35-timelink/windows/schtasks-residue/`。
+
+### 产物
+
+Windows 侧：`tools/windows/wt35-{pull,build,suites,launch}.ps1`（新；`wt35-launch.ps1`
+本轮末修正为 `Start-Process` 重定向版，**未被本批验证**，as-run 版 md5
+`c20653ec8f23f298cc83116bd33626fd`）；
+`docs/WT35_WINDOWS_RECHECK.zh_CN.md`（新，8 节）；
+`docs/evidence/2026-09-30-t35-timelink/{windows,windows-instrument,windows-src-sync}/`（新）。
+mac 侧：`docs/T34_TOOLBAR.zh_CN.md` §9、`docs/T35_TIMELINK.zh_CN.md` §10
+各补"W 支线已结清"；`docs/PROGRESS_SNAPSHOT.zh_CN.md` 加 W-T35 小节。
+

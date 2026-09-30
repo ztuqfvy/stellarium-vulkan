@@ -1,0 +1,2 @@
+QVulkanInstance already created; setExtensions() has no effect
+Attempting to create QWindow-based QOffscreenSurface outside the gui thread. Expect failures.

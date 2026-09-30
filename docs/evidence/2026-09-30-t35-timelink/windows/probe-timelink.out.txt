@@ -1,0 +1,27 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.70471，时钟=HostDriven）
+TIMELINKPROBE: 仿真时间链路探针：只报读数、不下结论（断言见 T35-C 的 TimeLinkCheck）
+TIMELINKPROBE:   Q1 时钟模式=HostDriven（isHostDriven=true）  scale=1
+TIMELINKPROBE:   Q1 读面 simClockJD=2461313.704712928  getJD=2461313.704712928  facade.julianDay=2461313.704712928（后两者与前者之差 0.000e+00 / 0.000e+00 天）
+TIMELINKPROBE:   Q1 速率面 core->getTimeRate=0.1 天/秒（JDay/sec，见 StelCore.hpp:595）  facade->timeRate=0.1  STELQUICK_LIVE_SIMRATE=(未设 ⇒ 帧泵默认 0.1)
+TIMELINKPROBE:   Q2 档A(长) 窗口实测 W=2.4921s  ΔJD=0.500200 天  rate=0.2 scale=1 ⇒ 应走 0.498418 天  比值=1.0036  反推窗口=2.5010s  偏差=0.36%
+TIMELINKPROBE:   Q3 档A'(短) 窗口实测 W=0.8001s  ΔJD=0.159800 天  rate=0.2 scale=1 ⇒ 应走 0.160010 天  比值=0.9987  反推窗口=0.7990s  偏差=-0.13%
+TIMELINKPROBE:   Q3 语义：档A(长)/档A'(短) 的 ΔJD 之比应与 W 之比同阶（≈3.1）；若帧泵按**固定步长**推进，两者会接近 1:1
+TIMELINKPROBE:   Q4 阶梯起点：setTimeRate(0.1) ⇒ 读数 0.1
+TIMELINKPROBE:   Q4 increaseTimeSpeed 第 1 次：0.1 ⇒ 1（×10 阶梯）—— INTERACTCHECK 的 IT-05 自己就注入 L 键走这条路，所以同一进程里 engineRate 是**移动靶**
+TIMELINKPROBE:   Q4 increaseTimeSpeed 第 2 次：1 ⇒ 10（×10 阶梯）—— INTERACTCHECK 的 IT-05 自己就注入 L 键走这条路，所以同一进程里 engineRate 是**移动靶**
+TIMELINKPROBE:   Q4 increaseTimeSpeed 第 3 次：10 ⇒ 100（×10 阶梯）—— INTERACTCHECK 的 IT-05 自己就注入 L 键走这条路，所以同一进程里 engineRate 是**移动靶**
+TIMELINKPROBE:   Q5 冻结(scale=0) 窗口实测 W=1.0008s  ΔJD=0.000000 天  rate=0.2 scale=0 ⇒ 应走 0.000000 天  比值=0.0000  反推窗口=0.0000s  偏差=0.00%
+TIMELINKPROBE:   Q5b 恢复后 窗口实测 W=1.2008s  ΔJD=0.240200 天  rate=0.2 scale=1 ⇒ 应走 0.240159 天  比值=1.0002  反推窗口=1.2010s  偏差=0.02%
+TIMELINKPROBE:   Q5b 语义：恢复后这一窗口的 ΔJD 不应包含冻结期（若「补回来」，偏差% 会 ≈ +100% 量级）
+TIMELINKPROBE:   Q6 前提：挂载=AltAz（getEquatorialMount=false） 跟踪=false  rate=0.05 天/秒（窗口 2s ⇒ ΔJD≈0.1 天 ⇒ 恒星时应转 ≈36°）
+TIMELINKPROBE:   Q6a 时间窗：W=2.0074s  ΔJD=0.101050 天
+TIMELINKPROBE:   Q6b 恒星时恒等式：ΔLST=36.4776°  期望 ΔJD×360.9856=36.4776°  残差=0.0000°（0.000%）
+TIMELINKPROBE:   Q6c 下游重算：固定 J2000 方向 (RA=0h,Dec=0) 经引擎 j2000ToAltAz 的落点转过 36.477°（>0 ⇒ 帧末真的用新 JD 重算了；T30 铁律：「设了新值」证明不了「重算过」）
+TIMELINKPROBE:   Q6d 「视线随 JD 转」机制核验：静置（无键/无拖拽、tracking=false）时 getViewDirectionJ2000 的 ΔRA=36.4621° —— 与 ΔLST 同阶 ⇒ 视线**确实**随 JD 转。机理 = updateVisionVector 的「vision vector locked to its position in the mountFrame」分支（flagLockEquPos 默认 false）每帧由 mountFrameToJ2000(viewDirectionMountFrame) 重算，而量天系不动 ⇒ J2000 视线以恒星时速率旋转。这正是 T27「视线锁地平 ⇒ 随 JD 漂移」的正确机理（T27 错的只是把**速率**读成了 1.5 天/秒）
+TIMELINKPROBE:   收尾：已还原 rate=0.1 scale=1 挂载=AltAz 跟踪=false
+TIMELINKPROBE: VERDICT=DONE

@@ -1,0 +1,26 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.70370，时钟=HostDriven）
+TIMELINKCHECK: 判据 4/7  VERDICT=FAIL
+TIMELINKCHECK:   ✓ TL-06 读面同源：模式=HostDriven HostDriven=true |getJD−simClockJD|=0.000e+00（≤2.000e-02）|facade.julianDay−simClockJD|=0.000e+00（≤1e-9）
+TIMELINKCHECK:     TL-06 语义：getJD() 是**上一帧快照**（T16），允许落后一帧；facade.julianDay() 必须与真源逐位同源（防「第二个时间源」）
+TIMELINKCHECK:   ✗ TL-01 链路自洽：窗口 W=3.0019s ΔJD=0.300100 天 rate=0.2 scale=1 ⇒ 应走 0.600389 天 比值=0.4998 反推窗口=1.5005s ⇒ 相对偏差=50.02%（≤15%）
+TIMELINKCHECK:     TL-01 ⇒ **这就是 T27 那条线索的反命题**：同一时刻量齐三个量时，「ΔJD == W × rate × scale」成立 ⇒ 不存在「推进量与 rate 脱钩」。
+TIMELINKCHECK:     TL-01 ⇒ T27 那个数字的对账：把「0.61 天」除以**任何**一个真实的 rate 读数，得到的都是**某个真实窗口长度**（÷0.1 = 6.1s、÷0.2 = 3.06s、÷1 = 0.61s）——而「1.5 天/秒」这个数只能由「0.61 天 ÷ 名义 0.4s」得到：它既不是任何时刻的 rate 读数，也不是任何速率的物理量，是「用错窗口 + 读错单位」的商。
+TIMELINKCHECK:     TL-02 档A（rate=0.2）：W=1.5003s ΔJD=0.150000；档B（rate=0.8）：W=1.5002s ΔJD=0.150000；两窗口长度差=0.0%（**只作读数**：断言已按速率归一化）
+TIMELINKCHECK:   ✗ TL-02 rate 多档线性：**速率归一化**后之比=1.0000（=(ΔJD_B/W_B)/(ΔJD_A/W_A)，期望 4.0，±30%；裸 ΔJD 之比=1.0000、窗口长度差=0.0%）⇒ rate **真的进了链路**
+TIMELINKCHECK:     TL-03 短窗 W=0.8006s ΔJD=0.080000；长窗 W=2.4174s ΔJD=0.241900；ΔJD 之比=3.0238 vs W 之比=3.0196（固定步长假设下 ΔJD 之比≈1）
+TIMELINKCHECK:   ✓ TL-03 窗口线性：ΔJD 之比/W 之比=1.0014（±35%）⇒ 推进量与**真实墙钟**成正比，不是「按帧数固定步长」
+TIMELINKCHECK:     TL-04 冻结窗口 W=1.2005s scale=0 ⇒ ΔJD=0.000000000000 天
+TIMELINKCHECK:   ✓ TL-04 冻结/恢复不补：冻结窗 ΔJD=0.000000000000（≤1e-9）∧ 恢复窗 W=1.5002s ΔJD=0.150100 比值=0.5003（∈[0.4,1.6]；补冻结期会 →≈2，链路死掉会 →≈0）
+TIMELINKCHECK:     TL-05 increaseTimeSpeed（= INTERACTCHECK IT-05 注入的 L 键那条路）：0.1 ⇒ 1
+TIMELINKCHECK:     TL-05 阶梯台账：0.1 → 1 → 10（×10 阶梯，低档吸附 JD_SECOND）；同长窗口 ΔJD：0.099900 → 0.100100
+TIMELINKCHECK:     TL-05 ⇒ 这条解释了 T27 的「engineRate 读数=10」：INTERACTCHECK 的 IT-05 注入 L 键把 rate 从 0.1 提到 1（第 2 次到 10），所以 DIAG9 打出来的读数与相位设计速率本就不是一个东西。
+TIMELINKCHECK:   ✗ TL-05 速率阶梯 + 链路跟变：阶梯 {0.1,1,10} 成立 ∧ ΔJD 之比/rate 之比=0.1002（±40%）
+TIMELINKCHECK:   ✓ TL-07 恒星时腿：W=3.9976s ΔJD=0.400100 天 ⇒ ΔLST=+144.4304° 期望 ΔJD×360.9856=+144.4303°（残差=+0.0000° ≤1.00°）∧ 固定 J2000 方向经引擎 j2000ToAltAz 落点转过 144.429°（>10°，证明下游真的重算了）
+TIMELINKCHECK:     TL-07 语义：这是**绝对腿**——恒星时是 JD 的天文函数（走 Planet::getSiderealTime 这条路，不是复述 simClock），360.9856°/天 把「天」这个单位钉死在画面上（T30 铁律）。
+TIMELINKCHECK:     收尾：已还原 rate=0.1 scale=1 ⇒ 回读 rate=0.1 scale=1
+TIMELINKCHECK: VERDICT=FAIL

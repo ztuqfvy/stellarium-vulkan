@@ -1,0 +1,28 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.69964，时钟=HostDriven）
+REPLAYCHECK: 开始（I-REP-02 全流程回放：开机→搜月球→定位→改时间→返回，全程只投递真实鼠标事件，共 11 条判据）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+REPLAYCHECK: RP-01 全流程锚点可寻（9 个控件找到 9/9：pageStack/navSearch/navTime/searchQueryField/searchGoButton/searchResultList/locateButton/timeAddHourButton/skyReturnButton）：OK
+REPLAYCHECK: RP-02 开机态（startPage=sky）→ currentIndex=1（期望 1）：OK
+REPLAYCHECK: RP-note 时钟已暂停（scale=0），开机 JD=2461313.699635；全程只投递真实鼠标事件
+REPLAYCHECK: RP-note 已在搜索框写入 "Moon"（框内=Moon）
+REPLAYCHECK: RP-03 「搜月球」：真实输入 + 点「搜索」→ 结果 3 条（要求 >0）：OK
+REPLAYCHECK: RP-note 结果[0] "Moon" / english="Moon" / Planet:Moon
+REPLAYCHECK: RP-note 结果[1] "Pirate Moon Cluster" / english="Pirate Moon Cluster" / Nebula:NGC 1647
+REPLAYCHECK: RP-note 结果[2] "Ghost of the Moon Nebula" / english="Snowglobe Nebula" / Nebula:NGC 6781
+REPLAYCHECK: RP-04b 结果列表无重复天体（3 行 → 3 个不同 stableId，重复 0 条）：OK
+REPLAYCHECK: RP-note 首行 = "Moon"（Planet:Moon）—— T21 相关度排序已生效，「首行 = 月球」现在是**断言**，不再是期望
+REPLAYCHECK: RP-04a 首行即月球 Planet:Moon（相关度排序生效）—— 实得 Planet:Moon：OK
+REPLAYCHECK: RP-note 向窗口投递真实点击 @(475.0,201.0) —— 结果列表第 0 行（列表 934×357，行高 46.0）
+REPLAYCHECK: RP-04 真实点击「月球」那一行 → 选中=true displayName="月球" englishName="Moon" stableId="Planet:Moon"（期望命中 Moon）：OK
+REPLAYCHECK: RP-05 「定位」：真实点击后 tracking=true stableId="Planet:Moon"（期望 Planet:Moon）：OK
+REPLAYCHECK: RP-06 「改时间」：真实点击「+1 时」→ JD 位移 0.041667 天（期望 ≈1/24=0.041667 天，±30%）：OK
+REPLAYCHECK: RP-07 末态·页面：真实点击「返回天空」→ currentIndex=1（期望 1）：OK
+REPLAYCHECK: RP-08 末态·状态保留：时间位移 0.041667 天（未被撤销）、tracking=true stableId="Planet:Moon"（期望 Planet:Moon）：OK
+REPLAYCHECK: RP-09 末态·星空（I-DYN-02 内核）：改 1 小时后，月球 AltAz 相对改前变化 13.1294°（门槛 >5.0）：OK
+REPLAYCHECK: 判据 11/11
+REPLAYCHECK: VERDICT=PASS

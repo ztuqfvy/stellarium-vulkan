@@ -1,0 +1,45 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.70456，时钟=HostDriven）
+TOOLBARPROBE: 工具栏数据面探针：只报读数、不下结论（断言见 T34-C 的 ToolbarCheck）
+TOOLBARPROBE: Q1 引擎动作注册表：共 447 个动作 / 15 个分组
+TOOLBARPROBE: Q2 候选清单共 12 项，逐项：
+TOOLBARPROBE: Q2 actionShow_Constellation_Lines [星座连线] ⇒ checkable=true checked=false text="星座连线" key="C"
+TOOLBARPROBE: Q2 actionShow_Constellation_Labels [星座名称] ⇒ checkable=true checked=false text="星座标签" key="V"
+TOOLBARPROBE: Q2 actionShow_Constellation_Art [星座插图] ⇒ checkable=true checked=false text="星座图绘" key="R"
+TOOLBARPROBE: Q2 actionShow_Equatorial_Grid [赤道坐标网格] ⇒ checkable=true checked=false text="赤道网格" key="E"
+TOOLBARPROBE: Q2 actionShow_Azimuthal_Grid [地平坐标网格] ⇒ checkable=true checked=false text="地平网格" key="Z"
+TOOLBARPROBE: Q2 actionShow_Ground [地面] ⇒ checkable=true checked=true text="地面" key="G"
+TOOLBARPROBE: Q2 actionShow_Cardinal_Points [方位角标记] ⇒ checkable=true checked=true text="方位基点" key="Q"
+TOOLBARPROBE: Q2 actionShow_Atmosphere [大气] ⇒ checkable=true checked=true text="大气层" key="A"
+TOOLBARPROBE: Q2 actionShow_Nebulas [深空天体] ⇒ checkable=true checked=false text="深空天体" key="D"
+TOOLBARPROBE: Q2 actionShow_Planets_Labels [行星标签] ⇒ checkable=true checked=true text="行星标签" key="Alt+P"
+TOOLBARPROBE: Q2 actionShow_Planets_Orbits [行星轨道] ⇒ checkable=true checked=false text="行星轨道" key="O"
+TOOLBARPROBE: Q2 actionShow_Night_Mode [夜间模式] ⇒ checkable=true checked=false text="夜间模式" key="Ctrl+N"
+TOOLBARPROBE: Q2b ActionRouter.isAvailable（透传路径）逐项：
+TOOLBARPROBE: Q2b actionShow_Constellation_Lines ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Constellation_Labels ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Constellation_Art ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Equatorial_Grid ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Azimuthal_Grid ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Ground ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Cardinal_Points ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Atmosphere ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Nebulas ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Planets_Labels ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Planets_Orbits ⇒ 可用
+TOOLBARPROBE: Q2b actionShow_Night_Mode ⇒ 可用
+TOOLBARPROBE: Q3 trigger(actionShow_Constellation_Lines) ⇒ executed=true 写前 getter=false（写后下一步读）
+TOOLBARPROBE: Q3 trigger(actionShow_Constellation_Labels) ⇒ executed=true 写前 getter=false（写后下一步读）
+TOOLBARPROBE: Q3 trigger(actionShow_Constellation_Art) ⇒ executed=true 写前 getter=false（写后下一步读）
+TOOLBARPROBE: Q3 trigger(actionShow_Equatorial_Grid) ⇒ executed=true 写前 getter=false（写后下一步读）
+TOOLBARPROBE: Q3b actionShow_Constellation_Lines 写后 getter=true（与上一步写前对照，应翻转）
+TOOLBARPROBE: Q3b actionShow_Constellation_Labels 写后 getter=true（与上一步写前对照，应翻转）
+TOOLBARPROBE: Q3b actionShow_Constellation_Art 写后 getter=true（与上一步写前对照，应翻转）
+TOOLBARPROBE: Q3b actionShow_Equatorial_Grid 写后 getter=true（与上一步写前对照，应翻转）
+TOOLBARPROBE: Q4 actionToggled 观测：共发射 4 次，涉及 4 个 id：actionShow_Constellation_Labels, actionShow_Constellation_Lines, actionShow_Equatorial_Grid, actionShow_Constellation_Art
+TOOLBARPROBE: Q4b AppFacade.displayTogglesRevision = 4（若 >0 ⇒ Facade 订阅已生效）
+TOOLBARPROBE: VERDICT=DONE

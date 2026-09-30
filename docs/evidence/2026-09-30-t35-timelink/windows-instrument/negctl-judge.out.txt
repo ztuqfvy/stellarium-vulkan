@@ -1,0 +1,9 @@
+negctl-judge: call#1 = [12/12|PASS]
+negctl-judge: call#2 = [|PASS]
+negctl-judge: call#3 = [/|PASS]
+  DETECTED  call#2 differs from call#1 got=[|PASS] want=[12/12|PASS]
+  DETECTED  call#3 differs from call#1 got=[/|PASS] want=[12/12|PASS]
+  DETECTED  call#3 is the empty-capture form got=[/|PASS] want=[12/12|PASS]
+
+NEGCTL OK -- the old instrument reproduces 3/3 signatures.
+=> test.ps1's REPEATED CALLS section is load-bearing.

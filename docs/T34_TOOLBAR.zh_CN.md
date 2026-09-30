@@ -251,3 +251,4 @@ location）**全 rc=0**；`INTERACTCHECK` **rc=0（18/18，窗口已激活）**�
 | `actionShow_*` 之外的开关（亮度/星等/投影/主题/高 DPI） | A-alpha 表里标"基础"，本项未列入 12 开关；如需覆盖走同一透传路径 |
 | 工具栏在**窄窗口**下的行数 | 现为 2 行（960 宽）；更窄时 Flow 继续换行，未设最小宽度门 |
 | `findLocations` 排序 / 时间链路脱钩 / 捏合后首击 / DYN 停摆根因 | 计划文档 §10.2 的余项，与本项无关 |
+| **W-T34 Windows 跨平台复验** | ✅ **已结清**（2026-09-30 下午，与 W-T35 并批）：见 `docs/WT35_WINDOWS_RECHECK.zh_CN.md`。原生 Vulkan 上 `TOOLBARCHECK` 正题 3/3 `12/12 PASS`、四组负控红项 `[TB-07,09,12]` / `[TB-09,12]` / `[TB-10]` / `[TB-10]`+`covered=false` **与 mac 逐位一致** |

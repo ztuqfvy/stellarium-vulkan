@@ -1,0 +1,304 @@
+[     0.112][INFO]  -------------------------------------------------------------------------------
+[     0.115][INFO] [ This is Stellarium 26.1+ (v26.1.273-cf738bb [main]) - https://stellarium.org/ ]
+[     0.117][INFO] [ Copyright (C) 2000-2026 Stellarium Developers                                 ]
+[     0.119][INFO]  -------------------------------------------------------------------------------
+[     0.122][INFO] 2026-09-30T12:48:22
+[     0.124][INFO] Operating System: Windows 10 Version 22H2
+[     0.127][INFO] Platform: windows
+[     0.129][INFO] Compiled using MSVC 19.51.36257.0
+[     0.129][INFO] Qt runtime version: 6.11.2
+[     0.129][INFO] Qt compilation version: 6.11.2
+[     0.129][INFO] Build ABI: x86_64-little_endian-llp64
+[     0.129][INFO] Addressing mode: 64-bit
+[     0.129][INFO] CPU architecture: x86_64
+[     0.142][INFO] CPU name: AMD Ryzen 7 3700X 8-Core Processor             
+[     0.142][INFO] CPU maximum speed: 4051 MHz
+[     0.142][INFO] CPU logical cores: 16
+[     0.144][INFO] Total physical memory: 16384 MB
+[     0.169][INFO] GPU name: GameViewer Virtual Display Adapter
+[     0.169][INFO] GPU RAM: 0 MB
+[     0.169][INFO] Current resolution: 0x0
+[     0.169][INFO] GPU name: Zako Display Adapter
+[     0.169][INFO] GPU RAM: 0 MB
+[     0.170][INFO] Current resolution: 0x0
+[     0.170][INFO] GPU name: NVIDIA GeForce RTX 4060
+[     0.170][INFO] GPU RAM: 4095 MB
+[     0.170][INFO] Current resolution: 2560x1440
+[     0.172][INFO] Writing log file to: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\log.txt
+[     0.172][INFO] File search paths:
+[     0.172][INFO]  [0]: C:\Users\ztuqfvy\AppData\Roaming\Stellarium
+[     0.172][INFO]  [1]: E:\Qt_demo\stellarium-vulkan
+[     0.175][INFO] Config file: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\config.ini
+[     0.175][DBG ] Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+[     0.710][INFO] OpenGL module type: desktop OpenGL
+[     0.722][INFO] System language (ISO 639 / ISO 3166): zh_CN
+[     0.728][DBG ] Default surface format:  QSurfaceFormat(version 3.3, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 24, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize -1, stencilBufferSize 8, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::CoreProfile)
+[     0.728][INFO] OpenGL module type: desktop OpenGL
+[     0.728][DBG ] StelGLWidget constructor
+[     0.728][DBG ] StelGraphicsScene constructor
+[     0.886][DBG ] initializeGL(windowWidth = 1280, windowHeight = 720)
+[     0.887][INFO] OpenGL supported version:  "3.3.0 NVIDIA 591.74"
+[     0.887][INFO] Current Format:  QSurfaceFormat(version 3.3, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 24, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize 8, stencilBufferSize 8, samples 0, swapBehavior QSurfaceFormat::DoubleBuffer, swapInterval 1, colorSpace QColorSpace(QColorSpace::SRgb, QColorSpace::Primaries::SRgb, QColorSpace::TransferFunction::SRgb), profile  QSurfaceFormat::CoreProfile)
+[     0.887][INFO] Initializing StelMainView
+[     0.887][INFO] Luminance textures are not supported
+[     0.888][INFO] Running in High Graphics Mode
+[     0.888][INFO] Maximum texture anisotropy: 16
+[     0.889][INFO] Maximum 2D texture size: 32768
+[     0.889][INFO] Detected: OpenGL 3.3
+[     0.889][INFO] Driver version string: 3.3.0 NVIDIA 591.74
+[     0.889][INFO] GL vendor: NVIDIA Corporation
+[     0.889][INFO] GL renderer: NVIDIA GeForce RTX 4060/PCIe/SSE2
+[     0.889][INFO] GL Shading Language version: 3.30 NVIDIA via Cg compiler
+[     0.889][INFO] GLSL Version Number detected: 3.3
+[     0.890][INFO] GLSL version is fine, we should not see a graphics problem.
+[     0.890][INFO] Vertex Array Objects are supported
+[     0.890][INFO] Initial high-DPI scaling factor: 1
+[     1.977][INFO] Application language: zh_CN
+[     1.978][INFO] Sky language: zh_CN
+[     1.979][INFO] Planetary features language: zh_CN
+[     1.979][INFO] Scripts language: zh_CN
+[     1.980][INFO] Sky culture description language: zh_CN
+[     2.192][INFO] Cache directory: C:\Users\ztuqfvy\AppData\Local\stellarium\stellarium\cache
+[     2.264][INFO] Loaded 252 countries
+[     2.265][INFO] Loaded 193 regions
+[     2.557][WARN] No valid QPositionInfoSource. Old IP queries should still work.
+[     2.559][INFO] Loading Solar System data (1: planets and moons) ...
+[     2.559][INFO] Loading from: E:\Qt_demo\stellarium-vulkan\data\ssystem_major.ini
+[     2.616][INFO] Loaded 83 Solar System bodies from  E:\Qt_demo\stellarium-vulkan\data\ssystem_major.ini
+[     2.616][INFO] Solar System now has 83 entries.
+[     2.617][INFO] Loading Solar System data (2: minor bodies) ...
+[     2.618][INFO] Loading from: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\data\ssystem_minor.ini
+[     2.678][WARN] Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in C:\Users\ztuqfvy\AppData\Roaming\Stellarium\data\ssystem_minor.ini section 152637(152637)
+[     2.680][WARN] Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in C:\Users\ztuqfvy\AppData\Roaming\Stellarium\data\ssystem_minor.ini section 66146(66146)
+[     2.750][WARN] minor body  "(66146)" has no IAU code in section  "66146(66146)"
+[     2.764][INFO] libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+[     2.845][WARN] minor body  "(152637)" has no IAU code in section  "152637(152637)"
+[     2.865][INFO] Loaded 627 Solar System bodies from  C:\Users\ztuqfvy\AppData\Roaming\Stellarium\data\ssystem_minor.ini
+[     2.866][INFO] Solar System now has 710 entries.
+[     2.869][INFO] File ssystem_minor.ini is loaded successfully...
+[     2.878][INFO] ExtendedElements: loaded epoch tables for 4 asteroids from "E:\\Qt_demo\\stellarium-vulkan\\data\\asteroid_elements.json" ( 0 not matched in ssystem_minor.ini)
+[     2.879][INFO] SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+[     2.886][INFO] libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+[     2.903][INFO] Loading nomenclature for Solar system bodies ...
+[     3.117][INFO] Loaded 16058 / 16094 items of planetary surface nomenclature
+[     3.122][INFO] Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
+[     3.125][INFO] Loading star data ...
+[     3.125][INFO] Loading star catalog: E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+[     3.126][INFO] Loading star catalog: E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+[     3.126][INFO] Loading star catalog: E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+[     3.126][INFO] Loading star catalog: E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+[     3.140][INFO] Finished loading star catalogue data, max_geodesic_level: 3
+[     3.140][INFO] Loading scientific star designations from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\name.fab
+[     3.145][INFO] Loaded 5060 / 5060 scientific designations
+[     3.146][INFO] Loading scientific star designations from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\extra_name.fab
+[     3.173][INFO] Loaded 26200 / 26200 scientific designations
+[     3.175][INFO] Loading variable stars data from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\gcvs.cat
+[     3.186][INFO] [...] GCVS 5.1-20250615
+[     3.410][INFO] Loaded 47323 / 47323 variable stars
+[     3.427][INFO] Loading double stars from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\wds_hip_part.dat
+[     3.471][INFO] Loaded 22992 / 22992 double stars
+[     3.472][INFO] Loading cross-identification data from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\cross-id.cat
+[     3.987][INFO] Loaded 327097 / 327097 cross-identification data records for stars
+[     4.005][INFO] Loading orbital parameters data for binary system from E:\Qt_demo\stellarium-vulkan\stars\hip_gaia3\binary_orbitparam.dat
+[     4.005][INFO] Loaded 15 / 15 orbital parameters data for binary system
+[     4.095][INFO] Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 159 Barium stars, and 220 have PM>1000mas/yr.
+[     4.105][INFO] navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+[     4.213][INFO] Loading DSO data ...
+[     4.261][INFO] [...] Stellarium DSO Catalog, version 3.23 (standard edition)
+[     4.615][INFO] Loaded 94899 DSO records
+[     4.626][INFO] Loading DSO name data ...
+[     4.777][INFO] Loaded 1362 / 1389 DSO name records successfully
+[     4.777][WARN] No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+[     4.777][INFO] Loading DSO outline data ...
+[     4.786][INFO] Loaded 100 DSO outline records successfully
+[     4.786][INFO] Loading DSO discovery data ...
+[     4.789][INFO] Loaded 183 / 183 DSO discovery records successfully
+[     4.877][INFO] Using Qt multimedia with FFmpeg version 7.1.5 LGPL version 2.1 or later
+[     4.960][INFO] LandscapeMgr: initialized Cache for 100 MB.
+[     5.286][INFO] Loading star names from E:\Qt_demo\stellarium-vulkan\skycultures\common_star_names.fab
+[     5.288][INFO] Loaded 411 / 411 common star names
+[     5.335][INFO] Loaded 88 / 88 constellation records successfully for culture modern
+[     5.335][DBG ] Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+[     5.335][INFO] Loading constellation boundary data ... 
+[     5.338][INFO] Loaded 781 constellation boundary segments
+[     5.359][WARN] Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install more star catalogs
+[     5.359][WARN] Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install more star catalogs
+[     5.359][WARN] Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
+[     5.359][WARN] Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
+[     5.360][INFO] Loaded 88 / 92 asterism records successfully for culture modern
+[     5.635][INFO] Initializing basic GL shaders... 
+[     5.645][INFO] Creating GUI ...
+[     6.025][INFO] Loading style file: :/graphicGui/normalStyle.css
+[     6.061][INFO] Loaded plugin "Exoplanets"
+[     6.215][INFO] [Exoplanets] Version of the format of the catalog: 1
+[     6.231][INFO] [Exoplanets] loading catalog file: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\Exoplanets\exoplanets.json
+[     8.006][INFO] Loaded plugin "MeteorShowers"
+[     8.030][INFO] [MeteorShowersMgr] Loading catalog file: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\MeteorShowers\MeteorShowers.json
+[     8.032][INFO] [MeteorShowersMgr] Version of the format of the catalog: 2
+[     8.044][INFO] Loaded plugin "Novae"
+[     8.046][INFO] [Novae] version of the catalog: 1
+[     8.046][INFO] [Novae] Loading catalog file: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\Novae\novae.json
+[     8.066][INFO] Loaded plugin "Oculars"
+[     8.067][INFO] Oculars::validateAndLoadIniFile() ocular.ini exists at: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\Oculars\ocular.ini . Checking version...
+[     8.068][INFO] Oculars::validateAndLoadIniFile() found existing ini file version 3.1
+[     8.545][INFO] Loaded plugin "Satellites"
+[     8.691][INFO] [Satellites] loading catalogue file: C:\Users\ztuqfvy\AppData\Roaming\Stellarium\modules\Satellites\satellites.json
+[     8.742][INFO] Loaded plugin "SolarSystemEditor"
+[     8.754][INFO] Using the ssystem_minor.ini file that already exists in the user directory...
+[    11.222][INFO] Loaded 895910 discovery circumstances records for minor planets...
+[    11.241][WARN] SSE: Comet cross-index data: Overwriting entry for "453P"
+[    11.242][WARN] SSE: Comet cross-index data: Overwriting entry for "467P"
+[    11.242][WARN] SSE: Comet cross-index data: Overwriting entry for "465P"
+[    11.242][WARN] SSE: Comet cross-index data: Overwriting entry for "466P"
+[    11.242][WARN] SSE: Comet cross-index data: Overwriting entry for "468P"
+[    11.242][WARN] SSE: Comet cross-index data: Overwriting entry for "470P"
+[    11.242][WARN] SSE: Comet cross-index data: Overwriting entry for "472P"
+[    11.243][WARN] SSE: Comet cross-index data: Overwriting entry for "475P"
+[    11.243][WARN] SSE: Comet cross-index data: Overwriting entry for "477P"
+[    11.243][WARN] SSE: Comet cross-index data: Overwriting entry for "473P"
+[    11.243][WARN] SSE: Comet cross-index data: Overwriting entry for "476P"
+[    11.243][WARN] SSE: Comet cross-index data: Overwriting entry for "479P"
+[    11.243][WARN] SSE: Comet cross-index data: Overwriting entry for "480P"
+[    11.243][WARN] SSE: Comet cross-index data: Overwriting entry for "481P"
+[    11.244][INFO] Loaded 2576 discovery circumstances records for comets...
+[    11.263][INFO] OpenGL viewport size: 1280 x 720
+[    11.264][INFO] Creating scene FBO with size 1280x720
+[    11.322][WARN] Satellite has invalid orbit: "ALTAIR (RS65S)" "61779"
+[    11.322][WARN] Satellite has invalid orbit: "ASRTU-1 (AO-123)" "61781"
+[    11.324][WARN] Satellite has invalid orbit: "COSMOS 1536" "14699"
+[    11.324][WARN] Satellite has invalid orbit: "COSMOS 1953" "19210"
+[    11.324][WARN] Satellite has invalid orbit: "CREW DRAGON 12" "67796"
+[    11.324][WARN] Satellite has invalid orbit: "CUBESX-HSE 3 (RS42S)" "57178"
+[    11.324][WARN] Satellite has invalid orbit: "CZ-4B R/B" "28415"
+[    11.324][WARN] Satellite has invalid orbit: "CYGNUS NG-24" "68689"
+[    11.324][WARN] Satellite has invalid orbit: "COSMOS 1975" "19573"
+[    11.325][WARN] Satellite has invalid orbit: "FREGAT DEB" "49271"
+[    11.325][WARN] Satellite has invalid orbit: "DTUSAT-2" "40030"
+[    11.325][WARN] Satellite has invalid orbit: "FOX-1CLIFF (AO-95)" "43770"
+[    11.324][WARN] Satellite has invalid orbit: "Curium One" "60242"
+[    11.325][WARN] Satellite has invalid orbit: "GEOSCAN 1 (RS92S1)" "64880"
+[    11.325][WARN] Satellite has invalid orbit: "GEOSCAN 2 (RS92S2)" "64890"
+[    11.325][WARN] Satellite has invalid orbit: "GEOSCAN 6 (RS92S6)" "64879"
+[    11.325][WARN] Satellite has invalid orbit: "H-2A R/B" "28932"
+[    11.325][WARN] Satellite has invalid orbit: "HST" "20580"
+[    11.326][WARN] Satellite has invalid orbit: "KOSEN 1" "49402"
+[    11.325][WARN] Satellite has invalid orbit: "FUNCUBE-1 (AO-73)" "39444"
+[    11.326][WARN] Satellite has invalid orbit: "ISS (ZARYA)" "25544"
+[    11.326][WARN] Satellite has invalid orbit: "IXPE" "49954"
+[    11.325][WARN] Satellite has invalid orbit: "IGS 6" "37813"
+[    11.326][WARN] Satellite has invalid orbit: "MONITOR-3 (RS58S)" "57180"
+[    11.326][WARN] Satellite has invalid orbit: "INNOSAT 16 (RS92S7)" "64878"
+[    11.327][WARN] Satellite has invalid orbit: "MONITOR-4 (RS57S)" "57182"
+[    11.327][WARN] Satellite has invalid orbit: "ONEWEB-0179" "48212"
+[    11.328][WARN] Satellite has invalid orbit: "ONEWEB-0617" "55158"
+[    11.328][WARN] Satellite has invalid orbit: "Optsat 3000" "42900"
+[    11.328][WARN] Satellite has invalid orbit: "OTP-2" "63235"
+[    11.328][WARN] Satellite has invalid orbit: "SL-3 R/B" "14208"
+[    11.328][WARN] Satellite has invalid orbit: "SL-8 R/B" "20775"
+[    11.328][WARN] Satellite has invalid orbit: "SL-3 R/B" "12465"
+[    11.328][WARN] Satellite has invalid orbit: "ROBUSTA-3A (MEDITERRAN*)" "60243"
+[    11.328][WARN] Satellite has invalid orbit: "POISK" "36086"
+[    11.328][WARN] Satellite has invalid orbit: "SL-8 R/B" "5730"
+[    11.328][WARN] Satellite has invalid orbit: "SNUSat 2" "43782"
+[    11.328][WARN] Satellite has invalid orbit: "SPACEMOBILE-005" "61046"
+[    11.328][WARN] Satellite has invalid orbit: "SVYATOBOR 1 (RS60S)" "57187"
+[    11.329][WARN] Satellite has invalid orbit: "PROGRESS-MS 34" "68837"
+[    11.329][WARN] Satellite has invalid orbit: "USA 290" "43941"
+[    11.329][WARN] Satellite has invalid orbit: "UTMN 2 (RS27S)" "57203"
+[    11.330][WARN] Satellite has invalid orbit: "USA 318" "48848"
+[    11.330][WARN] Satellite has invalid orbit: "USA 326" "51445"
+[    11.330][WARN] Satellite has invalid orbit: "ZHANGHENG 1-01 (CSES-1)" "43194"
+[    11.330][WARN] Satellite has invalid orbit: "USA 352" "59288"
+[    11.330][WARN] Satellite has invalid orbit: "Prox-1" "44339"
+[    11.331][WARN] Satellite has invalid orbit: "QB50P1" "40025"
+[    11.331][WARN] Satellite has invalid orbit: "SALSAT" "46495"
+[    11.332][WARN] Satellite has invalid orbit: "Suomi 100" "43804"
+[    11.333][WARN] Satellite has invalid orbit: "ISS (NAUKA)" "49044"
+[    11.335][WARN] Satellite has invalid orbit: "RADFXSAT (FOX-1B)" "43017"
+[    11.337][WARN] Satellite has invalid orbit: "SHIJIAN-6 02A (SJ-6 02A)" "29505"
+[    11.374][WARN] Satellite has invalid orbit: "CubeBel-2 (EU11S)" "57175"
+[    11.375][WARN] Satellite has invalid orbit: "KUZGTU 1 (RS47S)" "57217"
+[    11.476][DBG ] Initializing planets GL shaders... 
+[    11.516][WARN] Satellite has invalid orbit: "TEVEL2-7" "63238"
+[    11.570][WARN] Satellite has invalid orbit: "239ALFEROV (RS61S)" "64881"
+[    11.572][WARN] Satellite has invalid orbit: "KORONAS-FOTON" "33504"
+[    11.573][WARN] Satellite has invalid orbit: "SL-3 R/B" "13819"
+[    11.573][WARN] Satellite has invalid orbit: "TEVEL2-8" "63239"
+[    11.574][WARN] Satellite has invalid orbit: "TEVEL2-9" "63237"
+[    11.621][WARN] Satellite has invalid orbit: "ONEWEB-0419" "50494"
+[    11.625][WARN] Satellite has invalid orbit: "Unknown 110623" "90087"
+[    11.663][WARN] Satellite has invalid orbit: "GEOSCAN 5 (RS92S5)" "64891"
+[    11.665][WARN] Satellite has invalid orbit: "SPACEMOBILE-002" "61048"
+[    11.665][WARN] Satellite has invalid orbit: "SPACEMOBILE-004" "61049"
+[    11.667][WARN] Satellite has invalid orbit: "VIZARD-METEO (RS38S)" "57189"
+[    11.704][WARN] Satellite has invalid orbit: "GEOSCAN 4 (RS92S4)" "64892"
+[    11.705][WARN] Satellite has invalid orbit: "SL-4 R/B" "39679"
+[    11.706][WARN] Satellite has invalid orbit: "USA 338" "53883"
+[    11.744][WARN] Satellite has invalid orbit: "ACS3" "59588"
+[    11.746][WARN] Satellite has invalid orbit: "ONEWEB-0188" "48231"
+[    11.747][WARN] Satellite has invalid orbit: "SL-8 R/B" "12139"
+[    11.753][WARN] Satellite has invalid orbit: "USA 179" "28384"
+[    11.782][WARN] Satellite has invalid orbit: "GEOSCAN 3 (RS92S3)" "64893"
+[    11.783][WARN] Satellite has invalid orbit: "IGS 9" "40381"
+[    11.783][WARN] Satellite has invalid orbit: "NUSTAR" "38358"
+[    11.784][WARN] Satellite has invalid orbit: "SL-3 R/B" "10114"
+[    11.819][WARN] Satellite has invalid orbit: "H-2A R/B" "43682"
+[    11.820][WARN] Satellite has invalid orbit: "ONEWEB-0326" "49195"
+[    11.821][WARN] Satellite has invalid orbit: "USA 245" "39232"
+[    11.857][WARN] Satellite has invalid orbit: "CSS (MENGTIAN)" "54216"
+[    11.857][WARN] Satellite has invalid orbit: "CSS (TIANHE)" "48274"
+[    11.857][WARN] Satellite has invalid orbit: "JY1SAT (JO-97)" "43803"
+[    11.857][WARN] Satellite has invalid orbit: "CSS (WENTIAN)" "53239"
+[    11.858][WARN] Satellite has invalid orbit: "TEVEL2-1" "63217"
+[    11.858][WARN] Satellite has invalid orbit: "TIANZHOU-10" "69049"
+[    11.859][WARN] Satellite has invalid orbit: "TEVEL2-2" "63219"
+[    11.859][WARN] Satellite has invalid orbit: "USA 317" "48847"
+[    11.859][WARN] Satellite has invalid orbit: "TEVEL2-3" "63218"
+[    11.859][WARN] Satellite has invalid orbit: "TEVEL2-4" "63213"
+[    11.859][WARN] Satellite has invalid orbit: "TEVEL2-5" "63214"
+[    11.859][WARN] Satellite has invalid orbit: "TEVEL2-6" "63215"
+[    11.860][WARN] Satellite has invalid orbit: "SHENZHOU-23 (SZ-23)" "69180"
+[    11.893][WARN] Satellite has invalid orbit: "CASSIOPE" "39265"
+[    11.893][WARN] Satellite has invalid orbit: "LILACSAT-2" "40908"
+[    11.893][WARN] Satellite has invalid orbit: "ONEWEB-0196" "48218"
+[    11.893][WARN] Satellite has invalid orbit: "ONEWEB-0195" "48240"
+[    11.893][WARN] Satellite has invalid orbit: "ONEWEB-0332" "49279"
+[    11.928][WARN] Satellite has invalid orbit: "COLIBRI-S (RS67S)" "61746"
+[    11.964][WARN] Satellite has invalid orbit: "LASARSAT" "62391"
+[    11.996][WARN] Satellite has invalid orbit: "CROCUBE" "62394"
+[    11.997][WARN] Satellite has invalid orbit: "CZ-2C R/B" "52794"
+[    11.997][WARN] Satellite has invalid orbit: "MinXSS-2" "43758"
+[    11.997][WARN] Satellite has invalid orbit: "KNACKSAT-2" "67683"
+[    11.997][WARN] Satellite has invalid orbit: "DUPLEX" "66906"
+[    11.997][WARN] Satellite has invalid orbit: "INNOSAT 3 (RS92S0)" "64894"
+[    12.029][WARN] Satellite has invalid orbit: "GXIBA-1" "67685"
+[    12.029][WARN] Satellite has invalid orbit: "SIT-2086" "61764"
+[    12.029][WARN] Satellite has invalid orbit: "SONATE-2" "59112"
+[    12.029][WARN] Satellite has invalid orbit: "SZ-21 MODULE" "66515"
+[    12.062][WARN] Satellite has invalid orbit: "HRC MONOBLOCK CAMERA" "66052"
+[    12.063][WARN] Satellite has invalid orbit: "SWIFT" "28485"
+[    12.062][WARN] Satellite has invalid orbit: "LEOPARD" "67687"
+[    12.063][WARN] Satellite has invalid orbit: "UITMSAT-2" "67686"
+[    12.094][WARN] Satellite has invalid orbit: "COSMOS 1743" "16719"
+[    12.094][WARN] Satellite has invalid orbit: "CZ-2C R/B" "54039"
+[    12.094][WARN] Satellite has invalid orbit: "CatSat" "60246"
+[    12.094][WARN] Satellite has invalid orbit: "HORS 3 (RS81S)" "61753"
+[    12.094][WARN] Satellite has invalid orbit: "HORS 4 (RS82S)" "61754"
+[    12.095][WARN] Satellite has invalid orbit: "ISAT" "43879"
+[    12.095][WARN] Satellite has invalid orbit: "MESAT1" "60209"
+[    12.095][WARN] Satellite has invalid orbit: "CZ-2D R/B" "28738"
+[    12.095][WARN] Satellite has invalid orbit: "SAMSAT-IONOSPHERE (RS7*)" "61784"
+[    12.095][WARN] Satellite has invalid orbit: "SL-3 R/B" "5118"
+[    12.095][WARN] Satellite has invalid orbit: "RTU MIREA 1 (RS51S)" "61785"
+[    12.096][WARN] Satellite has invalid orbit: "SAR Lupe 5" "33244"
+[    12.128][WARN] Satellite has invalid orbit: "UWE-4" "43880"
+[    12.159][WARN] Satellite has invalid orbit: "SEEDS II (CO-66)" "32791"
+[    13.007][INFO] Unloaded plugin "SolarSystemEditor"
+[    13.022][INFO] Unloaded plugin "Satellites"
+[    13.038][INFO] Unloaded plugin "Oculars"
+[    13.039][INFO] Unloaded plugin "Novae"
+[    13.039][INFO] Unloaded plugin "MeteorShowers"
+[    13.050][INFO] Unloaded plugin "Exoplanets"
+[    13.056][INFO] Downloaded 0 files (0 kbytes) in a session of 12.332 sec (average of 0 kB/s + 0 files from cache (0 kB)).
+[    13.166][INFO] LandscapeMgr: Clearing cache of 0 landscapes totalling about  0 MB.
+[    13.201][DBG ] StelGLWidget destroyed

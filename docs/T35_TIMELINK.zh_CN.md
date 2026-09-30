@@ -314,6 +314,9 @@ STELQUICK_TIMELINK_PROBE=1 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS
   - `REPEATCHECK` 就绪门预算；
   - 捏合后首击、DYN 停摆根因；
   - T33 移交的 `findLocations` 排序（完全匹配优先）；
-  - **W-T35 Windows 跨平台复验**（T33 证明过它能逼出真缺陷）。
+  - **W-T35 Windows 跨平台复验**（T33 证明过它能逼出真缺陷）
+    —— ✅ **已结清**（2026-09-30 下午，与 W-T34 并批）：见
+    `docs/WT35_WINDOWS_RECHECK.zh_CN.md`。Windows 侧 `TIMELINKCHECK` 正题 3/3 `7/7 PASS`、
+    三组负控红项与 mac **逐位一致**；首轮那 13 条失败是**纯仪器缺陷**（已定性并类级修复）。
 - **对时间类判据的意义**：T27 那条"时间链路可能整体不可信"的担忧**解除**——
   既有的 time/clock/replay 套件不必因为这条线索而重做口径。

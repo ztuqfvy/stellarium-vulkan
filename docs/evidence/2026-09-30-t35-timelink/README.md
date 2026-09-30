@@ -127,3 +127,23 @@ mac/negctl-mac.txt                     三组负控并列 + 期望/实测对照
 mac/probe-timelink-mac.txt             探针
 mac/regression-*.txt                   相邻回归（11 套件 + INTERACTCHECK + S3 + A2 + DYN 双路）
 ```
+
+## 9 Windows 跨平台复验（W-T35，2026-09-30 下午，**并批 T34**）
+
+产品文档：`docs/WT35_WINDOWS_RECHECK.zh_CN.md`
+
+| 目录 | 内容 |
+|---|---|
+| `windows/` | 定稿轮全部产物（33 套件 × out/err + `SUMMARY.txt` + launcher 日志 + 计划任务残留存档）。**首轮（仪器坏）的汇总**也在内，文件名带 `broken-instrument-NOT-EVIDENCE` |
+| `windows-instrument/` | **仪器缺陷**的诊断、修复与三方闭环（本地真值测试 97/97、负控复现 3/3） |
+| `windows-src-sync/` | 送源同源对账（`git hash-object`，94 项 / 90 同源 / 0 不同 / 4 缺失） |
+
+**定稿轮结论**：`launcher exit=0`、零 FATAL；`TIMELINKCHECK` 正题 **3/3 `7/7 PASS`**、
+三组负控红项 `[TL-01]` / `[TL-01,TL-02,TL-05]` / `[TL-04]` **与 mac 逐位一致**；
+`TOOLBARCHECK` 正题 **3/3 `12/12 PASS`**、四组负控红项同样与 mac 逐位一致；
+探针 2/2 OK、`INTERACTCHECK` 3×18/18、DYN 双路 6/6、就绪门触发 **0 次**。
+
+⚠️ 首轮报过 **13 条期望校验失败**，看着像产品退步 —— **是纯仪器缺陷**
+（PowerShell 变量名大小写不敏感：`$judge` 覆盖了拼正则用的 `$JUDGE` token）。
+同一轮里产品侧其实已经全绿。诊断与类级修法见 `windows-instrument/README.md`。
+

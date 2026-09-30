@@ -1,0 +1,50 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.70533，时钟=HostDriven）
+INTERACTCHECK: act-note 已排入 3 次 requestActivate（0.15s/0.40s/0.90s，自激活前台提升）
+INTERACTCHECK: 开始（最外层注入：窗口真实滚轮/鼠标/键盘/捏合/输入法事件，共 16 条判据，每相位 400ms）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+LIVESKY: simScale -> 1.000（引擎仿真时钟）
+INTERACTCHECK: IT-note DIAG9 冻结窗口内 simJD 推进=0.000000000 天（应≈0；冻结前 engineRate=1）拖拽受理=7/7
+INTERACTCHECK: IT-note DIAG 引擎投影视口 1280x720 dppp=1 月球投影=(640.0,360.0) 点击=(480.0,370.0) 居中角距=0.0000°
+INTERACTCHECK: T29W-note 前导窗口激活门：窗口未激活（尝试 1/3），requestActivate 后重入本相位
+INTERACTCHECK: T29W-note 前导窗口激活门：窗口已激活（重试 1 次）
+INTERACTCHECK: ✓ IT-01 交互锚点齐备（keySink=有 pageStack=有 viewport=有 pinchHandler=有 navSky/Time/Search=有/有/有 queryField=有 页索引=1/3/2）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,369.5) 投递滚轮 dy=+1200（10 格），事件受理=0，FOV before=60.000
+INTERACTCHECK: ✓ IT-02 天空页滚轮向前 → FOV 60.0000 → 11.3325（应严格变小；不动即滚轮链路死，T10 起 T25 前的老病）
+INTERACTCHECK: ✓ IT-03 方向对照：滚轮向后 → FOV 11.3325 → 60.0000（应回升，且回到接近 60.0000）
+INTERACTCHECK: ✓ IT-04 负控：时间页滚轮 dy=+1200 → FOV 60.0000 → 60.0000（应不变：WheelHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: IT-note 已投递真实 L 键（引擎 actionIncrease_Time_Speed），timeRate before=0.1，dispatched 基线=0
+INTERACTCHECK: IT-note L 键派发后焦点快照：windowActive=true keySinkHasActiveFocus=true activeFocusItem=skyKeySink focusObject=QQuickItem canDispatchToSky=true
+INTERACTCHECK: ✓ IT-05 天空页注入 L 键 → timeRate 0.1 → 1（应变），dispatched 累计=1（应>基线 0），lastActionId="actionIncrease_Time_Speed"（应=actionIncrease_Time_Speed）—— QKeyEvent→keySink→routeKey 的 QML 链是活的
+INTERACTCHECK: IT-note 已真实点击搜索框并再次投递 L 键（不抢焦点变体；焦点门重试 0 次），timeRate before=1，dispatched 基线=1，事件受理=0
+INTERACTCHECK: IT-note L 键（不抢焦点变体）派发后焦点快照：windowActive=true keySinkHasActiveFocus=false activeFocusItem=searchQueryField focusObject=TextField_QMLTYPE_20 canDispatchToSky=false
+INTERACTCHECK: ✓ IT-06 焦点守卫：搜索框聚焦时注入 L → timeRate 1 → 1（应不变），dispatched=1（应=基线 1）—— U-ACT-03 的 QML 端到端腿
+INTERACTCHECK: ✓ IT-07 冻结时间后向左拖 160px → 视线转过 18.1988°（应>0.2°），再向右拖 → 两次增量点积 -0.9981（应<0，反向）—— QML MouseArea→skyMouse*→handleClick/handleMove→dragView 的平移链是活的
+INTERACTCHECK: ✓ IT-08 月球居中后：清选中（前=false，应 false）→ 真实点击视口中心 → 选中="Moon"（应 Moon）—— 引擎 findAndSelect 经 QML MouseArea→skyMouse*→handleClick 链是活的
+INTERACTCHECK: ✓ IT-09 右键释放反选 → 选中 true（点击后）→ false（右键后，应 false）—— 引擎 deselection 经 MouseArea 链是活的（与 IT-08 成对）
+INTERACTCHECK: IT-note 天空页视口中心 @(480.0,370.0) 投递 3× ZoomNativeGesture(1.25)，事件受理=0/3，FOV before=60.0000
+INTERACTCHECK: ✓ IT-10 天空页原生捏开 ×1.25³ → FOV 60.0000 → 30.7200（应严格变小；不动即捏合链路死，T10 起 T28 前的老病）
+INTERACTCHECK: ✓ IT-11 方向对照：反向捏拢 ×0.8³ → FOV 30.7200 → 60.0000（应回升且回到 60.0000，相对偏差 0.00000 应<0.02）
+INTERACTCHECK: ✓ IT-12 负控：时间页捏合 ×1.25³（受理=0/3）→ FOV 60.0000 → 60.0000（应不变：PinchHandler 只挂天空页，引擎没收到就是没收到）
+INTERACTCHECK: IT-note（T29）已真实点击搜索框聚焦（焦点门重试 0 次）并注入输入法 preedit="yueqiu"（受理=1），组合前 text=""
+INTERACTCHECK: ✓ IT-13 IME 组合链：注入 preedit → preeditText="yueqiu"（应=yueqiu）、inputMethodComposing=true（应=true）、text=""（应仍=""，组合不得污染正文）—— 窗口→focusTargetItem→TextInput 的输入法通路是活的（此前从未在合流形态被测过）
+INTERACTCHECK: IT-note（T29）组合态注入 Esc（受理=1），前提：页=2 rate=1 dispatched=1 preeditText="yueqiu"
+INTERACTCHECK: IT-note 组合态 Esc 派发后焦点快照：windowActive=true keySinkHasActiveFocus=false activeFocusItem=searchQueryField focusObject=TextField_QMLTYPE_20 canDispatchToSky=false
+INTERACTCHECK: ✓ IT-14 组合态注入 Esc：页 2 → 2（应仍=2）、rate 1 → 1（应不变）、dispatched 1（应=基线 1）—— 焦点在输入控件时 Esc 必须走守卫，不得跳页
+INTERACTCHECK: IT-note（T29）注入输入法 commit="月球"（受理=1）
+INTERACTCHECK: ✓ IT-15 IME 提交：commit="月球" → text="月球"（应="月球"=组合前正文+提交串）、inputMethodComposing=false（应=false）、preeditText=""（应空：组合区已归位）
+INTERACTCHECK: IT-note（T29）焦点移出输入控件后注入 Esc（受理=1），Esc 前页=2（非天空页）
+INTERACTCHECK: ✓ IT-16 判别性对照：焦点移出输入控件后注入 Esc → currentIndex=1（应=1 天空页）—— 与 IT-14 同一个键、同一个页，唯一差别是焦点位置；Esc 返回链路仍然活着（修复没有把它一起杀掉）
+INTERACTCHECK: IT-note（T32）IT-17 布场：当前页=1 ≠ 搜索页（2），点搜索页按钮后重入本相位（1/2）
+INTERACTCHECK: IT-note（T32）IT-17 写入步：点击搜索框聚焦（焦点门重试 0 次）→ text="mars"（页=2 dispatched=1）→ 注入 Esc（受理=1，**不抢焦点**变体）
+INTERACTCHECK: IT-note Esc 派发后焦点快照：windowActive=true keySinkHasActiveFocus=false activeFocusItem=searchQueryField focusObject=TextField_QMLTYPE_20 canDispatchToSky=false
+INTERACTCHECK: ✓ IT-17 两段式 Esc 第一段：text "mars" → ""（应被清空）、页 2 → 2（应不动，仍=搜索页 2）、dispatched 1（应=基线 1）—— 焦点在输入框且有文本时，Esc 只清空、不跳页
+INTERACTCHECK: IT-note（T32）IT-18 写入步：重新点击搜索框聚焦（焦点门重试 0 次）→ text=""（页=2）→ 注入 Esc（受理=1，**不抢焦点**变体）；注入时守卫判定canDispatchToSky=false（焦点在输入框）
+INTERACTCHECK: IT-note Esc 派发后焦点快照：windowActive=true keySinkHasActiveFocus=false activeFocusItem=searchQueryField focusObject=TextField_QMLTYPE_20 canDispatchToSky=false
+INTERACTCHECK: ✓ IT-18 两段式 Esc 第二段：注入前 text=""（应空）、页=2（应=搜索页 2）、守卫判定不可派发=true（判别腿）→ 注入后 currentIndex=1（应=1 天空页）—— 空框再按一次 Esc 才离开搜索，**且走的是守卫路径**（不是 canDispatchToSky 回真的回退路径）
+INTERACTCHECK: 判据 18/18
+INTERACTCHECK: VERDICT=PASS

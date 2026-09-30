@@ -1,0 +1,34 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461313.70076，时钟=HostDriven）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+LIVESKY: simScale -> 1.000（引擎仿真时钟）
+TOOLBARCHECK: 判据 12/12  VERDICT=PASS
+TOOLBARCHECK:     前提：12 个候选动作 present=12/12 checkable=12/12
+TOOLBARCHECK:     前提：revisionBase=0 写前值 4 个（4/12 入写入腿）
+TOOLBARCHECK:     前提：boot 初值 Lines=false, Grid=false, =true, Mode=false
+TOOLBARCHECK:     TB 写入：trigger(actionShow_Constellation_Lines) ⇒ executed=true
+TOOLBARCHECK:     TB 写入：trigger(actionShow_Equatorial_Grid) ⇒ executed=true
+TOOLBARCHECK:     TB 写入：trigger(actionShow_Ground) ⇒ executed=true
+TOOLBARCHECK:     TB 写入：trigger(actionShow_Night_Mode) ⇒ executed=true
+TOOLBARCHECK:   ✓ TB-01 写入生效：actionShow_Constellation_Lines getter false ⇒ true（翻转）
+TOOLBARCHECK:   ✓ TB-02 写入生效：actionShow_Equatorial_Grid getter false ⇒ true（翻转）
+TOOLBARCHECK:   ✓ TB-03 写入生效：actionShow_Ground getter true ⇒ false（翻转）
+TOOLBARCHECK:   ✓ TB-04 写入生效：actionShow_Night_Mode getter false ⇒ true（翻转）
+TOOLBARCHECK:   ✓ TB-06 信号腿：actionToggled 发射 4/4 个 id
+TOOLBARCHECK:   ✓ TB-07 revision 腿：净增 8 ≥ 8
+TOOLBARCHECK:   ✓ TB-05 往返复原：4/4 回到写前值
+TOOLBARCHECK:   ✓ TB-08 负控：trigger(actionShow_Nonexistent_T34) ⇒ executed=false revision Δ=0 toggled Δ=0
+TOOLBARCHECK:   ✓ TB-11 判别负控：registry(app.togglePause) executed=true revision Δ=0（必须为 0）
+TOOLBARCHECK:   ✓ TB-09 UI 腿：按钮 12/12 找到、态一致 12/12
+TOOLBARCHECK:     TB-10 落点覆盖：covered=true（未覆盖的祖先：<无>）
+TOOLBARCHECK:     TB-10 落点：center=(29.0,46.0) 按钮 scene(0,0)=(6.0,34.0) 46x24
+TOOLBARCHECK:     TB-10 父链：MainWindow(x=0 y=0 w=960 h=640) ← ApplicationWindowContentControl(x=0 y=0 w=960 h=640) ← ApplicationWindow(x=0 y=0 w=960 h=640) ← skyKeySink(x=0 y=0 w=960 h=640) ← QQuickColumnLayout(x=0 y=0 w=960 h=640) ← Toolbar_QMLTYPE_67(x=0 y=0 w=960 h=64) ← QQuickColumnLayout(x=6 y=6 w=948 h=52) ← toolbarToggleFlow(x=0 y=28 w=948 h=24) ← toolToggle_actionShow_Constellation_Lines(x=0 y=0 w=46 h=24) ← scene(0,0)=(6.0,34.0) btn w=46 h=24 visible=true
+TOOLBARCHECK:     TB-10 第一轮点击：accepted=true 点击前引擎=false 点击后立即=true revisionBase=8
+TOOLBARCHECK:   ✓ TB-10 UI 点击腿：真实点击星座连线 ⇒ 引擎 false ⇒ true（翻转）
+TOOLBARCHECK:     收尾：星座连线 引擎=false（写前=false）⇒ 已复原
+TOOLBARCHECK:   ✓ TB-12 绑定重算腿：点击后 engineOn=true vs 引擎=true；复原后 engineOn=false vs 引擎=false
+TOOLBARCHECK: VERDICT=PASS

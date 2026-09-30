@@ -1,0 +1,92 @@
+[t35w] suites start 2026-09-30T12:27:18.1368043+08:00
+repo HEAD = cf738bb
+script md5 = d2800b278bed32a18daa9c33bd93ad95
+SRC src\app\ToolbarCheck.hpp md5=83afc98037346e7c3a76f904faeaec0c
+SRC src\app\ToolbarCheck.cpp md5=60ec05ba1aede5bcdd42c4b54d53e6d3
+SRC src\app\ToolbarProbe.cpp md5=aff38e66bbca24e5d6005b4336e12fce
+SRC src\app\TimeLinkCheck.hpp md5=ae6b236f4531c00ec4b45bda97fa8f5c
+SRC src\app\TimeLinkCheck.cpp md5=446313bee4522cf0cb801db2b8257710
+SRC src\app\TimeLinkProbe.cpp md5=9796f63d5aa5edeb4263d15f6219febc
+SRC src\app\AppFacade.cpp md5=6c06fb1cb32a286ca31b650e4efb1aae
+SRC src\ui\LiveSkyRuntime.cpp md5=8d4692036f2a17bb03bee586e4109e4d
+SRC src\ui\main.cpp md5=fa40fdeb505e9eb51240a67cdf9baaed
+SRC src\ui\qml\Toolbar.qml md5=7374e3599f7a9781b1045f233ce1b306
+SRC src\ui\qml\MainWindow.qml md5=898abe9cd6d60c8008ee89f21dbe6a30
+exe = E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+exe size = 29282816 B   mtime = 2026-09-30T12:26:43.1855555+08:00
+exe md5  = 7687513E293BAA23298231B4E7B46348
+SUITE clockcheck  rc=0  elapsed=1.1s  var=STELQUICK_CLOCK_CHECK  producer=
+SUITE actioncheck  rc=0  elapsed=20.2s  var=STELQUICK_ACTION_CHECK  producer=
+SUITE searchcheck  rc=0  elapsed=16.2s  var=STELQUICK_SEARCH_CHECK  producer=
+SUITE locatecheck  rc=0  elapsed=23.2s  var=STELQUICK_LOCATE_CHECK  producer=
+SUITE locate-uicheck  rc=0  elapsed=15.2s  var=STELQUICK_UI_CHECK  producer=
+SUITE timecheck  rc=0  elapsed=19.2s  var=STELQUICK_TIME_CHECK  producer=
+SUITE returnuicheck  rc=0  elapsed=18.2s  var=STELQUICK_RETURN_UI_CHECK  producer=
+SUITE replaycheck  rc=0  elapsed=18.2s  var=STELQUICK_REPLAY_CHECK  producer=
+SUITE timeuicheck  rc=0  elapsed=26.2s  var=STELQUICK_TIME_UI_CHECK  producer=
+SUITE locationcheck  rc=0  elapsed=18.2s  var=STELQUICK_LOC_CHECK  producer=
+SUITE a2-vulkan  rc=0  elapsed=3.1s  var=STELQUICK_A2_CHECK  producer=
+SUITE s3-stela3-legacy  rc=0  elapsed=14.2s  var=STELA3_CHECK  producer=
+  S3 legacy: rc=0 verdictPASS=True -> OK
+SUITE toolbarcheck-run1  rc=0  elapsed=16.2s  var=STELQUICK_TOOL_CHECK  producer=
+  TOOLBAR run1: rc=0 judge=12/12|PASS red=[] tb09found=1(>=1) covered=1(>=1) -> pos-pass
+SUITE toolbarcheck-run2  rc=0  elapsed=16.2s  var=STELQUICK_TOOL_CHECK  producer=
+  TOOLBAR run2: rc=0 judge=|PASS red=[] tb09found=1(>=1) covered=1(>=1) -> BAD
+SUITE toolbarcheck-run3  rc=0  elapsed=16.2s  var=STELQUICK_TOOL_CHECK  producer=
+  TOOLBAR run3: rc=0 judge=/|PASS red=[] tb09found=1(>=1) covered=1(>=1) -> BAD
+  TOOLBAR summary: pos-pass=1 env-skip=0 bad=2 of 3
+SUITE timelinkcheck-run1  rc=0  elapsed=36.3s  var=STELQUICK_TIMELINK_CHECK  producer=
+  TIMELINK run1: rc=0 judge=|PASS red=[] leak=0(0) restore=1(>=1) gate=0 recomputedTL01=True recomputedTL07=True -> BAD
+    recheck TL-01: W=3.0007 dJD=0.6 rate=0.2 pred=0.60014 ratio=0.9998 rel_dev=0.02% OK
+    recheck TL-07: dJD=0.2 dLST=72.1971 expected=72.1971 residual=0 tol=1 OK
+SUITE timelinkcheck-run2  rc=0  elapsed=36.4s  var=STELQUICK_TIMELINK_CHECK  producer=
+  TIMELINK run2: rc=0 judge=/|PASS red=[] leak=0(0) restore=1(>=1) gate=0 recomputedTL01=True recomputedTL07=True -> BAD
+    recheck TL-01: W=2.995 dJD=0.6 rate=0.2 pred=0.599 ratio=1.0017 rel_dev=0.17% OK
+    recheck TL-07: dJD=0.2 dLST=72.1971 expected=72.1971 residual=0 tol=1 OK
+SUITE timelinkcheck-run3  rc=0  elapsed=36.4s  var=STELQUICK_TIMELINK_CHECK  producer=
+  TIMELINK run3: rc=0 judge=|PASS red=[] leak=0(0) restore=1(>=1) gate=0 recomputedTL01=True recomputedTL07=True -> BAD
+    recheck TL-01: W=2.9991 dJD=0.5998 rate=0.2 pred=0.59982 ratio=1 rel_dev=0% OK
+    recheck TL-07: dJD=0.2 dLST=72.1971 expected=72.1971 residual=0 tol=1 OK
+  TIMELINK summary: pos-pass=0 env-skip=0 bad=3 of 3 ; window-gate hits=0 (reading only)
+FATAL TIMELINKCHECK never produced a full 7/7 run -- positive case not exercised
+SUITE toolbneg-a-run1  rc=10  elapsed=16.2s  var=STELQUICK_TOOL_CHECK  producer=
+  TOOLBAR-NEG-A run1: rc=10 judge=/|FAIL red=[TB-07,TB-09,TB-12] expect=[TB-07,TB-09,TB-12] -> BAD
+SUITE toolbneg-b-run1  rc=10  elapsed=16.1s  var=STELQUICK_TOOL_CHECK  producer=
+  TOOLBAR-NEG-B run1: rc=10 judge=|FAIL red=[TB-09,TB-12] expect=[TB-09,TB-12] -> BAD
+SUITE toolbneg-c-run1  rc=10  elapsed=16.2s  var=STELQUICK_TOOL_CHECK  producer=
+  TOOLBAR-NEG-C run1: rc=10 judge=/|FAIL red=[TB-10] expect=[TB-10] -> BAD
+SUITE toolbneg-d-run1  rc=10  elapsed=16.2s  var=STELQUICK_TOOL_CHECK  producer=
+  TOOLBAR-NEG-D run1: rc=10 judge=|FAIL red=[TB-10] expect=[TB-10] coveredFalse=1(>=1) coveredTrue=0(0) -> BAD
+SUITE timelinkneg-a-run1  rc=10  elapsed=36.4s  var=STELQUICK_TIMELINK_CHECK  producer=
+  TIMELINK-NEG-A run1: rc=10 judge=/|FAIL red=[TL-01] expect=[TL-01] gate=0 -> BAD
+SUITE timelinkneg-b-run1  rc=10  elapsed=36.4s  var=STELQUICK_TIMELINK_CHECK  producer=
+  TIMELINK-NEG-B run1: rc=10 judge=|FAIL red=[TL-01,TL-02,TL-05] expect=[TL-01,TL-02,TL-05] gate=0 -> BAD
+SUITE timelinkneg-c-run1  rc=10  elapsed=36.4s  var=STELQUICK_TIMELINK_CHECK  producer=
+  TIMELINK-NEG-C run1: rc=10 judge=/|FAIL red=[TL-04] expect=[TL-04] gate=0 -> BAD
+SUITE probe-toolbar  rc=0  elapsed=13.1s  var=STELQUICK_TOOL_PROBE  producer=
+  TOOLBARPROBE: rc=0 verdictDONE=True Q1lines=1(>=1) Q2candidates=12(>=12) -> OK
+SUITE probe-timelink  rc=0  elapsed=24.3s  var=STELQUICK_TIMELINK_PROBE  producer=
+  TIMELINKPROBE: rc=0 verdictDONE=True placeholderLeak=0(0) missingAnchors=[] -> OK
+SUITE interactcheck-run1  rc=0  elapsed=28.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run1: rc=0 armed=1 full18=True degraded=False crosses=0 -> pos-pass
+SUITE interactcheck-run2  rc=0  elapsed=28.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run2: rc=0 armed=1 full18=True degraded=False crosses=0 -> pos-pass
+SUITE interactcheck-run3  rc=0  elapsed=28.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT run3: rc=0 armed=1 full18=True degraded=False crosses=0 -> pos-pass
+  INTERACT summary: pos-pass=3 env-skip=0 of 3
+SUITE probe-interact-inactive  rc=10  elapsed=30.3s  var=STELQUICK_INTERACT_UI_CHECK  producer=
+  INTERACT-PROBE: rc=10 crosses=[IT-05,IT-06,IT-13,IT-16,IT-17,IT-18] expect=[IT-05,IT-06,IT-13,IT-16,IT-17,IT-18] -> OK
+SUITE dyn-engine-run1  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run2  rc=0  elapsed=33.4s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-engine-run3  rc=0  elapsed=33.3s  var=STELQUICK_DYN_CHECK  producer=engine
+  producer-readback: requested=engine observed=engine OK
+SUITE dyn-test-run1  rc=0  elapsed=11.2s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run2  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+SUITE dyn-test-run3  rc=0  elapsed=11.1s  var=STELQUICK_DYN_CHECK  producer=test
+  producer-readback: requested=test observed=test OK
+[done] 2026-09-30T12:41:06.1183960+08:00
+FATAL 13 expectation check(s) failed

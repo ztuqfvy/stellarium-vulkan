@@ -1,0 +1,119 @@
+=== T34 TOOLBARCHECK positive (5 mac runs) ===
+  PASS  run1 judge = [12/12|PASS]
+  PASS  run1 reds = []
+  PASS  run1 tb09 = [1] >= 1
+  PASS  run1 cov = [1] >= 1
+  PASS  run2 judge = [12/12|PASS]
+  PASS  run2 reds = []
+  PASS  run2 tb09 = [1] >= 1
+  PASS  run2 cov = [1] >= 1
+  PASS  run3 judge = [12/12|PASS]
+  PASS  run3 reds = []
+  PASS  run3 tb09 = [1] >= 1
+  PASS  run3 cov = [1] >= 1
+  PASS  run4 judge = [12/12|PASS]
+  PASS  run4 reds = []
+  PASS  run4 tb09 = [1] >= 1
+  PASS  run4 cov = [1] >= 1
+  PASS  run5 judge = [12/12|PASS]
+  PASS  run5 reds = []
+  PASS  run5 tb09 = [1] >= 1
+  PASS  run5 cov = [1] >= 1
+=== T34 negative controls ===
+  PASS  A judge = [9/12|FAIL]
+  PASS  A reds = [TB-07,TB-09,TB-12]
+  PASS  B judge = [10/12|FAIL]
+  PASS  B reds = [TB-09,TB-12]
+  PASS  C judge = [11/12|FAIL]
+  PASS  C reds = [TB-10]
+  PASS  D judge = [11/12|FAIL]
+  PASS  D reds = [TB-10]
+  PASS  D coveredFalse = [1] >= 1
+  PASS  D coveredTrue = [0]
+=== T35 TIMELINKCHECK positive (5 mac runs) ===
+  PASS  run1 judge = [7/7|PASS]
+  PASS  run1 reds = []
+  PASS  run1 leak = [0]
+  PASS  run1 restore = [1] >= 1
+  PASS  run1 gate = [0]
+        TL01: W=3.0596 dJD=0.6176 rate=0.2 pred=0.61192 ratio=1.0093 rel_dev=0.93% OK
+        TL07: dJD=0.2116 dLST=76.3846 expected=76.3846 residual=0 tol=1 OK
+  PASS  run1 recheckTL01 = [True]
+  PASS  run1 recheckTL07 = [True]
+  PASS  run2 judge = [7/7|PASS]
+  PASS  run2 reds = []
+  PASS  run2 leak = [0]
+  PASS  run2 restore = [1] >= 1
+  PASS  run2 gate = [0]
+        TL01: W=3.0493 dJD=0.611 rate=0.2 pred=0.60986 ratio=1.0019 rel_dev=0.19% OK
+        TL07: dJD=0.2041 dLST=73.6772 expected=73.6772 residual=0 tol=1 OK
+  PASS  run2 recheckTL01 = [True]
+  PASS  run2 recheckTL07 = [True]
+  PASS  run3 judge = [7/7|PASS]
+  PASS  run3 reds = []
+  PASS  run3 leak = [0]
+  PASS  run3 restore = [1] >= 1
+  PASS  run3 gate = [0]
+        TL01: W=3.0996 dJD=0.6286 rate=0.2 pred=0.61992 ratio=1.014 rel_dev=1.4% OK
+        TL07: dJD=0.20835 dLST=75.2114 expected=75.2114 residual=0 tol=1 OK
+  PASS  run3 recheckTL01 = [True]
+  PASS  run3 recheckTL07 = [True]
+  PASS  run4 judge = [7/7|PASS]
+  PASS  run4 reds = []
+  PASS  run4 leak = [0]
+  PASS  run4 restore = [1] >= 1
+  PASS  run4 gate = [0]
+        TL01: W=3.1482 dJD=0.6346 rate=0.2 pred=0.62964 ratio=1.0079 rel_dev=0.79% OK
+        TL07: dJD=0.2103 dLST=75.9153 expected=75.9153 residual=0 tol=1 OK
+  PASS  run4 recheckTL01 = [True]
+  PASS  run4 recheckTL07 = [True]
+  PASS  run5 judge = [7/7|PASS]
+  PASS  run5 reds = []
+  PASS  run5 leak = [0]
+  PASS  run5 restore = [1] >= 1
+  PASS  run5 gate = [0]
+        TL01: W=2.977 dJD=0.5968 rate=0.2 pred=0.5954 ratio=1.0024 rel_dev=0.24% OK
+        TL07: dJD=0.2117 dLST=76.4207 expected=76.4207 residual=0 tol=1 OK
+  PASS  run5 recheckTL01 = [True]
+  PASS  run5 recheckTL07 = [True]
+=== T35 negative controls ===
+  PASS  A judge = [6/7|FAIL]
+  PASS  A reds = [TL-01]
+  PASS  B judge = [4/7|FAIL]
+  PASS  B reds = [TL-01,TL-02,TL-05]
+  PASS  C judge = [6/7|FAIL]
+  PASS  C reds = [TL-04]
+=== neighbour suites ===
+  PASS  LOC judge = [10/10|PASS]
+  PASS  IT judge = [18/18|PASS]
+  PASS  IT crosses = [0]
+=== probes ===
+  PASS  TB probe done = [True]
+  PASS  TB probe Q1 = [1] >= 1
+  PASS  TB probe Q2 = [12] >= 12
+  PASS  TL probe done = [True]
+  PASS  TL probe leak = [0]
+  PASS  TL probe anchor Q1 = [3] >= 1
+  PASS  TL probe anchor Q2 = [1] >= 1
+  PASS  TL probe anchor Q3 = [2] >= 1
+  PASS  TL probe anchor Q4 increaseTimeSpeed = [3] >= 1
+  PASS  TL probe anchor Q5 = [1] >= 1
+  PASS  TL probe anchor Q6b = [1] >= 1
+  PASS  TL probe anchor Q6c = [1] >= 1
+=== REPEATED CALLS -- regression for the  /  collision ===
+  PASS  call#1 = [12/12|PASS]
+  PASS  call#2 identical = [12/12|PASS]
+  PASS  call#3 identical = [12/12|PASS]
+  PASS  call after other tag = [12/12|PASS]
+  PASS  other tag intact = [7/7|PASS]
+  PASS  immune to JUDGE poisoning = [12/12|PASS]
+  PASS  immune, upper case too = [12/12|PASS]
+=== NEGATIVE INPUTS (must NOT be washed into PASS) ===
+  PASS  truncated judge = [|]
+  PASS  truncated leaking through? = [False]
+  PASS  leak detected = [1]
+  PASS  clean log leak = [0]
+
+================================
+ALL 97 CHECKS PASSED
+================================

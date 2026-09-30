@@ -1,0 +1,252 @@
+# W-T35 / W-T34  Windows source-sync evidence (EOL-normalised)
+
+Generated on the mac from the two `git hash-object` dumps; nothing here is
+re-typed by hand. Run recorded 2026-09-30, Windows box DESKTOP-0PJI1SO
+(E:\Qt_demo\stellarium-vulkan, repo HEAD cf738bb = T31).
+
+## Method (and why a raw MD5 is worthless here)
+
+This box's checkout converted LF -> CRLF for every file it received via git
+(core.autocrlf), while files that arrived by SCP from the mac stayed LF.
+A raw MD5 therefore compares LINE ENDINGS, not content. MEASURED:
+
+    src/app/ActionRouter.cpp
+      raw md5        win=46ad928649cef541975da514ac06110b  mac=5f0a0c3b14a82f392daa439ad137396a   -> differ
+      CR-stripped    win=5f0a0c3b14a82f392daa439ad137396a  mac=5f0a0c3b14a82f392daa439ad137396a   -> IDENTICAL
+      bytes          win=5810  mac=5639   CR count  win=171  mac=0
+
+So the comparison uses `git hash-object <path>`, which applies the same clean
+filters as `git add` and therefore hashes the CONTENT with the EOL normalised.
+Cross-checked on ActionRouter.cpp: both sides returned
+fef39003087ff09584b8f46bf893fc8395f68269.
+
+## Result AFTER the SCP of the 17 T34/T35 source files
+
+    files compared           : 94  (all tracked files under src/app, src/ui, tools)
+    SAME content             : 90
+    CONTENT DIFFERS          : 0
+    ABSENT on Windows        : 4
+
+### files whose CONTENT still differs
+    (none)
+
+### absent on Windows
+
+All four are mac-only bash harnesses (`tools/t3{2,3,4,5}-verify.sh`); the
+Windows side runs the `tools/windows/wt*.ps1` twins instead. This matches the
+established pattern -- W-T32/W-T33 never SCP-ed their `.sh` either:
+    tools/t32-verify.sh
+    tools/t33-verify.sh
+    tools/t34-verify.sh
+    tools/t35-verify.sh
+
+## The 17 files that were SCP-ed this round
+
+    8 modified : src/app/AppFacade.{cpp,hpp}, src/ui/CMakeLists.txt,
+                 src/ui/LiveSkyRuntime.cpp, src/ui/main.cpp,
+                 src/ui/qml/MainWindow.qml, src/ui/quick/BackendInfo.{cpp,hpp}
+    9 added    : src/app/TimeLinkCheck.{cpp,hpp}, src/app/TimeLinkProbe.{cpp,hpp},
+                 src/app/ToolbarCheck.{cpp,hpp}, src/app/ToolbarProbe.{cpp,hpp},
+                 src/ui/qml/Toolbar.qml
+
+`repo HEAD` on that box stays cf738bb (it cannot reach github: `git fetch` dies
+with "Recv failure: Connection was reset" / "Empty reply from server"), so the
+revision actually built is proven by the SRC md5 lines below, NOT by HEAD.
+
+## Raw object-hash dump (mac side)
+
+```
+fef39003087ff09584b8f46bf893fc8395f68269  src/app/ActionRouter.cpp
+5178215c05a9ffccdfa632ceb327c156220e984d  src/app/ActionRouter.hpp
+414a46024dea05338d9bf6186077337a102de1d5  src/app/AppFacade.cpp
+1dda3ab996692577dc6e8f936b368e2d28e2b8c0  src/app/AppFacade.hpp
+901fd57c327da45c163b86e0849cde8d667c5974  src/app/AppFacadeCheck.cpp
+ab0c6ebbbf630aa5908041472a1e4d5ffb5254f7  src/app/AppFacadeCheck.hpp
+0b4f949647d29493f9641c08fff8ffa44003e715  src/app/LocateCheck.cpp
+297509aaa3dae40ef87baca318b11a064339c3bc  src/app/LocateCheck.hpp
+7debc5699663bab00c6142faa489fd141b615ae1  src/app/LocationCheck.cpp
+734783aaf5c059d796f3e6f99278c49b399b4906  src/app/LocationCheck.hpp
+24bfe92b3ea2077c4e2220f5db6fce87a6a6aea7  src/app/LocationProbe.cpp
+e2569a3479c6871b9515a8df40ee7625671dd8ff  src/app/LocationProbe.hpp
+de018824419e47a5a68a06119952e7b9b57d94a1  src/app/ObjectInfoModel.cpp
+81f61e941717b8d60838be5f7a28d3f3892f6b40  src/app/ObjectInfoModel.hpp
+7cfbe2d3eb42b059cbf18c10ddce972b7a345a28  src/app/PinyinIndex.cpp
+21dd02e9745c30409a051d11c960748b50464d9f  src/app/PinyinIndex.hpp
+fa9bbb7dff7a356d42afb1b43a0397c7735418a1  src/app/SearchModelCheck.cpp
+1db3ba8f8d63545cd247c482628fbc097451570f  src/app/SearchModelCheck.hpp
+9509340a2e14933637c57af00b15e87161425e23  src/app/SearchRanker.cpp
+49f054dfa2c667da3b2a6b0b7d25629a23c113ec  src/app/SearchRanker.hpp
+9cc09ad6aed054fac503ed50fd9db22062e09e09  src/app/SearchResultsModel.cpp
+f70ecb89f5776174992f425b150cd205dfea87ec  src/app/SearchResultsModel.hpp
+13ec65d67d0c09a898a67c595c50b47ec1ab9f63  src/app/TimeCheck.cpp
+1cb0fd4faef64d25c6b8a27201e4102817333c9c  src/app/TimeCheck.hpp
+2499cb177663b67ddc9002780c837f87feabdf48  src/app/TimeLinkCheck.cpp
+39e7da10540f7ae74924064f1a4ebbd5085f572a  src/app/TimeLinkCheck.hpp
+ce71b424a977f58351b54ac04a1dd8bde9395d24  src/app/TimeLinkProbe.cpp
+350473d7ccad26ecc00f8422c030037002569f90  src/app/TimeLinkProbe.hpp
+01f9831cc686d96b9d253b2faad581f91fb57996  src/app/ToolbarCheck.cpp
+eca81ad9a2c06abe1775130e90b17eacd5caee20  src/app/ToolbarCheck.hpp
+afba531faae87ba0ac22d7e75a54c0956b6f8e43  src/app/ToolbarProbe.cpp
+1c49c4bedd7194a9a03f61bfeb7311d83a2c4b21  src/app/ToolbarProbe.hpp
+b4682a5996e9c10482992e1ec9deca03670b1f4b  src/app/ViewportState.hpp
+cdf02d8c0aac951f67f5924a4dc3075cc4a10f62  src/ui/A2FrameCheck.cpp
+c99467c2ecda3a72a8eadb42b4a64bd5958d1e43  src/ui/A2FrameCheck.hpp
+c3bbf9a85c8fec9e85ec717369b0fb316a661493  src/ui/CMakeLists.txt
+56b53a8120900d1f645363f97600c8060d48367d  src/ui/DynFrameCheck.cpp
+45bb48fdf13b8ff0317d92d21b6a48104a31cb17  src/ui/DynFrameCheck.hpp
+75c39c48fc8e35beca331f27dabd8928e7bdccaf  src/ui/IFrameProducer.hpp
+5e1a17c654cab8a45e6c15c564429d83b545c03d  src/ui/LegacyHostCheck.cpp
+d51bd4a71ad114385540650a61f1c470f24405a5  src/ui/LegacyHostCheck.hpp
+d2d748db0ecbc5bf9d510caa7299cb3ee10e59d4  src/ui/LiveFrameSource.cpp
+ffc6a6ccee29e70dbe88329dd8ffe6f834486076  src/ui/LiveFrameSource.hpp
+9b4bd15a1c9b85a7e3e785946d548f4e69e571a4  src/ui/LiveSkyRuntime.cpp
+93ac431696f0006c230c9fa496c0afd9ae677116  src/ui/LiveSkyRuntime.hpp
+5878ea06622c773a93ce8d05c5b0a48de5d17f9c  src/ui/SkyLongRun.cpp
+5ed5d062595fd181eef368a715d720310ce49de5  src/ui/SkyLongRun.hpp
+406ec93c2b971c6df10f1569e3ed89051aa6e6db  src/ui/assets/pinyin-lite.txt
+840d876bed3c866d2edb55d213e393401f704fde  src/ui/main.cpp
+832f430214bfd0757f7f5c3b5924220cb06dea47  src/ui/qml/DiagnosticPage.qml
+293ff198134441c1a04f476f4ebc8bfdd4572c8a  src/ui/qml/LocationPage.qml
+b195a763fd7a31caab98a59382141a43796d7ca9  src/ui/qml/MainWindow.qml
+ab29cd159579174e662f6b21f95f317365616155  src/ui/qml/README.md
+77b162315266d2f2c13865ef40bbb88a87df5333  src/ui/qml/SearchPage.qml
+2d0eb181e77b6717a29bbe0b290e691c1164851a  src/ui/qml/SkyTestPage.qml
+7dc2e1390d13b37c6b7a8edee07085105f808f4b  src/ui/qml/TimePage.qml
+5ce5d391c7331357816af0c4049c0a3574da8a23  src/ui/qml/Toolbar.qml
+66bb2a49191800474588fe88fd5d2bc88c0a3721  src/ui/quick/BackendInfo.cpp
+0fbfe481a70768e6fc73ab689abeccff65f15d9e  src/ui/quick/BackendInfo.hpp
+54f9ece25762d550d8c15ec61959eff3fc1f3c79  src/ui/quick/SkyViewport.cpp
+c5b4971937b89b46f81a5516c37690bc6807d0d1  src/ui/quick/SkyViewport.hpp
+a1528a46a7d2c430b4af7b4d47c2f7b209293aa5  tools/evidence/collect.ps1
+ddd43b34bb392346368a2b077a35e15b7d1c25c0  tools/make-deploy.ps1
+b7192c963d76d592b93862ca4e23109dd09abced  tools/materialize-resources.mjs
+5e0a4f84afe3f315ae43022d1243642b8f606e0f  tools/negctl/check_rc_propagation.cmd
+e438eb3104816152506c99118268dfbe00849172  tools/negctl/run_negctl.cmd
+eed437ad2c9d5b3f545f503cbdc4bd875bbd7205  tools/negctl/stub_backend.cmd
+fda95568a728c6881ed9c85c39b09d1f72fa2502  tools/performance-model.mjs
+7318c0759a3bf255b80c8001e41e80010add2893  tools/setup-upstream-assets.sh
+a3a4a3b49286f21920b3b41e74159362697cd750  tools/source-snapshot.mjs
+7acabe0b98dce8410fbcb8ca739827d762310d44  tools/t16-verify.sh
+2363a22250cc1c91a7e91df4858f42fb31e901e3  tools/t17-verify.sh
+964a34e8906b34599140b4b8755862ae063264c7  tools/t17-win-build.ps1
+d6a67e98a5eed7f06cd94f699cb7047dcdde6c05  tools/t18-verify.sh
+edd04340aecfc17bb2be2648f122a13eec869238  tools/t18-win-longrun.ps1
+660645ab036066cfd0e07e8012f720069048d46b  tools/t19-verify.sh
+a6d07969a6540a3af00caebcb609d52b14b0861b  tools/t20-verify.sh
+533fa0b0b75268080b25529cf606d86956b2dac0  tools/t21-verify.sh
+95c2512a669c2eb565146b1d6661a446487a363e  tools/t22-verify.sh
+872d1c1e464d6e6acb6ea25959ea5f965d13ab1a  tools/t23-verify.sh
+3b6beae8923439e8d892751563d3b7c2384c4dc3  tools/t24-verify.sh
+80af9e8d5cf789c9f1e9d28704983e0272023a62  tools/t25-verify.sh
+4dc6adcfbcdff0dce7cdd294b60b5808446e7893  tools/t26-verify.sh
+f08501430a194fc0967b75a7b762fb14cdb44aa0  tools/t27-verify.sh
+c89e344a82183877dbc0d1cb1b81edd254471e15  tools/t28-verify.sh
+932188016ba9907e99c038759357c962266aa965  tools/t29-verify.sh
+a45e9c5920ae30ead3a54433ee9229b48a0b8f49  tools/t30-verify.sh
+ed53d29c0e74a6510ae0ea8a92bee3a6eecb3555  tools/t31-verify.sh
+207e8802b6470fabe04acaca603c17cc8f86bc93  tools/t32-verify.sh
+cf9cea2d3a9bc317a96ded8178b7e5fa8a2e8755  tools/t33-verify.sh
+d8d393dec4aad51447fde1043a08f71f5521d072  tools/t34-verify.sh
+f43394fd3034ca410a856f919246ec790dbcbe39  tools/t35-verify.sh
+984d1a439ad4cfcd056b3900188015f4f96e972f  tools/test-materialize.mjs
+5d9b544c74fb4ca88167d7b87a4610e5c085011e  tools/wt29-verify.sh
+```
+
+## Raw object-hash dump (Windows side)
+
+```
+fef39003087ff09584b8f46bf893fc8395f68269  src/app/ActionRouter.cpp
+5178215c05a9ffccdfa632ceb327c156220e984d  src/app/ActionRouter.hpp
+414a46024dea05338d9bf6186077337a102de1d5  src/app/AppFacade.cpp
+1dda3ab996692577dc6e8f936b368e2d28e2b8c0  src/app/AppFacade.hpp
+901fd57c327da45c163b86e0849cde8d667c5974  src/app/AppFacadeCheck.cpp
+ab0c6ebbbf630aa5908041472a1e4d5ffb5254f7  src/app/AppFacadeCheck.hpp
+0b4f949647d29493f9641c08fff8ffa44003e715  src/app/LocateCheck.cpp
+297509aaa3dae40ef87baca318b11a064339c3bc  src/app/LocateCheck.hpp
+7debc5699663bab00c6142faa489fd141b615ae1  src/app/LocationCheck.cpp
+734783aaf5c059d796f3e6f99278c49b399b4906  src/app/LocationCheck.hpp
+24bfe92b3ea2077c4e2220f5db6fce87a6a6aea7  src/app/LocationProbe.cpp
+e2569a3479c6871b9515a8df40ee7625671dd8ff  src/app/LocationProbe.hpp
+de018824419e47a5a68a06119952e7b9b57d94a1  src/app/ObjectInfoModel.cpp
+81f61e941717b8d60838be5f7a28d3f3892f6b40  src/app/ObjectInfoModel.hpp
+7cfbe2d3eb42b059cbf18c10ddce972b7a345a28  src/app/PinyinIndex.cpp
+21dd02e9745c30409a051d11c960748b50464d9f  src/app/PinyinIndex.hpp
+fa9bbb7dff7a356d42afb1b43a0397c7735418a1  src/app/SearchModelCheck.cpp
+1db3ba8f8d63545cd247c482628fbc097451570f  src/app/SearchModelCheck.hpp
+9509340a2e14933637c57af00b15e87161425e23  src/app/SearchRanker.cpp
+49f054dfa2c667da3b2a6b0b7d25629a23c113ec  src/app/SearchRanker.hpp
+9cc09ad6aed054fac503ed50fd9db22062e09e09  src/app/SearchResultsModel.cpp
+f70ecb89f5776174992f425b150cd205dfea87ec  src/app/SearchResultsModel.hpp
+13ec65d67d0c09a898a67c595c50b47ec1ab9f63  src/app/TimeCheck.cpp
+1cb0fd4faef64d25c6b8a27201e4102817333c9c  src/app/TimeCheck.hpp
+2499cb177663b67ddc9002780c837f87feabdf48  src/app/TimeLinkCheck.cpp
+39e7da10540f7ae74924064f1a4ebbd5085f572a  src/app/TimeLinkCheck.hpp
+ce71b424a977f58351b54ac04a1dd8bde9395d24  src/app/TimeLinkProbe.cpp
+350473d7ccad26ecc00f8422c030037002569f90  src/app/TimeLinkProbe.hpp
+01f9831cc686d96b9d253b2faad581f91fb57996  src/app/ToolbarCheck.cpp
+eca81ad9a2c06abe1775130e90b17eacd5caee20  src/app/ToolbarCheck.hpp
+afba531faae87ba0ac22d7e75a54c0956b6f8e43  src/app/ToolbarProbe.cpp
+1c49c4bedd7194a9a03f61bfeb7311d83a2c4b21  src/app/ToolbarProbe.hpp
+b4682a5996e9c10482992e1ec9deca03670b1f4b  src/app/ViewportState.hpp
+cdf02d8c0aac951f67f5924a4dc3075cc4a10f62  src/ui/A2FrameCheck.cpp
+c99467c2ecda3a72a8eadb42b4a64bd5958d1e43  src/ui/A2FrameCheck.hpp
+c3bbf9a85c8fec9e85ec717369b0fb316a661493  src/ui/CMakeLists.txt
+56b53a8120900d1f645363f97600c8060d48367d  src/ui/DynFrameCheck.cpp
+45bb48fdf13b8ff0317d92d21b6a48104a31cb17  src/ui/DynFrameCheck.hpp
+75c39c48fc8e35beca331f27dabd8928e7bdccaf  src/ui/IFrameProducer.hpp
+5e1a17c654cab8a45e6c15c564429d83b545c03d  src/ui/LegacyHostCheck.cpp
+d51bd4a71ad114385540650a61f1c470f24405a5  src/ui/LegacyHostCheck.hpp
+d2d748db0ecbc5bf9d510caa7299cb3ee10e59d4  src/ui/LiveFrameSource.cpp
+ffc6a6ccee29e70dbe88329dd8ffe6f834486076  src/ui/LiveFrameSource.hpp
+9b4bd15a1c9b85a7e3e785946d548f4e69e571a4  src/ui/LiveSkyRuntime.cpp
+93ac431696f0006c230c9fa496c0afd9ae677116  src/ui/LiveSkyRuntime.hpp
+5878ea06622c773a93ce8d05c5b0a48de5d17f9c  src/ui/SkyLongRun.cpp
+5ed5d062595fd181eef368a715d720310ce49de5  src/ui/SkyLongRun.hpp
+406ec93c2b971c6df10f1569e3ed89051aa6e6db  src/ui/assets/pinyin-lite.txt
+840d876bed3c866d2edb55d213e393401f704fde  src/ui/main.cpp
+832f430214bfd0757f7f5c3b5924220cb06dea47  src/ui/qml/DiagnosticPage.qml
+293ff198134441c1a04f476f4ebc8bfdd4572c8a  src/ui/qml/LocationPage.qml
+b195a763fd7a31caab98a59382141a43796d7ca9  src/ui/qml/MainWindow.qml
+ab29cd159579174e662f6b21f95f317365616155  src/ui/qml/README.md
+77b162315266d2f2c13865ef40bbb88a87df5333  src/ui/qml/SearchPage.qml
+2d0eb181e77b6717a29bbe0b290e691c1164851a  src/ui/qml/SkyTestPage.qml
+7dc2e1390d13b37c6b7a8edee07085105f808f4b  src/ui/qml/TimePage.qml
+5ce5d391c7331357816af0c4049c0a3574da8a23  src/ui/qml/Toolbar.qml
+66bb2a49191800474588fe88fd5d2bc88c0a3721  src/ui/quick/BackendInfo.cpp
+0fbfe481a70768e6fc73ab689abeccff65f15d9e  src/ui/quick/BackendInfo.hpp
+54f9ece25762d550d8c15ec61959eff3fc1f3c79  src/ui/quick/SkyViewport.cpp
+c5b4971937b89b46f81a5516c37690bc6807d0d1  src/ui/quick/SkyViewport.hpp
+a1528a46a7d2c430b4af7b4d47c2f7b209293aa5  tools/evidence/collect.ps1
+ddd43b34bb392346368a2b077a35e15b7d1c25c0  tools/make-deploy.ps1
+b7192c963d76d592b93862ca4e23109dd09abced  tools/materialize-resources.mjs
+5e0a4f84afe3f315ae43022d1243642b8f606e0f  tools/negctl/check_rc_propagation.cmd
+e438eb3104816152506c99118268dfbe00849172  tools/negctl/run_negctl.cmd
+eed437ad2c9d5b3f545f503cbdc4bd875bbd7205  tools/negctl/stub_backend.cmd
+fda95568a728c6881ed9c85c39b09d1f72fa2502  tools/performance-model.mjs
+7318c0759a3bf255b80c8001e41e80010add2893  tools/setup-upstream-assets.sh
+a3a4a3b49286f21920b3b41e74159362697cd750  tools/source-snapshot.mjs
+7acabe0b98dce8410fbcb8ca739827d762310d44  tools/t16-verify.sh
+2363a22250cc1c91a7e91df4858f42fb31e901e3  tools/t17-verify.sh
+964a34e8906b34599140b4b8755862ae063264c7  tools/t17-win-build.ps1
+d6a67e98a5eed7f06cd94f699cb7047dcdde6c05  tools/t18-verify.sh
+edd04340aecfc17bb2be2648f122a13eec869238  tools/t18-win-longrun.ps1
+660645ab036066cfd0e07e8012f720069048d46b  tools/t19-verify.sh
+a6d07969a6540a3af00caebcb609d52b14b0861b  tools/t20-verify.sh
+533fa0b0b75268080b25529cf606d86956b2dac0  tools/t21-verify.sh
+95c2512a669c2eb565146b1d6661a446487a363e  tools/t22-verify.sh
+872d1c1e464d6e6acb6ea25959ea5f965d13ab1a  tools/t23-verify.sh
+3b6beae8923439e8d892751563d3b7c2384c4dc3  tools/t24-verify.sh
+80af9e8d5cf789c9f1e9d28704983e0272023a62  tools/t25-verify.sh
+4dc6adcfbcdff0dce7cdd294b60b5808446e7893  tools/t26-verify.sh
+f08501430a194fc0967b75a7b762fb14cdb44aa0  tools/t27-verify.sh
+c89e344a82183877dbc0d1cb1b81edd254471e15  tools/t28-verify.sh
+932188016ba9907e99c038759357c962266aa965  tools/t29-verify.sh
+a45e9c5920ae30ead3a54433ee9229b48a0b8f49  tools/t30-verify.sh
+ed53d29c0e74a6510ae0ea8a92bee3a6eecb3555  tools/t31-verify.sh
+MISSING                          tools/t32-verify.sh
+MISSING                          tools/t33-verify.sh
+MISSING                          tools/t34-verify.sh
+MISSING                          tools/t35-verify.sh
+984d1a439ad4cfcd056b3900188015f4f96e972f  tools/test-materialize.mjs
+5d9b544c74fb4ca88167d7b87a4610e5c085011e  tools/wt29-verify.sh
+```
