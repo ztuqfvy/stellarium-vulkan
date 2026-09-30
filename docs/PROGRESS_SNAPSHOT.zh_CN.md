@@ -1,6 +1,6 @@
 # 进度总览（截至 2026-09-30 上午，**T34 后**盘点）
 
-> 口径基线：`main @ <T34 提交>`（工作区干净、与 `origin/main` 同步）。上一版快照基线是
+> 口径基线：`main @ 9b04cdd`（T34 收口提交；工作区干净、与 `origin/main` 同步）。上一版快照基线是
 > `3f7b4a0`（T32 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，**T34 见 `docs/T34_TOOLBAR.zh_CN.md`**。
 > 环境口径与 T17–T33 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
