@@ -1,8 +1,8 @@
-# 进度总览（截至 2026-09-30 深夜，**T40 后**盘点）
+# 进度总览（截至 2026-09-30 深夜，**T41 后**盘点）
 
 > 口径基线：T34 收口提交 `9b04cdd` + T35 提交 `d68cc32` + W 支线 + **T36（A5 第一项）**
 > + **T37（A5 第二项：夜视闭环）** + **T38（显示参数）** + **T39（高 DPI + 渲染诊断）**
-> + **T40（快捷键编辑）**。
+> + **T40（快捷键编辑）** + **T41（帮助/版本/许可证）**。
 > 上一版快照基线是 `9b04cdd`（T34 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，
 > **T34 见 `docs/T34_TOOLBAR.zh_CN.md`**，**T35 见 `docs/T35_TIMELINK.zh_CN.md`**，
 > **W-T34/W-T35 跨平台复验见 `docs/WT35_WINDOWS_RECHECK.zh_CN.md`**，
@@ -10,7 +10,8 @@
 > **T37 夜视闭环见 `docs/T37_NIGHTMODE.zh_CN.md`**，
 > **T38 显示参数见 `docs/T38_DISPLAY.zh_CN.md`**，
 > **T39 高 DPI + 渲染诊断见 `docs/T39_HIDPI.zh_CN.md`**，
-> **T40 快捷键编辑见 `docs/T40_SHORTCUTS.zh_CN.md`**。
+> **T40 快捷键编辑见 `docs/T40_SHORTCUTS.zh_CN.md`**，
+> **T41 帮助/版本/许可证见 `docs/T41_HELP.zh_CN.md`**。
 > 环境口径与 T17–T34 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
@@ -26,7 +27,7 @@
 | A2 旧天空帧桥 | 静态 12/12 + 动态 7/7 + 30min 长跑 | ✅ 完成 |
 | A3 业务接口与输入路由 | AppFacade / ActionRouter / 模型 / 单一仿真时钟 / 键位路由 | ✅ 完成（T14–T17） |
 | **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | ✅ **7/7 完成**（**T34 收口**，见 §2） |
-| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 + **T39** 高 DPI/渲染诊断 + **T40** 快捷键编辑 完成；余 T41–T42，见 §6） |
+| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 + **T39** 高 DPI/渲染诊断 + **T40** 快捷键编辑 + **T41** 帮助/版本/许可证 完成；余 T42，见 §6） |
 | A6 回归与交接 | 全量回归、帧桥统计、资源打包、接口冻结 | ⬜ 未开始 |
 | A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置 A6 或真机 |
 
@@ -96,8 +97,10 @@
 | （探针）`HIDPIPROBE` | 只报读数、**不打 PASS** | `STELQUICK_HIDPI_PROBE` | **T39-A** 高 DPI + 渲染诊断数据面探针（三个 setter 的**夹取语义** / 派生量独立验算 / config 来源 / 🔴 `getGuiFontSize()` 读的是**全局字体** / 🔴 `setGuiFontSize` 对 QML 视觉树 **325 项零跟随**〔**三重仪器正控**〕/ `screenFontSize` **帧效应 4.054%** + 还原逐位复原 / `FrameMailbox::Stats` 全字段 / NOTIFY 静置增量）。7 条实测结论见 `docs/T39_HIDPI.zh_CN.md` §2 |
 | `SHORTCUTCHECK` | **15 个 id / 14 条**（SC-01..SC-14，05 拆 a/b） | `STELQUICK_SHORTCUT_CHECK` | **T40** 快捷键编辑：表完整性（模型 505 vs 引擎 505） / 行数据抽样（逐项 vs 引擎）/ `customized` 口径（全表 505 行 vs `conf->contains`）/ **键名生成单点**（含**别名判别对照** `PageUp` 直构=空序列）/ **改键写引擎**（引擎 getter 独立回读）/ **改键落盘**（**另开 `QSettings` 实例**读磁盘 + 按构造解析路径取首段 + **比序列语义**）/ **不写穿**（整本指纹跳过 `shortcuts/` 差异=0）/ 冲突检测（制造 ⇄ **判别消解**）/ 单恢复不冲别人（**两个不同动作**）/ 空串移除（磁盘 `"" ""` 形态 + 复刻构造解析）/ **非法键名闸**（`PageUp` 被拒 + 引擎未变 + 状态文本非空）/ 全部恢复 / UI 控件齐备（**视觉树递归**，陷阱 45）/ **UI 交互端到端**（真实点击导航 → 真实点击主键按钮 → **注入真实 `QKeyEvent`** ⇒ 引擎 + UI 按钮文字双确认）/ 复原（整本指纹=0）。**两组负控**：`STELQUICK_SHORTCUT_WRITE_OFF=1` ⇒ 红 `[SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13]`（8/15）；`STELQUICK_SHORTCUT_SAVE_OFF=1` ⇒ 红 `[SC-05b,SC-09,SC-11]`（12/15）。**正题 3/3 `15/15`、负控各 3/3 命中且两腿正交（`A\B`=引擎写入生效组）** |
 | （探针）`SHORTCUTPROBE` | 只报读数、**不打 PASS** | `STELQUICK_SHORTCUT_PROBE` | **T40-A** 快捷键命令面探针（Q1 `QKeySequence` 往返恒等 14/15 + **键名别名对照** + 组合个数 / Q2 `setShortcut` 即时性 + **信号面**（只发 `changed`）+ `routeKey` 真触发 / Q3·Q3b·Q4 **落盘 + 不写穿 + 多键序列规范化** / Q5 空串移除 / Q6 重启等价（**比序列语义**）/ Q7 单恢复波及面 / Q8 出厂无重复键 / Q9 `actionsEnabled` 门只挡 `pushKey` / Q10 注册表 505·15 / Q11 平台键名格式 / Q12 还原）。**12 条实测结论见 `docs/T40_SHORTCUTS.zh_CN.md` §2** |
+| `HELPCHECK` | **17**（HC-01..HC-17） | `STELQUICK_HELP_CHECK` | **T41** 帮助/版本/许可证：数据面自洽（手势表 23 行 scope 计数、贡献者去重+排序）/ **GPL 编进 qrc**（资源存在 + 内容 md5 对磁盘） / **许可证加载**（标题 + `Version 2`）/ 版本面（**走 `StelUtils::getApplicationVersion()`**，⚠️ `QCoreApplication::applicationVersion()` 是 `1.0.0`）/ 系统行（API/平台/编译器非空）/ **接管表**（6 个 == 预期 + F2/F10/F12 **刻意未接管**对照）/ **接管生效（trigger）**（`triggered=1` ∧ `hostActionRequested Δ=1` ∧ `index=7` ∧ **QWidget Δ=0**）+ **判别对照**（撤销接管 ⇒ QWidget **Δ=46** ⇒ 正题 Δ=0 是接管的功劳）/ **键盘路径（`routeKey`）**（同查表，T41 陷阱 88 的核心）/ 帮助页控件（手势行 23/23｜外链行 7/7｜可见 legacy 标记 10/10 —— **视觉树递归**，陷阱 45）/ 跳转互跳 / 关于页控件（版本行 9/9｜系统行 6/6｜贡献者 delegate 8 条）/ **许可证端到端**（Dialog 可见 ∧ UI 文本 17992 字符 == 数据面）/ 复原（配置指纹=0）。**两组负控**：`STELQUICK_HELP_TAKEOVER_OFF=1` ⇒ 恰红 `[HC-14,HC-15,HC-16]`（14/17）；`STELQUICK_HELP_LICENSE_OFF=1` ⇒ 恰红 `[HC-04,HC-13]`（15/17）。**正题 3/3 `17/17`、负控各 3/3 命中且两腿正交（`A\B`=接管域、`B\A`=许可证域）** |
+| （探针）`HELPPROBE` | 只报读数、**不打 PASS** | `STELQUICK_HELP_PROBE` | **T41-A** 帮助/版本/许可证探针（93 行读数：`src/gui/` 是否编进来 / 8 个窗口动作是否在册 / F1 `trigger()` 会不会弹老对话框 / 版本面五个来源 / `COPYING` 在不在 bundle 里 / 贡献者表规模与重复）。**推翻三处开工推断**——见陷阱 88/89 与 `docs/T41_HELP.zh_CN.md` §2 |
 
-一键复跑：`tools/t16-verify.sh` … **`tools/t40-verify.sh`**（每个任务一个，用法 `all N`；
+一键复跑：`tools/t16-verify.sh` … **`tools/t41-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
 8 条判据、要求 `VERDICT=PASS`；**`t34-verify.sh` 含四组负控 + 探针 + 10 套件 + S3 + A2 + DYN**；
 **`t35-verify.sh` 含三组负控 + 探针 + **11 套件**（多了 `toolbarcheck`）+ INTERACTCHECK + S3 + A2 + DYN**；
@@ -113,7 +116,13 @@
 + INTERACTCHECK + S3 + A2 + DYN 双路，并多一条 **两腿正交定位**断言
 （`A\B` = 引擎写入生效组、`B\A` 应为空 ⇒ 红项集合不只是"不同"，还指向不同的腿）**
 （⚠️ T40 把 **T39 的 `hidpicheck`** 纳入回归：T40 在 `main.cpp` 自检装配段落插了一段、
-且动了 `Toolbar.qml` ⇒ 必须证明 T39 那 12 条没被碰坏）。
+且动了 `Toolbar.qml` ⇒ 必须证明 T39 那 12 条没被碰坏）；
+**`t41-verify.sh` 含正题×3 + **两组负控×3** + **17 套件**（多了 `shortcutcheck` ——
+T41 动了 `ActionRouter::routeKey()`，正是 T40 SC-14 交互腿的路径）
++ INTERACTCHECK + S3 + A2 + DYN 双路，并含同款 **两腿正交定位**断言
+（`A\B` = **接管域**、`B\A` = **许可证域**，应无交集）**。
+（⚠️ T41 把 **T40 的 `shortcutcheck`** 纳入回归：T41 在 `main.cpp` 自检装配段落又插了一段、
+动了 `ActionRouter`（新增 `routeKey` 查表分支）与 `Toolbar.qml` ⇒ 必须证明 T40 那 14 条没被碰坏）。
 Windows 侧 `tools/windows/wt29…wt33-*.ps1`
 （`wt33-launch.ps1` 是给 `schtasks /it` 用的启动器，负责注入 `T33_PROBE_EXPECT`）。
 

@@ -17,11 +17,27 @@
  *   U-ACT-01 同一键不双触发 —— widget 分发已拆除 + 本类单点（AppFacadeCheck 断言）；
  *   U-ACT-02 禁用态不触发 —— Entry::enabled 门（AppFacadeCheck 断言）；
  *   U-ACT-03 焦点守卫 —— canDispatchToSky()（QML 侧 Keys 路径调用）。
+ *
+ * ── T41 新增：**宿主接管**（setHostTakeover）────────────────────────────────
+ * 问题（T41-A 探针 Q13/Q14 实测）：`src/gui/` 的整个 QWidget GUI 子系统随 `stelMain`
+ * 静态库链接进了 `stelQuickUI`（`src/CMakeLists.txt:330-348`），`StelApp::getGui()`
+ * 非空 ⇒ 老宿主注册的 **8 个窗口动作**（`actionShow_*_Window_Global`，F1..F12）
+ * 全都活着，且 `trigger()` 会真的弹出老式 QWidget 对话框叠在 QML 界面之上
+ * （Q14 铁证：F1 `trigger()` 前后 QWidget 总数 **12 → 58**，并出现可见 `QDialog`；
+ * 且 `setVisible(false)` 只隐藏不销毁 ⇒ 46 个 widget 常驻）。
+ * ⇒ 凡**已有 QML 对应页**的窗口动作一律接管，否则 QML 界面里按 F3 就蹦出老搜索窗。
+ *
+ * 语义刻意做窄：本类**只发"这个动作被宿主接管了"**（`hostActionRequested`），
+ * **不知道"页"是什么**（"页"是纯 UI 概念，T20 已就此定过案）。去哪一页由 QML 决定。
+ * 命中接管 ⇒ **不转发引擎 `trigger()`**（这正是"抑制老对话框"的实现），
+ * 但仍计入 `dispatchCount` 并发 `dispatched(id, true)` —— 对"每命令恰执行一次"
+ * 这条既有不变量而言，接管就是一次成功的处置（U-ACT-01 语义不变）。
  */
 #pragma once
 
 #include <QHash>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <functional>
@@ -71,15 +87,29 @@ public:
     //! 已执行命令计数（U-ACT-01 计数器断言的挂点；只增不减）。
     quint64 dispatchCount() const { return m_dispatchCount; }
 
+    // ── T41 宿主接管（见头注）──────────────────────────────────────────────
+    //! 声明"这个动作由宿主（QML）接管"：此后 trigger/routeKey 命中它时**不转发引擎**，
+    //! 改发 `hostActionRequested(id)`。@p on = false 撤销（撤销后恢复引擎透传）。
+    void setHostTakeover(const QString &actionId, bool on);
+    Q_INVOKABLE bool isHostTakeover(const QString &actionId) const
+    {
+        return m_hostTakeover.contains(actionId);
+    }
+    //! 当前接管表（判据/诊断用）。
+    QStringList hostTakeoverIds() const;
+
 signals:
     //! 每次请求的处置结果（执行与否），供 QML/自检观测。
     void dispatched(const QString &actionId, bool executed);
     //! 动作可用性变化，供 QML 工具栏绑定（T15 仅注册表项在门变化时补发；
     //! 引擎 StelAction 的可用性恒真，不订阅）。
     void actionEnabledChanged(const QString &actionId, bool enabled);
+    //! T41：某个被接管的动作被请求执行（键盘或按钮皆可）。QML 据此导航。
+    void hostActionRequested(const QString &actionId);
 
 private:
     QHash<QString, Entry> m_entries;
+    QSet<QString> m_hostTakeover;   //!< T41 接管表（见头注）
     quint64 m_dispatchCount = 0;
 };
 

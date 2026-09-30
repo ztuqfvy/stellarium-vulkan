@@ -1,0 +1,106 @@
+# T41-A 帮助/版本/许可证数据面探针（mac，定稿轮）
+# 命令：VK_DRIVER_FILES=... STELQUICK_GRAPHICS_API=metal STELQUICK_HELP_PROBE=1 ./stelQuickUI
+# 二进制：41491048 B｜md5=f10cebc9f33aad26e5e1a78a04656525
+# 探针只读、零写入、不启帧泵（纯数据面，与 GPU 无关）。
+
+HELPPROBE: 帮助/版本/许可证数据面读数完毕（只读，零写入）
+HELPPROBE: Q1 getApplicationName()          = 「Stellarium 26.1+」
+HELPPROBE: Q1 getApplicationVersion()       = 「26.1.273-4132aeb [main]」
+HELPPROBE: Q1 getApplicationPublicVersion() = 「26.1」
+HELPPROBE: Q1 getApplicationSeries()        = 「26.0」
+HELPPROBE: Q2 PACKAGE_VERSION            = 「26.1.273」
+HELPPROBE: Q2 STELLARIUM_BUIDING_VERSION = 「26.1+」
+HELPPROBE: Q2 STELLARIUM_PUBLIC_VERSION  = 「26.1」
+HELPPROBE: Q2 STELLARIUM_SERIES          = 「26.0」
+HELPPROBE: Q7 STELLARIUM_COPYRIGHT       = 「Copyright (C) 2000-2026 Stellarium Developers」
+HELPPROBE: Q1 GIT_REVISION               = 「4132aeb」
+HELPPROBE: Q1 GIT_BRANCH                 = 「main」
+HELPPROBE: Q3 getOperatingSystemInfo()      = 「macOS Golden Gate (27.0)」
+HELPPROBE: Q3 getAddressingMode()           = 「64-bit」
+HELPPROBE: Q3 getUserAgentString()          = 「Stellarium/26.1 (macOS Golden Gate (27.0); arm64)」
+HELPPROBE: Q3 QSysInfo::prettyProductName() = 「macOS Golden Gate (27.0)」
+HELPPROBE: Q3 QSysInfo::kernelVersion()     = 「27.0.0」
+HELPPROBE: Q3 QSysInfo::cpuArchitecture()   = 「arm64」
+HELPPROBE: Q3 QSysInfo::productVersion()    = 「27.0.0」
+HELPPROBE: Q3 QSysInfo::buildAbi()          = 「arm64-little_endian-lp64」
+HELPPROBE: Q3 QSysInfo::buildCpuArchitecture() = 「arm64」
+HELPPROBE: Q4 QT_VERSION_STR（编译期）= 「6.11.2」
+HELPPROBE: Q4 qVersion()（运行期）    = 「6.11.2」 ⇒ 一致=是
+HELPPROBE: Q4 QCoreApplication::applicationDirPath() = 「/Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release/src/ui/stelQuickUI.app/Contents/MacOS」
+HELPPROBE: Q4 QCoreApplication::applicationVersion() = 「1.0.0」
+HELPPROBE: Q4 QCoreApplication::applicationName()    = 「stelQuickUI」
+HELPPROBE: S4 贡献者：原表 246 条｜排序去重后 245 条｜含非 ASCII 名 21 条
+HELPPROBE: S4 前 6 条：adalava, Adam Majer, Adriano Steffler, afontenot, Alec Clews, Alessandro Siniscalchi …(共 245)
+HELPPROBE: S4 末 4 条：Yury Solomonov, zhu1995zpb, Łukasz 'sil2100' Zemczak, 观津邀月_Kwantsin_Кванцин
+HELPPROBE: ── Q5 许可证文件（COPYING，GPL-2.0 全文）可达性 ──
+HELPPROBE: Q5 __FILE__（编译期）= 「/Users/ztuqfvy/qt_demo/stellarium_vulkan/src/app/HelpProbe.cpp」 绝对=是
+HELPPROBE: Q5 推导源码树根 = 「/Users/ztuqfvy/qt_demo/stellarium_vulkan」
+HELPPROBE: Q5 源码树 ./COPYING ⇒ 存在｜17992 B｜340 行｜md5=29a10ec17fcd｜/Users/ztuqfvy/qt_demo/stellarium_vulkan/COPYING
+HELPPROBE: Q5 源码树 ./src/gui/HelpDialog.cpp ⇒ 存在｜30979 B｜643 行｜md5=d9bf804232dc｜/Users/ztuqfvy/qt_demo/stellarium_vulkan/src/gui/HelpDialog.cpp
+HELPPROBE: Q5 StelFileMgr::findFile("COPYING") ⇒ 命中「./COPYING」
+HELPPROBE: Q5 StelFileMgr::findFile("LICENSE") ⇒ **未命中**
+HELPPROBE: Q5 StelFileMgr::findFile("gpl-2.0.txt") ⇒ **未命中**
+HELPPROBE: Q5 StelFileMgr::getUserDir()         = 「/Users/ztuqfvy/Library/Application Support/Stellarium-quick」
+HELPPROBE: Q5 StelFileMgr::getInstallationDir() = 「.」
+HELPPROBE: Q5 用户目录 ⇒ 5 项[config.ini, data, log.txt, modules, stars]（/Users/ztuqfvy/Library/Application Support/Stellarium-quick）
+HELPPROBE: Q5 安装目录 ⇒ 44 项[android, atmosphere, BACKERS.md, build-harmony, build-manual, build-release, …]（.）
+HELPPROBE: Q5 applicationDirPath() = 「/Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release/src/ui/stelQuickUI.app/Contents/MacOS」
+HELPPROBE: Q5 bundle Contents/ ⇒ 3 项[Info.plist, MacOS, translations]（/Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release/src/ui/stelQuickUI.app/Contents）
+HELPPROBE: Q5 bundle Contents/Resources/ ⇒ 目录不存在（/Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release/src/ui/stelQuickUI.app/Contents/Resources）
+HELPPROBE: Q5 bundle Contents/COPYING ⇒ 缺失（/Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release/src/ui/stelQuickUI.app/Contents/COPYING）
+HELPPROBE: Q5 bundle Contents/Resources/COPYING ⇒ 缺失（/Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release/src/ui/stelQuickUI.app/Contents/Resources/COPYING）
+HELPPROBE: Q5 可执行同级 COPYING ⇒ 缺失（/Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release/src/ui/stelQuickUI.app/Contents/MacOS/COPYING）
+HELPPROBE: ── Q8 帮助入口 + 窗口动作归属 ──
+HELPPROBE: Q8 actionShow_Help_Window_Global ⇒ **在**（组=Windows 键=F1 文本=「说明」）
+HELPPROBE: Q8 actionShow_ScriptConsole_Window_Global ⇒ **在**（组=Windows 键=F12 文本=「脚本控制台窗口」）
+HELPPROBE: Q8 actionShow_Configuration_Window_Global ⇒ **在**（组=Windows 键=F2 文本=「设置」）
+HELPPROBE: Q8 actionShow_Search_Window_Global ⇒ **在**（组=Windows 键=F3 文本=「搜索」）
+HELPPROBE: Q8 actionShow_SkyView_Window_Global ⇒ **在**（组=Windows 键=F4 文本=「星空及显示」）
+HELPPROBE: Q8 actionShow_DateTime_Window_Global ⇒ **在**（组=Windows 键=F5 文本=「日期/时间」）
+HELPPROBE: Q8 actionShow_Location_Window_Global ⇒ **在**（组=Windows 键=F6 文本=「所在地点」）
+HELPPROBE: Q8 actionShow_Shortcuts_Window_Global ⇒ **在**（组=Windows 键=F7 文本=「快捷键窗口」）
+HELPPROBE: Q8 actionShow_AstroCalc_Window_Global ⇒ **在**（组=Windows 键=F10 文本=「天文计算」）
+HELPPROBE: Q8 注册表 text 含 help/帮助 的动作：∅
+HELPPROBE: Q8 F1..F12 归属：F1→actionShow_Help_Window_Global, F2→actionShow_Configuration_Window_Global, F3→actionShow_Search_Window_Global, F4→actionShow_SkyView_Window_Global, F5→actionShow_DateTime_Window_Global, F6→actionShow_Location_Window_Global, F7→actionShow_Shortcuts_Window_Global, F8→∅, F9→∅, F10→actionShow_AstroCalc_Window_Global, F11→actionSet_Full_Screen_Global, F12→actionShow_ScriptConsole_Window_Global
+HELPPROBE: Q8 「F1」按 `findActionFromShortcut` 命中 = actionShow_Help_Window_Global
+HELPPROBE: Q9 分组数 = 15
+HELPPROBE: Q9 分组名（顺序即 getGroupList 顺序）：Miscellaneous, Selected object information, Display Options, Movement and Selection, Field of View, Date and Time, Specific Time, Scripts, Windows, Exoplanets, Meteor Showers, Bright Novae, Oculars, Satellites, Solar System Editor
+HELPPROBE: Q9 「Windows」组存在 = **是**（下标 8）
+HELPPROBE: Q9 「Windows」组成员 10 个：actionShow_ScriptConsole_Window_Global(键=F12), actionShow_Help_Window_Global(键=F1), actionShow_Configuration_Window_Global(键=F2), actionShow_Search_Window_Global(键=F3), actionShow_SkyView_Window_Global(键=F4), actionShow_DateTime_Window_Global(键=F5), actionShow_Location_Window_Global(键=F6), actionShow_Shortcuts_Window_Global(键=F7), actionShow_AstroCalc_Window_Global(键=F10), actionShow_ObsList_Window_Global(键=Alt+B)
+HELPPROBE: Q9 各组动作数：Miscellaneous=9, Selected object information=6, Display Options=107, Movement and Selection=15, Field of View=10, Date and Time=69, Specific Time=33, Scripts=88, Windows=10, Exoplanets=7, Meteor Showers=4, Bright Novae=1, Oculars=38, Satellites=107, Solar System Editor=1
+HELPPROBE: Q10b 老 HelpDialog.cpp：30962 B｜`<tr>` 40 处｜`hotkeyTextWrapper(` 14 处｜`<h2>` 2 处｜`<h3>` 6 处
+HELPPROBE: Q10b 判读：`<tr>` 里每一行是一张键位表行；`hotkeyTextWrapper` 的调用点 = **来自引擎注册表**的那一半，其余 = **硬编码手势**那一半
+HELPPROBE: Q10b 样例行：htmlText += "<tr><td>" + q_("Pan view around the sky").toHtmlEscaped() + "</td>";
+HELPPROBE: Q10b 样例行：htmlText += "<tr><td rowspan='2'>" + q_("Zoom in/out").toHtmlEscaped() + "</td>";
+HELPPROBE: Q10b 样例行：htmlText += "<tr><td><b>" + hotkeyTextWrapper("Ctrl+Up") + "/" + hotkeyTextWrapper("Ctrl+Down") + "</b></td></tr>\n";
+HELPPROBE: Q11 「Stellarium Help」 → 「Stellarium 帮助」 有译文（帮助页标题）
+HELPPROBE: Q11 「Help window」 → 「说明」 有译文（帮助动作名（老 GUI））
+HELPPROBE: Q11 「Keys」 → 「快捷键」 有译文（帮助页「键位」节标题）
+HELPPROBE: Q11 「Further Reading」 → 「了解更多」 有译文（帮助页「延伸阅读」节标题）
+HELPPROBE: Q11 「Version」 → 「版本」 有译文（关于页「版本」）
+HELPPROBE: Q11 「Based on Qt」 → 「基于Qt」 有译文（关于页「基于 Qt」）
+HELPPROBE: Q11 「Contributors」 → 「贡献者」 有译文（关于页「贡献者」）
+HELPPROBE: Q11 「Developers」 → 「开发者」 有译文（关于页「开发者」）
+HELPPROBE: Q11 「Financial support」 → 「财务支持」 有译文（关于页「资助」）
+HELPPROBE: Q11 「Copyright」 → 「Copyright」 **未翻译**（版权）
+HELPPROBE: ── Q13 老 QWidget GUI 活性 ──
+HELPPROBE: Q13 StelApp::getGui() 非空 = **是**（老 QWidget GUI 活着）
+HELPPROBE: Q13 帮助动作：checkable=是｜组=「Windows」｜文本=「说明」｜键=「F1」
+HELPPROBE: Q13 ⇒ 老 GUI 若活着，该动作 toggle 的是**老 HelpDialog 的 visible 属性**（QWidget），QML 界面里看不见它
+HELPPROBE: Q13 树里类名含 Gui 的实例：∅
+HELPPROBE: Q13 树里类名含 Dialog 的实例 0 种：∅
+HELPPROBE: Q13 QWidget 总数=12｜顶层窗口=7｜可见顶层=3
+HELPPROBE: Q13 可见顶层窗口：QSplashScreen(「」), QProgressBar(「」), StelMainView(「Stellarium 26.1+」)
+HELPPROBE: Q13 判读：老 GUI 活着 ⇒ T41 要决定是**接管** F1（重定向到 QML 帮助页，抑制老对话框）还是**并存**（QML 工具栏入口独立）
+HELPPROBE: Q14 触发前：QWidget 总数=12｜可见顶层=QSplashScreen, QProgressBar, StelMainView(「Stellarium 26.1+」)
+HELPPROBE: Q14 触发前全部 widget 类（去重）：QScrollBar, QWidget, QSplashScreen, QOpenGLWidget, QProgressBar, StelMainView
+HELPPROBE: Q14 `trigger()` 前 checked=0
+HELPPROBE: Q14 `trigger()` 后：QWidget 总数=58（Δ46）｜可见顶层=QSplashScreen, QProgressBar, StelMainView(「Stellarium 26.1+」), QDialog
+HELPPROBE: Q14 `trigger()` 后 checked=1
+HELPPROBE: Q14 触发后类名含 Dialog 的 widget：QDialog
+HELPPROBE: Q14 **还原**后：QWidget 总数=58（相对基线 Δ46）｜可见顶层=QSplashScreen, QProgressBar, StelMainView(「Stellarium 26.1+」)
+HELPPROBE: Q14 判读：Δ>0 且出现 HelpDialog ⇒ **F1 在本形态下会弹出老 QWidget 对话框**（QML 界面之上）⇒ T41 必须决定「接管」还是「并存」；Δ=0 ⇒ 老对话框在本形态下起不来，T41 只管自建 QML 入口
+HELPPROBE: Q12 配置文件 = 「/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini」｜顶层组数 = 32
+HELPPROBE: Q12 本轮探针**只读**：未调用任何 setValue / saveShortcuts / setShortcut ⇒ 配置零写入（结构性成立）
+HELPPROBE: Q12 shortcuts 组项数 = 0（应与 T40 收尾后的值一致）
+HELPPROBE: VERDICT=DONE

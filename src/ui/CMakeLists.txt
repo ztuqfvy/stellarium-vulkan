@@ -191,6 +191,18 @@ set(stelQuickUI_SOURCES
     ../app/ShortcutModel.cpp
     ../app/ShortcutCheck.hpp
     ../app/ShortcutCheck.cpp
+    # T41-A：帮助/版本/许可证数据面探针（版本四件套与编译期宏 / 环境串 /
+    # 编译期vs运行期 Qt / 贡献者名单 / COPYING 运行时可达性 / 帮助动作悬空裁决 /
+    # "Windows" 组之谜 / 帮助页两半数据源规模 / 翻译串可达性）。只读、不启帧泵。
+    ../app/HelpProbe.hpp
+    ../app/HelpProbe.cpp
+    # T41-B：帮助/版本/许可证的**只读数据面**（版本宏与 StelUtils 串 / 手势常量表 /
+    # 外链白名单 / 贡献者 245 条 / 从 qrc 读 GPL 全文）。
+    ../app/HelpModel.hpp
+    ../app/HelpModel.cpp
+    # T41-C：帮助/版本/许可证自检（HC-01..HC-17；负控 TAKEOVER_OFF / LICENSE_OFF）。
+    ../app/HelpCheck.hpp
+    ../app/HelpCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp
@@ -256,6 +268,9 @@ qt_add_qml_module(stelQuickUI
         qml/DisplayPage.qml
         # T40：快捷键编辑页（同样运行时解析，漏登记必炸）
         qml/ShortcutsPage.qml
+        # T41：帮助页 / 版本与许可证页（同样运行时解析，漏登记必炸）
+        qml/HelpPage.qml
+        qml/AboutPage.qml
     NO_PLUGIN
 )
 
@@ -281,6 +296,23 @@ qt_add_resources(stelQuickUI "stelquickui_pinyin"
     PREFIX "/StelQuickUI"
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/assets"
     FILES assets/pinyin-lite.txt
+)
+
+# ── T41：GPL 全文（仓库根的 COPYING）编进资源 ───────────────────────────────
+# 为什么**必须**编进资源（T41-A 探针 Q5 实测，不是推测）：
+#   `COPYING` **不在 app bundle 里** —— `Contents/` 只有 Info.plist / MacOS /
+#   translations，连 `Contents/Resources/` 这个目录都不存在。探针里
+#   `StelFileMgr::findFile("COPYING")` 之所以命中「./COPYING」，纯粹因为当时的
+#   cwd 恰好是源码树根（`getInstallationDir()` 返回 "."）⇒ **分发后必然失效**
+#   （用户从 Finder 双击启动时 cwd 是 "/"）。
+#   ⇒ 唯一自包含的方案：把全文编进 qrc。落地路径 = /StelQuickUI/COPYING，
+#     与 `HelpModel::licenseResource()`（":/StelQuickUI/COPYING"）**逐字对应**。
+# ⚠️ 改这里的 PREFIX/BASE 就必须同步改 HelpModel 里那个常量 —— 判据会拿两边
+#   逐字比，不一致立刻红（防"改了 CMake 忘了改 C++"这类只在运行期暴露的错）。
+qt_add_resources(stelQuickUI "stelquickui_license"
+    PREFIX "/StelQuickUI"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/../.."
+    FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../COPYING"
 )
 
 # ── T37：夜视滤镜（qsb 预编译）─────────────────────────────────────────────

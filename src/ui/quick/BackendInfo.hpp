@@ -121,8 +121,14 @@ public:
     void applyProbe(const VulkanProbeResult &probe);
     // 探针未编译进本构建时调用（如鸿蒙交叉编译，OHOS NDK 不保证提供 libvulkan）
     void applyProbeUnavailable(const QString &reason);
-    // 写入运行时实际 API 名并做判定（sceneGraphInitialized 回调）
+    // 写入运行时实际 API 名（sceneGraphInitialized 回调）。⚠️ T41 起此函数**不再自判**
+    //   backendOk —— 判定真源在 main.cpp 的 `checkBackendApi`（`api == wantedApi`，
+    //   wantedApi 跟随用户请求）。这里自判过的旧实现把字符串写死成 "Vulkan"，
+    //   T39 转 Metal 后恒 false ⇒ 工具栏/诊断页/关于页的状态色全错（T41-B 冒烟实抓，
+    //   日志明明 `backendOk=1`、界面却红）。判定只有一份，别复制。
     void applyRuntimeApi(const QString &apiName);
+    // 写入运行时 API 名 + **宿主的判定结果**（判定真源在 main.cpp，见上）。
+    void applyBackendResult(const QString &apiName, bool ok);
 
 signals:
     void runtimeApiNameChanged();

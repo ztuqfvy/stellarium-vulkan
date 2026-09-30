@@ -307,6 +307,14 @@ void ensureVulkanLoaderPath()
 // 序列语义）/ 不写穿 / 冲突检出与消解 / 恢复默认不冲别人 / 空串移除 / 非法键名闸 /
 // 全部恢复 / UI 控件与真实点击+真实按键的交互端到端 / 复原）。
 #include "app/ShortcutCheck.hpp"
+// T41-A：帮助/版本/许可证**数据面探针**（版本四件套与编译期宏 / 运行环境串 /
+// 编译期vs运行期 Qt / 贡献者名单 / 🔴 COPYING 在运行时的可达性（源码树·StelFileMgr
+// 各目录·app bundle·qrc）/ 🔴 帮助动作悬空裁决（老 8 个窗口动作全注册在未编译的
+// src/gui/StelGui.cpp ⇒ F1 是否有主）/ "Windows" 组之谜 / 帮助页两半数据源规模 /
+// 翻译串可达性）。只报读数、零写入。
+#include "app/HelpProbe.hpp"
+#include "app/HelpModel.hpp"   // T41-B：帮助/版本/许可证数据面
+#include "app/HelpCheck.hpp"   // T41-C：帮助/版本/许可证自检
 // T36：配置目录隔离（引导期）与其自检。**引导期**那一半由 LiveSkyRuntime::boot()
 // 调用——位置即判据，别挪到 StelLogger / config.ini 之后。
 #include "app/ConfigIsolationCheck.hpp"
@@ -5292,6 +5300,17 @@ int main(int argc, char **argv)
     // [SC-05b]。B ⊂ A —— 只有 SC-05b 红 = 保存环节坏；SC-05a 也红 = 写入环节坏。
     const bool shortcutCheck = qEnvironmentVariableIsSet("STELQUICK_SHORTCUT_CHECK");
 
+    // T41-A：**帮助/版本/许可证数据面探针**（见 app/HelpProbe.hpp）。A-1.0 范围表
+    // 倒数第二格按 T40 拆分后余下的三项（帮助 / 版本 / 许可证）。老宿主那份是
+    // `src/gui/HelpDialog`（QWidget 四标签对话框 + 硬编码 HTML 键位表 + 联网检查更新），
+    // 而 `src/gui/` **完全不在本形态的构建里** ⇒ 要先探清"数据在不在、什么形态、
+    // 运行时可不可达"，再决定 QML 侧怎么重建。**只读、零写入、不启帧泵**。
+    const bool helpProbe = qEnvironmentVariableIsSet("STELQUICK_HELP_PROBE");
+    // T41-C：帮助/版本/许可证自检（判据 HC-01..HC-17，见 app/HelpCheck.hpp）。
+    // 负控 A `STELQUICK_HELP_TAKEOVER_OFF=1`（main.cpp 接管注册段读它）
+    // 负控 B `STELQUICK_HELP_LICENSE_OFF=1`（HelpModel::loadLicense 读它）。
+    const bool helpCheck = qEnvironmentVariableIsSet("STELQUICK_HELP_CHECK");
+
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
     const bool replayCheck = qEnvironmentVariableIsSet("STELQUICK_REPLAY_CHECK");
@@ -5311,7 +5330,7 @@ int main(int argc, char **argv)
                                       || timeLinkProbe || timeLinkCheck || cfgCheck || nightProbe
                                       || nightCheck || displayProbe || displayCheck
                                       || hiDpiProbe || hiDpiCheck || shortcutProbe
-                                      || shortcutCheck
+                                      || shortcutCheck || helpProbe || helpCheck
                                       || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                                       || liveEngine)
                                          ? QStringLiteral("sky")
@@ -5339,6 +5358,10 @@ int main(int argc, char **argv)
     // T40-B：快捷键编辑的模型 + 命令面。**引擎是延迟引导的**（A3）⇒ 这里先创建空模型，
     // 引导完成后在下方调用 `refresh()` 拉注册表（否则 QML 在引导前实例化只会看到空表）。
     stelapp::ShortcutModel shortcutModel;
+    // T41-B：帮助/版本/许可证的只读数据面。与 ShortcutModel 同理 —— 版本串依赖引擎，
+    // 这里先建对象，引导完成后由 `refresh()` 填（QML 用 `HelpModel.ready` 显示空态）。
+    // GPL 全文来自 qrc（构造时读一次），与引擎无关。
+    stelapp::HelpModel helpModel;
     actionRouter.registerAction(QStringLiteral("app.togglePause"),
                                 { [&appFacade]() { appFacade.togglePause(); },
                                   nullptr,
@@ -5362,6 +5385,34 @@ int main(int argc, char **argv)
                                 { [&appFacade]() { appFacade.toggleTracking(); },
                                   nullptr,
                                   QStringLiteral("开关跟踪选中天体") });
+
+    // ── T41：老 QWidget 窗口动作的**宿主接管** ────────────────────────────────
+    // 动机与"到哪一页"的映射见 `MainWindow.qml::hostActionPages` 的注释。要点：
+    // T41-A 探针 Q13/Q14 实测 —— `src/gui/` 的 QWidget GUI 子系统随 `stelMain`
+    // 静态库链进了本形态，`StelApp::getGui()` 非空 ⇒ 老宿主那 8 个窗口动作全都
+    // 活着，`trigger()` 会**真的弹出老式对话框**（QWidget 总数 12 → 58）。
+    // 这里只**声明接管**（ActionRouter 负责"命中就不转发引擎"），去哪一页归 QML。
+    // ⚠️ 只接管**有 QML 对应页**的动作：F2 设置 / F10 天文计算 / F12 脚本控制台
+    //    没有对应页 ⇒ 刻意不接管（记入 T42「未支持项」清单）—— 接管到不存在的页
+    //    只是把"弹老对话框"换成"按了没反应"，那是另一种骗人。
+    // ⚠️ 负控 `STELQUICK_HELP_TAKEOVER_OFF=1` 跳过整段注册，用来证"接管相关的判据
+    //    真的承重"（关掉后 F1 会恢复成"真的弹出老对话框"，判据必须红）。
+    if (!qEnvironmentVariableIsSet("STELQUICK_HELP_TAKEOVER_OFF"))
+    {
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_Help_Window_Global"), true);
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_Search_Window_Global"), true);
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_SkyView_Window_Global"), true);
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_DateTime_Window_Global"), true);
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_Location_Window_Global"), true);
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_Shortcuts_Window_Global"), true);
+        std::printf("HELP: 已接管 %d 个老式窗口动作（F1/F3/F4/F5/F6/F7）\n",
+                    int(actionRouter.hostTakeoverIds().size()));
+    }
+    else
+    {
+        std::printf("HELP: （负控）STELQUICK_HELP_TAKEOVER_OFF=1 —— 未注册任何接管\n");
+    }
+
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("appFacade"), &appFacade);
     engine.rootContext()->setContextProperty(QStringLiteral("ActionRouter"), &actionRouter);
@@ -5374,6 +5425,8 @@ int main(int argc, char **argv)
                                              appFacade.objectInfo());
     // T40-B：快捷键编辑模型（同上惯例：上下文属性，不做类型注册）。
     engine.rootContext()->setContextProperty(QStringLiteral("ShortcutModel"), &shortcutModel);
+    // T41-B：帮助/版本/许可证数据面（同上惯例）。
+    engine.rootContext()->setContextProperty(QStringLiteral("HelpModel"), &helpModel);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      []() { std::exit(2); }, Qt::QueuedConnection);
     engine.load(QUrl(QStringLiteral("qrc:/StelQuickUI/qml/MainWindow.qml")));
@@ -5444,12 +5497,14 @@ int main(int argc, char **argv)
 
         const auto api = rif->graphicsApi();
         const QString name = QString::fromUtf8(apiName(api));
-        backendInfo->applyRuntimeApi(name);
-        // backendOk = 实际后端与请求后端一致（默认请求即 Vulkan）
+        // backendOk = 实际后端与请求后端一致（wantedApi 跟随用户请求）。
+        // ⚠️ T41 修复：判定**只有这一份** —— BackendInfo::applyRuntimeApi 旧实现
+        //   自判 `(apiName == "Vulkan")`，T39 转 Metal 后恒 false（状态色全错）。
         backendOk = (api == wantedApi);
-        // 视口也要知道后端判定：非 Vulkan 时进入 error 态而不是假装 ready（Q-001）
+        // 视口也要知道后端判定：非请求后端时进入 error 态而不是假装 ready（Q-001）
         if (skyViewport)
             skyViewport->applyBackendResult(name, backendOk);
+        backendInfo->applyBackendResult(name, backendOk);
 
         std::printf("STELQUICK: runtimeApi=%s backendOk=%d device=%s（判定来源=%s）\n",
                     name.toUtf8().constData(), backendOk ? 1 : 0,
@@ -6371,6 +6426,62 @@ int main(int argc, char **argv)
 #endif
     }
 
+    // T41-A 帮助/版本/许可证数据面探针（STELQUICK_HELP_PROBE=1）：A-1.0 范围表
+    // 倒数第二格按 T40 拆分后余下的三项。老宿主那份 `src/gui/HelpDialog` 是
+    // QWidget 四标签对话框（Help=硬编码 HTML 键位表 / About=版本+版权+贡献者 /
+    // Log / Config + 联网检查更新），**`src/gui/` 不在本形态构建里** ⇒ 本轮先探
+    // 数据面：版本四件套与编译期宏、运行环境串、贡献者名单、🔴 COPYING 在运行时的
+    // 可达性（源码树 / StelFileMgr 各目录 / app bundle / qrc）、🔴 帮助动作悬空裁决、
+    // "Windows" 组之谜、帮助页两半数据源规模、翻译串可达性。
+    // ⚠️ **只读、零写入、不启帧泵**（版本/许可证是纯数据面，与 GPU 无关）。
+    // 输出 `HELPPROBE:` 前缀，只报读数、不下 PASS/FAIL（断言在 T41-C）。
+    if (helpProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("HELPPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "HELPPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("HELPPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        // 引导完整性自证：动作注册表非空才说明 StelApp::init() 跑到位（S6/S7/S9 依赖它）。
+        if (StelApp::getInstance().getStelActionManager()->getActionList().isEmpty()) {
+            std::fprintf(stderr, "HELPPROBE: 动作注册表为空（boot 未完整引导）\n");
+            std::printf("HELPPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+
+        stelapp::HelpProbe::run(
+            &app,
+            [&app](const stelapp::HelpProbe::Result &result) {
+                std::printf("HELPPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("HELPPROBE: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("HELPPROBE: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("HELPPROBE: VERDICT=DONE\n");
+                std::fflush(stdout);
+                app.exit(0);
+            });
+        const int rc = app.exec();
+        liveSkyRuntime.reset();
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
     // T40-C 快捷键编辑自检（STELQUICK_SHORTCUT_CHECK=1）：判据 SC-01..SC-14。
     // 装配与 T39-C 一致（暖机 → boot → start）—— SC-12/13 要真实点击，窗口必须
     // 完整渲染。输出 `SHORTCUTCHECK:` 前缀；负控 WRITE_OFF / SAVE_OFF（见上方注释）。
@@ -6424,6 +6535,73 @@ int main(int argc, char **argv)
                     return;
                 }
                 std::printf("SHORTCUTCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T41-C 帮助/版本/许可证自检（STELQUICK_HELP_CHECK=1）：判据 HC-01..HC-17。
+    // 装配与 T40-C 一致（暖机 → boot → start）—— HC-09..13 要真实点击，窗口必须
+    // 完整渲染。输出 `HELPCHECK:` 前缀；负控 TAKEOVER_OFF（main.cpp 接管注册段）/
+    // LICENSE_OFF（HelpModel::loadLicense）。
+    if (helpCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("HELPCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "HELPCHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("HELPCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "HELPCHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("HELPCHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        // 🔴 给 **QML 绑定的那些实例**喂数据（陷阱 84；正常路径末尾的 refresh() 在
+        // 自检块里走不到）。HelpModel：版本/系统行；ShortcutModel：HelpPage 的
+        // engineActionCount 绑着它的 totalCount，不喂数摘要就显示 0。
+        helpModel.refresh();
+        shortcutModel.refresh();
+
+        stelapp::HelpCheck::run(
+            &app, window, &actionRouter, &helpModel,
+            [&app](const stelapp::HelpCheck::Result &result) {
+                std::printf("HELPCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("HELPCHECK: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("HELPCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                if (result.inconclusive) {
+                    std::printf("HELPCHECK: VERDICT=INCONCLUSIVE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("HELPCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
                 std::fflush(stdout);
                 app.exit(result.pass ? 0 : 10);
             });
@@ -7192,6 +7370,11 @@ int main(int argc, char **argv)
     // 放在这里 = 同一个共同点；未引导时 `refresh()` 是空操作（表保持空、UI 显示空态）。
     if (liveSkyRuntime)
         shortcutModel.refresh();
+
+    // T41-B：版本/系统信息同理（`StelUtils` 要走 `StelFileMgr`，引导后才拿得到）。
+    // GPL 全文与贡献者名单不依赖引擎，构造时就已经就绪。
+    if (liveSkyRuntime)
+        helpModel.refresh();
 
     const int rc = app.exec();
     liveSource.stop();   // 生产者停机先于邮箱析构（析构顺序：liveSource 在 frameMailbox 之后声明）

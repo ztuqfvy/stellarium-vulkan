@@ -85,10 +85,25 @@ void BackendInfo::applyRuntimeApi(const QString &apiName)
 {
     m_runtimeApiName = apiName;
     m_runtimeApiKnown = true;
-    // A1 判定：请求 Vulkan，实际必须 Vulkan
-    m_backendOk = (apiName == QLatin1String("Vulkan"));
+    // ⚠️ T41 修复：这里**不再自判** `m_backendOk = (apiName == "Vulkan")`。
+    //   旧实现把判定写死成 "Vulkan" 字符串（A1 时代的语义复制）—— T39 转 Metal
+    //   RHI 后 `applyRuntimeApi("Metal")` ⇒ m_backendOk 恒 false ⇒ 工具栏标签、
+    //   诊断页状态色、关于页渲染后端行**全错**（T41-B 冒烟实抓：C++ 日志明明
+    //   `backendOk=1`，界面却红）。判定真源 = main.cpp `checkBackendApi` 的
+    //   `api == wantedApi`（wantedApi 跟随用户请求），经 applyBackendResult 传入。
     emit runtimeApiNameChanged();
-    emit backendOkChanged();
+}
+
+void BackendInfo::applyBackendResult(const QString &apiName, bool ok)
+{
+    applyRuntimeApi(apiName);
+    // 值变化才 emit（避免噪音重算 —— 绑定只登记"绑定里实际读过的属性"，
+    // 重复发信号只会引起无谓的重算）。
+    if (m_backendOk != ok)
+    {
+        m_backendOk = ok;
+        emit backendOkChanged();
+    }
 }
 
 } // namespace stelapp

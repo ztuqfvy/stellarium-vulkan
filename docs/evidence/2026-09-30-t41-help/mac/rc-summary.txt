@@ -1,0 +1,85 @@
+环境：23:31  up 6 days,  1:15, 1 user, load averages: 4.58 3.76 3.85
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：41833528 B  2026-09-30 23:28 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=13b2f5c36fac7703c47601c02595b6e2
+──────── 正题 HELPCHECK ×3（预期 rc=0 / 判据 17/17 / 红项空）────────
+  · run1 rc=0（HELPCHECK: VERDICT=PASS；红项 []）
+  · run2 rc=0（HELPCHECK: VERDICT=PASS；红项 []）
+  · run3 rc=0（HELPCHECK: VERDICT=PASS；红项 []）
+  ✓ 正题 3/3 全绿（判据 17/17 × 3）
+  · run1 判据全文（见 docs/evidence/2026-09-30-t41-help/mac/helpcheck-run1.txt）：
+      HELPCHECK: 帮助/版本/许可证自检：判据 17/17
+      HELPCHECK: 布场：配置 /Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini（770 键）｜可见顶层 StelMainView｜versionRows 9 行｜贡献者 245｜手势 23（legacy 10）｜接管 6 个｜判据步延迟 2500ms
+      HELPCHECK: [PASS] HC-01 版本行：9 行｜完整版本「26.1.273-4132aeb [main]」== StelUtils｜Git 修订一致｜applicationVersion「1.0.0」≠ 完整版本（源分离）
+      HELPCHECK: [PASS] HC-02 系统行：6 行｜OS「macOS Golden Gate (27.0)」｜Qt 编译期==运行期==6.11.2
+      HELPCHECK: [PASS] HC-03 贡献者：245（原表 246）｜无重复｜首项「adalava」（大小写不敏感排序）｜非 ASCII 名在场
+      HELPCHECK: [PASS] HC-04 许可证内容：loaded=1｜341 行｜含 GPL 标题与 Version 2
+      HELPCHECK: [PASS] HC-05 许可证资源：:/StelQuickUI/COPYING｜md5 == 磁盘 COPYING（一致）
+      HELPCHECK: [PASS] HC-06 手势表：23 条（sky 13 + legacy 10）｜scope 全合法
+      HELPCHECK: [PASS] HC-07 外链：7 条全 https｜白名单内放行｜表外 URL 必拒
+      HELPCHECK: [PASS] HC-08 键名平台化：至少一条含 NativeText 修饰键「⌘」（键名由 C++ 生成的物证）
+      HELPCHECK: [PASS] HC-09 导航按钮：navHelpButton/navAboutButton 在场｜原有 8 个导航按钮一个不少
+      HELPCHECK: 切页：真实点击 navHelpButton ⇒ pageStack.currentIndex=7
+      HELPCHECK: [PASS] HC-10 帮助页控件：手势行 23/23｜外链行 7/7｜可见 legacy 标记 10/10｜跳转按钮与摘要在场
+      HELPCHECK: [PASS] HC-11 跳转快捷键页：点击后 index=6（期望 6）｜点回帮助 index=7（期望 7）
+      HELPCHECK: 切页：真实点击 navAboutButton ⇒ pageStack.currentIndex=8
+      HELPCHECK: [PASS] HC-12 关于页控件：版本行 9/9｜系统行 6/6｜贡献者 delegate 8 条、首条「1.  adalava」
+      HELPCHECK: HC-13 预滚：滚动了（contentY → 479）
+      HELPCHECK: [PASS] HC-13 许可证端到端：Dialog visible=1｜UI 文本 17992 字符 == 数据面 licenseText（一致）
+      HELPCHECK: [PASS] HC-14 接管表：6 个 == 预期 6（actionShow_DateTime_Window_Global,actionShow_Help_Window_Global,actionShow_Location_Window_Global,actionShow_Search_Window_Global,actionShow_Shortcuts_Window_Global,actionShow_SkyView_Window_Global）｜F2/F10/F12 刻意未接管=1
+      HELPCHECK: 切页：真实点击 navSkyButton ⇒ pageStack.currentIndex=1
+      HELPCHECK: [PASS] HC-15 接管生效（trigger）：triggered=1｜hostActionRequested Δ=1（0→1）｜index=7｜QWidget 11→11（Δ0，应为 0）
+      HELPCHECK: [PASS] HC-15 判别对照：撤销接管后 trigger ⇒ QWidget 11→57（Δ46>0，老对话框真的弹出）⇒ 正题的 Δ=0 是接管的功劳；已关对话框并恢复接管
+      HELPCHECK: [PASS] HC-16 键盘路径：routeKey(F1) 命中=1｜hostActionRequested Δ=1（1→2）｜index=7｜QWidget Δ=0（应为 0）
+      HELPCHECK: [PASS] HC-17 复原：配置指纹差异 0（应为 0，本自检全程只读）｜可见顶层回基线（基线 StelMainView）
+      HELPCHECK: VERDICT=PASS
+──────── 负控 A STELQUICK_HELP_TAKEOVER_OFF=1 ×3（预期 rc=10 / 14/17 / 红项 [HC-14,HC-15,HC-16]）────────
+  · run1 rc=10（HELPCHECK: VERDICT=FAIL；红项 [HC-14,HC-15,HC-16]）
+  · run2 rc=10（HELPCHECK: VERDICT=FAIL；红项 [HC-14,HC-15,HC-16]）
+  · run3 rc=10（HELPCHECK: VERDICT=FAIL；红项 [HC-14,HC-15,HC-16]）
+  ✓ 负控 A 3/3 命中 [HC-14,HC-15,HC-16]（接管域承重证明）
+  负控 A 的红是**预期**结果（接管未注册 ⇒ F1 透传引擎 ⇒ 老对话框弹出）；读数：
+      HELPCHECK: [FAIL] HC-14 接管表：0 个 == 预期 6（）｜F2/F10/F12 刻意未接管=1
+      HELPCHECK: [FAIL] HC-15 接管生效（trigger）：triggered=1｜hostActionRequested Δ=0（0→0）｜index=1｜QWidget 11→57（Δ46，应为 0）
+      HELPCHECK: [FAIL] HC-15 判别对照：撤销接管后 trigger ⇒ QWidget 57→57（Δ0>0，老对话框真的弹出）⇒ 正题的 Δ=0 是接管的功劳；已关对话框并恢复接管
+      HELPCHECK: [FAIL] HC-16 键盘路径：routeKey(F1) 命中=1｜hostActionRequested Δ=0（0→0）｜index=1｜QWidget Δ=0（应为 0）
+      HELPCHECK: VERDICT=FAIL
+──────── 负控 B STELQUICK_HELP_LICENSE_OFF=1 ×3（预期 rc=10 / 15/17 / 红项 [HC-04,HC-13]）────────
+  · run1 rc=10（HELPCHECK: VERDICT=FAIL；红项 [HC-04,HC-13]）
+  · run2 rc=10（HELPCHECK: VERDICT=FAIL；红项 [HC-04,HC-13]）
+  · run3 rc=10（HELPCHECK: VERDICT=FAIL；红项 [HC-04,HC-13]）
+  ✓ 负控 B 3/3 命中 [HC-04,HC-13]（许可证域承重证明；HC-05 不红是对的——资源存在性与加载行为分离）
+  负控 B 的红是**预期**结果（加载被关 ⇒ 断言许可证内容的判据读不到内容）；读数：
+      HELPCHECK: [FAIL] HC-04 许可证内容：loaded=0｜0 行｜含 GPL 标题与 Version 2
+      HELPCHECK: [FAIL] HC-13 许可证端到端：Dialog visible=1｜UI 文本 0 字符 == 数据面 licenseText（不一致）
+      HELPCHECK: VERDICT=FAIL
+──────── 两腿正交定位（A\B = 接管域；B\A = 许可证域，应无交集）────────
+  · A\B = [HC-14,HC-15,HC-16]（期望 HC-14,HC-15,HC-16）
+  · B\A = [HC-04,HC-13]（期望 HC-04,HC-13）
+  ✓ 两腿正交定位成立（A\B=接管域｜B\A=许可证域，无交集）
+  ✓ 三组红项集合两两不同（正题 [∅] ｜ A [HC-14,HC-15,HC-16] ｜ B [HC-04,HC-13]）
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-locationcheck rc=0
+regression-toolbarcheck rc=0
+regression-timelinkcheck rc=0
+regression-configcheck rc=0
+regression-nightcheck rc=0
+regression-displaycheck rc=0
+regression-hidpicheck rc=0
+regression-interactcheck rc=0（18/18，窗口已激活）
+regression-a2-metal rc=0
+regression-dyn-engine-metal 0/3 PASS
+regression-dyn-stub-metal 0/3 PASS
+regression-s3-stela3 rc=0（旧形态）
+════════════════════════════════════════
+脚本层判据：5 通过 / 0 失败
+环境：23:39  up 6 days,  1:23, 1 user, load averages: 12.44 11.18 7.23
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：41833528 B  2026-09-30 23:28 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=13b2f5c36fac7703c47601c02595b6e2

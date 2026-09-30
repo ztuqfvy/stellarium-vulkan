@@ -129,6 +129,19 @@ Rectangle {
                 text: "快捷键"
                 onClicked: toolbar.navigate("shortcuts")
             }
+            // T41：帮助页 / 版本与许可证页。上面 8 个导航按钮的 objectName **照旧不动**
+            // （RETURNUICHECK / INTERACTCHECK / AppFacadeCheck / TOOLBARCHECK 的注入判据
+            //   锚着它们；T34/T38/T40 一路都是"只加不改"）。
+            Button {
+                objectName: "navHelpButton"
+                text: "帮助"
+                onClicked: toolbar.navigate("help")
+            }
+            Button {
+                objectName: "navAboutButton"
+                text: "关于"
+                onClicked: toolbar.navigate("about")
+            }
 
             // 唯一 filler：把右侧信息顶到最右（见文件头坑②，别再加第二个）。
             Item { Layout.fillWidth: true }

@@ -1,0 +1,7 @@
+T41-B 冒烟抓帧（run_in_background 前台批次前的手工冒烟，23:02-23:05）
+路径：build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI
+字节：41833528
+md5：13b2f5c36fac7703c47601c02595b6e2
+命令：LIVE_ENGINE=1 STELQUICK_GRAPHICS_API=metal STELQUICK_PAGE={help|about} STELQUICK_AUTOTEST_SECONDS=14 STELQUICK_GRAB_AT_SECONDS=11 STELQUICK_GRAB_PATH=<png> ./stelQuickUI
+读数：help 页手势表 23 行渲染正常（⌘ NativeText 正确）；about 页版本 9 行/系统 6 行/GPL 341 行/贡献者 245 条（首条 adalava）
+⚠️ 首轮冒烟未带 LIVE_ENGINE=1 ⇒ 引擎未引导 ⇒ 版本区显示空态「（版本信息读取中…）」——这正是 ready 空态设计在起作用，不是缺陷。

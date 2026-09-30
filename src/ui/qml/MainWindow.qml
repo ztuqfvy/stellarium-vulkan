@@ -13,6 +13,8 @@
 //   ① 框里有文本 → 清空（留在本页）；② 已空 → 返回天空页。组合态（IME）除外。
 //   适用面**只到搜索框**（时间页的 SpinBox 字段 `text` 是绑定，赋值会销毁绑定）。
 //   详见 root.focusedSearchField() 与 keySink 里 Esc 分支的 T32 段。
+// T41：新增帮助页 / 版本与许可证页；并落下**老 QWidget 窗口动作的宿主接管**
+//   （F1 帮助等 —— 探针实测不接管就会弹出老式对话框，见 root.hostActionPages）。
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -28,12 +30,51 @@ ApplicationWindow {
     color: "#f5f6f8"
 
     // 由 C++ 上下文属性注入："diag"（诊断页）| "sky"（天空视口页）
-    // | "search"（搜索/信息页）| "time"（时间页）
+    // | "search"（搜索/信息页）| "time"（时间页）| "location" | "display"
+    // | "shortcuts" | "help" | "about"
     property string startPage: "diag"
 
     // 页名 → StackLayout 索引（一处定义，切换器与 C++ 的 startPage 共用，
     // 避免"加了页面忘了改另一处"这类只在运行时才暴露的错位）。
-    readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2, "time": 3, "location": 4, "display": 5, "shortcuts": 6 })
+    readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2, "time": 3,
+                                        "location": 4, "display": 5, "shortcuts": 6,
+                                        "help": 7, "about": 8 })
+
+    // ── T41：老 QWidget 窗口动作的**宿主接管**落点 ────────────────────────────
+    //
+    // 机制：`ActionRouter` 只发"这个动作被宿主接管了"（`hostActionRequested`），
+    //   **不知道"页"是什么** —— 到哪一页是 UI 自己的事，这张表就是那份映射的
+    //   唯一真源（ActionRouter 的 T41 头注解释了为什么把语义切成这样）。
+    //
+    // 动机（T41-A 探针 Q13/Q14 实测，不是推测）：
+    //   `src/gui/` 的整个 QWidget GUI 子系统随 `stelMain` 静态库链进了本形态
+    //   （`src/CMakeLists.txt:330-348`），`StelApp::getGui()` 非空 ⇒ 老宿主注册的
+    //   8 个窗口动作（`actionShow_*_Window_Global`）全都活着，`trigger()` 会**真的
+    //   弹出老式 QWidget 对话框叠在 QML 界面之上**（QWidget 总数 12 → 58，并出现
+    //   可见 `QDialog`；且 `setVisible(false)` 只隐藏不销毁 ⇒ 46 个 widget 常驻）。
+    //   ⇒ 凡**已有 QML 对应页**的一律接管，否则"QML 重写"就白做了。
+    //
+    // ⚠️ 这张表**故意不完整**：F2（设置）/ F10（天文计算）/ F12（脚本控制台）
+    //   没有对应的 QML 页，**不接管**（保留旧行为）—— 接管到一个不存在的页
+    //   只会把"弹老对话框"换成"按了没反应"，那是另一种骗人。
+    //   这三项记入 T42 的「未支持项」清单。
+    readonly property var hostActionPages: ({
+        "actionShow_Help_Window_Global": "help",           // F1
+        "actionShow_Search_Window_Global": "search",       // F3
+        "actionShow_SkyView_Window_Global": "display",     // F4
+        "actionShow_DateTime_Window_Global": "time",       // F5
+        "actionShow_Location_Window_Global": "location",   // F6
+        "actionShow_Shortcuts_Window_Global": "shortcuts"  // F7
+    })
+
+    Connections {
+        target: ActionRouter
+        function onHostActionRequested(actionId) {
+            var page = root.hostActionPages[actionId]
+            if (page !== undefined && root.pageIndex[page] !== undefined)
+                stack.currentIndex = root.pageIndex[page]
+        }
+    }
 
     // ── T20「返回」环的唯一实现点 ─────────────────────────────────────────────
     //
@@ -295,6 +336,16 @@ ApplicationWindow {
                 LocationPage { }                // T33：观察地点页（索引 4）
                 DisplayPage { }                 // T38：显示参数页（索引 5）
                 ShortcutsPage { }                // T40：快捷键编辑页（索引 6）
+                // T41：帮助页（索引 7）。engineActionCount 从快捷键域的真源注入
+                //（帮助页本身不认识 ShortcutModel，见该页文件头）。
+                HelpPage {
+                    engineActionCount: ShortcutModel.totalCount
+                    onNavigate: (page) => stack.currentIndex = root.pageIndex[page]
+                }
+                // T41：版本与许可证页（索引 8）。
+                AboutPage {
+                    onNavigate: (page) => stack.currentIndex = root.pageIndex[page]
+                }
             }
         }
     }

@@ -56,7 +56,18 @@ bool ActionRouter::trigger(const QString &actionId)
         return true;
     }
 
-    // ② 引擎 StelAction 透传（ID 直呼）
+    // ② T41 宿主接管（必须在引擎透传之前 —— 接管的正是引擎动作）。
+    //    见头注：命中即**不转发** StelAction::trigger()（老 QWidget 对话框就是这么
+    //    被抑制的），但仍算一次成功处置（计数器 + dispatched）。
+    if (m_hostTakeover.contains(actionId))
+    {
+        ++m_dispatchCount;
+        emit hostActionRequested(actionId);
+        emit dispatched(actionId, true);
+        return true;
+    }
+
+    // ③ 引擎 StelAction 透传（ID 直呼）
 #if defined(STELQUICK_HAS_ENGINE)
     if (StelApp::isInitialized())
     {
@@ -85,6 +96,21 @@ bool ActionRouter::isAvailable(const QString &actionId) const
         return StelApp::getInstance().getStelActionManager()->findAction(actionId) != nullptr;
 #endif
     return false;
+}
+
+void ActionRouter::setHostTakeover(const QString &actionId, bool on)
+{
+    if (on)
+        m_hostTakeover.insert(actionId);
+    else
+        m_hostTakeover.remove(actionId);
+}
+
+QStringList ActionRouter::hostTakeoverIds() const
+{
+    QStringList ids(m_hostTakeover.begin(), m_hostTakeover.end());
+    ids.sort();   // 判据要拿它跟预期名单逐字比 ⇒ 顺序必须确定
+    return ids;
 }
 
 QStringList ActionRouter::actionIds() const
@@ -154,8 +180,16 @@ bool ActionRouter::routeKey(int key, int modifiers)
             {
                 // 单点触发：widget QAction 分发已拆除（见头注），此处是唯一入口，
                 // 同一次按键不可能新旧双触发（U-ACT-01）。
-                action->trigger();
+                //
+                // ⚠️ T41：**键盘路径必须与 trigger() 路径共用同一套接管语义**。
+                //   探针 Q8 已证 F1 经 `findActionFromShortcut` 能命中
+                //   `actionShow_Help_Window_Global` ⇒ 只接管 trigger() 而不接管这里，
+                //   用户按 F1 照样弹出老对话框（只在按钮上有效 = 假修复）。
                 ++m_dispatchCount;
+                if (m_hostTakeover.contains(action->getId()))
+                    emit hostActionRequested(action->getId());
+                else
+                    action->trigger();
                 emit dispatched(action->getId(), true);
                 return true;
             }
