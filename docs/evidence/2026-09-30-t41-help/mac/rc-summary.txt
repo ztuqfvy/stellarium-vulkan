@@ -83,3 +83,12 @@ regression-s3-stela3 rc=0（旧形态）
 环境：23:39  up 6 days,  1:23, 1 user, load averages: 12.44 11.18 7.23
 环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
 二进制：41833528 B  2026-09-30 23:28 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=13b2f5c36fac7703c47601c02595b6e2
+
+════════ 补跑（2026-10-01 00:02，遮挡解除后）════════
+定性：首轮 DYN 0/3 = 环境受阻（全屏浏览器独占 Space ⇒ 窗口 occluded ⇒ 场景图停摆，
+  TRAPS 93；运行中抓屏 screen-during-dyn-fullscreen-browser.png 为直接物证），非产品回归。
+复跑环境：前台 = WorkBuddy 普通窗口（无全屏应用），load 2.91，Spotlight 空闲。
+regression-shortcutcheck rc=0（15/15 —— T41 动 routeKey 后的最近邻补跑）
+regression-dyn-engine-metal-recheck 3/3 PASS（C02 全程推进 681/657/658 帧 vs 受阻时 2）
+regression-dyn-stub-metal-recheck   3/3 PASS（269/271/267 帧）
+SCRIPT-RC=0 FAILED=0（补跑段全绿；首轮 0/3 记录保留于上方原段，不删改）

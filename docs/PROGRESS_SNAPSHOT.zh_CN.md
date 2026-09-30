@@ -465,19 +465,57 @@ CFG-06/07 的原目录侧"天然成立"（空串不含哨兵 / 两个 `<unreadab
   **本轮又各踩一次** —— 编号不新加，但说明是高频坑。
 
 
+### T41 帮助/版本/许可证 —— ✅ **已完成**（`docs/T41_HELP.zh_CN.md`）
+
+**A-1.0 范围表**：`|快捷键编辑、帮助、版本与许可证页面 | 可延后 | 必须 | …|` 的**后三项**。
+先探针再写 UI：**T41-A 探针 93 行读数推翻三处开工推断**——① `src/gui/` **是被编译的**
+（在 `stelMain` 静态库里）⇒ 老 QWidget GUI 子系统整个随行；② 8 个窗口动作**全在册**且
+`getGroup()`="Windows" 是真读数；③ 🔴 **F1 `trigger()` 真的弹出老 QWidget 对话框**
+（QWidget 12→**58，Δ46 常驻**，`StelDialog` 只隐藏不销毁）⇒ **必须接管**。另证：
+🔴 **`COPYING` 不在 bundle 里**（探针 `findFile` 命中只因 cwd 恰是源码树）⇒ GPL 须编 qrc；
+⚠️ `QCoreApplication::applicationVersion()` 是 `1.0.0` ⇒ 版本走 `StelUtils`。
+
+- **产品**：`ActionRouter::setHostTakeover(id,on)` + `hostActionRequested(id)`——命中**不转发
+  引擎 trigger**、改交 QML，本类**不知道"页"**；⚠️ **`routeKey()` 同查表**（只接管 trigger =
+  假修复）；接管仍计 `dispatchCount` + 发 `dispatched(id,true)`（U-ACT-01 不变）。注册
+  **F1/F3/F4/F5/F6/F7** 六个；**F2/F10/F12 刻意不接管**（无 QML 页，移交 T42）。
+  `HelpModel` 只读数据面（手势 23 = sky13+legacy10、`scope` 诚实性字段；外链 7 走**白名单**
+  `openExternal`；贡献者 246→**245** 去重；**GPL 全文 17992 B 编进 qrc**）+
+  `HelpPage.qml`（索引 7）/`AboutPage.qml`（索引 8）+ Toolbar **+2 导航按钮**（原 8 个
+  objectName 未动）+ `qt_add_resources(stelquickui_license)`。
+- 🔴 **真缺陷 ×2（均已修）**：① `BackendInfo::applyRuntimeApi` **自判 `backendOk` 写死
+  "Vulkan"**（T39 遗留 —— 转 Metal 后恒 false，状态色全错）⇒ 改 `applyBackendResult()` 由
+  main.cpp 传入（判定只有一份）；② `helpGotoShortcutsButton` 沉底 y=1036 且页面不可滚
+  ⇒ **用户自己都点不到** ⇒ 挪页首（陷阱 92："被测物的问题" vs "观测姿势的问题"）。
+- 判据 `HELPCHECK` **17 条**（HC-01..17）；负控 A `TAKEOVER_OFF` 红 `[HC-14,15,16]`、
+  负控 B `LICENSE_OFF` 红 `[HC-04,13]`，**两腿正交**。🔴 **判据自身 4 处方法缺陷**：
+  负控 B 首版期望又是推理填的（陷阱 87 第二次重演，HC-05 验"编进 qrc"≠"加载"腿）/
+  **HC-16 判别对照恢复段把被负控打断的路径自己修好了 ⇒ 假绿**（恢复只到**布场态**，
+  陷阱 80 对偶）/ 基线混启动瞬态（排除 QSplashScreen/QProgressBar）/ 残留 QDialog 连带红。
+- **定稿轮（mac）最终全绿**：正题 3/3 `17/17`、负控各 3/3、**17 套件**（含
+  **`shortcutcheck`** 最近邻——T41 动了 `routeKey`，正是 T40 SC-14 交互腿路径）
+  + `INTERACTCHECK 18/18` + A2 + S3 全 rc=0；**DYN 双路 3/3+3/3**（C02 推进
+  681/657/658 / 269/271/267 帧）。首轮 DYN 0/3+0/3 定性为**环境受阻**（全屏浏览器
+  独占 Space ⇒ 窗口 occluded ⇒ 场景图停摆；**运行中抓屏 = 直接物证**；替身腿同款红
+  排除产品 + `A2_TRACE` 数到 8 秒 3 次 `updatePaintNode`）。⚠️ **抓帧型判据照绿 =
+  假绿掩护**（`grabWindow` 强制渲染绕过遮挡）。⇒ **TRAPS 90–93**。
+- 批次期 load 12.44 + `mdbulkimport` 在跑（16 套件仍全绿）；复跑时 load 2.91。
+
 ### 之后（按优先级）
 
-`LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算 → 捏合后首击 → DYN 停摆根因；
-另加 T33 移交的 `findLocations` 排序（照 T21 完全匹配优先）、
-"负控 A 在 Windows 不复现"的定性、**T37-X4**（仿真冻结期间 fader 动画停摆，
-NC-05 的有界容忍来源）、**T37-X1**（夜视翻转引起 5 个工具栏按钮重绘，功能正确、
-纯性能线索）、**`NightModeCheck` 的噪声口径并入 T39 统一**（⚠️ **顺带项，本轮未做** ——
-它仍持"占比<0.1% ∧ Δ≤2"的旧式；风险有界：NC-02 是环境门，误触退化成 rc=6 而非 FAIL）。
-
-**A5 剩余**（T40 之后）：**T41 帮助/版本/许可证** → T42 错误页 + "未支持项"清单。
-再往后：A6（回归与交接、接口冻结）。**W-T37 / W-T38 / W-T39 / W-T40 Windows 复验待排期**
+**T42 错误页 + "未支持项"清单**（A5 最后一项；含 F2/F10/F12 的处置口径）→
+A6（回归与交接、接口冻结）。加固穿插：`LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算
+→ 捏合后首击；另加 T33 移交的 `findLocations` 排序（照 T21 完全匹配优先）、
+"负控 A 在 Windows 不复现"的定性、**T37-X4**（仿真冻结期间 fader 动画停摆）、
+**T37-X1**（夜视翻转引起 5 个工具栏按钮重绘，纯性能线索）、
+**`NightModeCheck` 的噪声口径并入 T39 统一**（⚠️ **顺带项，仍未做**，风险有界）。
+~~DYN 停摆根因~~ **已结**（T41-D：全屏应用遮挡 ⇒ occluded ⇒ 场景图停摆，TRAPS 93；
+不是代码问题，无产品动作）。
+**W-T37 / W-T38 / W-T39 / W-T40 / W-T41 Windows 复验待排期**
 （T33/W-T35 已证明跨平台复验能逼出真缺陷 —— **T39 抓到的是 QML 侧真缺陷、T40 抓到的
 是在纯 Qt 行为面上的真缺陷（键名别名），跨平台复验最可能再抓出东西的地方**）。
+
+
 
 ---
 
