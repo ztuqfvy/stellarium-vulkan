@@ -276,6 +276,83 @@ Item {
                 }
             }
 
+            // ── T39 界面字号（高 DPI）────────────────────────────────────────
+            // 出处：A-1.0 范围表最后一格"必须"里的「高 DPI」。
+            // ⚠️ **诚实标注作用域**（T39-A 探针实测）：
+            //   · `screenFontSize` 是合流形态下**唯一可见**的旋钮 —— 它改的是引擎侧
+            //     天空文本（星名、地景标签、星座名）：探针实测字号 13→40 让上游帧产生
+            //     **4.054%** 的像素差异（噪声底逐位相同），还原后**逐位复原**。
+            //   · `guiFontSize` / `screenButtonScale` 只作用于**老 QWidget 对话框与
+            //     老 GUI 按钮**（本形态不渲染）；探针实测 QML 视觉树 325 项
+            //     **一项都不跟随** ⇒ 这里**不给它们控件** —— 给一个改了没反应的
+            //     滑块是假承诺，不如把作用域写清楚。
+            //   · Qt Quick 界面自身的清晰度由 Qt 按**设备像素比**自动处理
+            //     （探针实测合流宿主 DPR=2，引擎侧 devicePixelsPerPixel 同为 2）。
+            GroupBox {
+                Layout.fillWidth: true
+                Layout.margins: 8
+                title: "界面字号（天空文本）"
+
+                GridLayout {
+                    columns: 3
+                    columnSpacing: 12
+                    rowSpacing: 6
+                    anchors.fill: parent
+
+                    Label { text: "字号" }
+                    Slider {
+                        objectName: "displayScreenFontSlider"
+                        Layout.fillWidth: true
+                        stepSize: 1
+                        snapMode: Slider.SnapAlways
+                        from: appFacade.screenFontSizeMin
+                        to: appFacade.screenFontSizeMax
+                        value: appFacade.screenFontSize
+                        onMoved: {
+                            // ⚠️ 必须用**赋值语法**（走 Q_PROPERTY 的 WRITE）——
+                            // 调 `setScreenFontSize(...)` 是调用 WRITE **函数**，
+                            // 它不是 Q_INVOKABLE/slot ⇒ QML 找不到这个方法 ⇒
+                            // 静默 TypeError（T39-C HP-08 真实点击抓到的缺陷；
+                            // T38 的五个滑块用的都是赋值语法，无同病）。
+                            appFacade.screenFontSize = Math.round(value)
+                            displayPage.noteRefusal()
+                        }
+                    }
+                    Label {
+                        objectName: "displayScreenFontValue"
+                        Layout.preferredWidth: 72
+                        text: appFacade.screenFontSize + " px"
+                        color: "#37474f"
+                        font.bold: true
+                    }
+
+                    Label {
+                        Layout.columnSpan: 3
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        color: "#757575"
+                        text: "作用面：天空里的文本（星名、地景标签、星座名）。范围 "
+                              + appFacade.screenFontSizeMin + "…" + appFacade.screenFontSizeMax
+                              + "，默认 " + appFacade.screenFontSizeDefault + "。"
+                    }
+
+                    Label {
+                        objectName: "displayScaleStatusLabel"
+                        Layout.columnSpan: 3
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        color: "#8a8e96"
+                        text: "缩放状态：设备像素比 "
+                              + appFacade.devicePixelsPerPixel.toFixed(2)
+                              + "｜天空缩放 " + appFacade.screenScale.toFixed(2)
+                              + "｜界面缩放 " + appFacade.guiScale.toFixed(2)
+                              + "。Qt Quick 界面按设备像素比自动渲染；引擎的「界面字体」"
+                              + "与「按钮尺寸」只作用于旧式对话框（本形态不渲染），"
+                              + "故不提供控件。"
+                    }
+                }
+            }
+
             Item { Layout.fillHeight: true }
         }
     }

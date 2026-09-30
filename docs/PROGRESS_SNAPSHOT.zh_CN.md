@@ -1,13 +1,14 @@
-# 进度总览（截至 2026-09-30 傍晚，**T38 后**盘点）
+# 进度总览（截至 2026-09-30 深夜，**T39 后**盘点）
 
 > 口径基线：T34 收口提交 `9b04cdd` + T35 提交 `d68cc32` + W 支线 + **T36（A5 第一项）**
-> + **T37（A5 第二项：夜视闭环）** + **T38（显示参数：亮度/星等 · 视场 · 投影）**。
+> + **T37（A5 第二项：夜视闭环）** + **T38（显示参数）** + **T39（高 DPI + 渲染诊断）**。
 > 上一版快照基线是 `9b04cdd`（T34 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，
 > **T34 见 `docs/T34_TOOLBAR.zh_CN.md`**，**T35 见 `docs/T35_TIMELINK.zh_CN.md`**，
 > **W-T34/W-T35 跨平台复验见 `docs/WT35_WINDOWS_RECHECK.zh_CN.md`**，
 > **T36 配置目录隔离见 `docs/T36_CONFIG_ISOLATION.zh_CN.md`**，
 > **T37 夜视闭环见 `docs/T37_NIGHTMODE.zh_CN.md`**，
-> **T38 显示参数见 `docs/T38_DISPLAY.zh_CN.md`**。
+> **T38 显示参数见 `docs/T38_DISPLAY.zh_CN.md`**，
+> **T39 高 DPI + 渲染诊断见 `docs/T39_HIDPI.zh_CN.md`**。
 > 环境口径与 T17–T34 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
@@ -23,7 +24,7 @@
 | A2 旧天空帧桥 | 静态 12/12 + 动态 7/7 + 30min 长跑 | ✅ 完成 |
 | A3 业务接口与输入路由 | AppFacade / ActionRouter / 模型 / 单一仿真时钟 / 键位路由 | ✅ 完成（T14–T17） |
 | **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | ✅ **7/7 完成**（**T34 收口**，见 §2） |
-| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 完成；余 T39–T42，见 §6） |
+| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 + **T39** 高 DPI/渲染诊断 完成；余 T40–T42，见 §6） |
 | A6 回归与交接 | 全量回归、帧桥统计、资源打包、接口冻结 | ⬜ 未开始 |
 | A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置 A6 或真机 |
 
@@ -56,7 +57,8 @@
 > 仍**不属于** A4 的部分（留 A5）：A-alpha 表里标"**基本开关 / 基础**"的项（星座线·名称、
 > 网格、地景、大气；亮度·星等、投影、主题·夜视、高 DPI）。T34 已把其中 **12 个显示开关**
 > 做成 QML 承载面（含"状态与引擎双向同步"），**T37** 补上主题·夜视（Qt Quick 侧效果层），
-> **T38** 补上亮度·星等 / 视场 / 投影 —— **只剩高 DPI**（T39）。
+> **T38** 补上亮度·星等 / 视场 / 投影，**T39** 补上**高 DPI** —— ⇒ **该格至此清空**
+> （「基础 | 必须」列里"No QML GUI"的项**已全部落地**）。
 > 这些项归 A5 的设置页，**不在 A-alpha 出口第一条的"必须"清单里**。
 
 ---
@@ -88,8 +90,10 @@
 | （探针）`NIGHTPROBE` | 只报读数、**不打 PASS** | `STELQUICK_NIGHT_PROBE` | **T37-A** 夜视链路数据面探针（引擎状态面 / 宿主链面 `property("nightMode")` / 帧静定噪声底 / 上游·下游两条独立读回路径 OFF↔ON 差异 / 判别性对照）。⚠️ 探针头条"上游逐位相同"事后被证伪（等待挂读步，TRAPS 69）—— 但**帧号留痕**才使翻案成为可能 |
 | `DISPLAYCHECK` | **14**（DP-00..DP-11） | `STELQUICK_DISPLAY_CHECK` | **T38** 显示参数：噪声底门 / 状态面往返（**引擎 getter 独立回读**）/ **范围闸**（引擎 setter 不夹取 ⇒ 闸门在 façade）/ 投影 12 key 往返 + **maxFov 活属性**（随投影取到 6 个不同值）/ **投影白名单闸** / `lastDisplayRefusal` 必须是 Q_PROPERTY / UI 控件齐备（**视觉树递归**，陷阱 45）/ 绑定腿 / 视场生效（成对）+ **判别对照** / 投影生效（成对）/ **DP-10a 静置对照 + DP-10b LOW↔HIGH 方向量** / 复原。**两组负控**：`STELQUICK_DISPLAY_GATE_OFF=1` ⇒ 恰红 `[DP-02,DP-04]`；`STELQUICK_DISPLAY_FWD_OFF=1` ⇒ 恰红 `[DP-07]`。**正题 3/3 `14/14`、负控各 2/2 恰中** |
 | （探针）`DISPLAYPROBE` | 只报读数、**不打 PASS** | `STELQUICK_DISPLAY_PROBE` | **T38-A** 显示参数命令面探针（初值台账 / 四个 setter 的**夹取语义** / 星等语义四问 / 步进动作 / `setFov` 夹取边界 / 12 投影 key 往返 + maxFov 随投影 / **非法 key 落点** / NOTIFY 静置增量）。7 条实测结论见 `docs/T38_DISPLAY.zh_CN.md` §2 |
+| `HIDPICHECK` | **12**（HP-00..HP-11） | `STELQUICK_HIDPI_CHECK` | **T39** 高 DPI + 渲染诊断：噪声底门（环境门）/ 引擎面往返（**引擎 getter 独立回读**）/ **三处范围闸**（`screenFontSize` [5,50]、`guiFontSize` [7,50]、`screenButtonScale` [50,200] 产品自定；各含上沿+下沿）/ **派生量算术验算** / UI 控件齐备（**视觉树递归**）/ 绑定腿 / **交互后绑定仍活**（**真实点击**验 `onMoved` ⇒ 再引擎侧改 ⇒ UI 仍跟随）/ **字号帧效应**（成对 + 判别对照）/ **诊断数据面健康**（`bytesPerFrame` 用抓帧 `FrameSample` **独立验算**）/ 复原。**两组负控**：`STELQUICK_DISPLAY_GATE_OFF=1` ⇒ 恰红 `[HP-02,HP-03,HP-04]`（9/12）；`STELQUICK_DISPLAY_FWD_OFF=1` ⇒ 恰红 `[HP-07,HP-08]`（10/12）。**正题 3/3 `12/12`、负控各 2/2 恰中** |
+| （探针）`HIDPIPROBE` | 只报读数、**不打 PASS** | `STELQUICK_HIDPI_PROBE` | **T39-A** 高 DPI + 渲染诊断数据面探针（三个 setter 的**夹取语义** / 派生量独立验算 / config 来源 / 🔴 `getGuiFontSize()` 读的是**全局字体** / 🔴 `setGuiFontSize` 对 QML 视觉树 **325 项零跟随**〔**三重仪器正控**〕/ `screenFontSize` **帧效应 4.054%** + 还原逐位复原 / `FrameMailbox::Stats` 全字段 / NOTIFY 静置增量）。7 条实测结论见 `docs/T39_HIDPI.zh_CN.md` §2 |
 
-一键复跑：`tools/t16-verify.sh` … **`tools/t38-verify.sh`**（每个任务一个，用法 `all N`；
+一键复跑：`tools/t16-verify.sh` … **`tools/t39-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
 8 条判据、要求 `VERDICT=PASS`；**`t34-verify.sh` 含四组负控 + 探针 + 10 套件 + S3 + A2 + DYN**；
 **`t35-verify.sh` 含三组负控 + 探针 + **11 套件**（多了 `toolbarcheck`）+ INTERACTCHECK + S3 + A2 + DYN**；
@@ -97,7 +101,10 @@
 + INTERACTCHECK + A2 + DYN 双路；⑤ 收尾做"**合流形态**全程原目录零改动"核对，
 ⑥ **把 S3 旧宿主挪到核对之后单独跑**（写原版目录是它应有的行为，见 §6 T36 血泪②）**，
 `core N` 段即含以上全部）；**`t37-verify.sh` 含正题×3 + 负控×3 + **13 套件**（多了 `nightcheck`）**；
-**`t38-verify.sh` 含正题×3 + **两组负控×2** + **14 套件** + INTERACTCHECK + S3 + A2 + DYN 双路**。
+**`t38-verify.sh` 含正题×3 + **两组负控×2** + **14 套件**（多了 `displaycheck`）+ INTERACTCHECK + S3 + A2 + DYN 双路**；
+**`t39-verify.sh` 含正题×3 + **两组负控×2** + **15 套件** + INTERACTCHECK + S3 + A2 + DYN 双路**
+（⚠️ T39 把 **T38 的 `displaycheck`** 纳入回归：T39 就在 `AppFacade` 显示参数段落里加东西、
+同一个 `ensureDisplayParamsForwarding()` 末尾补连接 ⇒ 它是最紧的**最近邻**）。
 Windows 侧 `tools/windows/wt29…wt33-*.ps1`
 （`wt33-launch.ps1` 是给 `schtasks /it` 用的启动器，负责注入 `T33_PROBE_EXPECT`）。
 
@@ -344,19 +351,67 @@ CFG-06/07 的原目录侧"天然成立"（空串不含哨兵 / 两个 `<unreadab
 
 
 
+### T39 高 DPI + 渲染诊断（**A5 第三项**）—— ✅ **已完成**（`docs/T39_HIDPI.zh_CN.md`）
+
+**A-1.0 两格同一轮清空**：第一格「…、**高 DPI** | 基础 | 必须」⇒ **此格清空**；
+第二格「资源路径、错误提示、**渲染诊断**、配置保存 | 最小 | 必须」（T36 已做「配置保存」）
+⇒ 本轮做掉「渲染诊断」（余「资源路径 / 错误提示」归 T41/T42）。先探针再写 UI：
+
+- **T39-A 探针 7 条实测结论**：
+  ① 三个 setter **一个都不夹取**（写 99/99/999 原样回读 + `immediateSave` **落盘**用户 config）
+  ⇒ **范围闸必须在 façade**；
+  ② 派生量算术全对（`getScreenScale() = dpp × 字号/13`）；
+  ③ 🔴 `getGuiFontSize()` **读的就是全局字体**、`setGuiFontSize()` **改的也是全局字体**
+  ⇒ 它**不是"用户设定值"的可靠真源**（T38 近名 getter 同族）；
+  ④ 🔴 `setGuiFontSize(25)` 后 QML 视觉树 **325 项一项都不跟随**（**三重仪器正控**验证完备：
+  读取链路能读到 / 真实树人为扰动**恰查 1 项** / **点值路径**同样 0 跟随 + 前扫分类计数
+  68+257=325）⇒ 引擎 `guiFontSize` **只作用于老 QWidget 对话框** ⇒ QML 缩放必须产品侧自己做系数；
+  ⑤ `screenFontSize` **强帧效应**：噪声底**逐位相同**（哈希一致）→ 13→40 差异 **4.054%**，
+  还原**逐位回到原哈希**；⑥ 静置 NOTIFY 增量 **0** ⇒ 可安全绑定；
+  ⑦ `FrameMailbox::Stats` 全字段可读 ⇒ **渲染诊断有真数据面**。
+- **产品**：`AppFacade` 高 DPI 面（6 个 `Q_PROPERTY` + 7 个 `CONSTANT` 范围常量 + 整数版
+  范围闸 `clampIntoInt()`〔复用 `STELQUICK_DISPLAY_GATE_OFF`〕+ 3 条引擎转发）
+  + `DisplayPage.qml`「界面字号（天空文本）」组 + **`BackendInfo` 运行时诊断面**（13 个
+  `Q_PROPERTY` + `Q_INVOKABLE refresh()` + `setFrameMailbox()`）+ `DiagnosticPage.qml`
+  「运行时诊断（帧泵健康度）」组（Timer 周期 refresh —— 连续量**不建绑定**）。
+- 🔴 **UI 只提供被验证过真的有效的控件**（本轮产品侧口径）：探针④已证 `guiFontSize` /
+  `screenButtonScale` 对 QML **零影响** ⇒ **不搬那两个 SpinBox 上来**（搬过来就是**假控件**：
+  拖了没反应、还顺手写穿用户 config），只在 `displayScaleStatusLabel` 上**文字说明作用域**。
+  这是「判据只验被声称的命题」（TRAPS 75）在产品侧的**对偶**。
+- 🔴 **判据抓出一个真产品缺陷**（本轮最有价值的产出）：`DisplayPage.qml` 的 `onMoved` 首版写
+  `appFacade.setScreenFontSize(...)` —— **`Q_PROPERTY` 的 WRITE 函数不是 `Q_INVOKABLE`/slot**
+  ⇒ QML 侧 **静默** `TypeError: Property 'setScreenFontSize' … is not a function`
+  ⇒ **拖滑块 UI 数字会动、引擎纹丝不动**。已改**赋值语法** `appFacade.screenFontSize = …`。
+  ⚠️ 这条**只有 HP-08 的"真实点击"腿**才抓得到（T38 的 DP-07 只做了单向"引擎侧改 ⇒ UI 跟随"，
+  且 T38 五个滑块恰好用的是赋值语法）⇒ **UI 腿判据两个方向都要有**。
+- 判据 `HIDPICHECK` **12 条**（HP-00..HP-11）；**两组负控**红项 `[HP-02,HP-03,HP-04]` /
+  `[HP-07,HP-08]` **两两不同**；负控读数**自带证据**（"写 99 ⇒ **引擎=99**"，探针①在判据层复现）。
+- **顺带修掉**：`STELQUICK_PAGE` 原排在 `startPage` 三元链**最后**，任何起引擎的模式都会吞掉它
+  ⇒ 诊断页（**必须引擎活着**才有人喂数据）根本切不过去 ⇒ 改为**显式指定优先**。
+- **定稿轮（mac）`FAILED=0` 全绿**：正题 3/3 `12/12 PASS`、负控各 2/2 恰中、
+  **15 套件**（含 **`displaycheck`** 最近邻回归）+ `INTERACTCHECK 18/18` + S3 + A2 +
+  DYN 双路 3/3+3/3 全 rc=0（脚本层 **3/0**；产物 `40929912 B /
+  md5=f0e39fd324c8dfdceb0a35c64c1bd442`；批次期 `mdbulkimport` 在跑，仍全绿）。
+- 本轮新血泪：`TRAPS.md` **77–82**（WRITE 函数不是方法 / `invokeMethod("increase")` 不是交互
+  〔+隐藏页·视口裁剪·DFS 找 Flickable〕/ **否定性结论必须自己先被验证** /
+  **噪声门限不能跨布场搬** / **诊断不得污染被诊断的量** / UI 只提供被验证过真的有效的控件）。
+
+
+
 ### 之后（按优先级）
 
 `LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算 → 捏合后首击 → DYN 停摆根因；
 另加 T33 移交的 `findLocations` 排序（照 T21 完全匹配优先）、
 "负控 A 在 Windows 不复现"的定性、**T37-X4**（仿真冻结期间 fader 动画停摆，
 NC-05 的有界容忍来源）、**T37-X1**（夜视翻转引起 5 个工具栏按钮重绘，功能正确、
-纯性能线索）、**`NightModeCheck` 的噪声口径并入 T39 统一**（它仍持"占比<0.1% ∧ Δ≤2"
-的旧式；风险有界 —— NC-02 是环境门，误触退化成 rc=6 而非 FAIL）。
+纯性能线索）、**`NightModeCheck` 的噪声口径并入 T39 统一**（⚠️ **顺带项，本轮未做** ——
+它仍持"占比<0.1% ∧ Δ≤2"的旧式；风险有界：NC-02 是环境门，误触退化成 rc=6 而非 FAIL）。
 
-**A5 剩余**（T38 之后）：**T39 高 DPI + 渲染诊断** → T40 快捷键编辑 →
+**A5 剩余**（T39 之后）：T40 快捷键编辑 →
 T41 帮助/版本/许可证 → T42 错误页 + "未支持项"清单。
-再往后：A6（回归与交接、接口冻结）。**W-T37 / W-T38 Windows 复验待排期**
-（T33/W-T35 已证明跨平台复验能逼出真缺陷）。
+再往后：A6（回归与交接、接口冻结）。**W-T37 / W-T38 / W-T39 Windows 复验待排期**
+（T33/W-T35 已证明跨平台复验能逼出真缺陷 —— **T39 抓到的是一条 QML 侧真缺陷，
+正是跨平台复验最可能再抓出东西的地方**）。
 
 ---
 

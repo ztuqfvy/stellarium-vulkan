@@ -181,6 +181,10 @@ set(stelQuickUI_SOURCES
     # 投影的帧效果（含判别对照）/ 星等截断 / 全量复原。判据 DP-00..DP-11。
     ../app/DisplayCheck.hpp
     ../app/DisplayCheck.cpp
+    ../app/HiDpiProbe.hpp
+    ../app/HiDpiProbe.cpp
+    ../app/HiDpiCheck.hpp
+    ../app/HiDpiCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp

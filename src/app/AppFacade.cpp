@@ -145,6 +145,25 @@ bool clampInto(double &v, double lo, double hi)
     return true;
 }
 
+//! T39：整数版的同一个范围闸（字号是 int）。负控开关**复用 T38 的同一个**
+//! `STELQUICK_DISPLAY_GATE_OFF` —— 语义就是"关掉范围闸"，T38/T39 两族判据共用一把。
+bool clampIntoInt(int &v, int lo, int hi)
+{
+    if (qEnvironmentVariableIsSet("STELQUICK_DISPLAY_GATE_OFF"))
+        return true;
+    if (v < lo)
+    {
+        v = lo;
+        return false;
+    }
+    if (v > hi)
+    {
+        v = hi;
+        return false;
+    }
+    return true;
+}
+
 } // namespace
 
 void AppFacade::setDisplayRefusal(const char *reason)
@@ -211,6 +230,12 @@ void AppFacade::ensureDisplayParamsForwarding()
                 emit fieldOfViewChanged(fieldOfView());
                 emit displayParametersChanged();
             });
+    // T39 高 DPI：三条字号/按钮信号。`StelApp` 自己发的（`setScreenFontSize` 等），
+    // 但**引擎内部**也会改（config 载入、语言切换、SplashScreen），所以同样要转。
+    StelApp *sa = &StelApp::getInstance();
+    connect(sa, &StelApp::screenFontSizeChanged, this, [bump](int) { bump(); });
+    connect(sa, &StelApp::guiFontSizeChanged, this, [bump](int) { bump(); });
+    connect(sa, &StelApp::screenButtonScaleChanged, this, [bump](double) { bump(); });
 #endif
 }
 
@@ -465,6 +490,137 @@ void AppFacade::setFieldOfViewNow(double degrees)
     emit fieldOfViewChanged(fieldOfView());
 #else
     Q_UNUSED(degrees)
+#endif
+}
+
+// ── T39 高 DPI：天空文本字号 / 界面字号 / 按钮尺寸百分比 ─────────────────────
+//
+// 设计依据全部来自 T39-A 探针（见 app/HiDpiProbe.hpp 的"实测结论"段）：
+//   ① 三个 setter **一个都不夹取**（写 99/99/999 原样回读）⇒ 范围闸在下面每个 setter 里做；
+//   ② `getGuiFontSize()` 读的是全局字体、`setGuiFontSize()` 改的是全局字体，且**只影响
+//      老 QWidget**（QML 视觉树 325 项一项不跟随）⇒ 照实暴露引擎面，但**UI 不给控件**
+//      （诚实标注作用域 > 给一个改了没反应的滑块）；
+//   ③ `screenFontSize` 是合流形态下**唯一可见**的旋钮（帧效应 4.054%，还原后逐位复原）；
+//   ④ 静置期三条 NOTIFY 增量 0 ⇒ 不是每帧连续量，可以安全绑定。
+
+int AppFacade::screenFontSize() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return -1;
+    return StelApp::getInstance().getScreenFontSize();
+#else
+    return -1;
+#endif
+}
+
+void AppFacade::setScreenFontSize(int v)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setDisplayRefusal("not-engine");
+        return;
+    }
+    const bool ok = clampIntoInt(v, screenFontSizeMin(), screenFontSizeMax());
+    StelApp::getInstance().setScreenFontSize(v);
+    m_displayWriteCount++;
+    setDisplayRefusal(ok ? nullptr : "out-of-range");
+#else
+    Q_UNUSED(v)
+#endif
+}
+
+int AppFacade::guiFontSize() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return -1;
+    // ⚠️ 探针②：这个 getter 读的是 `QGuiApplication::font()`，**不是内部缓存** ——
+    // 任何绕过 setter 的全局改字都会污染它。产品侧不拿它当"用户设定值"的真源。
+    return StelApp::getInstance().getGuiFontSize();
+#else
+    return -1;
+#endif
+}
+
+void AppFacade::setGuiFontSize(int v)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setDisplayRefusal("not-engine");
+        return;
+    }
+    const bool ok = clampIntoInt(v, guiFontSizeMin(), guiFontSizeMax());
+    // ⚠️ 引擎实现是 `QGuiApplication::setFont()` —— **全局**副作用，但只对老 QWidget
+    // 对话框可见；QML 侧不受影响（探针实测）。这里照实透传，不额外"保护"。
+    StelApp::getInstance().setGuiFontSize(v);
+    m_displayWriteCount++;
+    setDisplayRefusal(ok ? nullptr : "out-of-range");
+#else
+    Q_UNUSED(v)
+#endif
+}
+
+double AppFacade::screenButtonScale() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return -1.0;
+    return StelApp::getInstance().getScreenButtonScale();
+#else
+    return -1.0;
+#endif
+}
+
+void AppFacade::setScreenButtonScale(double v)
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+    {
+        setDisplayRefusal("not-engine");
+        return;
+    }
+    const bool ok = clampInto(v, screenButtonScaleMin(), screenButtonScaleMax());
+    StelApp::getInstance().setScreenButtonScale(v);
+    m_displayWriteCount++;
+    setDisplayRefusal(ok ? nullptr : "out-of-range");
+#else
+    Q_UNUSED(v)
+#endif
+}
+
+double AppFacade::screenScale() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return 0.0;
+    return StelApp::getInstance().getScreenScale();
+#else
+    return 0.0;
+#endif
+}
+
+double AppFacade::guiScale() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return 0.0;
+    return StelApp::getInstance().getGuiScale();
+#else
+    return 0.0;
+#endif
+}
+
+double AppFacade::devicePixelsPerPixel() const
+{
+#if defined(STELQUICK_HAS_ENGINE)
+    if (!StelApp::isInitialized())
+        return 0.0;
+    return StelApp::getInstance().getDevicePixelsPerPixel();
+#else
+    return 0.0;
 #endif
 }
 

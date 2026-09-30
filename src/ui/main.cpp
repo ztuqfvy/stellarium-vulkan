@@ -81,6 +81,21 @@
  *                                  白名单闸旁路）⇒ 预期恰红 [DP-02,DP-04]；
  *                                  `STELQUICK_DISPLAY_FWD_OFF=1`（断引擎→façade
  *                                  转发）⇒ 预期恰红 [DP-07]。
+ *   STELQUICK_HIDPI_PROBE=1      → T39-A **高 DPI + 渲染诊断数据面探针**（见
+ *                                  app/HiDpiProbe.hpp）：screenFontSize / guiFontSize /
+ *                                  screenButtonScale 三属性的写读往返 + 夹取语义 +
+ *                                  派生量（getScreenScale / getGuiScale）算术验算 +
+ *                                  `getGuiFontSize()` 的来源（是否读全局 app font）+
+ *                                  `setGuiFontSize()` 对 QML 视觉树的波及面 +
+ *                                  screenFontSize 的帧级效应 + FrameMailbox::Stats
+ *                                  运行时诊断量。只报读数、**不下 PASS/FAIL**
+ *                                  （断言在 T39-C 的 HiDpiCheck）。
+ *   STELQUICK_HIDPI_CHECK=1      → T39-C **高 DPI + 渲染诊断自检**（见
+ *                                  app/HiDpiCheck.hpp）：判据 HP-00..HP-11。
+ *                                  负控复用 T38 两个开关：`STELQUICK_DISPLAY_GATE_OFF=1`
+ *                                  ⇒ 预期恰红 [HP-02,HP-03,HP-04]；
+ *                                  `STELQUICK_DISPLAY_FWD_OFF=1` ⇒ 预期恰红
+ *                                  [HP-07,HP-08]。起始页停在 "sky"。
  *   STELQUICK_LEGACY_HOST_TEST=1 → A2 主体 T6 自检：旧宿主显式帧驱动 + 读回。
  *                                  **在创建任何窗口之前**同步执行、不进入事件循环。
  * 退出码：0 正常；2 窗口创建失败；3 后端校验失败（实际 API 非 Vulkan）；4 交互自测失败；
@@ -272,6 +287,14 @@ void ensureVulkanLoaderPath()
 // T38-C：显示参数自检（判据 DP-00..DP-11 —— 状态面往返 / 范围闸 / 投影白名单 /
 // UI 控件存在性与绑定 / 视场与投影的**帧效果** + 判别对照 / 星等截断 / 复原）。
 #include "app/DisplayCheck.hpp"
+// T39-A：高 DPI + 渲染诊断数据面探针（screenFontSize / guiFontSize /
+// screenButtonScale 的往返与夹取、派生量算术验算、getGuiFontSize 的来源、
+// setGuiFontSize 对 QML 视觉树的波及面、FrameMailbox::Stats）。只报读数。
+#include "app/HiDpiProbe.hpp"
+// T39-C：高 DPI + 渲染诊断自检（判据 HP-00..HP-11 —— 状态面往返 / 范围闸 /
+// 派生量算术验算 / UI 控件与绑定（含"交互后绑定仍活"）/ 字号帧效应成对 + 判别
+// 对照 / 诊断数据面独立验算 / 复原）。
+#include "app/HiDpiCheck.hpp"
 // T36：配置目录隔离（引导期）与其自检。**引导期**那一半由 LiveSkyRuntime::boot()
 // 调用——位置即判据，别挪到 StelLogger / config.ini 之后。
 #include "app/ConfigIsolationCheck.hpp"
@@ -5234,6 +5257,15 @@ int main(int argc, char **argv)
     // T38-C 显示参数自检（见 app/DisplayCheck.hpp）：判据 DP-00..DP-11。装配顺序同其他
     // 自检，运行块在下方紧邻 displayProbe。负控：STELQUICK_DISPLAY_GATE_OFF=1
     // （关范围闸/白名单闸）/ STELQUICK_DISPLAY_FWD_OFF=1（断引擎→façade 转发）。
+    // T39-A：**高 DPI + 渲染诊断数据面探针**（见 app/HiDpiProbe.hpp）。A-1.0 范围表
+    // 最后一格"必须"里的"高 DPI"；审计发现两条可疑（getGuiFontSize 读的是全局 app
+    // font / setGuiFontSize 改全局字体），必须先实测坐实。只报读数。
+    const bool hiDpiProbe = qEnvironmentVariableIsSet("STELQUICK_HIDPI_PROBE");
+    // T39-C：**高 DPI + 渲染诊断自检**（见 app/HiDpiCheck.hpp）。判据 HP-00..HP-11。
+    // 负控复用 T38 的两个开关：STELQUICK_DISPLAY_GATE_OFF（范围闸旁路）⇒ 预期恰红
+    // [HP-02,HP-03,HP-04]；STELQUICK_DISPLAY_FWD_OFF（断引擎→façade 订阅）⇒ 预期恰红
+    // [HP-07,HP-08]。
+    const bool hiDpiCheck = qEnvironmentVariableIsSet("STELQUICK_HIDPI_CHECK");
 
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
@@ -5243,22 +5275,27 @@ int main(int argc, char **argv)
     //  而不是等人工点击）；手动模式下可用 STELQUICK_PAGE 指定。
     // T20：返回环与 I-REP-02 回放都从**天空页**起步（前者要先从它切走再切回来，
     //   后者直接断言"开机态=天空页"）。
-    const QString startPage = (a2Check || dynCheck || longRun || returnUiCheck || replayCheck
-                               || interactUiCheck || locProbe || toolProbe || toolCheck
-                               || timeLinkProbe || timeLinkCheck || cfgCheck || nightProbe
-                               || nightCheck || displayProbe || displayCheck
-                               || qEnvironmentVariableIsSet("STELQUICK_LIVE")
-                               || liveEngine)
-                                  ? QStringLiteral("sky")
-                                  : ((searchCheck || locateCheck || uiCheck)
-                                         ? QStringLiteral("search")
-                                         : ((timeCheck || timeUiCheck)
-                                                ? QStringLiteral("time")
-                                                : (locCheck
-                                                       ? QStringLiteral("location")
-                                                       : qEnvironmentVariable(
-                                                             "STELQUICK_PAGE",
-                                                             QStringLiteral("diag")))));
+    // T39：`STELQUICK_PAGE` **显式指定优先**（此前它排在三元链最后，任何起引擎的
+    // 模式都会把它吞掉 ⇒ `LIVE_ENGINE=1 STELQUICK_PAGE=diag` 实测停在天空页，
+    // 诊断页的运行时数据没法人眼验证 —— 显式指定 > 自动选择，这是常规语义）。
+    const QString pageEnv = qEnvironmentVariable("STELQUICK_PAGE");
+    const QString startPage = !pageEnv.isEmpty()
+                                  ? pageEnv
+                                  : ((a2Check || dynCheck || longRun || returnUiCheck || replayCheck
+                                      || interactUiCheck || locProbe || toolProbe || toolCheck
+                                      || timeLinkProbe || timeLinkCheck || cfgCheck || nightProbe
+                                      || nightCheck || displayProbe || displayCheck
+                                      || hiDpiProbe || hiDpiCheck
+                                      || qEnvironmentVariableIsSet("STELQUICK_LIVE")
+                                      || liveEngine)
+                                         ? QStringLiteral("sky")
+                                         : ((searchCheck || locateCheck || uiCheck)
+                                                ? QStringLiteral("search")
+                                                : ((timeCheck || timeUiCheck)
+                                                       ? QStringLiteral("time")
+                                                       : (locCheck
+                                                              ? QStringLiteral("location")
+                                                              : QStringLiteral("diag")))));
 
     // 3. 加载 QML
     // T15 命令通路装配（加载前注入，QML 命令栏/Keys 直接绑定）：
@@ -6132,6 +6169,125 @@ int main(int argc, char **argv)
 #endif
     }
 
+    // T39-A 高 DPI + 渲染诊断数据面探针（STELQUICK_HIDPI_PROBE=1）：A-1.0 范围表
+    // 最后一格"必须"里的"高 DPI"。装配顺序与 T38-A 一致（暖机 → boot → start → attach）。
+    // 输出 `HIDPIPROBE:` 前缀，只报读数、不下 PASS/FAIL（断言在 T39-C 的 HiDpiCheck）。
+    if (hiDpiProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("HIDPIPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "HIDPIPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("HIDPIPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "HIDPIPROBE: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("HIDPIPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::HiDpiProbe::run(
+            &app, &appFacade, window, &frameMailbox,
+            [&app](const stelapp::HiDpiProbe::Result &result) {
+                std::printf("HIDPIPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("HIDPIPROBE: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("HIDPIPROBE: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("HIDPIPROBE: VERDICT=DONE\n");
+                std::fflush(stdout);
+                app.exit(0);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T39-C 高 DPI + 渲染诊断自检（STELQUICK_HIDPI_CHECK=1）：判据 HP-00..HP-11。
+    // 装配顺序与 T38-C 一致（暖机 → boot → start → attach）。
+    // 输出 `HIDPICHECK:` 前缀。负控复用 T38 的两个开关（GATE_OFF / FWD_OFF）。
+    if (hiDpiCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("HIDPICHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "HIDPICHECK: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("HIDPICHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::LiveSkyRuntime::Config cfg =
+            engineConfigFromEnv(0.1, kEngineNominalFps);
+        if (!liveSkyRuntime->start(&frameMailbox, cfg, &producerError)) {
+            std::fprintf(stderr, "HIDPICHECK: 帧泵启动失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("HIDPICHECK: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        appFacade.attachSimControl(liveSkyRuntime.get());
+
+        stelapp::HiDpiCheck::run(
+            &app, &appFacade, window, &frameMailbox,
+            [&app](const stelapp::HiDpiCheck::Result &result) {
+                std::printf("HIDPICHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("HIDPICHECK: %s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("HIDPICHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                // 同 T37/T38 口径：INCONCLUSIVE（竞态型读数/异常帧）不硬判 FAIL，rc=6。
+                if (result.inconclusive) {
+                    std::printf("HIDPICHECK: VERDICT=INCONCLUSIVE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("HIDPICHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 10);
+            });
+        const int rc = app.exec();
+        if (liveSkyRuntime) {
+            liveSkyRuntime->stop();
+            liveSkyRuntime.reset();
+        }
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
     // T37-C 夜视自检（STELQUICK_NIGHT_CHECK=1）：判据 NC-01..NC-05。装配顺序同上。
     // 输出 `NIGHTCHECK:` 前缀。负控 STELQUICK_NIGHT_EFFECT_OFF=1 ⇒ NC-03② 必红。
     if (nightCheck) {
@@ -6876,6 +7032,12 @@ int main(int argc, char **argv)
             std::fflush(stdout);
         });
     }
+
+    // T39：把帧泵接上诊断页（**运行时诊断**的数据源）。
+    // 放在这里 = 正常运行路径的最后一个共同点，且 frameMailbox 与 backendInfo 都还活着。
+    // 自检路径各自 exit，不需要诊断页；`refresh()` 在没接时只发信号、不假装 0 是读数。
+    if (liveSkyRuntime)
+        backendInfo->setFrameMailbox(&frameMailbox);
 
     const int rc = app.exec();
     liveSource.stop();   // 生产者停机先于邮箱析构（析构顺序：liveSource 在 frameMailbox 之后声明）

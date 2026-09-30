@@ -132,5 +132,111 @@ Pane {
                 }
             }
         }
+
+        // ── T39 运行时诊断（这才是"渲染诊断"里"活"的那一半）──────────────
+        // 出处：A-1.0 范围表 `|资源路径、错误提示、渲染诊断、配置保存|最小|必须|`
+        // —— T36 只做掉了"配置保存"（目录隔离），上面那块是**静态后端信息**
+        // （API/设备/驱动/DPR），这一段才是**运行时量**（数据源 FrameMailbox::Stats）。
+        // ⚠️ 这些量**每帧都在变**（帧号/帧年龄）⇒ 不建绑定，用 Timer 周期 refresh()
+        // （T15 纪律：每帧变的连续量一律轮询。T39 探针已确认字号那一组才是离散状态）。
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: runtimeColumn.implicitHeight + 40
+            radius: 8
+            color: "white"
+            border.color: "#e0e2e6"
+
+            Timer {
+                objectName: "diagRuntimeTimer"
+                interval: 500
+                running: page.visible      // 只在页面可见时轮询
+                repeat: true
+                triggeredOnStart: true
+                onTriggered: BackendInfo.refresh()
+            }
+
+            ColumnLayout {
+                id: runtimeColumn
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 10
+
+                Label {
+                    text: "运行时诊断（帧泵健康度）"
+                    font.pixelSize: 16
+                    font.bold: true
+                    color: "#1a1c1e"
+                }
+
+                GridLayout {
+                    columns: 4
+                    columnSpacing: 18
+                    rowSpacing: 8
+
+                    Label { text: "当前帧号"; color: "#5a5e66"; font.pixelSize: 14 }
+                    Label {
+                        objectName: "diagFrameNumber"
+                        text: BackendInfo.frameNumber
+                        font.pixelSize: 14
+                        font.bold: true
+                    }
+
+                    Label { text: "已投递 / 丢弃"; color: "#5a5e66"; font.pixelSize: 14 }
+                    Label {
+                        objectName: "diagPublishStats"
+                        text: BackendInfo.framesPublished + " / " + BackendInfo.framesDropped
+                        font.pixelSize: 14
+                        font.bold: true
+                        color: BackendInfo.framesDropped > 0 ? page.unknownColor : "#1a1c1e"
+                    }
+
+                    Label { text: "已被取走"; color: "#5a5e66"; font.pixelSize: 14 }
+                    Label {
+                        objectName: "diagLeased"
+                        text: BackendInfo.framesLeased
+                        font.pixelSize: 14
+                    }
+
+                    Label { text: "完整槽位 / 读中"; color: "#5a5e66"; font.pixelSize: 14 }
+                    Label {
+                        objectName: "diagSlots"
+                        text: BackendInfo.completeSlots + " / " + BackendInfo.slotCapacity
+                              + "｜" + BackendInfo.readersHeld
+                        font.pixelSize: 14
+                    }
+
+                    Label { text: "最新帧年龄"; color: "#5a5e66"; font.pixelSize: 14 }
+                    Label {
+                        objectName: "diagFrameAge"
+                        text: BackendInfo.latestFrameAgeMs < 0
+                              ? "（无完整帧）"
+                              : BackendInfo.latestFrameAgeMs + " ms"
+                        font.pixelSize: 14
+                        font.bold: true
+                        color: BackendInfo.latestFrameAgeMs > 100 ? page.unknownColor : "#1a1c1e"
+                    }
+
+                    Label { text: "每帧字节 / 尺寸世代"; color: "#5a5e66"; font.pixelSize: 14 }
+                    Label {
+                        objectName: "diagBytes"
+                        text: (BackendInfo.bytesPerFrame / 1024).toFixed(0) + " KiB｜"
+                              + BackendInfo.sizeGeneration
+                        font.pixelSize: 14
+                    }
+                }
+
+                Label {
+                    objectName: "diagRuntimeNote"
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 12
+                    color: BackendInfo.runtimeDiagAvailable ? "#8a8e96" : page.unknownColor
+                    text: BackendInfo.runtimeDiagAvailable
+                          ? "数据源：FrameMailbox（无锁帧邮箱，任意线程可读）。"
+                            + "每 500ms 刷新一次 —— 刻意**不建绑定**：这些量每帧都在变。"
+                          : "未接引擎帧泵 ⇒ 上面各项是 0 占位，不是读数。"
+                }
+            }
+        }
     }
 }

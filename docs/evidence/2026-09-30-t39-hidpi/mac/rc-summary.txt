@@ -1,0 +1,96 @@
+环境：20:44  up 5 days, 22:28, 1 user, load averages: 2.59 3.62 3.91
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：40929912 B  2026-09-30 20:30 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=f0e39fd324c8dfdceb0a35c64c1bd442
+──────── 正题 HIDPICHECK ×3（预期 rc=0 / 判据 12/12 / 红项空）────────
+  · run1 rc=0（HIDPICHECK: VERDICT=PASS；红项 []）
+  · run2 rc=0（HIDPICHECK: VERDICT=PASS；红项 []）
+  · run3 rc=0（HIDPICHECK: VERDICT=PASS；红项 []）
+  ✓ 正题 3/3 全绿（判据 12/12 × 3）
+  · run1 判据全文（见 docs/evidence/2026-09-30-t39-hidpi/mac/hidpicheck-run1.txt）：
+      HIDPICHECK: 高 DPI 自检：判据 12/12
+      HIDPICHECK: 初值：screenFontSize=13 guiFontSize=13 screenButtonScale=100 ｜dpp=2 screenScale=2 guiScale=2
+      HIDPICHECK: 布场：仿真冻结 已由判据置停（帧静定 —— 像素比较前提；大气**不动**：探针已证默认布场下天空文本可见且效应 4.054%）
+      HIDPICHECK: 噪声底帧①：有效 帧号=166 尺寸=1280x720 非黑=1.0000 哈希=193b80c316882ace
+      HIDPICHECK: 噪声底帧②：有效 帧号=191 尺寸=1280x720 非黑=1.0000 哈希=193b80c316882ace
+      HIDPICHECK: [PASS] HP-00 噪声底门：冻结后同状态两帧**低于噪声容差**（实测 差异像素=0（逐位相同，哈希相同），Δ≤2）—— 后续像素判据口径有效
+      HIDPICHECK: HP-01 已 façade 写 screenFontSize=33（回读放下一步）
+      HIDPICHECK: [PASS] HP-01 引擎面往返：façade 写 33 ⇒ façade 读回 33 ∧ 引擎 getter 独立回读 33
+      HIDPICHECK: HP-02 已写 99（超上限，回读放下一步）
+      HIDPICHECK: [PASS] HP-02 范围闸（上沿）：写 99 ⇒ façade=50 ∧ 引擎=50 ∧ refusal=out-of-range（原版 SpinBox 上限 50）
+      HIDPICHECK: HP-02 已写 0（超下限，回读放下一步）
+      HIDPICHECK: [PASS] HP-02 范围闸（下沿）：写 0 ⇒ façade=5 ∧ 引擎=5（原版 SpinBox 下限 5）
+      HIDPICHECK: HP-03 已写 guiFontSize=99（回读放下一步）
+      HIDPICHECK: [PASS] HP-03 范围闸（上沿）：写 99 ⇒ façade=50 ∧ 引擎=50（原版 SpinBox 上限 50）
+      HIDPICHECK: HP-03 已写 0（回读放下一步）
+      HIDPICHECK: [PASS] HP-03 范围闸（下沿）：写 0 ⇒ façade=7 ∧ 引擎=7（原版 SpinBox 下限 7）
+      HIDPICHECK: HP-04 已写 screenButtonScale=999（回读放下一步）
+      HIDPICHECK: [PASS] HP-04 范围闸（上沿）：写 999 ⇒ façade=200 ∧ 引擎=200（⚠️ [50,200] 是产品自定 —— 原版只有配置键）
+      HIDPICHECK: HP-04 已写 0（回读放下一步）
+      HIDPICHECK: [PASS] HP-04 范围闸（下沿）：写 0 ⇒ façade=50 ∧ 引擎=50
+      HIDPICHECK: [PASS] HP-05 派生量算术验算：screenScale 引擎 2 vs 独立算 dpp(2)×字号/13 = 2｜guiScale 引擎 2 vs 2（差均 <1e-6）
+      HIDPICHECK: [PASS] HP-06 控件齐备：滑块 from=5/to=50/value=13 vs façade 范围 [5,50]/当前 13 ∧ 三个 objectName 全部找到
+      HIDPICHECK: HP-07 已引擎侧写 screenFontSize=30（读 UI 放下一步）
+      HIDPICHECK: [PASS] HP-07 绑定腿：引擎侧写 30 ⇒ UI 滑块 value=30 跟随（守 T15：绑定必须真的读属性）
+      HIDPICHECK: HP-08 已真实点击 navDisplayButton（等切页 → 下一步点滑块）
+      HIDPICHECK: HP-08 滑块在视口外（sceneY=819，窗口高 640）⇒ 已滚所属 Flickable contentY 0→499
+      HIDPICHECK: HP-08 滑块已进视口（sceneY=819）
+      HIDPICHECK: HP-08 已真实点击滑块 70% 位置（scene=616.9,320）—— clickAt 返回 true｜点击后 UI value=37（点前 30；value 变了说明 press 到了滑块）
+      HIDPICHECK: HP-08 前半：真实点击 ⇒ façade=37（点前 30）⇒ onMoved 通路活
+      HIDPICHECK: HP-08 后半：引擎侧已写 25（读 UI 放下一步）
+      HIDPICHECK: [PASS] HP-08 交互后绑定仍活：真实点击交互后，引擎侧写 25 ⇒ UI 滑块 value=25 跟随 —— Qt 6 Slider 若交互打破绑定，只有这条才测得出（T38 DP-07 没交互过）
+      HIDPICHECK: screenFontSize 已还原为 13；已切回天空页
+      HIDPICHECK: HP-09 已写 screenFontSize=40（抓帧放下一步 —— 等待挂在写步）
+      HIDPICHECK: HP-09 字号 40 帧：有效 帧号=517 尺寸=1280x720 非黑=1.0000 哈希=c5ca8214f24bdf47
+      HIDPICHECK: vs 参考帧：差异像素=37988/921600（4.122%） 最大通道差=246 平均通道差=4.2956 哈希不同 包围盒=(0,0)-(1279,715) 高度8带=1913/5199/7650/137/2787/13037/4984/2281
+      HIDPICHECK: [PASS] HP-09 字号帧效应（成对）：字号 13→40 ⇒ 上游帧差异占比 0.0412 ≥ 门 0.01 —— 探针实测本效应 4.054%、噪声 0
+      HIDPICHECK: HP-09 还原后帧：有效 帧号=553 尺寸=1280x720 非黑=1.0000 哈希=193b80c316882ace
+      HIDPICHECK: vs 参考帧（判别对照）：差异像素=0（逐位相同，哈希相同）
+      HIDPICHECK:   ⇒ 还原后回噪声级 ⇒ 效应可逆，判别对照成立
+      HIDPICHECK: [PASS] HP-10 诊断数据面健康：published=589 dropped=0 completeSlots=3/3 readersHeld=0 bytesPerFrame=3686400 vs 独立验算 宽1280×高720×4=3686400
+      HIDPICHECK: [PASS] HP-11 复原：screenFontSize=13（初值 13）guiFontSize=13（13）screenButtonScale=100（100）｜仿真已恢复 开
+      HIDPICHECK: VERDICT=PASS
+──────── 负控 A STELQUICK_DISPLAY_GATE_OFF=1 ×2（预期 rc=10 / 9/12 / 红项 [HP-02,HP-03,HP-04]）────────
+  · run1 rc=10（HIDPICHECK: VERDICT=FAIL；红项 [HP-02,HP-03,HP-04]）
+  · run2 rc=10（HIDPICHECK: VERDICT=FAIL；红项 [HP-02,HP-03,HP-04]）
+  ✓ 负控 A 2/2 命中恰好 [HP-02,HP-03,HP-04]（三处范围闸承重证明）
+  负控 A 的红是**预期**结果（闸门被关掉 ⇒ 闸门判据必须红）；读数自带证据 （探针结论①现场复现：三个 setter 一个都不夹取）：
+      HIDPICHECK: [FAIL] HP-02 范围闸（上沿）：写 99 ⇒ façade=99 ∧ 引擎=99 ∧ refusal=ok（原版 SpinBox 上限 50）
+      HIDPICHECK: [FAIL] HP-02 范围闸（下沿）：写 0 ⇒ façade=0 ∧ 引擎=0（原版 SpinBox 下限 5）
+      HIDPICHECK: [FAIL] HP-03 范围闸（上沿）：写 99 ⇒ façade=99 ∧ 引擎=99（原版 SpinBox 上限 50）
+      HIDPICHECK: [FAIL] HP-03 范围闸（下沿）：写 0 ⇒ façade=99 ∧ 引擎=99（原版 SpinBox 下限 7）
+      HIDPICHECK: [FAIL] HP-04 范围闸（上沿）：写 999 ⇒ façade=999 ∧ 引擎=999（⚠️ [50,200] 是产品自定 —— 原版只有配置键）
+      HIDPICHECK: [FAIL] HP-04 范围闸（下沿）：写 0 ⇒ façade=0 ∧ 引擎=0
+      HIDPICHECK: VERDICT=FAIL
+──────── 负控 B STELQUICK_DISPLAY_FWD_OFF=1 ×2（预期 rc=10 / 10/12 / 红项 [HP-07,HP-08]）────────
+  · run1 rc=10（HIDPICHECK: VERDICT=FAIL；红项 [HP-07,HP-08]）
+  · run2 rc=10（HIDPICHECK: VERDICT=FAIL；红项 [HP-07,HP-08]）
+  ✓ 负控 B 2/2 命中恰好 [HP-07,HP-08]（绑定腿承重证明）
+  负控 B 的红是**预期**结果（订阅被断 ⇒ 引擎侧改动刷不到 UI）；读数：
+      HIDPICHECK: [FAIL] HP-07 绑定腿：引擎侧写 30 ⇒ UI 滑块 value=13 不跟随（守 T15：绑定必须真的读属性）
+      HIDPICHECK: [FAIL] HP-08 交互后绑定仍活：真实点击交互后，引擎侧写 25 ⇒ UI 滑块 value=37 不跟随（绑定已被交互杀死） —— Qt 6 Slider 若交互打破绑定，只有这条才测得出（T38 DP-07 没交互过）
+      HIDPICHECK: VERDICT=FAIL
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-locationcheck rc=0
+regression-toolbarcheck rc=0
+regression-timelinkcheck rc=0
+regression-configcheck rc=0
+regression-nightcheck rc=0
+regression-displaycheck rc=0
+regression-interactcheck rc=0（18/18，窗口已激活）
+regression-a2-metal rc=0
+regression-dyn-engine-metal 3/3 PASS
+regression-dyn-stub-metal 3/3 PASS
+regression-s3-stela3 rc=0（旧形态）
+════════════════════════════════════════
+脚本层判据：3 通过 / 0 失败
+环境：20:53  up 5 days, 22:36, 1 user, load averages: 4.39 4.26 4.13
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：40929912 B  2026-09-30 20:30 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=f0e39fd324c8dfdceb0a35c64c1bd442

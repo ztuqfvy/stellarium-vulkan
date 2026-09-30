@@ -1,0 +1,65 @@
+高 DPI + 渲染诊断数据面探针：只报读数、不下结论（断言见 T39-C 的 HiDpiCheck）
+── Q1/Q2 初值台账（高 DPI 三属性 + 派生量）──
+screenFontSize     = 13（int，天空文本字号）
+guiFontSize        = 13（int，GUI 面板字号）
+screenButtonScale  = 100（double，按钮尺寸百分比）
+devicePixelsPerPixel = 2
+screenFontSizeRatio  = 1｜guiFontSizeRatio = 1（分母=默认字号 13）
+getScreenScale() = 2｜getGuiScale() = 2（引擎读数）
+  独立验算 dpp×screenRatio = 2.000000（与引擎读数差 0.000000）｜dpp×guiRatio = 2.000000（差 0.000000）
+窗口 devicePixelRatio = 2（合流宿主是 WA_DontShowOnScreen）
+主屏 DPR = 2｜逻辑尺寸 960×640
+── Q8 config 来源（陷阱 44 同族）──
+settings file    = /Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini
+gui/screen_font_size   = 13（默认 13）
+gui/gui_font_size      = 13（默认 13）
+gui/screen_button_scale= 100（默认 100）
+布场：仿真冻结 已由探针置停（Q5 的像素比较前提）
+── Q1 写读往返 + 夹取（写入值刻意取「远」值：99 / 99 / 999）──
+已写 screenFontSize=99 / guiFontSize=99 / screenButtonScale=999（回读放下一步）
+回读 screenFontSize = 99 ⇒ **原样**（setter 不夹取）
+回读 guiFontSize    = 99 ⇒ **原样**（setter 不夹取）
+回读 screenButtonScale = 999 ⇒ **原样**（setter 不夹取）
+三属性已还原（guiFontSize 留在 99，下一步 Q3 用它做对照）
+── Q3 getGuiFontSize() 的来源（绕过 setter 直改全局字体）──
+改前：getGuiFontSize()=99｜QGuiApplication::font().pixelSize()=99
+已绕过 setter 直改全局字体 pixelSize=21（回读放下一步）
+改后：getGuiFontSize()=21｜QGuiApplication::font().pixelSize()=21 ⇒ 🔴 **它读的就是全局字体**（不是内部缓存）⇒ 任何绕过 setter 的改字都会污染「用户设定值」
+全局字体已还原为 pixelSize=13
+Q4 基准扫描（前）：n=325｜显式 pixelSize 68 项(10~22)｜显式 pointSize 257 项(13~13)｜无字号 0 项
+Q4 仪器正控①（读取链路）：显式 pixelSize=33 能读到｜显式 pointSize=37 能读到
+Q4 仪器正控②（真实树人为扰动 Label_QMLTYPE_30）：跟随 1 / 不动 324（共配对 325）；样本：Label_QMLTYPE_30(-) px=22/pt=-1/.AppleSystemUIFont→px=41/pt=-1/.AppleSystemUIFont
+  ⇒ 恰好 1 项被查出 ⇒ 配对对比有效
+Q4 正控③（app font 改 pointSize=25）：跟随 0 / 不动 325（共配对 325）
+  ⇒ 点值路径同样**一项都不跟随** ⇒ 结论完备
+── Q4 setGuiFontSize() 的波及面（正经 setter）──
+改前：guiFontSize=13｜app font pixelSize=13
+已 setGuiFontSize(25)（后扫放下一步）
+改后：guiFontSize=25｜app font pixelSize=25
+Q4 配对对比：跟随 0 / 不动 325（共配对 325）
+  ⇒ 🔴 **QML 侧一个都不跟随**：引擎 guiFontSize 只作用于老 QWidget 对话框；QML UI 自有字号 ⇒ 高 DPI 的 QML 缩放必须由**产品侧**自己做系数
+guiFontSize 已还原为 13（app font pixelSize=13）
+── Q5 screenFontSize 的帧级效应 ──
+噪声底帧①（冻结、未动任何参数）：有效 帧号=194 尺寸=1280x720 非黑=1.0000 哈希=3a3441f8953664b8
+噪声底帧②：有效 帧号=217 尺寸=1280x720 非黑=1.0000 哈希=3a3441f8953664b8
+噪声底（①②同状态）：差异像素=0（逐位相同，哈希相同）
+参考帧（初值，字号 13）：有效 帧号=217 尺寸=1280x720 非黑=1.0000 哈希=3a3441f8953664b8
+已 setScreenFontSize(40)（抓帧放下一步 —— T38 血泪：等待必须挂在**写入步**，否则读到上一帧缓冲）
+字号 40 帧：有效 帧号=275 尺寸=1280x720 非黑=1.0000 哈希=8e833f8cbdabd193
+vs 参考帧：差异像素=37360/921600（4.054%） 最大通道差=247 平均通道差=4.3657 哈希不同 包围盒=(1,0)-(1279,715) 高度8带=1214/5788/7910/137/588/1736/9707/10280
+  ⇒ 天空文本字号 13→40 的上游帧差异见上（量级由 T39-C 标定门槛）
+screenFontSize 已还原为 13
+还原字号后的帧：有效 帧号=290 尺寸=1280x720 非黑=1.0000 哈希=3a3441f8953664b8
+vs 参考帧（判别对照 —— 还原应回到噪声级）：差异像素=0（逐位相同，哈希相同）
+── Q7 渲染诊断数据面（FrameMailbox::Stats，任意线程可读）──
+latestCompletedFrameNumber = 326
+published=326｜dropped=0｜leased=322
+sizeGeneration=2｜completeSlots=3 / 槽位 3｜readersHeld=0
+latestFrameAgeMs=1（-1 = 无完整帧）｜bytesPerFrame=3686400
+── Q6 NOTIFY 静置基线（此刻起静置 1.5s）──
+基线计数：screen=4｜gui=3｜button=2
+静置 1.5s 增量：screen=0｜gui=0｜button=0（决定 QML 能否安全绑定）
+── 收尾还原核对 ──
+仿真已恢复运行（探针置停的）
+screenFontSize=13（初值 13）｜guiFontSize=13（初值 13）｜screenButtonScale=100（初值 100）
+VERDICT=DONE

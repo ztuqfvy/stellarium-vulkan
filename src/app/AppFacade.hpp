@@ -604,6 +604,71 @@ public:
     Q_INVOKABLE QString displayRefusalText() const;
     //@}
 
+    // ---- T39 高 DPI：天空文本字号 / 界面字号 / 按钮尺寸百分比 ----
+    //!
+    //! 出处：A-1.0 范围表最后一格"必须"里的「高 DPI」。引擎侧三个旋钮
+    //! （`StelApp.screenFontSize` / `guiFontSize` / `screenButtonScale`）本就是
+    //! Q_PROPERTY + NOTIFY，但 **T39-A 探针实测四条**决定了本层怎么写：
+    //!
+    //! ① **三个 setter 一个都不夹取**（写 99/99/999 原样回读，还会顺手落盘）
+    //!   ⇒ 范围闸在本层（同 T38 的 StelSkyDrawer 一族）。
+    //! ② 🔴 **`getGuiFontSize()` 读的就是 `QGuiApplication::font()`**（探针绕过 setter
+    //!   设 21 → 读回 21）⇒ 它**不是"用户设定值"的可靠真源**（T38 那条"读错量的名字"
+    //!   的同族）。而且 `setGuiFontSize()` 直接改**全局字体**，却**只作用于老 QWidget
+    //!   对话框** —— 探针实测：改 25 后 QML 视觉树 **325 项一项都不跟随**
+    //!   （三重仪器正控验证：读取链路有效 / 真实树人为扰动恰查 1 项 / 换成 pointSize
+    //!   路径同样 0 跟随）。
+    //!   ⇒ 本层照实暴露引擎面，但 QML 的 UI 侧**只给 screenFontSize 一个控件**，
+    //!   并在界面上**诚实标注作用域** —— 不假装 Qt Quick 界面会跟着缩放。
+    //! ③ **`screenFontSize` 有强帧效应**（探针：噪声底逐位相同 → 字号 13→40 的上游帧
+    //!   差异 **4.054%**、Δmax 247，还原后**逐位回到原哈希**）⇒ 合流形态下**真正可见**
+    //!   的就是这一个旋钮（作用面 = 天空里的文本：星名、地景标签、星座名）。
+    //! ④ 静置 1.5s 三条 NOTIFY 增量均为 0 ⇒ 不是"每帧都变的连续量"，可安全绑定。
+    //@{
+    Q_PROPERTY(int screenFontSize READ screenFontSize WRITE setScreenFontSize
+                   NOTIFY displayParametersChanged)
+    Q_PROPERTY(int guiFontSize READ guiFontSize WRITE setGuiFontSize
+                   NOTIFY displayParametersChanged)
+    Q_PROPERTY(double screenButtonScale READ screenButtonScale WRITE setScreenButtonScale
+                   NOTIFY displayParametersChanged)
+    //! 只读派生量（诊断用）。与引擎 `getScreenScale()/getGuiScale()` 同式
+    //! （`devicePixelsPerPixel × 字号比`），探针②实测独立验算差 0。
+    Q_PROPERTY(double screenScale READ screenScale NOTIFY displayParametersChanged)
+    Q_PROPERTY(double guiScale READ guiScale NOTIFY displayParametersChanged)
+    Q_PROPERTY(double devicePixelsPerPixel READ devicePixelsPerPixel
+                   NOTIFY displayParametersChanged)
+    //! 范围常量。前两个**照原版 `configurationDialog.ui`**（screen [5,50]、gui [7,50]，
+    //! 默认值 13 = `DEFAULT_FONT_SIZE`）。
+    //! ⚠️ `screenButtonScale` 原版**只有配置键、没有控件**（默认 100）⇒ [50,200] 是
+    //! **产品自定**，不是照抄；且它在本形态**无可见效果**（探针：只作用于老 GUI 按钮，
+    //! 合流形态不渲染老 GUI），故**不给 UI 控件**，仅暴露引擎面供判据与后续复用。
+    Q_PROPERTY(int screenFontSizeMin READ screenFontSizeMin CONSTANT)
+    Q_PROPERTY(int screenFontSizeMax READ screenFontSizeMax CONSTANT)
+    Q_PROPERTY(int guiFontSizeMin READ guiFontSizeMin CONSTANT)
+    Q_PROPERTY(int guiFontSizeMax READ guiFontSizeMax CONSTANT)
+    Q_PROPERTY(double screenButtonScaleMin READ screenButtonScaleMin CONSTANT)
+    Q_PROPERTY(double screenButtonScaleMax READ screenButtonScaleMax CONSTANT)
+    Q_PROPERTY(int screenFontSizeDefault READ screenFontSizeDefault CONSTANT)
+
+    int screenFontSize() const;
+    void setScreenFontSize(int v);
+    int guiFontSize() const;
+    void setGuiFontSize(int v);
+    double screenButtonScale() const;
+    void setScreenButtonScale(double v);
+    double screenScale() const;
+    double guiScale() const;
+    double devicePixelsPerPixel() const;
+
+    int screenFontSizeMin() const { return 5; }
+    int screenFontSizeMax() const { return 50; }
+    int guiFontSizeMin() const { return 7; }
+    int guiFontSizeMax() const { return 50; }
+    double screenButtonScaleMin() const { return 50.0; }
+    double screenButtonScaleMax() const { return 200.0; }
+    int screenFontSizeDefault() const { return 13; }
+    //@}
+
 signals:
     void simulationPausedChanged(bool paused);
     void timeRateChanged(double ratePerJulianDaySecond);

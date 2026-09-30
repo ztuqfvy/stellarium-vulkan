@@ -1,4 +1,5 @@
 #include "ui/quick/BackendInfo.hpp"
+#include "render/legacy/FrameMailbox.hpp"  // T39 运行时诊断的数据源
 #include "render/vulkan/VkDeviceProbe.hpp" // 包含路径以 src/ 为根（CMake include 目录）
 
 namespace stelapp {
@@ -34,6 +35,34 @@ bool BackendInfo::tbLayoutBreak() const
 bool BackendInfo::nightEffectOff() const
 {
     return qEnvironmentVariableIsSet("STELQUICK_NIGHT_EFFECT_OFF");
+}
+
+void BackendInfo::setFrameMailbox(FrameMailbox *mailbox)
+{
+    m_mailbox = mailbox;
+    refresh();   // 立刻拉一次，免得界面先显示一排 0
+}
+
+void BackendInfo::refresh()
+{
+    if (!m_mailbox)
+    {
+        emit refreshed();
+        return;
+    }
+    // 只读搬运：**不做任何计算、不做任何加计数的取帧**（见头注那句"诊断污染"）。
+    const FrameMailbox::Stats st = m_mailbox->stats();
+    m_frameNumber = m_mailbox->latestCompletedFrameNumber();
+    m_published = st.published;
+    m_dropped = st.dropped;
+    m_leased = st.leased;
+    m_completeSlots = st.completeSlots;
+    m_slotCapacity = FrameMailbox::kFrameSlotCount;
+    m_readersHeld = st.readersHeld;
+    m_latestFrameAgeMs = st.latestFrameAgeMs;
+    m_bytesPerFrame = st.bytesPerFrame;
+    m_sizeGeneration = st.sizeGeneration;
+    emit refreshed();
 }
 
 void BackendInfo::applyProbe(const VulkanProbeResult &probe)

@@ -16,6 +16,8 @@
 namespace stelapp {
 
 struct VulkanProbeResult;
+//! T39 运行时诊断的数据源（只前置声明 —— 实现细节留在 .cpp，本头保持轻量）。
+class FrameMailbox;
 
 class BackendInfo : public QObject
 {
@@ -51,6 +53,35 @@ class BackendInfo : public QObject
     // 缺陷只能靠 NC-03① 的上游零差异碰运气（那是"引擎侧没画"，测不出"UI 侧没画"）。
     Q_PROPERTY(bool nightEffectOff READ nightEffectOff CONSTANT)
 
+    // ---- T39 运行时诊断（诊断页的"活"的那一半）----
+    //!
+    //! 出处：A-1.0 范围表 `|资源路径、错误提示、**渲染诊断**、配置保存 | 最小 | 必须 |`
+    //! —— T36 只做掉了"配置保存"（目录隔离）；"渲染诊断"此前只有**静态后端信息**
+    //! （API/设备/驱动/DPR），**没有任何运行时量**。数据源 = `FrameMailbox::Stats`
+    //! （`src/render/legacy/FrameMailbox.hpp:117`，任意线程可读）。
+    //!
+    //! ⚠️ 这些量**每帧都在变**（帧号 / 帧年龄）⇒ 按项目纪律**不建绑定**，由 QML 侧
+    //! `Timer` 周期调 `refresh()`（T15：每帧变的连续量一律轮询；T39 探针已确认
+    //! 字号那一组才是"离散状态"，可以绑定）。
+    //! ⚠️ `refresh()` 里**不做任何计算**，只把引擎读数搬过来 —— 诊断页显示的数字
+    //! 必须与 `FrameMailbox::stats()` 逐字对应（否则又是一把"会撒谎的仪器"）。
+    Q_PROPERTY(quint64 frameNumber READ frameNumber NOTIFY refreshed)
+    Q_PROPERTY(quint64 framesPublished READ framesPublished NOTIFY refreshed)
+    Q_PROPERTY(quint64 framesDropped READ framesDropped NOTIFY refreshed)
+    Q_PROPERTY(quint64 framesLeased READ framesLeased NOTIFY refreshed)
+    Q_PROPERTY(int completeSlots READ completeSlots NOTIFY refreshed)
+    Q_PROPERTY(int slotCapacity READ slotCapacity NOTIFY refreshed)
+    Q_PROPERTY(int readersHeld READ readersHeld NOTIFY refreshed)
+    Q_PROPERTY(qint64 latestFrameAgeMs READ latestFrameAgeMs NOTIFY refreshed)
+    Q_PROPERTY(qint64 bytesPerFrame READ bytesPerFrame NOTIFY refreshed)
+    Q_PROPERTY(quint32 sizeGeneration READ sizeGeneration NOTIFY refreshed)
+    //! 诊断是否已接上帧泵（未接 ⇒ 全 0，界面显示"未接引擎帧泵"而非假装 0 是读数）。
+    Q_PROPERTY(bool runtimeDiagAvailable READ runtimeDiagAvailable NOTIFY refreshed)
+    //! ⚠️ **刻意不报帧宽高**：`FrameMailbox` 没有只读的尺寸访问，唯一途径是
+    //! `takeLatestFrame()` —— 而它会让 `leased` 计数 **+1**，也就是**诊断会污染
+    //! 被诊断的量**（刷新 500ms 一次 ⇒ leased 长得比 published 快，读数是假的）。
+    //! 尺寸的独立验算留在 T39-A 探针与 T39-C 判据里做（那里本来就持有完整接口）。
+
     // 说明：手动 qmlRegisterSingletonInstance 注册（main.cpp），不用 QML_ELEMENT 宏，
     // 避免与 qt_add_qml_module 的类型注册重复冲突。
 
@@ -69,6 +100,23 @@ public:
     bool tbLayoutBreak() const;
     bool nightEffectOff() const;
 
+    //! T39：拉一次运行时读数并 emit refreshed()（QML 侧 Timer 周期调；**不建绑定**）。
+    Q_INVOKABLE void refresh();
+    //! T39：main.cpp 在帧泵 `start()` **之后**调用（之前 refresh() 拿不到数据）。
+    void setFrameMailbox(FrameMailbox *mailbox);
+
+    quint64 frameNumber() const { return m_frameNumber; }
+    quint64 framesPublished() const { return m_published; }
+    quint64 framesDropped() const { return m_dropped; }
+    quint64 framesLeased() const { return m_leased; }
+    int completeSlots() const { return m_completeSlots; }
+    int slotCapacity() const { return m_slotCapacity; }
+    int readersHeld() const { return m_readersHeld; }
+    qint64 latestFrameAgeMs() const { return m_latestFrameAgeMs; }
+    qint64 bytesPerFrame() const { return m_bytesPerFrame; }
+    quint32 sizeGeneration() const { return m_sizeGeneration; }
+    bool runtimeDiagAvailable() const { return m_mailbox != nullptr; }
+
     // 填充探针结果（应用启动时调用一次）
     void applyProbe(const VulkanProbeResult &probe);
     // 探针未编译进本构建时调用（如鸿蒙交叉编译，OHOS NDK 不保证提供 libvulkan）
@@ -79,6 +127,8 @@ public:
 signals:
     void runtimeApiNameChanged();
     void backendOkChanged();
+    //! T39：`refresh()` 拉完一次运行时读数后发（QML 侧那些数字靠它重算）。
+    void refreshed();
 
 private:
     QString m_deviceName;
@@ -89,6 +139,19 @@ private:
     QString m_runtimeApiName;
     bool m_runtimeApiKnown = false;
     bool m_backendOk = false;
+
+    // T39 运行时诊断（每次 refresh() 从 FrameMailbox::Stats 原样搬过来）
+    FrameMailbox *m_mailbox = nullptr;
+    quint64 m_frameNumber = 0;
+    quint64 m_published = 0;
+    quint64 m_dropped = 0;
+    quint64 m_leased = 0;
+    int m_completeSlots = 0;
+    int m_slotCapacity = 0;
+    int m_readersHeld = 0;
+    qint64 m_latestFrameAgeMs = -1;
+    qint64 m_bytesPerFrame = 0;
+    quint32 m_sizeGeneration = 0;
 };
 
 } // namespace stelapp
