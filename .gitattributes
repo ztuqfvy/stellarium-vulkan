@@ -1,0 +1,12 @@
+# Evidence artifacts are BYTE-LEVEL records, not source code: never let git
+# normalise their line endings.
+#
+# Why: docs/evidence/**/windows/*.txt are produced on Windows and are CRLF in
+# their original form. With core.autocrlf=input (this repo), committing them
+# would rewrite CRLF -> LF inside the object store, so a fresh clone would no
+# longer hold the bytes the instrument actually wrote -- and any later
+# hash-based verification of the archive would silently disagree with the
+# original. This is the same hazard as TRAPS 60 ("a bare MD5 across platforms
+# compares line endings, not content"); here the normaliser would have done it
+# for us without asking.
+docs/evidence/** -text
