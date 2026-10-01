@@ -1,0 +1,57 @@
+[pull] 2026-09-30T12:20:30.0838857+08:00
+before=cf738bb
+git : fatal: unable to access 'https://github.com/ztuqfvy/stellarium-vulkan.git/': Empty reply from server
+所在位置 C:\temp\wt35-pull.ps1:7 字符: 1
++ git fetch origin main *>&1 | Out-File -Encoding utf8 -Append $log
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (fatal: unable t...ply from server:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+fetch_rc=128
+Already up to date.
+merge_rc=0
+after=cf738bb
+--- status ---
+ D atmosphere
+ D landscapes
+ D models
+ D nebulae
+ D plugins
+ D po
+ D scenery3d
+ D scripts
+ D skycultures
+ M src/app/AppFacade.cpp
+ M src/app/AppFacade.hpp
+ M src/ui/CMakeLists.txt
+ M src/ui/LiveSkyRuntime.cpp
+ M src/ui/main.cpp
+ M src/ui/qml/MainWindow.qml
+ M src/ui/qml/SearchPage.qml
+ M src/ui/quick/BackendInfo.cpp
+ M src/ui/quick/BackendInfo.hpp
+ D stars
+ D textures
+ D util
+?? src/app/LocationCheck.cpp
+?? src/app/LocationCheck.hpp
+?? src/app/LocationProbe.cpp
+?? src/app/LocationProbe.hpp
+?? src/app/TimeLinkCheck.cpp
+?? src/app/TimeLinkCheck.hpp
+?? src/app/TimeLinkProbe.cpp
+?? src/app/TimeLinkProbe.hpp
+?? src/app/ToolbarCheck.cpp
+?? src/app/ToolbarCheck.hpp
+?? src/app/ToolbarProbe.cpp
+?? src/app/ToolbarProbe.hpp
+?? src/ui/qml/LocationPage.qml
+?? src/ui/qml/Toolbar.qml
+?? tools/windows/wt33-build.ps1
+?? tools/windows/wt33-launch.ps1
+?? tools/windows/wt33-pull.ps1
+?? tools/windows/wt33-suites.ps1
+?? tools/windows/wt35-build.ps1
+?? tools/windows/wt35-pull.ps1
+?? tools/windows/wt35-suites.ps1
+[ok]

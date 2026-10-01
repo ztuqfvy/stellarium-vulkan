@@ -1,0 +1,28 @@
+before=20d4157
+git : From https://github.com/ztuqfvy/stellarium-vulkan
+所在位置 C:\temp\pull2.ps1:6 字符: 1
++ git fetch origin *>&1 | Out-File -Encoding utf8 -Append $log
++ ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (From https://gi...ellarium-vulkan:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   20d4157..b4e8cf2  main       -> origin/main
+Updating 20d4157..b4e8cf2
+Fast-forward
+ src/ui/main.cpp | 124 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 122 insertions(+), 2 deletions(-)
+merge_rc=0
+after=b4e8cf2
+ D atmosphere
+ D landscapes
+ D models
+ D nebulae
+ D plugins
+ D po
+ D scenery3d
+ D scripts
+ D skycultures
+ D stars
+ D textures
+ D util
+[ok]

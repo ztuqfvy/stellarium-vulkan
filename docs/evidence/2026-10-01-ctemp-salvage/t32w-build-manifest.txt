@@ -1,0 +1,6 @@
+elapsed_min=0.16
+stelQuickUI.exe  size=28939264  md5=CDF612C345B9A586E96C476518180790  mtime=2026-09-29T19:31:32.1038461+08:00
+stellarium.exe  size=27634176  md5=66C51B61582BAC065C7A7FE5ACA44A42  mtime=2026-09-29T11:56:35.7263677+08:00
+SRC MainWindow.qml  size=17174  md5=e9858e4e4ddf6bb51aa76fa9a32f340c
+SRC main.cpp  size=357435  md5=92d2fa0e07ec7b1d89eb2d828d2d69e8
+SRC MISSING E:\Qt_demo\stellarium-vulkan\tools\windows\wt32-suites.ps1

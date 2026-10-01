@@ -1,0 +1,1017 @@
+[start] 2026-09-24T12:05:25.1589832+08:00
+cmake  = E:\VisualStudio\CanPin\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe
+src    = E:\Qt_demo\stellarium-vulkan
+CMake is re-running because E:/Qt_demo/stellarium-vulkan/build-win/src/ui/CMakeFiles/generate.stamp is out-of-date.
+  the file 'E:/Qt_demo/stellarium-vulkan/src/ui/CMakeLists.txt'
+  is newer than 'E:/Qt_demo/stellarium-vulkan/build-win/src/ui/CMakeFiles/generate.stamp.depend'
+  result='-1'
+-- Found CMake 4.3.1-msvc1
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.19045.
+-- Platform: Windows-10.0.19045 (AMD64)
+-- Found Git 2.51.0.windows.1
+-- Building Stellarium 26.1+ (v26.1.267; Mode: Release)
+-- Found Qt6: E:/Qt/6.11.2/msvc2022_64/bin/qmake.exe (found suitable version 6.11.2)
+-- Building an OpenGL/OpenGL ES build
+-- CPM: Adding package ShowMySky-Qt6@0.4.0 (0.4.0)
+cmake.exe : CMake Deprecation Warning at build-win/_deps/showmysky-qt6-src/CMakeLists.txt:3 (cmake_policy):
+所在位置 E:\Qt_demo\stellarium-vulkan\tools\t17-win-build.ps1:22 字符: 1
++ & $cmake --build $build --config Release --parallel *>&1 |
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (CMake Deprecati...(cmake_policy)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  The OLD behavior for policy CMP0110 will be removed from a future version
+  of CMake.
+
+  The cmake-policies(7) manual explains that the OLD behaviors of all
+  policies are deprecated and that a policy should be set to OLD only under
+  specific short-term circumstances.  Projects should be ported to the NEW
+  behavior and not rely on setting a policy to OLD.
+
+
+-- Looking for C++ include glm/glm.hpp
+-- Looking for C++ include glm/glm.hpp - not found
+-- CPM: Adding package glm@1.0.1 (1.0.1)
+CMake Deprecation Warning at build-win/_deps/glm-src/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at build-win/_deps/glm-src/CMakeLists.txt:2 (cmake_policy):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- GLM: Version 1.0.1
+-- GLM: Build with C++ features auto detection
+-- CPM: Adding package Eigen3@3.4.0 (3.4.0)
+-- Populating eigen3
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.19045.
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: E:/Qt_demo/stellarium-vulkan/build-win/_deps/eigen3-subbuild
+閫傜敤浜?.NET Framework MSBuild 鐗堟湰 18.10.1-1.26427.6+3cd27c13e
+
+  1>
+-- ABI version: 15
+-- Will build ShowMySky library
+-- GPS: support by Qt's NMEA handling enabled.
+-- Unit tests support: disabled
+-- Using bundled zlib version at E:/Qt_demo/stellarium-vulkan/src/external/zlib
+-- Using bundled qtcompress at E:/Qt_demo/stellarium-vulkan/src/external/qtcompress
+-- CPM: Adding package QXlsxQt6@ ()
+CMake Warning at E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6/QtPublicDependencyHelpers.cmake:339 (message):
+  This project is using headers of the GuiPrivate module and will therefore
+  be tied to this specific Qt module build version.  Running this project
+  against other versions of the Qt modules may crash at any arbitrary point.
+  This is not a bug, but a result of using Qt internals.  You have been
+  warned!
+
+  You can disable this warning by setting QT_NO_PRIVATE_MODULE_WARNING to ON.
+Call Stack (most recent call first):
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6GuiPrivate/Qt6GuiPrivateConfig.cmake:48 (_qt_internal_show_private_module_warni
+ng)
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6/Qt6Config.cmake:257 (find_package)
+  build-win/_deps/qxlsxqt6-src/QXlsx/CMakeLists.txt:22 (find_package)
+
+
+-- CPM: Adding package md4c@0.5.2 (0.5.2)
+CMake Deprecation Warning at build-win/_deps/md4c-src/CMakeLists.txt:2 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Found windeployqt: E:/Qt/6.11.2/msvc2022_64/bin/windeployqt.exe
+-- Found Spout library: E:/Qt_demo/stellarium-vulkan/util/spout2/x64/SpoutLibrary.dll
+-- Could NOT find Inno Setup compiler. You won't be able to build setup files.
+-- Could NOT find Doxygen (missing: DOXYGEN_EXECUTABLE) 
+-- Checking that std::from_chars for floats is supported by the C++ library
+-- Checking that std::from_chars for floats is supported by the C++ library - yes
+-- Checking that std::execution::par is supported by the C++ library
+-- Checking that std::execution::par is supported by the C++ library - yes
+-- CPM: Adding package indiclient@2.1.3 (2.1.3)
+-- Populating indiclient
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.19045.
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: E:/Qt_demo/stellarium-vulkan/build-win/_deps/indiclient-subbuild
+閫傜敤浜?.NET Framework MSBuild 鐗堟湰 18.10.1-1.26427.6+3cd27c13e
+
+  1>
+-- Adding Speech output.
+CMake Warning (dev) at E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Core/Qt6CoreMacros.cmake:3573 (message):
+  Qt policy QTP0001 is not set: ':/qt/qml/' is the default resource prefix
+  for QML modules.  Check https://doc.qt.io/qt-6/qt-cmake-policy-qtp0001.html
+  for policy details.  Use the qt_policy command to set the policy and
+  suppress this warning.
+
+Call Stack (most recent call first):
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:816 (__qt_internal_setup_policy)
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:1513 (qt6_add_qml_module)
+  src/ui/CMakeLists.txt:169 (qt_add_qml_module)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Core/Qt6CoreMacros.cmake:3573 (message):
+  Qt policy QTP0004 is not set: You need qmldir files for each extra
+  directory that contains .qml files for your module.  Check
+  https://doc.qt.io/qt-6/qt-cmake-policy-qtp0004.html for policy details.
+  Use the qt_policy command to set the policy and suppress this warning.
+
+Call Stack (most recent call first):
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:4040 (__qt_internal_setup_policy)
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:1035 (qt6_target_qml_sources)
+  E:/Qt/6.11.2/msvc2022_64/lib/cmake/Qt6Qml/Qt6QmlMacros.cmake:1513 (qt6_add_qml_module)
+  src/ui/CMakeLists.txt:169 (qt_add_qml_module)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning at plugins/OnlineQueries/src/CMakeLists.txt:57 (MESSAGE):
+  Qt6::WebEngineWidgets or its dependencies (Positioning, WebChannel,
+  WebEngineCore) not found.  If these packages exist for your platform,
+  install and rerun.  Else the program will call the system web browser where
+  required.
+
+
+CMake Warning at plugins/LensDistortionEstimator/src/CMakeLists.txt:1 (FIND_PACKAGE):
+  By not providing "Findexiv2.cmake" in CMAKE_MODULE_PATH this project has
+  asked CMake to find a package configuration file provided by "exiv2", but
+  CMake did not find one.
+
+  Could not find a package configuration file provided by "exiv2" with any of
+  the following names:
+
+    exiv2.cps
+    exiv2Config.cmake
+    exiv2-config.cmake
+
+  Add the installation prefix of "exiv2" to CMAKE_PREFIX_PATH or set
+  "exiv2_DIR" to a directory containing one of the above files.  If "exiv2"
+  provides a separate development package or SDK, be sure it has been
+  installed.
+
+
+-- CPM: Adding package NLopt@2.9.0 (2.9.0)
+-- NLopt version 2.9.0
+CMake Warning at E:/VisualStudio/CanPin/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CPac
+k.cmake:541 (message):
+  CPack.cmake has already been included!!
+Call Stack (most recent call first):
+  build-win/_deps/nlopt-src/CMakeLists.txt:389 (include)
+
+
+-- Sky Culture Converter is DISABLED.
+-- Found lupdate: E:/Qt/6.11.2/msvc2022_64/bin/lupdate.exe
+-- Found lconvert: E:/Qt/6.11.2/msvc2022_64/bin/lconvert.exe
+-- Configuring done (15.1s)
+-- Generating done (4.8s)
+-- Build files have been written to: E:/Qt_demo/stellarium-vulkan/build-win
+閫傜敤浜?.NET Framework MSBuild 鐗堟湰 18.10.1-1.26427.6+3cd27c13e
+
+  Automatic MOC and UIC for target AngleMeasure-static
+  Automatic MOC and UIC for target EquationOfTime-static
+  Automatic MOC and UIC for target MosaicCamera-static
+  Automatic MOC and UIC for target MeteorShowers-static
+  Automatic MOC and UIC for target Calendars-static
+  Automatic MOC and UIC for target Exoplanets-static
+  Automatic MOC and UIC for target ArchaeoLines-static
+  Automatic MOC and UIC for target NavStars-static
+  Automatic MOC and UIC for target Observability-static
+  Automatic MOC and UIC for target NebulaTextures-static
+  Automatic MOC and UIC for target OnlineQueries-static
+  Automatic MOC and UIC for target Novae-static
+  Automatic MOC and UIC for target Oculars-static
+  Automatic MOC and UIC for target Planes-static
+  Automatic MOC and UIC for target PointerCoordinates-static
+  Automatic MOC and UIC for target Pulsars-static
+  Automatic MOC and UIC for target RemoteControl-static
+  Automatic MOC and UIC for target Quasars-static
+  Automatic MOC and UIC for target RemoteSync-static
+  Automatic MOC and UIC for target Scenery3d-static
+  Automatic MOC and UIC for target SkyCultureMaker-static
+  Automatic MOC and UIC for target Satellites-static
+  Automatic MOC and UIC for target SolarSystemEditor-static
+  Automatic MOC and UIC for target TimeNavigator-static
+  Automatic MOC and UIC for target TextUserInterface-static
+  Automatic MOC and UIC for target Supernovae-static
+  Automatic MOC and UIC for target TelescopeControl_common
+  Automatic UIC for target zlib_stel
+  LogFile.cpp
+  Socket.cpp
+  Server.cpp
+  RemoteSync.cpp
+  Supernovae.cpp
+  Connection.cpp
+  SyncClient.cpp
+  SerialPort.cpp
+  TcpConnection.cpp
+  CCD.cpp
+  ScmConstellation.cpp
+  SyncClientHandlers.cpp
+  SyncMessages.cpp
+  Lens.cpp
+  Supernova.cpp
+  SolarSystemEditor.cpp
+  Ocular.cpp
+  Oculars.cpp
+  Telescope.cpp
+  OcularDialog.cpp
+  PropertyBasedTableModel.cpp
+  OcularsGuiPanel.cpp
+  qrc_Oculars.cpp
+  mocs_compilation_Release.cpp
+  adler32.c
+  compress.c
+  Quasars.cpp
+  SolarSystemManagerWindow.cpp
+  crc32.c
+  Exoplanets.cpp
+  deflate.c
+  InterpolatedPosition.cpp
+  ASCOMSupport.cpp
+  Exoplanet.cpp
+  gzclose.c
+  OLE.cpp
+  mocs_compilation_Release.cpp
+  Frustum.cpp
+  Plane.cpp
+  SPolygon.cpp
+  gSatTEME.cpp
+  DummyDialog.cpp
+  AbstractAPIService.cpp
+  APIController.cpp
+  MainService.cpp
+  ObjectService.cpp
+  LocationService.cpp
+  LocationSearchService.cpp
+  RemoteControl.cpp
+  RequestHandler.cpp
+  ScriptService.cpp
+  SimbadService.cpp
+  StelActionService.cpp
+  ExoplanetsDialog.cpp
+  TimeNavigator.cpp
+  PlanetaryEventsMgr.cpp
+  Polyhedron.cpp
+  StelPropertyService.cpp
+  MpcImportWindow.cpp
+  SyncProtocol.cpp
+  ManualImportWindow.cpp
+  SyncServer.cpp
+  SyncServerEventSenders.cpp
+  SyncServerHandlers.cpp
+  RemoteSyncDialog.cpp
+  qrc_RemoteSync.cpp
+  mocs_compilation_Release.cpp
+  gzlib.c
+  gzread.c
+  Quasar.cpp
+  QuasarsDialog.cpp
+  qrc_Quasars.cpp
+  SceneInfo.cpp
+  gzwrite.c
+  ViewService.cpp
+  infback.c
+  S3DScene.cpp
+  qrc_Exoplanets.cpp
+  RemoteControlDialog.cpp
+  SupernovaeDialog.cpp
+  ScmConstellationArtwork.cpp
+  inffast.c
+  qrc_RemoteControl.cpp
+  qrc_Supernovae.cpp
+  inflate.c
+  httpconnectionhandler.cpp
+  mocs_compilation_Release.cpp
+  PointerCoordinates.cpp
+  PointerCoordinatesWindow.cpp
+  qrc_PointerCoordinates.cpp
+  mocs_compilation_Release.cpp
+  Scenery3d.cpp
+  Scenery3dRemoteControlService.cpp
+  inftrees.c
+  httpconnectionhandlerpool.cpp
+  TuiNode.cpp
+  TuiNodeActivate.cpp
+  trees.c
+  TuiNodeEditable.cpp
+  gTime.cpp
+  TuiNodeBool.cpp
+  gTimeSpan.cpp
+  TuiNodeInt.cpp
+  sgp4ext.cpp
+  TuiNodeDouble.cpp
+  sgp4io.cpp
+  TuiNodeFloat.cpp
+  sgp4unit.cpp
+  TuiNodeDateTime.cpp
+  gSatWrapper.cpp
+  TuiNodeColor.cpp
+  Satellite.cpp
+  TuiNodeEnum.cpp
+  Satellites.cpp
+  AircraftObject.cpp
+  SatellitesListModel.cpp
+  Planes.cpp
+  SatellitesListFilterModel.cpp
+  TextUserInterface.cpp
+  SatellitesDialog.cpp
+  PlanesDialog.cpp
+  SatellitesImportDialog.cpp
+  SatellitesFilterDialog.cpp
+  SatellitesCommDialog.cpp
+  qrc_Satellites.cpp
+  mocs_compilation_Release.cpp
+  httpcookie.cpp
+  S3DRenderer.cpp
+  qrc_Planes.cpp
+  qrc_SolarSystemEditor.cpp
+  TimeNavigatorDialog.cpp
+  mocs_compilation_Release.cpp
+  mocs_compilation_Release.cpp
+  mocs_compilation_Release.cpp
+  mocs_compilation_Release.cpp
+  uncompr.c
+  zutil.c
+  ScmDraw.cpp
+  ScmSkyCulture.cpp
+  SkyCultureMaker.cpp
+  ScmConstellationDialog.cpp
+  ScmConstellationImage.cpp
+  ScmConstellationImageAnchor.cpp
+  ScmHideOrAbortMakerDialog.cpp
+  ScmSkyCultureDialog.cpp
+  ScmSkyCultureExportDialog.cpp
+  ScmStartDialog.cpp
+  ScmGeoLocGraphicsView.cpp
+  ScmPreviewPathItem.cpp
+  ScmPreviewPolygonItem.cpp
+  ScmPolygonInfoTreeItem.cpp
+  mocs_compilation_Release.cpp
+  ShaderManager.cpp
+  Heightmap.cpp
+  Scenery3dDialog.cpp
+  StoredViewDialog.cpp
+  qrc_Scenery3d.cpp
+  mocs_compilation_Release.cpp
+  qrc_TimeNavigator.cpp
+  mocs_compilation_Release.cpp
+  AngleMeasure.cpp
+  AngleMeasureDialog.cpp
+  qrc_AngleMeasure.cpp
+  mocs_compilation_Release.cpp
+  ArchaeoLines.cpp
+  ArchaeoLinesDialog.cpp
+  ArchaeoLinesDialogLocations.cpp
+  qrc_ArchaeoLines.cpp
+  mocs_compilation_Release.cpp
+  cmake_pch.cxx
+  httpglobal.cpp
+  httplistener.cpp
+  ScmMultiselectionComboBox.cpp
+  ScmAdvancedSpinBox.cpp
+  httprequest.cpp
+  httprequesthandler.cpp
+  qrc_SkyCultureMaker.cpp
+  httpresponse.cpp
+  staticfilecontroller.cpp
+  template.cpp
+  mocs_compilation_Release.cpp
+  mocs_compilation_Release.cpp
+  Observability.cpp
+  ObservabilityDialog.cpp
+  qrc_Observability.cpp
+  mocs_compilation_Release.cpp
+  ArchaeoLines-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\ArchaeoLines\src\Release\ArchaeoLines.lib
+  TextUserInterface-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TextUserInterface\src\Release\TextUserInterface.lib
+  SolarSystemEditor-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\SolarSystemEditor\src\Release\SolarSystemEditor.lib
+  AngleMeasure-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\AngleMeasure\src\Release\AngleMeasure.lib
+  NebulaTextures.cpp
+E:\Qt_demo\stellarium-vulkan\plugins\RemoteControl\src\qtwebapp\httpserver\httprequest.cpp(171,17): warning C4834: 鏀惧純鍏锋湁 [[nodiscard]] 灞炴€х殑鍑芥暟鐨勮繑鍥炲€?[E:\Qt_demo\stellarium-vulkan\build-win\plugins\RemoteControl\src\RemoteControl-static.vcxproj]
+E:\Qt_demo\stellarium-vulkan\plugins\RemoteControl\src\qtwebapp\httpserver\httprequest.cpp(499,25): warning C4834: 鏀惧純鍏锋湁 [[nodiscard]] 灞炴€х殑鍑芥暟鐨勮繑鍥炲€?[E:\Qt_demo\stellarium-vulkan\build-win\plugins\RemoteControl\src\RemoteControl-static.vcxproj]
+  NebulaTexturesDialog.cpp
+  PlateSolver.cpp
+  TextureConfigManager.cpp
+  SkyCoords.cpp
+  TileManager.cpp
+  qrc_NebulaTextures.cpp
+  mocs_compilation_Release.cpp
+  Planes-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Planes\src\Release\Planes.lib
+  OnlineQueries.cpp
+  TimeNavigator-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TimeNavigator\src\Release\TimeNavigator.lib
+  Quasars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Quasars\src\Release\Quasars.lib
+  EquationOfTime.cpp
+  EquationOfTimeWindow.cpp
+  qrc_EquationOfTime.cpp
+  mocs_compilation_Release.cpp
+  Calendars.cpp
+  RemoteControl-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\RemoteControl\src\Release\RemoteControl.lib
+  Calendar.cpp
+  EgyptianCalendar.cpp
+  ArmenianCalendar.cpp
+  ZoroastrianCalendar.cpp
+  SkyCultureMaker-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\SkyCultureMaker\src\Release\SkyCultureMaker.lib
+  JulianCalendar.cpp
+  RevisedJulianCalendar.cpp
+  RomanCalendar.cpp
+  ByzantineCalendar.cpp
+  OlympicCalendar.cpp
+  GregorianCalendar.cpp
+  ISOCalendar.cpp
+  CopticCalendar.cpp
+  EthiopicCalendar.cpp
+  IcelandicCalendar.cpp
+  IslamicCalendar.cpp
+  HebrewCalendar.cpp
+  OldHinduSolarCalendar.cpp
+  OldHinduLuniSolarCalendar.cpp
+  PointerCoordinates-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\PointerCoordinates\src\Release\PointerCoordinates.lib
+  NewHinduCalendar.cpp
+  NewHinduLunarCalendar.cpp
+  AstroHinduLunarCalendar.cpp
+  AstroHinduSolarCalendar.cpp
+  MayaLongCountCalendar.cpp
+  Exoplanets-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Exoplanets\src\Release\Exoplanets.lib
+  MayaHaabCalendar.cpp
+  MayaTzolkinCalendar.cpp
+  AztecXihuitlCalendar.cpp
+  AztecTonalpohualliCalendar.cpp
+  BalinesePawukonCalendar.cpp
+  FrenchArithmeticCalendar.cpp
+  FrenchAstronomicalCalendar.cpp
+  PersianArithmeticCalendar.cpp
+  PersianAstronomicalCalendar.cpp
+  TibetanCalendar.cpp
+  BahaiArithmeticCalendar.cpp
+  BahaiAstronomicalCalendar.cpp
+  ChineseCalendar.cpp
+  JapaneseCalendar.cpp
+  KoreanCalendar.cpp
+  VietnameseCalendar.cpp
+  CalendarsInfoPanel.cpp
+  CalendarsDialog.cpp
+  mocs_compilation_Release.cpp
+  zlib_stel.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\external\Release\zlib_stel.lib
+  MosaicCamera.cpp
+  MosaicCameraDialog.cpp
+  qrc_MosaicCamera.cpp
+  TelescopeControl_common.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\common\Release\TelescopeControl_common.lib
+  NavStars.cpp
+  NavStarsCalculator.cpp
+  NavStarsWindow.cpp
+  qrc_NavStars.cpp
+  mocs_compilation_Release.cpp
+  Supernovae-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Supernovae\src\Release\Supernovae.lib
+  mocs_compilation_Release.cpp
+  HipOnlineQuery.cpp
+  MeteorShower.cpp
+  MeteorShowers.cpp
+  MeteorShowersMgr.cpp
+  MeteorObj.cpp
+  MSConfigDialog.cpp
+  MSSearchDialog.cpp
+  qrc_MeteorShower.cpp
+  mocs_compilation_Release.cpp
+  OnlineQueriesDialog.cpp
+  StelWebEngineView.cpp
+  qrc_OnlineQueries.cpp
+  mocs_compilation_Release.cpp
+  Scenery3d-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Scenery3d\src\Release\Scenery3d.lib
+  Observability-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Observability\src\Release\Observability.lib
+  Satellites-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Satellites\src\Release\Satellites.lib
+  RemoteSync-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\RemoteSync\src\Release\RemoteSync.lib
+  Oculars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Oculars\src\Release\Oculars.lib
+  Pulsars.cpp
+  Pulsar.cpp
+  PulsarsDialog.cpp
+  qrc_Pulsars.cpp
+  mocs_compilation_Release.cpp
+  OnlineQueries-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\OnlineQueries\src\Release\OnlineQueries.lib
+  NebulaTextures-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\NebulaTextures\src\Release\NebulaTextures.lib
+  Novae.cpp
+  EquationOfTime-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\EquationOfTime\src\Release\EquationOfTime.lib
+  Nova.cpp
+  NovaeDialog.cpp
+  qrc_Novae.cpp
+  mocs_compilation_Release.cpp
+  Automatic MOC and UIC for target TelescopeControl_Lx200
+  Automatic MOC and UIC for target TelescopeControl_Rts2
+  qrc_Calendars.cpp
+  MeteorShowers-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\MeteorShowers\src\Release\MeteorShowers.lib
+  Calendars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Calendars\src\Release\Calendars.lib
+  Automatic MOC and UIC for target indiclient
+  Automatic MOC and UIC for target TelescopeControl_NexStar
+  TelescopeClientJsonRts2.cpp
+  mocs_compilation_Release.cpp
+  Lx200Command.cpp
+  Lx200Connection.cpp
+  TelescopeClientDirectLx200.cpp
+  mocs_compilation_Release.cpp
+  lilxml.cpp
+  abstractbaseclient.cpp
+  baseclient.cpp
+  basedevice.cpp
+  indibase.cpp
+  indistandardproperty.cpp
+  parentdevice.cpp
+  watchdeviceproperty.cpp
+  indiproperties.cpp
+  indipropertybasic.cpp
+  indipropertyblob.cpp
+  indiproperty.cpp
+  indipropertylight.cpp
+  indipropertynumber.cpp
+  indipropertyswitch.cpp
+  indipropertytext.cpp
+  indipropertyview.cpp
+  tcpsocket.cpp
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./../_deps/indiclient-src/libs/indiclient/baseclient.cpp鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./../_deps/indiclient-src/libs/indiabstractclient/abstractbaseclient.cpp鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./../_deps/indiclient-src/libs/indidevice/basedevice.cpp鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./../_deps/indiclient-src/libs/indidevice/parentdevice.cpp鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./../_deps/indiclient-src/libs/indidevice/watchdeviceproperty.cpp鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+  tcpsocket_win.cpp
+  mocs_compilation_Release.cpp
+  MosaicCamera-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\MosaicCamera\src\Release\MosaicCamera.lib
+  NavStars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\NavStars\src\Release\NavStars.lib
+  NexStarCommand.cpp
+  NexStarConnection.cpp
+  1>Automatic MOC and UIC for target nlopt
+  TelescopeClientDirectNexStar.cpp
+  mocs_compilation_Release.cpp
+  Automatic MOC and UIC for target TelescopeControl_ASCOM
+  base64.c
+  indidevapi.c
+  indicom.c
+  userio.c
+  indiuserio.c
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./indiclient-src/libs/indicore/indicom.c鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./indiclient-src/libs/indicore/indiuserio.c鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./indiclient-src/libs/indicore/indidevapi.c鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\base64.c(71,9): warning C4068: 鏈煡鐨勬潅娉ㄢ€淕CC鈥?[E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\base64.c(72,9): warning C4068: 鏈煡鐨勬潅娉ㄢ€淕CC鈥?[E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\base64.c(74,9): warning C4068: 鏈煡鐨勬潅娉ㄢ€淕CC鈥?[E:\Qt_demo\stellarium-vulkan\build-win\src\external\indiclient.vcxproj]
+  Novae-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Novae\src\Release\Novae.lib
+  Pulsars-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\Pulsars\src\Release\Pulsars.lib
+  DIRect.c
+  direct_wrap.c
+  DIRserial.c
+  DIRsubrout.c
+  cdirect.c
+  hybrid.c
+  praxis.c
+  crs.c
+  mlsl.c
+  mma.c
+  ccsa_quadratic.c
+  cobyla.c
+  newuoa.c
+  nldrmd.c
+  sbplx.c
+  auglag.c
+  bobyqa.c
+  isres.c
+  slsqp.c
+  esch.c
+  general.c
+  options.c
+  optimize.c
+  deprecated.c
+  f77api.c
+  mt19937ar.c
+  sobolseq.c
+  timer.c
+  stop.c
+  redblack.c
+  qsort_r.c
+  rescale.c
+  indiclient.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\external\Release\indiclient.lib
+  Automatic MOC and UIC for target TelescopeControl_INDI
+  ASCOMDevice.cpp
+  TelescopeClientASCOM.cpp
+  TelescopeClientASCOMWidget.cpp
+  mocs_compilation_Release.cpp
+  INDIConnection.cpp
+  TelescopeClientINDI.cpp
+  TelescopeClientINDIWidget.cpp
+  INDIControlWidget.cpp
+  mocs_compilation_Release.cpp
+  TelescopeControl_Lx200.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\Lx200\Release\TelescopeControl_Lx200.lib
+  TelescopeControl_Rts2.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\Rts2\Release\TelescopeControl_Rts2.lib
+  global.cc
+  linalg.cc
+  local.cc
+  stogo.cc
+  tools.cc
+  evolvent.cc
+  solver.cc
+  local_optimizer.cc
+  ags.cc
+  mocs_compilation_Release.cpp
+  nlopt.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\nlopt-build\Release\nlopt.lib
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\INDI\TelescopeControl_INDI.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./../../../../plugins/TelescopeControl/src/INDI/INDIConnection.cpp鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+  Automatic MOC and UIC for target LensDistortionEstimator-static
+  TelescopeControl_NexStar.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\NexStar\Release\TelescopeControl_NexStar.lib
+  LensDistortionEstimator.cpp
+  LensDistortionEstimatorDialog.cpp
+  qrc_LensDistortionEstimator.cpp
+  mocs_compilation_Release.cpp
+E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9): warning C4005: 鈥淿USE_MATH_DEFINES鈥? 瀹忛噸瀹氫箟 [E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\INDI\TelescopeControl_INDI.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?./../../../../plugins/TelescopeControl/src/INDI/TelescopeClientINDI.cpp鈥?
+      E:\Qt_demo\stellarium-vulkan\build-win\_deps\indiclient-src\libs\indicore\indicom.h(41,9):
+      涔嬪墠鍦ㄥ懡浠よ涓婂０鏄庣殑鈥淿USE_MATH_DEFINES鈥?
+  
+  TelescopeControl_ASCOM.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\ASCOM\Release\TelescopeControl_ASCOM.lib
+  TelescopeControl_INDI.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\INDI\Release\TelescopeControl_INDI.lib
+  Automatic MOC and UIC for target TelescopeControl_gui
+  SlewDialog.cpp
+  TelescopeDialog.cpp
+  TelescopeConfigurationDialog.cpp
+  StoredPointsDialog.cpp
+  mocs_compilation_Release.cpp
+  LensDistortionEstimator-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\LensDistortionEstimator\src\Release\LensDistortionEstimator.lib
+  TelescopeControl_gui.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\gui\Release\TelescopeControl_gui.lib
+  Automatic MOC and UIC for target TelescopeControl-static
+  cmake_pch.cxx
+  TelescopeControl.cpp
+  TelescopeClient.cpp
+  mocs_compilation_Release.cpp
+  qrc_TelescopeControl.cpp
+  TelescopeControl-static.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\plugins\TelescopeControl\src\Release\TelescopeControl.lib
+  Automatic MOC and UIC for target glm
+  Automatic UIC for target qtcompress_stel
+  Running qmlimportscanner for stelQuickUI
+  Copying stelQuickUI qml sources into build dir
+  Automatic UIC for target glues_stel
+  Automatic MOC and UIC for target md4c
+  Automatic MOC and UIC for target QXlsx
+  Generating check-version-update
+  
+  Generating version.cpp
+  Automatic MOC and UIC for target version
+  qzip.cpp
+E:\VisualStudio\CanPin\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): warning MSB8065: 椤光€淓:\Qt_demo\stellarium-vulkan\build-win\CMakeFiles\94d9c502be1ada08d236b6d96a3c67a7\check-version-update.rule鈥濈殑鑷畾涔夌敓鎴愭垚鍔燂紝浣嗗皻鏈垱寤烘寚瀹氱殑杈撳嚭鈥渆:\qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\check-version-update鈥濄€傝繖鍙兘浼氬鑷村閲忕敓鎴愭棤娉曟甯稿伐浣溿€?[E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\version_autogen.vcxproj]
+E:\VisualStudio\CanPin\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): warning MSB8064: 椤光€淓:\Qt_demo\stellarium-vulkan\build-win\CMakeFiles\94d9c502be1ada08d236b6d96a3c67a7\version.cpp.rule鈥濈殑鑷畾涔夌敓鎴愭垚鍔燂紝浣嗘寚瀹氱殑渚濊禆椤光€渆:\qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\check-version-update鈥濅笉瀛樺湪銆傝繖鍙兘浼氬鑷村閲忕敓鎴愭棤娉曟甯稿伐浣溿€?[E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\version_autogen.vcxproj]
+  md4c.c
+  glues_error.c
+  dict.c
+  geom.c
+  memalloc.c
+  mesh.c
+  normal.c
+  priorityq.c
+  render.c
+  sweep.c
+  tess.c
+  tessmono.c
+  version.cpp
+  glm.cpp
+  mocs_compilation_Release.cpp
+  mocs_compilation_Release.cpp
+  version.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\Release\version.lib
+  glues_stel.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\external\Release\glues_stel.lib
+  mocs_compilation_Release.cpp
+  xlsxcellrange.cpp
+  xlsxcontenttypes.cpp
+  xlsxdrawinganchor.cpp
+  xlsxrichstring.cpp
+  xlsxworkbook.cpp
+  xlsxabstractooxmlfile.cpp
+  xlsxcellreference.cpp
+  xlsxdatavalidation.cpp
+  xlsxdrawing.cpp
+  xlsxsharedstrings.cpp
+  xlsxworksheet.cpp
+  xlsxabstractsheet.cpp
+  xlsxchart.cpp
+  xlsxdatetype.cpp
+  xlsxformat.cpp
+  xlsxsimpleooxmlfile.cpp
+E:\Qt_demo\stellarium-vulkan\src\external\qtcompress\qzip.cpp(849,12): warning C4834: 鏀惧純鍏锋湁 [[nodiscard]] 灞炴€х殑鍑芥暟鐨勮繑鍥炲€?[E:\Qt_demo\stellarium-vulkan\build-win\src\external\qtcompress_stel.vcxproj]
+E:\Qt_demo\stellarium-vulkan\src\external\qtcompress\qzip.cpp(1140,12): warning C4834: 鏀惧純鍏锋湁 [[nodiscard]] 灞炴€х殑鍑芥暟鐨勮繑鍥炲€?[E:\Qt_demo\stellarium-vulkan\build-win\src\external\qtcompress_stel.vcxproj]
+  xlsxzipreader.cpp
+  xlsxcell.cpp
+  xlsxchartsheet.cpp
+  xlsxdocpropsapp.cpp
+  md4c.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\md4c-build\src\Release\md4c.lib
+  xlsxmediafile.cpp
+  xlsxstyles.cpp
+  xlsxzipwriter.cpp
+  Automatic MOC and UIC for target md4c-html
+  xlsxcellformula.cpp
+  glm.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\glm-build\glm\Release\glm.lib
+  xlsxcolor.cpp
+  qtcompress_stel.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\external\Release\qtcompress_stel.lib
+  xlsxdocpropscore.cpp
+  md4c-html.c
+  entity.c
+  xlsxnumformatparser.cpp
+  xlsxtheme.cpp
+  xlsxcelllocation.cpp
+  xlsxconditionalformatting.cpp
+  xlsxdocument.cpp
+  xlsxrelationships.cpp
+  xlsxutility.cpp
+  xlsxreadsax.cpp
+  mocs_compilation_Release.cpp
+  mocs_compilation_Release.cpp
+  Automatic MOC and UIC for target common
+  md4c-html.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\md4c-build\src\Release\md4c-html.lib
+  EclipsedDoubleScatteringPrecomputer.cpp
+  TextureAverageComputer.cpp
+  AtmosphereParameters.cpp
+  Spectrum.cpp
+  util.cpp
+  mocs_compilation_Release.cpp
+  QXlsx.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\qxlsxqt6-build\Release\QXlsxQt6.lib
+  Automatic MOC and UIC for target stelMain
+  cmake_pch.cxx
+  common.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\Release\common.lib
+  Automatic MOC and UIC for target ShowMySky
+  AtmosphereRenderer.cpp
+  StelSRGB.cpp
+  Dithering.cpp
+  StelAudioMgr.cpp
+  StelVideoMgr.cpp
+  StelSpeechMgr.cpp
+  StelGeodesicGrid.cpp
+  StelMovementMgr.cpp
+  StelObserver.cpp
+  StelLocation.cpp
+  StelLocationMgr.cpp
+  StelProjector.cpp
+  StelProjectorClasses.cpp
+  StelSkyDrawer.cpp
+  StelPainter.cpp
+  MultiLevelJsonBase.cpp
+  StelSkyImageTile.cpp
+  SolarEclipseComputer.cpp
+  SphericMirrorCalculator.cpp
+  StelApp.cpp
+  StelClockController.cpp
+  StelCore.cpp
+  StelFileMgr.cpp
+  StelLocaleMgr.cpp
+  StelModule.cpp
+  StelModuleMgr.cpp
+  StelObject.cpp
+  StelObjectMgr.cpp
+  StelObjectModule.cpp
+  StelOpenGL.cpp
+  StelSkyCultureMgr.cpp
+  StelSkyCultureSkyPartition.cpp
+  StelTextureMgr.cpp
+  StelTexture.cpp
+  StelToneReproducer.cpp
+  StelSkyLayerMgr.cpp
+  StelSkyLayer.cpp
+  StelSphereGeometry.cpp
+  OctahedronPolygon.cpp
+  StelIniParser.cpp
+  StelUtils.cpp
+  StelTranslator.cpp
+  VecMath.cpp
+  StelJsonParser.cpp
+  SimbadSearcher.cpp
+  StelSphericalIndex.cpp
+  StelVertexArray.cpp
+  StelGuiBase.cpp
+  StelViewportEffect.cpp
+  TrailGroup.cpp
+  RefractionExtinction.cpp
+  StelToast.cpp
+  StelToastGrid.cpp
+  StelActionMgr.cpp
+  StelPropertyMgr.cpp
+  StelOBJ.cpp
+  GeomMath.cpp
+  StelOpenGLArray.cpp
+  StelHips.cpp
+  StelHealpix.cpp
+  TextureAverageComputer.cpp
+  SpoutSender.cpp
+  jpleph.cpp
+  EphemWrapper.cpp
+  de430.cpp
+  de431.cpp
+  de440.cpp
+  de441.cpp
+  AtmosphereLightweight.cpp
+  AtmospherePreetham.cpp
+  AtmosphereShowMySky.cpp
+  Asterism.cpp
+  AsterismMgr.cpp
+  Constellation.cpp
+  ConstellationMgr.cpp
+  CoordObject.cpp
+  CustomObject.cpp
+  CustomObjectMgr.cpp
+  HighlightMgr.cpp
+  GridLinesMgr.cpp
+  HipsMgr.cpp
+  LabelMgr.cpp
+  MarkerMgr.cpp
+  Landscape.cpp
+  LandscapeMgr.cpp
+  Meteor.cpp
+  SporadicMeteor.cpp
+  SporadicMeteorMgr.cpp
+  MilkyWay.cpp
+  Nebula.cpp
+  NebulaMgr.cpp
+  Orbit.cpp
+  Planet.cpp
+  RotationElements.cpp
+  MinorPlanet.cpp
+  Comet.cpp
+  Skybright.cpp
+  Skylight.cpp
+  SolarSystem.cpp
+  NomenclatureItem.cpp
+  NomenclatureMgr.cpp
+  Star.cpp
+  StarMgr.cpp
+  StarWrapper.cpp
+  ToastMgr.cpp
+  ZoneArray.cpp
+  ZodiacalLight.cpp
+  SpecialMarkersMgr.cpp
+  SpecificTimeMgr.cpp
+  StelMainView.cpp
+  StelSplashScreen.cpp
+  StelLogger.cpp
+  StelSystemInfo.cpp
+  CLIProcessor.cpp
+  FrameMailbox.cpp
+  LegacySkyHost.cpp
+  LegacyAppCheck.cpp
+  LegacyLongRun.cpp
+  StelScriptOutput.cpp
+  V3d.cpp
+  StelScriptMgr.cpp
+  ScreenImageMgr.cpp
+  StelMainScriptAPI.cpp
+  StelMainScriptAPIProxy.cpp
+  StelGui.cpp
+  SkyGui.cpp
+  StelGuiItems.cpp
+  HelpDialog.cpp
+  ShortcutLineEdit.cpp
+  ShortcutsDialog.cpp
+  Dialog.cpp
+  MapWidget.cpp
+  SkyCultureMapGraphicsView.cpp
+  SkyCulturePolygonItem.cpp
+  SeparatorListWidgetItem.cpp
+  AngleSpinBox.cpp
+  LocationDialog.cpp
+  DateTimeDialog.cpp
+  ViewDialog.cpp
+  LightPollutionWidget.cpp
+  LogarithmicSpinBox.cpp
+  SearchDialog.cpp
+  ConfigurationDialog.cpp
+  AddRemoveLandscapesDialog.cpp
+  AtmosphereDialog.cpp
+  ConfigureDSOColorsDialog.cpp
+  ConfigureOrbitColorsDialog.cpp
+  GreatRedSpotDialog.cpp
+  CustomDeltaTEquationDialog.cpp
+  ConfigureScreenshotsDialog.cpp
+  AstroCalcDialog.cpp
+  AstroCalcChart.cpp
+  AstroCalcExtraEphemerisDialog.cpp
+  AstroCalcCustomStepsDialog.cpp
+  AstroCalcAlmanacWidget.cpp
+  ObsListDialog.cpp
+  StelDialog.cpp
+  StelDialogSeparate.cpp
+  TonemappingDialog.cpp
+  SkylightDialog.cpp
+  StelCloseButton.cpp
+  ColorButton.cpp
+  ScriptConsole.cpp
+  StelScriptSyntaxHighlighter.cpp
+  mocs_compilation_Release.cpp
+  AtmosphereRenderer.cpp
+  util.cpp
+  mocs_compilation_Release.cpp
+    姝ｅ湪鍒涘缓搴?E:/Qt_demo/stellarium-vulkan/build-win/_deps/showmysky-qt6-build/ShowMySky/Release/ShowMySky-Qt6.lib 鍜屽璞?E:/Qt_demo/stellarium-vulkan/build-win/_deps/showmysky-qt6-build/ShowMySky/Release/ShowMySky-Qt6.exp
+  ShowMySky.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\_deps\showmysky-qt6-build\ShowMySky\Release\ShowMySky-Qt6.dll
+  Automatic MOC and UIC for target fake-show-my-sky-client
+EXEC : AutoGen warning : "SRC:/build-win/fake-show-my-sky-client.cpp" is empty. [E:\Qt_demo\stellarium-vulkan\build-win\fake-show-my-sky-client.vcxproj]
+  
+  fake-show-my-sky-client.cpp
+  mocs_compilation_Release.cpp
+  fake-show-my-sky-client.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\Release\fake-show-my-sky-client.dll
+  calc_interpolated_elements.c
+  elliptic_to_rectangular.c
+  elp82b.c
+  gust86.c
+  l12.c
+  marssat.c
+  pluto.c
+  precession.c
+  sidereal_time.c
+  tass17.c
+  vsop87.c
+  htc20b.c
+  qrc_guiRes.cpp
+  qrc_mainRes.cpp
+  stelMain.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\Release\stelMain.lib
+  Automatic MOC and UIC for target stellarium
+  1>Automatic MOC and UIC for target stelQuickUI
+  main.cpp
+  mocs_compilation_Release.cpp
+  Running AUTOMOC file extraction for target stelQuickUI
+  Running moc --collect-json for target stelQuickUI
+  Running rcc for resource qmake_StelQuickUI
+  Generating .rcc/qmlcache/stelQuickUI_qmlcache_loader.cpp
+  Running rcc for resource stelQuickUI_raw_qml_0
+  Running rcc for resource stelquickui_qmldir
+  Generating meta_types/qt6stelquickui_metatypes.json
+  Automatic QML type registration for target stelQuickUI
+  Generating .rcc/qmlcache/stelQuickUI_qml_MainWindow_qml.cpp, .rcc/qmlcache/stelQuickUI_qml_MainWindow_qml.cpp.aotstats
+  Generating .rcc/qmlcache/stelQuickUI_qml_DiagnosticPage_qml.cpp, .rcc/qmlcache/stelQuickUI_qml_DiagnosticPage_qml.cpp.aotstats
+  Generating .rcc/qmlcache/stelQuickUI_qml_SkyTestPage_qml.cpp, .rcc/qmlcache/stelQuickUI_qml_SkyTestPage_qml.cpp.aotstats
+  Generating .rcc/qmlcache/stelQuickUI_qml_SearchPage_qml.cpp, .rcc/qmlcache/stelQuickUI_qml_SearchPage_qml.cpp.aotstats
+  main.cpp
+  A2FrameCheck.cpp
+  DynFrameCheck.cpp
+  LiveFrameSource.cpp
+  LiveSkyRuntime.cpp
+  SkyLongRun.cpp
+  LegacyHostCheck.cpp
+  AppFacade.cpp
+  ActionRouter.cpp
+  AppFacadeCheck.cpp
+  SearchResultsModel.cpp
+  ObjectInfoModel.cpp
+  SearchModelCheck.cpp
+  BackendInfo.cpp
+  SkyViewport.cpp
+  TestPattern.cpp
+  StaticFrameSource.cpp
+  LegacyTestScene.cpp
+  VkDeviceProbe.cpp
+  qrc_qmake_StelQuickUI.cpp
+  stelQuickUI_qmlcache_loader.cpp
+  stelQuickUI_qml_MainWindow_qml.cpp
+  stelQuickUI_qml_DiagnosticPage_qml.cpp
+  stelQuickUI_qml_SkyTestPage_qml.cpp
+  stelQuickUI_qml_SearchPage_qml.cpp
+  qrc_stelQuickUI_raw_qml_0.cpp
+  qrc_stelquickui_qmldir.cpp
+  mocs_compilation_Release.cpp
+  stellarium.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\Release\stellarium.exe
+  Adding manifest...
+  stelquickui_qmltyperegistrations.cpp
+    姝ｅ湪鍒涘缓搴?E:/Qt_demo/stellarium-vulkan/build-win/src/ui/Release/stelQuickUI.lib 鍜屽璞?E:/Qt_demo/stellarium-vulkan/build-win/src/ui/Release/stelQuickUI.exp
+  stelQuickUI.vcxproj -> E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+[done] 2026-09-24T12:11:02.7385005+08:00 rc=0

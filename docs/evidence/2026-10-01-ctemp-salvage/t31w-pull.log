@@ -1,0 +1,274 @@
+[pull] 2026-09-29T18:13:43.0940615+08:00
+before=c4cdec1
+git : From https://github.com/ztuqfvy/stellarium-vulkan
+所在位置 C:\temp\t31w-pull.ps1:7 字符: 1
++ git fetch origin main *>&1 | Out-File -Encoding utf8 -Append $log
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (From https://gi...ellarium-vulkan:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ * branch            main       -> FETCH_HEAD
+   c4cdec1..8df3eec  main       -> origin/main
+fetch_rc=0
+Updating c4cdec1..8df3eec
+Fast-forward
+ .../mac/interactcheck-mac-n5.txt                   |   27 +-
+ .../mac/interactcheck-mac-run1.txt                 |   12 +-
+ .../mac/interactcheck-mac-run2.txt                 |   12 +-
+ .../mac/interactcheck-mac-run3.txt                 |   10 +-
+ .../mac/interactcheck-mac-run4.txt                 |   10 +-
+ .../mac/interactcheck-mac-run5.txt                 |   13 +-
+ .../mac/negctl-mac-n5.txt                          |   10 +-
+ .../mac/negctl-mac-run1.txt                        |   10 +-
+ .../mac/negctl-mac-run2.txt                        |    8 +-
+ .../mac/negctl-mac-run3.txt                        |    8 +-
+ .../mac/negctl-mac-run4.txt                        |    8 +-
+ .../mac/negctl-mac-run5.txt                        |    8 +-
+ .../mac/probe-inactive-mac-summary.txt             |    1 +
+ .../mac/probe-inactive-mac.txt                     |   21 +-
+ .../mac/rc-summary.txt                             |    2 +-
+ .../mac/regression-a2-metal.txt                    |    2 +-
+ .../mac/regression-actioncheck.txt                 | 2794 ++++++++++----------
+ .../mac/regression-dyn-engine-metal-run1.txt       |   16 +-
+ .../mac/regression-dyn-engine-metal-run2.txt       |   16 +-
+ .../mac/regression-dyn-engine-metal-run3.txt       |   14 +-
+ .../mac/regression-dyn-engine-metal-run4.txt       |   16 +-
+ .../mac/regression-dyn-engine-metal-run5.txt       |   16 +-
+ .../mac/regression-dyn-engine-metal.txt            |   52 +-
+ .../mac/regression-dyn-test-metal-run1.txt         |   12 +-
+ .../mac/regression-dyn-test-metal-run2.txt         |   10 +-
+ .../mac/regression-dyn-test-metal-run3.txt         |   12 +-
+ .../mac/regression-dyn-test-metal-run4.txt         |   12 +-
+ .../mac/regression-dyn-test-metal-run5.txt         |   18 +-
+ .../mac/regression-dyn-test-metal.txt              |   64 +-
+ .../mac/regression-locate-uicheck.txt              |    6 +-
+ .../mac/regression-locatecheck.txt                 |   20 +-
+ .../mac/regression-replaycheck.txt                 |   10 +-
+ .../mac/regression-returnuicheck.txt               |    8 +-
+ .../mac/regression-searchcheck.txt                 |    6 +-
+ .../mac/regression-timecheck.txt                   |   12 +-
+ .../mac/regression-timeuicheck.txt                 |   20 +-
+ .../windows/t31w-suites-round1/SUMMARY.txt         |   48 +
+ .../windows/t31w-suites-round1/a2-vulkan.err.txt   |    1 +
+ .../windows/t31w-suites-round1/a2-vulkan.out.txt   |   21 +
+ .../windows/t31w-suites-round1/actioncheck.err.txt |  204 ++
+ .../windows/t31w-suites-round1/actioncheck.out.txt |   40 +
+ .../windows/t31w-suites-round1/clockcheck.err.txt  |    0
+ .../windows/t31w-suites-round1/clockcheck.out.txt  |   15 +
+ .../t31w-suites-round1/dyn-engine-run1.err.txt     |  157 ++
+ .../t31w-suites-round1/dyn-engine-run1.out.txt     |   16 +
+ .../t31w-suites-round1/dyn-engine-run2.err.txt     |  157 ++
+ .../t31w-suites-round1/dyn-engine-run2.out.txt     |   16 +
+ .../t31w-suites-round1/dyn-engine-run3.err.txt     |  157 ++
+ .../t31w-suites-round1/dyn-engine-run3.out.txt     |   16 +
+ .../t31w-suites-round1/dyn-test-run1.err.txt       |    2 +
+ .../t31w-suites-round1/dyn-test-run1.out.txt       |   14 +
+ .../t31w-suites-round1/dyn-test-run2.err.txt       |    2 +
+ .../t31w-suites-round1/dyn-test-run2.out.txt       |   14 +
+ .../t31w-suites-round1/dyn-test-run3.err.txt       |    2 +
+ .../t31w-suites-round1/dyn-test-run3.out.txt       |   14 +
+ .../t31w-suites-round1/interactcheck-run1.err.txt  |  158 ++
+ .../t31w-suites-round1/interactcheck-run1.out.txt  |   43 +
+ .../t31w-suites-round1/interactcheck-run2.err.txt  |  158 ++
+ .../t31w-suites-round1/interactcheck-run2.out.txt  |   43 +
+ .../t31w-suites-round1/interactcheck-run3.err.txt  |  158 ++
+ .../t31w-suites-round1/interactcheck-run3.out.txt  |   43 +
+ .../t31w-suites-round1/interactcheck-run4.err.txt  |  158 ++
+ .../t31w-suites-round1/interactcheck-run4.out.txt  |   43 +
+ .../t31w-suites-round1/interactcheck-run5.err.txt  |  158 ++
+ .../t31w-suites-round1/interactcheck-run5.out.txt  |   43 +
+ .../t31w-suites-round1/locate-uicheck.err.txt      |  156 ++
+ .../t31w-suites-round1/locate-uicheck.out.txt      |   22 +
+ .../windows/t31w-suites-round1/locatecheck.err.txt |  156 ++
+ .../windows/t31w-suites-round1/locatecheck.out.txt |   26 +
+ .../windows/t31w-suites-round1/negctl-run1.err.txt |  158 ++
+ .../windows/t31w-suites-round1/negctl-run1.out.txt |   36 +
+ .../windows/t31w-suites-round1/negctl-run2.err.txt |  158 ++
+ .../windows/t31w-suites-round1/negctl-run2.out.txt |   36 +
+ .../windows/t31w-suites-round1/negctl-run3.err.txt |  158 ++
+ .../windows/t31w-suites-round1/negctl-run3.out.txt |   36 +
+ .../t31w-suites-round1/probe-inactive.err.txt      |  164 ++
+ .../t31w-suites-round1/probe-inactive.out.txt      |   48 +
+ .../windows/t31w-suites-round1/replaycheck.err.txt |  157 ++
+ .../windows/t31w-suites-round1/replaycheck.out.txt |   28 +
+ .../t31w-suites-round1/returnuicheck.err.txt       |  157 ++
+ .../t31w-suites-round1/returnuicheck.out.txt       |   27 +
+ .../windows/t31w-suites-round1/searchcheck.err.txt |  188 ++
+ .../windows/t31w-suites-round1/searchcheck.out.txt |   65 +
+ .../windows/t31w-suites-round1/timecheck.err.txt   |  160 ++
+ .../windows/t31w-suites-round1/timecheck.out.txt   |   39 +
+ .../windows/t31w-suites-round1/timeuicheck.err.txt |  158 ++
+ .../windows/t31w-suites-round1/timeuicheck.out.txt |   49 +
+ .../windows/t31w-suites/SUMMARY.txt                |   48 +
+ .../windows/t31w-suites/a2-vulkan.err.txt          |    1 +
+ .../windows/t31w-suites/a2-vulkan.out.txt          |   21 +
+ .../windows/t31w-suites/actioncheck.err.txt        |  204 ++
+ .../windows/t31w-suites/actioncheck.out.txt        |   40 +
+ .../windows/t31w-suites/clockcheck.err.txt         |    0
+ .../windows/t31w-suites/clockcheck.out.txt         |   15 +
+ .../windows/t31w-suites/dyn-engine-run1.err.txt    |  157 ++
+ .../windows/t31w-suites/dyn-engine-run1.out.txt    |   16 +
+ .../windows/t31w-suites/dyn-engine-run2.err.txt    |  157 ++
+ .../windows/t31w-suites/dyn-engine-run2.out.txt    |   16 +
+ .../windows/t31w-suites/dyn-engine-run3.err.txt    |  157 ++
+ .../windows/t31w-suites/dyn-engine-run3.out.txt    |   16 +
+ .../windows/t31w-suites/dyn-test-run1.err.txt      |    2 +
+ .../windows/t31w-suites/dyn-test-run1.out.txt      |   14 +
+ .../windows/t31w-suites/dyn-test-run2.err.txt      |    2 +
+ .../windows/t31w-suites/dyn-test-run2.out.txt      |   14 +
+ .../windows/t31w-suites/dyn-test-run3.err.txt      |    2 +
+ .../windows/t31w-suites/dyn-test-run3.out.txt      |   14 +
+ .../windows/t31w-suites/interactcheck-run1.err.txt |  158 ++
+ .../windows/t31w-suites/interactcheck-run1.out.txt |   43 +
+ .../windows/t31w-suites/interactcheck-run2.err.txt |  158 ++
+ .../windows/t31w-suites/interactcheck-run2.out.txt |   43 +
+ .../windows/t31w-suites/interactcheck-run3.err.txt |  158 ++
+ .../windows/t31w-suites/interactcheck-run3.out.txt |   43 +
+ .../windows/t31w-suites/interactcheck-run4.err.txt |  158 ++
+ .../windows/t31w-suites/interactcheck-run4.out.txt |   43 +
+ .../windows/t31w-suites/interactcheck-run5.err.txt |  158 ++
+ .../windows/t31w-suites/interactcheck-run5.out.txt |   43 +
+ .../windows/t31w-suites/locate-uicheck.err.txt     |  156 ++
+ .../windows/t31w-suites/locate-uicheck.out.txt     |   22 +
+ .../windows/t31w-suites/locatecheck.err.txt        |  156 ++
+ .../windows/t31w-suites/locatecheck.out.txt        |   26 +
+ .../windows/t31w-suites/negctl-run1.err.txt        |  158 ++
+ .../windows/t31w-suites/negctl-run1.out.txt        |   36 +
+ .../windows/t31w-suites/negctl-run2.err.txt        |  158 ++
+ .../windows/t31w-suites/negctl-run2.out.txt        |   36 +
+ .../windows/t31w-suites/negctl-run3.err.txt        |  158 ++
+ .../windows/t31w-suites/negctl-run3.out.txt        |   36 +
+ .../windows/t31w-suites/probe-inactive.err.txt     |  164 ++
+ .../windows/t31w-suites/probe-inactive.out.txt     |   48 +
+ .../windows/t31w-suites/replaycheck.err.txt        |  157 ++
+ .../windows/t31w-suites/replaycheck.out.txt        |   28 +
+ .../windows/t31w-suites/returnuicheck.err.txt      |  157 ++
+ .../windows/t31w-suites/returnuicheck.out.txt      |   27 +
+ .../windows/t31w-suites/searchcheck.err.txt        |  188 ++
+ .../windows/t31w-suites/searchcheck.out.txt        |   65 +
+ .../windows/t31w-suites/timecheck.err.txt          |  160 ++
+ .../windows/t31w-suites/timecheck.out.txt          |   39 +
+ .../windows/t31w-suites/timeuicheck.err.txt        |  158 ++
+ .../windows/t31w-suites/timeuicheck.out.txt        |   49 +
+ src/ui/main.cpp                                    |  121 +-
+ tools/t31-verify.sh                                |    7 +-
+ tools/windows/wt31-suites.ps1                      |   46 +-
+ 141 files changed, 9962 insertions(+), 1674 deletions(-)
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/SUMMARY.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/a2-vulkan.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/a2-vulkan.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/actioncheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/actioncheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/clockcheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/clockcheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-engine-run1.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-engine-run1.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-engine-run2.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-engine-run2.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-engine-run3.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-engine-run3.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-test-run1.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-test-run1.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-test-run2.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-test-run2.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-test-run3.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/dyn-test-run3.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run1.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run1.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run2.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run2.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run3.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run3.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run4.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run4.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run5.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/interactcheck-run5.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/locate-uicheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/locate-uicheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/locatecheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/locatecheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/negctl-run1.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/negctl-run1.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/negctl-run2.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/negctl-run2.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/negctl-run3.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/negctl-run3.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/probe-inactive.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/probe-inactive.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/replaycheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/replaycheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/returnuicheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/returnuicheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/searchcheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/searchcheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/timecheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/timecheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/timeuicheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites-round1/timeuicheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/SUMMARY.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/a2-vulkan.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/a2-vulkan.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/actioncheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/actioncheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/clockcheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/clockcheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-engine-run1.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-engine-run1.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-engine-run2.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-engine-run2.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-engine-run3.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-engine-run3.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-test-run1.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-test-run1.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-test-run2.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-test-run2.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-test-run3.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/dyn-test-run3.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run1.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run1.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run2.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run2.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run3.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run3.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run4.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run4.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run5.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/interactcheck-run5.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/locate-uicheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/locate-uicheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/locatecheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/locatecheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/negctl-run1.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/negctl-run1.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/negctl-run2.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/negctl-run2.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/negctl-run3.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/negctl-run3.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/probe-inactive.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/probe-inactive.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/replaycheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/replaycheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/returnuicheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/returnuicheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/searchcheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/searchcheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/timecheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/timecheck.out.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/timeuicheck.err.txt
+ create mode 100644 docs/evidence/2026-09-29-t31-interact-gate/windows/t31w-suites/timeuicheck.out.txt
+merge_rc=0
+after=8df3eec
+--- status ---
+ D atmosphere
+ D landscapes
+ D models
+ D nebulae
+ D plugins
+ D po
+ D scenery3d
+ D scripts
+ D skycultures
+ D stars
+ D textures
+ D util
+[ok]
