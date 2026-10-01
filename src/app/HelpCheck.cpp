@@ -795,7 +795,11 @@ void HelpCheck::run(QCoreApplication *app,
                     .arg(textOk ? QStringLiteral("一致") : QStringLiteral("不一致")));
     }});
 
-    // ── S14 HC-14 接管表内容（含"没对应页的刻意不在"）──────────────────────────
+    // ── S14 HC-14 接管表内容 ──────────────────────────────────────────────────
+    // ⚠️ T42 口径校正（下游补新能力后旧判据口径必须跟着走，TRAPS 11 镜像）：
+    //    T41 时代预期 6 个 + "F2/F10/F12 刻意未接管"；**T42 把这 4 个（含 ⌥B）
+    //    接管 + 弹"未支持"提示**（接管表真身 10 个）⇒ 预期改为 10 个全量，
+    //    "未接管对照"反转为"T42 的 4 个已接管"（不再存在刻意未接管的窗口动作）。
     steps->append(Step{0, [](Ctx *c) {
         const QStringList got = c->router->hostTakeoverIds();
         QStringList expect{
@@ -804,17 +808,23 @@ void HelpCheck::run(QCoreApplication *app,
             QStringLiteral("actionShow_Location_Window_Global"),
             QStringLiteral("actionShow_Search_Window_Global"),
             QStringLiteral("actionShow_Shortcuts_Window_Global"),
-            QStringLiteral("actionShow_SkyView_Window_Global")};
+            QStringLiteral("actionShow_SkyView_Window_Global"),
+            QStringLiteral("actionShow_Configuration_Window_Global"),
+            QStringLiteral("actionShow_AstroCalc_Window_Global"),
+            QStringLiteral("actionShow_ScriptConsole_Window_Global"),
+            QStringLiteral("actionShow_ObsList_Window_Global")};
         std::sort(expect.begin(), expect.end());
-        const bool f2Untouched =
-            !c->router->isHostTakeover(QStringLiteral("actionShow_Configuration_Window_Global"))
-            && !c->router->isHostTakeover(QStringLiteral("actionShow_AstroCalc_Window_Global"))
-            && !c->router->isHostTakeover(QStringLiteral("actionShow_ScriptConsole_Window_Global"));
-        c->mark(got == expect && f2Untouched,
-                QStringLiteral("HC-14 接管表：%1 个 == 预期 6（%2）｜F2/F10/F12 刻意未接管=%3")
+        const bool t42FourOn =
+            c->router->isHostTakeover(QStringLiteral("actionShow_Configuration_Window_Global"))
+            && c->router->isHostTakeover(QStringLiteral("actionShow_AstroCalc_Window_Global"))
+            && c->router->isHostTakeover(QStringLiteral("actionShow_ScriptConsole_Window_Global"))
+            && c->router->isHostTakeover(QStringLiteral("actionShow_ObsList_Window_Global"));
+        c->mark(got == expect && t42FourOn,
+                QStringLiteral("HC-14 接管表：%1 个 == 预期 10（T42 后全量，%2）｜"
+                               "T42 四动作（F2/F10/F12/⌥B）已接管=%3")
                     .arg(got.size())
                     .arg(got.join(QLatin1Char(',')))
-                    .arg(f2Untouched));
+                    .arg(t42FourOn));
     }});
 
     // ── S15 切回天空页（给 HC-15/16 的 index 断言以判别力）────────────────────

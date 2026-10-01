@@ -203,6 +203,20 @@ set(stelQuickUI_SOURCES
     # T41-C：帮助/版本/许可证自检（HC-01..HC-17；负控 TAKEOVER_OFF / LICENSE_OFF）。
     ../app/HelpCheck.hpp
     ../app/HelpCheck.cpp
+    # T42-A：错误/状态与未支持项**数据面探针**（资源路径七目录实测 / T36 隔离读数 /
+    # 配置文件与日志实际路径 / boot 三处 fail + `StelFileMgr::init()` 的 qFatal 前置 /
+    # 🔴 未接管动作 F10·Alt+B 的 trigger 实测 / 「未支持项」注册表真源核对 /
+    # openUrl·剪贴板可操作性 / 零写入自证）。只读为主。
+    ../app/ErrorProbe.hpp
+    ../app/ErrorProbe.cpp
+    # T42-B：错误/运行状态/资源路径/未支持项的**只读数据面**（路径读数 / 状态分区 /
+    # 未支持项清单（从注册表真源生成）/ 打开白名单目录 / 诊断文本与剪贴板）。
+    ../app/ErrorModel.hpp
+    ../app/ErrorModel.cpp
+    # T42-C：状态与错误页自检（EC-01..EC-14 引擎腿 / EC-01..EC-05 失败腿，
+    # 由 STEL_USERDIR 造真实引导失败驱动；负控 ERROR_TAKEOVER_OFF 等）。
+    ../app/ErrorCheck.hpp
+    ../app/ErrorCheck.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp
@@ -271,6 +285,8 @@ qt_add_qml_module(stelQuickUI
         # T41：帮助页 / 版本与许可证页（同样运行时解析，漏登记必炸）
         qml/HelpPage.qml
         qml/AboutPage.qml
+        # T42：状态与错误页（资源路径 + 错误提示 + 未支持项清单；同样漏登记必炸）
+        qml/ErrorPage.qml
     NO_PLUGIN
 )
 

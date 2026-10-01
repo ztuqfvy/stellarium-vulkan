@@ -188,6 +188,13 @@ struct Ctx
     double buttonScale = 0.0;
     bool wasPaused = false;
     bool pausedByUs = false;
+    // ── 布场昼夜确定性（T42 收口轮实测的血泪，与 DisplayCheck 同款）──────────
+    // 开机 JD = 墙钟 ⇒ 白天跑批时天空是**纯大气渐变、一个标签都没有** ⇒
+    // HP-09 的"字号帧效应"（探针夜间标定 4.054%）实测只剩 0.001 ⇒ 假红。
+    // 治法：布场把 JD 钉在**固定夜时刻**（星空+标签可见 ⇒ 与标定环境一致），
+    // restoreAll 还原。
+    double jdRef = 0.0;
+    bool jdChangedByUs = false;
 
     //! 帧级判据的参考帧（HP-00 噪声底帧② = HP-09 的基准）。
     FrameSample refFrame;
@@ -205,6 +212,8 @@ struct Ctx
 #endif
         if (pausedByUs && facade)
             facade->setSimulationPaused(false);
+        if (jdChangedByUs && facade)
+            facade->setJulianDay(jdRef);
     }
 
     void note(const QString &line) { lines.append(line); }
@@ -262,7 +271,10 @@ void HiDpiCheck::run(QCoreApplication *app,
     auto tick = std::make_shared<std::function<void()>>();
 
     // ── S1：布场 + 初值台账 ────────────────────────────────────────────────
-    steps->append({900, [](Ctx *c) {
+    // ⚠️ delayAfter 6500：跳 JD 后瞳孔适应（StelSkyDrawer::reportLuminanceInFov 的
+    // log 平滑律，transitionSpeed=0.2 ⇒ 每秒只剩 35% 差距）需要数秒收敛，
+    // 否则 HP-00/DP-00 噪声底门吃到的还是 ramp 中段的帧（T42 收口轮实测）。
+    steps->append({6500, [](Ctx *c) {
         c->screenFont = c->facade->screenFontSize();
         c->guiFont = c->facade->guiFontSize();
         c->buttonScale = c->facade->screenButtonScale();
@@ -272,6 +284,10 @@ void HiDpiCheck::run(QCoreApplication *app,
             c->facade->setSimulationPaused(true);
             c->pausedByUs = true;
         }
+        // 固定夜 JD（见 Ctx 注释）：先记原值再写（陷阱 9：判据改的环境同批还原）。
+        c->jdRef = c->facade->julianDay();
+        c->facade->setJulianDay(2461000.4167);   // ≈2025-11-16 22:00 UT（夜）
+        c->jdChangedByUs = true;
         c->note(QStringLiteral("初值：screenFontSize=%1 guiFontSize=%2 screenButtonScale=%3 "
                                "｜dpp=%4 screenScale=%5 guiScale=%6")
                     .arg(c->screenFont)
@@ -280,11 +296,13 @@ void HiDpiCheck::run(QCoreApplication *app,
                     .arg(c->facade->devicePixelsPerPixel())
                     .arg(c->facade->screenScale())
                     .arg(c->facade->guiScale()));
-        c->note(QStringLiteral("布场：仿真冻结 %1（帧静定 —— 像素比较前提；"
-                               "大气**不动**：探针已证默认布场下天空文本可见且效应 4.054%）")
+        c->note(QStringLiteral("布场：仿真冻结 %1｜JD 钉夜（%2 → 2461000.4167）"
+                               "（帧静定 —— 像素比较前提；大气**不动**：探针已证"
+                               "夜间布场下天空文本可见且效应 4.054%）")
                     .arg(c->pausedByUs ? QStringLiteral("已由判据置停")
                                        : (c->wasPaused ? QStringLiteral("本来就在停")
-                                                       : QStringLiteral("未置停"))));
+                                                       : QStringLiteral("未置停")))
+                    .arg(c->jdRef, 0, 'f', 4));
     }});
 
     // ── S2：噪声底帧①（HP-09 的基准就在下一步取）───────────────────────────

@@ -1,0 +1,200 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 82 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: （负控）STELQUICK_ERROR_TAKEOVER_OFF=1 —— 这 4 个保持不接管
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+StelFileMgr found install location "."
+CONFIGISO: original=/Users/ztuqfvy/Library/Application Support/Stellarium
+CONFIGISO: personal=/Users/ztuqfvy/Library/Application Support/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=个人版目录已存在 config.ini，跳过播种（用户改过的值优先）
+CONFIGISO: config=/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini
+System language (ISO 639 / ISO 3166): zh_CN
+Couldn't load translations for language  "en" in section "stellarium"
+Empty translation file for language  "en" in section "stellarium"
+Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+OpenGL module type: desktop OpenGL
+StelGLWidget constructor
+StelGraphicsScene constructor
+qt.qpa.openglcontext: Could not create NSOpenGLContext with shared context, falling back to unshared context.
+initializeGL(windowWidth = 1280, windowHeight = 720)
+OpenGL supported version:  "4.1 Metal - 91.7"
+Current Format:  QSurfaceFormat(version 4.1, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 32, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize -1, stencilBufferSize 8, samples 0, swapBehavior QSurfaceFormat::DoubleBuffer, swapInterval 0, colorSpace QColorSpace(), profile  QSurfaceFormat::CoreProfile)
+Initializing StelMainView
+Luminance textures are not supported
+Running in High Graphics Mode
+Maximum texture anisotropy: 16
+Maximum 2D texture size: 16384
+Driver version string: 4.1 Metal - 91.7
+GL vendor: Apple
+GL renderer: Apple M3
+GL Shading Language version: 4.10
+stel.OpenGLArray: Vertex Array Objects are supported
+Initial high-DPI scaling factor: 2
+Application language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures"
+Couldn't load translations for language  "zh_CN" in section "stellarium-sky"
+Empty translation file for language  "zh_CN" in section "stellarium-sky"
+Empty skyculture-independent translation file for language  "zh_CN"
+Sky language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-planetary-features"
+Empty translation file for language  "zh_CN" in section "stellarium-planetary-features"
+Planetary features language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-scripts"
+Empty translation file for language  "zh_CN" in section "stellarium-scripts"
+Scripts language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Sky culture description language: zh_CN
+Cache directory: /Users/ztuqfvy/Library/Caches/stellarium-vulkan/stelQuickUI
+Using HTTP proxy: "" "" "127.0.0.1" "60753"
+Loaded 252 countries
+Loaded 193 regions
+Loading Solar System data (1: planets and moons) ...
+Loading from: ./data/ssystem_major.ini
+Loaded 83 Solar System bodies from  ./data/ssystem_major.ini
+Solar System now has 83 entries.
+Loading Solar System data (2: minor bodies) ...
+Loading from: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 152637(152637)
+Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 66146(66146)
+minor body  "(66146)" has no IAU code in section  "66146(66146)"
+minor body  "(152637)" has no IAU code in section  "152637(152637)"
+Loaded 477 Solar System bodies from  /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Solar System now has 560 entries.
+File ssystem_minor.ini is loaded successfully...
+ExtendedElements: loaded epoch tables for 4 asteroids from "./data/asteroid_elements.json" ( 0 not matched in ssystem_minor.ini)
+SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+qt.gui.imageio: libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Loading nomenclature for Solar system bodies ...
+Loaded 16058 / 16094 items of planetary surface nomenclature
+Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
+Loading star data ...
+Loading star catalog: ./stars/hip_gaia3/stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+Loading star catalog: ./stars/hip_gaia3/stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+Loading star catalog: ./stars/hip_gaia3/stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+Loading star catalog: ./stars/hip_gaia3/stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+Finished loading star catalogue data, max_geodesic_level: 3
+Loading scientific star designations from ./stars/hip_gaia3/name.fab
+Loaded 5060 / 5060 scientific designations
+Loading scientific star designations from ./stars/hip_gaia3/extra_name.fab
+Loaded 26200 / 26200 scientific designations
+Loading variable stars data from ./stars/hip_gaia3/gcvs.cat
+[...] GCVS 5.1-20250615
+Loaded 47323 / 47323 variable stars
+Loading double stars from ./stars/hip_gaia3/wds_hip_part.dat
+Loaded 22992 / 22992 double stars
+Loading cross-identification data from ./stars/hip_gaia3/cross-id.cat
+Loaded 327097 / 327097 cross-identification data records for stars
+Loading orbital parameters data for binary system from ./stars/hip_gaia3/binary_orbitparam.dat
+Loaded 15 / 15 orbital parameters data for binary system
+Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 159 Barium stars, and 220 have PM>1000mas/yr.
+navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+Loading DSO data ...
+[...] Stellarium DSO Catalog, version 3.23 (standard edition)
+Loaded 94899 DSO records
+Loading DSO name data ...
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+Loaded 1361 / 1388 DSO name records successfully
+No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+Loading DSO outline data ...
+Loaded 100 DSO outline records successfully
+Loading DSO discovery data ...
+Loaded 183 / 183 DSO discovery records successfully
+LandscapeMgr: initialized Cache for 100 MB.
+Loading star names from ./skycultures/common_star_names.fab
+Loaded 411 / 411 common star names
+Loaded 88 / 88 constellation records successfully for culture modern
+Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+Loading constellation boundary data ... 
+Loaded 781 constellation boundary segments
+Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install more star catalogs
+Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install more star catalogs
+Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
+Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
+Loaded 88 / 92 asterism records successfully for culture modern
+Initializing basic GL shaders... 
+Creating GUI ...
+Loading style file: :/graphicGui/normalStyle.css
+Loaded plugin "Exoplanets"
+[Exoplanets] Version of the format of the catalog: 1
+[Exoplanets] loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Exoplanets/exoplanets.json
+Loaded plugin "MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/MeteorShowers/MeteorShowers.json
+[MeteorShowersMgr] Version of the format of the catalog: 2
+Loaded plugin "Novae"
+[Novae] version of the catalog: 1
+[Novae] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Novae/novae.json
+Loaded plugin "Oculars"
+Oculars::validateAndLoadIniFile() ocular.ini exists at: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Oculars/ocular.ini . Checking version...
+Oculars::validateAndLoadIniFile() found existing ini file version 3.1
+Loaded plugin "Satellites"
+[Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Satellites/satellites.json
+Satellite has invalid orbit: "SAR Lupe 5" "33244"
+Satellite has invalid orbit: "DONGPO 01" "53453"
+Loaded plugin "SolarSystemEditor"
+Using the ssystem_minor.ini file that already exists in the user directory...
+Loaded 895910 discovery circumstances records for minor planets...
+SSE: Comet cross-index data: Overwriting entry for "453P"
+SSE: Comet cross-index data: Overwriting entry for "467P"
+SSE: Comet cross-index data: Overwriting entry for "465P"
+SSE: Comet cross-index data: Overwriting entry for "466P"
+SSE: Comet cross-index data: Overwriting entry for "468P"
+SSE: Comet cross-index data: Overwriting entry for "470P"
+SSE: Comet cross-index data: Overwriting entry for "472P"
+SSE: Comet cross-index data: Overwriting entry for "475P"
+SSE: Comet cross-index data: Overwriting entry for "477P"
+SSE: Comet cross-index data: Overwriting entry for "473P"
+SSE: Comet cross-index data: Overwriting entry for "476P"
+SSE: Comet cross-index data: Overwriting entry for "479P"
+SSE: Comet cross-index data: Overwriting entry for "480P"
+SSE: Comet cross-index data: Overwriting entry for "481P"
+Loaded 2570 discovery circumstances records for comets...
+OpenGL viewport size: 2560 x 1440
+Creating scene FBO with size 2560x1440
+LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 9
+qt.text.font.db: OpenType support missing for ".AppleSystemFallback", script 9
+qt.text.font.db: OpenType support missing for ".SF Georgian", script 9
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 11
+qt.text.font.db: OpenType support missing for ".AppleIndicFont", script 11
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 12
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 13
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 14
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 15
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 16
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 17
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 18
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 19
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 20
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 32
+qt.text.font.db: OpenType support missing for ".AppleSystemUIFont", script 66
+qt.text.font.db: OpenType support missing for "Arial Unicode MS", script 66
+stel.ObsLists: Starting with empty ObsList
+ERRORCHECK: 状态与错误页自检：判据 12/15
+ERRORCHECK:布场：配置文件 /Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini（771 键）｜QWidget 11｜可见 QDialog 0｜接管 6 个｜页栈 index 9
+ERRORCHECK:[PASS] EC-01 资源路径表 8 行（应 8）｜problem 0（应 0）｜标签齐备=是
+ERRORCHECK:[PASS] EC-02 用户目录以 `-quick` 结尾（T36 隔离运行期读数）：/Users/ztuqfvy/Library/Application Support/Stellarium-quick
+ERRORCHECK:[PASS] EC-03 配置文件/日志文件就位：cfg=有(ok)｜log=有(ok)
+ERRORCHECK:[PASS] EC-04 状态表 4 行（应 4）｜error 行 0
+ERRORCHECK:[PASS] EC-05 引擎已引导 + 后端已注入 ⇒ hasError=0（应 false，无错时不该报错）｜headline「」
+ERRORCHECK:[PASS] EC-06 未支持项 7 条（应 7：4 老窗口 + 插件设置 + legacy 手势 + T39 两控件）
+ERRORCHECK:[PASS] EC-07 未支持项 4 个老窗口动作与注册表交叉验算：命中 4/4｜不符 无（清单与真源一致）
+ERRORCHECK:[FAIL] EC-08 接管表 6 个（应 10 = T41 的 6 + T42 的 4）｜缺 actionShow_Configuration_Window_Global,actionShow_AstroCalc_Window_Global,actionShow_ScriptConsole_Window_Global,actionShow_ObsList_Window_Global
+ERRORCHECK:[FAIL] EC-09 4 个未支持动作逐个 trigger ⇒ QWidget Δ=1214（应 0）｜提示出现 4/4（）｜配置写入 1 项（应 0）｜FAIL 细节：actionShow_Configuration_Window_Global(QWidget Δ399); actionShow_Configuration_Window_Global(提示未出现/无功能名); actionShow_AstroCalc_Window_Global(QWidget Δ697); actionShow_AstroCalc_Window_Global(提示未出现/无功能名); actionShow_ScriptConsole_Window_Global(QWidget Δ60); actionShow_ScriptConsole_Window_Global(提示未出现/无功能名); actionShow_ObsList_Window_Global(QWidget Δ58); actionShow_ObsList_Window_Global(提示未出现/无功能名); 总 QWidget Δ1214（应 0 —— 老对话框会各建几十上百个）; 配置被写：DialogSizes/Configuration
+ERRORCHECK:EC-09 收尾：本步造成的配置写入 1 项已按基线还原（新增 无）
+ERRORCHECK:[NA] EC-10 判别对照：%1 布场时未被接管（负控 ERROR_TAKEOVER_OFF 生效中）⇒ 无可撤销
+ERRORCHECK:[PASS] EC-11 错误页控件（视觉树递归）：状态行 4/4｜路径行 8/8｜未支持行 7/7｜缺 无
+ERRORCHECK:[PASS] EC-12 操作行 4 按钮存在且落点可达（几何覆盖判据）：4/4 可达
+ERRORCHECK:[PASS] EC-13 真实点击「复制诊断信息」⇒ 剪贴板 1083 字符｜含版本行=是｜含未支持项小节=是
+ERRORCHECK:[PASS] EC-15 openPath 白名单闸：未知 kind 拒收=1（应 true）
+ERRORCHECK:[FAIL] EC-14 复原：配置差异 0 项（应 0）｜接管 6 个（应 10）
+ERRORCHECK: VERDICT=FAIL

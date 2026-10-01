@@ -11,7 +11,8 @@
 > **T38 显示参数见 `docs/T38_DISPLAY.zh_CN.md`**，
 > **T39 高 DPI + 渲染诊断见 `docs/T39_HIDPI.zh_CN.md`**，
 > **T40 快捷键编辑见 `docs/T40_SHORTCUTS.zh_CN.md`**，
-> **T41 帮助/版本/许可证见 `docs/T41_HELP.zh_CN.md`**。
+> **T41 帮助/版本/许可证见 `docs/T41_HELP.zh_CN.md`**，
+> **T42 状态/错误页见 `docs/T42_ERRORS.zh_CN.md`**。
 > 环境口径与 T17–T34 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
@@ -27,7 +28,7 @@
 | A2 旧天空帧桥 | 静态 12/12 + 动态 7/7 + 30min 长跑 | ✅ 完成 |
 | A3 业务接口与输入路由 | AppFacade / ActionRouter / 模型 / 单一仿真时钟 / 键位路由 | ✅ 完成（T14–T17） |
 | **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | ✅ **7/7 完成**（**T34 收口**，见 §2） |
-| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | 🔄 **进行中**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 + **T39** 高 DPI/渲染诊断 + **T40** 快捷键编辑 + **T41** 帮助/版本/许可证 完成；余 T42，见 §6） |
+| **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | ✅ **完成**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 + **T39** 高 DPI/渲染诊断 + **T40** 快捷键编辑 + **T41** 帮助/版本/许可证 + **T42** 状态/错误页 + "未支持项"清单，见 §6） |
 | A6 回归与交接 | 全量回归、帧桥统计、资源打包、接口冻结 | ⬜ 未开始 |
 | A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置 A6 或真机 |
 
@@ -99,6 +100,8 @@
 | （探针）`SHORTCUTPROBE` | 只报读数、**不打 PASS** | `STELQUICK_SHORTCUT_PROBE` | **T40-A** 快捷键命令面探针（Q1 `QKeySequence` 往返恒等 14/15 + **键名别名对照** + 组合个数 / Q2 `setShortcut` 即时性 + **信号面**（只发 `changed`）+ `routeKey` 真触发 / Q3·Q3b·Q4 **落盘 + 不写穿 + 多键序列规范化** / Q5 空串移除 / Q6 重启等价（**比序列语义**）/ Q7 单恢复波及面 / Q8 出厂无重复键 / Q9 `actionsEnabled` 门只挡 `pushKey` / Q10 注册表 505·15 / Q11 平台键名格式 / Q12 还原）。**12 条实测结论见 `docs/T40_SHORTCUTS.zh_CN.md` §2** |
 | `HELPCHECK` | **17**（HC-01..HC-17） | `STELQUICK_HELP_CHECK` | **T41** 帮助/版本/许可证：数据面自洽（手势表 23 行 scope 计数、贡献者去重+排序）/ **GPL 编进 qrc**（资源存在 + 内容 md5 对磁盘） / **许可证加载**（标题 + `Version 2`）/ 版本面（**走 `StelUtils::getApplicationVersion()`**，⚠️ `QCoreApplication::applicationVersion()` 是 `1.0.0`）/ 系统行（API/平台/编译器非空）/ **接管表**（6 个 == 预期 + F2/F10/F12 **刻意未接管**对照）/ **接管生效（trigger）**（`triggered=1` ∧ `hostActionRequested Δ=1` ∧ `index=7` ∧ **QWidget Δ=0**）+ **判别对照**（撤销接管 ⇒ QWidget **Δ=46** ⇒ 正题 Δ=0 是接管的功劳）/ **键盘路径（`routeKey`）**（同查表，T41 陷阱 88 的核心）/ 帮助页控件（手势行 23/23｜外链行 7/7｜可见 legacy 标记 10/10 —— **视觉树递归**，陷阱 45）/ 跳转互跳 / 关于页控件（版本行 9/9｜系统行 6/6｜贡献者 delegate 8 条）/ **许可证端到端**（Dialog 可见 ∧ UI 文本 17992 字符 == 数据面）/ 复原（配置指纹=0）。**两组负控**：`STELQUICK_HELP_TAKEOVER_OFF=1` ⇒ 恰红 `[HC-14,HC-15,HC-16]`（14/17）；`STELQUICK_HELP_LICENSE_OFF=1` ⇒ 恰红 `[HC-04,HC-13]`（15/17）。**正题 3/3 `17/17`、负控各 3/3 命中且两腿正交（`A\B`=接管域、`B\A`=许可证域）** |
 | （探针）`HELPPROBE` | 只报读数、**不打 PASS** | `STELQUICK_HELP_PROBE` | **T41-A** 帮助/版本/许可证探针（93 行读数：`src/gui/` 是否编进来 / 8 个窗口动作是否在册 / F1 `trigger()` 会不会弹老对话框 / 版本面五个来源 / `COPYING` 在不在 bundle 里 / 贡献者表规模与重复）。**推翻三处开工推断**——见陷阱 88/89 与 `docs/T41_HELP.zh_CN.md` §2 |
+| `ERRORCHECK` | **A 组 15 / B 组 5** | `STELQUICK_ERROR_CHECK`（失败腿加 `STEL_USERDIR=/dev/null/xxx`） | **T42-C** 状态与错误页（**两条腿同一二进制**，失败腿用 `STEL_USERDIR` 造**真实**失败）：A 组 = 路径表 8 行/problem 0 / `-quick` 后缀 / cfg+log 就位 / 状态表无 error / 无错不报错 / 未支持 7 条 / 注册表交叉验算 4/4 / 接管表 10 / **4 动作 trigger ⇒ Δ0+提示+配置零变化** / **判别对照**（撤销接管 ⇒ Δ697 真弹）/ UI 行 4/8/7 / 按钮几何可达 / 剪贴板诊断 / **openPath 白名单闸（EC-15）** / 复原。B 组 = hasError / detail 与注入原因一致 / 错误块 UI / 引导行=error / 失败时路径仍可展示。**负控三腿**（实跑写死）：`ERROR_TAKEOVER_OFF` 恰红 `[EC-08,09,14]`、`ERROR_PATHS_OFF` 恰红 `[EC-01..04,11]`、`ERROR_UNSUPPORTED_OFF` 恰红 `[EC-06,07,11]`；A∩B=A∩C=∅、B∩C={EC-11}（子段可分）；⚠️ `ERROR_OPEN_OFF` **不是负控**（红不了 = 不承重）。正题 3/3 `15/15`、失败腿 2/2 `5/5`、负控各 2/2；**config 零污染门**（脚本全程 md5） |
+| （探针）`ERRORPROBE` | 只报读数、**不打 PASS** | `STELQUICK_ERROR_PROBE` | **T42-A** 错误页探针（57 行读数：七目录事实 / 隔离运行期读数 / 关键文件 / 失败面 + `STEL_USERDIR` 可注入性 / 未接管动作 trigger 实测 / 未支持项真源 / 可操作性 / **Q9 净写入自证**）。**推翻 1**（老对话框写 `DialogSizes/*`）、**证实 1**（F10 Δ697 / ⌥B Δ58）、**发现 T41 遗漏 1**（⌥B 观测列表）——见 `docs/T42_ERRORS.zh_CN.md` §3 |
 
 一键复跑：`tools/t16-verify.sh` … **`tools/t41-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
@@ -501,10 +504,28 @@ CFG-06/07 的原目录侧"天然成立"（空串不含哨兵 / 两个 `<unreadab
   假绿掩护**（`grabWindow` 强制渲染绕过遮挡）。⇒ **TRAPS 90–93**。
 - 批次期 load 12.44 + `mdbulkimport` 在跑（16 套件仍全绿）；复跑时 load 2.91。
 
+### T42 状态/错误页 + "未支持项"清单 —— ✅ **已完成**（`docs/T42_ERRORS.zh_CN.md`）
+
+A-1.0 第二格（资源路径 + 错误提示）与 A5「错误页」收口。先探针再写 UI：**T42-A 探针 57 行读数
+推翻 1 处开工假设**（老对话框把尺寸写进 `DialogSizes/*` ⇒ 判据必须自净）、**证实 T41 推断**
+（F10 Δ697 / ⌥B Δ58 真弹老窗口）、**发现 T41 遗漏**（⌥B 观测列表从未被接管）。产品 =
+`ErrorModel`（静态健康面：状态 4 行 / 路径 8 行四态含 `unset` / 未支持 7 条从注册表真源取）
++ `ErrorPage.qml`（操作行页首 —— 陷阱 92 教训）+ **4 个老窗口动作接管改"未支持"提示**
+（解 T41 两难：既不静默开旧对话框、也不"按了没反应"）+ **`boot()` 用户目录可创建性预检**
+（🔴 真缺陷：`StelFileMgr::init()` 用户目录不可创建 ⇒ `qFatal`/SIGABRT；`STEL_USERDIR`
+可注入真实失败 ⇒ 判据失败腿 5/5 走真失败路径，不造假桩）。判据 `ERRORCHECK`
+**A 组 15 / B 组 5**，负控三腿实跑写死且正交；**config 零污染门**（EC-09 只判不净曾把
+`DialogSizes/Configuration` 残留进真实 config —— 已修 + 脚本 md5 门）。
+判据自身陷阱 85 三演（mark 没写台账 ⇒ 14/14 却 FAIL(0/14)）。
+🔴 **收口轮白天批跑逼出 TRAPS 97**：布场昼夜不确定（卫星真实 UTC 移动 / 瞳孔适应 log 律
+爬秒级 / 白天无标签 ⇒ HP-09 假红、DP-00 INCONCLUSIVE）⇒ DisplayCheck/HiDpiCheck 布场钉
+固定夜 JD + 6.5s 适应收敛；同轮修掉脚本 `red_ids` 正则缺陷与 **HC-14 口径**（T41"预期 6"
+⇒ T42 后 10）。定稿轮 **SCRIPT-RC=0 FAILED=0**：正题 3/3 `15/15` + 失败腿 2/2 `5/5` +
+负控各 2/2 恰中 + 回归 24 项全 rc=0（含 `helpcheck` 17/17、DYN 3/3+3/3、INTERACT 18/18）。
+
 ### 之后（按优先级）
 
-**T42 错误页 + "未支持项"清单**（A5 最后一项；含 F2/F10/F12 的处置口径）→
-A6（回归与交接、接口冻结）。加固穿插：`LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算
+**A6（回归与交接、接口冻结）**—— A5 已清零。加固穿插：`LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算
 → 捏合后首击；另加 T33 移交的 `findLocations` 排序（照 T21 完全匹配优先）、
 "负控 A 在 Windows 不复现"的定性、**T37-X4**（仿真冻结期间 fader 动画停摆）、
 **T37-X1**（夜视翻转引起 5 个工具栏按钮重绘，纯性能线索）、

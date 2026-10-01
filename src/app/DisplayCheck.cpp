@@ -183,6 +183,13 @@ struct Ctx
     bool atmWasOn = false;
     bool atmChanged = false;
     bool pausedByUs = false;
+    // ── 布场昼夜确定性（T42 收口轮实测的血泪，TRAPS 80 的深层变体）──────────
+    // 开机 JD = 墙钟 ⇒ 白天跑批时"冻结+大气关"的天上满是**太阳照亮的卫星**
+    // （卫星位置用真实 UTC，冻结仿真它照样动）⇒ DP-00 噪声底 Δ220、INCONCLUSIVE。
+    // 治法：布场把 JD 钉在**固定夜时刻**（UT 22:00 ⇒ 卫星不日照、天空只有静星），
+    // 收尾还原 —— 让测量环境昼夜一致，不再随跑批时段漂移。
+    double jdRef = 0.0;
+    bool jdChangedByUs = false;
     int frameRefNonBlackOk = 0;
 
     FrameSample refA;
@@ -310,7 +317,10 @@ void DisplayCheck::run(QCoreApplication *app,
 
     // ── S1：布场 + 初值台账 ────────────────────────────────────────────────
     // 冻结仿真（帧静定）+ **大气置关**（让星星可见 —— 星等判据的前提，T37 血泪）。
-    steps->append({900, [](Ctx *c) {
+    // ⚠️ delayAfter 6500：跳 JD 后瞳孔适应（StelSkyDrawer::reportLuminanceInFov 的
+    // log 平滑律，transitionSpeed=0.2 ⇒ 每秒只剩 35% 差距）需要数秒收敛，
+    // 否则 HP-00/DP-00 噪声底门吃到的还是 ramp 中段的帧（T42 收口轮实测）。
+    steps->append({6500, [](Ctx *c) {
         StelSkyDrawer *sd = StelApp::getInstance().getCore()->getSkyDrawer();
         c->relScale = sd->getRelativeStarScale();
         c->absScale = sd->getAbsoluteStarScale();
@@ -338,6 +348,10 @@ void DisplayCheck::run(QCoreApplication *app,
         {
             c->facade->setSimulationPaused(true);
             c->pausedByUs = true;
+            // 固定夜 JD（见 Ctx 注释）：先记原值再写（陷阱 9：判据改的环境同批还原）。
+            c->jdRef = c->facade->julianDay();
+            c->facade->setJulianDay(2461000.4167);   // ≈2025-11-16 22:00 UT（夜）
+            c->jdChangedByUs = true;
         }
         // 大气置关（隔离前提）：STELQUICK_HAS_ENGINE 下 getFlagAtmosphere 走模块。
         c->atmWasOn = c->facade && c->facade->actionChecked(QStringLiteral("actionShow_Atmosphere"));
@@ -741,15 +755,18 @@ void DisplayCheck::run(QCoreApplication *app,
             c->inconclusive = true;
     }});
 
-    // ── S15：还原环境（大气/仿真）──────────────────────────────────────────
+    // ── S15：还原环境（大气/仿真/JD）────────────────────────────────────────
     steps->append({0, [](Ctx *c) {
         if (c->router && c->atmChanged)
             c->router->trigger(QStringLiteral("actionShow_Atmosphere"));
+        if (c->facade && c->jdChangedByUs)
+            c->facade->setJulianDay(c->jdRef);
         if (c->facade && c->pausedByUs)
             c->facade->setSimulationPaused(false);
-        c->note(QStringLiteral("收尾：大气还原=%1 仿真暂停还原=%2")
+        c->note(QStringLiteral("收尾：大气还原=%1 仿真暂停还原=%2 JD 还原=%3")
                     .arg(c->atmChanged ? 1 : 0)
-                    .arg(c->pausedByUs ? 1 : 0));
+                    .arg(c->pausedByUs ? 1 : 0)
+                    .arg(c->jdChangedByUs ? 1 : 0));
     }});
 
     QTimer::singleShot(delayMs, app, [tick]() { (*tick)(); });

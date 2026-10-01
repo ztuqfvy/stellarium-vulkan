@@ -19,6 +19,7 @@
 
 #include <QCoreApplication>
 #include <QEventLoop>
+#include <QFileInfo>
 #include <QObject>
 #include <QSettings>
 #include <QThread>
@@ -48,6 +49,50 @@ bool LiveSkyRuntime::boot(QString *errorOut)
         return true;
     if (m_mainView)
         return fail(QStringLiteral("LiveSkyRuntime 处于异常状态（mainView 已存在但未 boot 完成）。"));
+
+    // ── T42：**用户目录可创建性预检**（必须在 `StelFileMgr::init()` 之前）──────
+    // 🔴 不加这道预检的后果（T42-A 探针 Q4 定位到源码行）：
+    //   `StelFileMgr::init()` 在用户目录不可创建时走 `makeSureDirExistsAndIsWritable`
+    //   抛 `std::runtime_error` ⇒ **`qFatal`**（`src/core/StelFileMgr.cpp:90-92`）
+    //   ⇒ **SIGABRT，进程直接崩** —— 任何 UI（包括错误页）都没机会出现。
+    //   有了预检，这条路径变成**可操作的失败原因**，交给错误页显示。
+    // 口径：只检 **`STEL_USERDIR` 被显式设置** 的情形 —— 未设置时引擎用平台默认
+    //   目录（用户 home 下的既有可写目录）；去"复刻"平台路径判定纯属语义复制
+    //   （T34「产品侧零语义复制」原则）。被显式设置为不可创建位置，是本形态下
+    //   唯一能造出这个失败的场景（也是判据的驱动手段）。
+    // 两级都要可创建：raw（引擎 init 用）+ `-quick`（T36 隔离后的实际用户目录）。
+    if (qEnvironmentVariableIsSet("STEL_USERDIR"))
+    {
+        const QString raw = qEnvironmentVariable("STEL_USERDIR");
+        const QString cands[2] = {raw, raw + QStringLiteral("-quick")};
+        for (const QString &cand : cands)
+        {
+            if (cand.isEmpty())
+                return fail(QStringLiteral("STEL_USERDIR 为空串。"));
+            const QFileInfo fi(cand);
+            if (fi.exists())
+            {
+                if (!fi.isDir())
+                    return fail(QStringLiteral("用户目录 %1 已存在但不是目录。").arg(cand));
+                if (!fi.isWritable())
+                    return fail(QStringLiteral("用户目录 %1 存在但不可写。").arg(cand));
+                continue;
+            }
+            // 不存在 ⇒ 必须能被创建：找最近的**已存在**祖先，判定"是否是目录且可写"
+            QString parent = QFileInfo(cand).absolutePath();
+            while (!parent.isEmpty() && !QFileInfo(parent).exists())
+            {
+                const QString up = QFileInfo(parent).absolutePath();
+                if (up == parent)
+                    break;
+                parent = up;
+            }
+            const QFileInfo pfi(parent);
+            if (parent.isEmpty() || !pfi.exists() || !pfi.isDir() || !pfi.isWritable())
+                return fail(QStringLiteral("用户目录 %1 无法创建：最近的已存在祖先 %2 不是可写目录。")
+                                .arg(cand, parent.isEmpty() ? QStringLiteral("(无)") : parent));
+        }
+    }
 
     // ── 引擎前置：照抄 src/main.cpp 的顺序（缺一不可）──────────────────────
     StelFileMgr::init();

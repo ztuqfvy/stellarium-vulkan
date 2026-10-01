@@ -38,7 +38,7 @@ ApplicationWindow {
     // 避免"加了页面忘了改另一处"这类只在运行时才暴露的错位）。
     readonly property var pageIndex: ({ "diag": 0, "sky": 1, "search": 2, "time": 3,
                                         "location": 4, "display": 5, "shortcuts": 6,
-                                        "help": 7, "about": 8 })
+                                        "help": 7, "about": 8, "error": 9 })
 
     // ── T41：老 QWidget 窗口动作的**宿主接管**落点 ────────────────────────────
     //
@@ -54,10 +54,19 @@ ApplicationWindow {
     //   可见 `QDialog`；且 `setVisible(false)` 只隐藏不销毁 ⇒ 46 个 widget 常驻）。
     //   ⇒ 凡**已有 QML 对应页**的一律接管，否则"QML 重写"就白做了。
     //
-    // ⚠️ 这张表**故意不完整**：F2（设置）/ F10（天文计算）/ F12（脚本控制台）
-    //   没有对应的 QML 页，**不接管**（保留旧行为）—— 接管到一个不存在的页
-    //   只会把"弹老对话框"换成"按了没反应"，那是另一种骗人。
-    //   这三项记入 T42 的「未支持项」清单。
+    // ⚠️ 这张表**只放"有对应 QML 页"的动作**。T41 时剩下的 F2/F10/F12（+ 未被发现的
+    //   Alt+B）**不接管**，理由是"接管到一个不存在的页 = 把『弹老对话框』换成
+    //   『按了没反应』，那是另一种骗人"。
+    //   **T42 把这个缺口补上了**：改成走下面的 `unsupportedActions` ——
+    //   弹一个**明确的"未支持"提示**（给功能名 + 指向状态页的清单）。
+    //   这样三条要求同时满足：
+    //     · A-1.0 末行「**不静默打开旧对话框**」—— 不再弹老 QWidget 窗口；
+    //     · 开发指导「**未支持项有清单和明确提示**」—— 提示 + 清单都有；
+    //     · T41 拒绝接管的理由（"按了没反应"）—— 不成立了，现在有反应且有信息。
+    //   T42-A 探针实测（推翻/证实了 T41 的推断，见 docs/T42_ERRORS.zh_CN.md §2）：
+    //     不接管时 `trigger()` **真的会弹** ——
+    //     F10 天文计算 ⇒ QWidget 11→708（**Δ697**）+ 可见 QDialog 0→1；
+    //     Alt+B 观测列表 ⇒ 708→766（**Δ58**）+ 可见 QDialog 0→1。
     readonly property var hostActionPages: ({
         "actionShow_Help_Window_Global": "help",           // F1
         "actionShow_Search_Window_Global": "search",       // F3
@@ -67,12 +76,35 @@ ApplicationWindow {
         "actionShow_Shortcuts_Window_Global": "shortcuts"  // F7
     })
 
+    // ── T42：**没有 QML 页**的老窗口动作 → 明确提示 ─────────────────────────
+    // 键 = 引擎 action id（真源：`src/gui/StelGui.cpp:262-272` 的 Windows 组；
+    // T42-A 探针用 `getActionList("Windows")` 实测到 **10 个成员**，其中 6 个已在
+    // 上表、4 个在本表）。值 = 给用户看的功能名。
+    readonly property var unsupportedActions: ({
+        "actionShow_Configuration_Window_Global": "设置（F2）",
+        "actionShow_AstroCalc_Window_Global": "天文计算（F10）",
+        "actionShow_ScriptConsole_Window_Global": "脚本控制台（F12）",
+        "actionShow_ObsList_Window_Global": "观测列表（⌥B）"
+    })
+
+    function showUnsupported(actionId) {
+        unsupportedDialog.featureName = root.unsupportedActions[actionId] !== undefined
+                ? root.unsupportedActions[actionId] : actionId
+        unsupportedDialog.open()
+    }
+
     Connections {
         target: ActionRouter
         function onHostActionRequested(actionId) {
             var page = root.hostActionPages[actionId]
-            if (page !== undefined && root.pageIndex[page] !== undefined)
+            if (page !== undefined && root.pageIndex[page] !== undefined) {
                 stack.currentIndex = root.pageIndex[page]
+                return
+            }
+            if (root.unsupportedActions[actionId] !== undefined) {
+                root.showUnsupported(actionId)
+                return
+            }
         }
     }
 
@@ -346,7 +378,62 @@ ApplicationWindow {
                 AboutPage {
                     onNavigate: (page) => stack.currentIndex = root.pageIndex[page]
                 }
+                // T42：状态与错误页（索引 9）—— A-1.0「资源路径 + 错误提示」两项、
+                // A5 的「错误页」、指导文档的「未支持项清单」都落在这一页。
+                ErrorPage {
+                    onNavigate: (page) => stack.currentIndex = root.pageIndex[page]
+                }
             }
         }
+    }
+
+    // ── T42：「未支持」提示对话框 ─────────────────────────────────────────────
+    // 4 个**没有 QML 页**的老窗口动作（F2 设置 / F10 天文计算 / F12 脚本控制台 /
+    // ⌥B 观测列表）被宿主接管后落到这里。它替掉的是"静默弹出老 QWidget 对话框"
+    // （A-1.0 明文禁止），也不是"按了没反应"（T41 拒绝接管的理由）。
+    Dialog {
+        id: unsupportedDialog
+        objectName: "unsupportedDialog"
+        property string featureName: ""
+        title: "此功能不在个人版范围内"
+        modal: true
+        width: Math.min(root.width - 80, 460)
+        standardButtons: Dialog.NoButton
+        contentItem: ColumnLayout {
+            id: unsupportedCol
+            spacing: 10
+            Label {
+                objectName: "unsupportedDialogText"
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: unsupportedDialog.featureName + " 属于旧版界面功能，个人版未纳入。"
+            }
+            Label {
+                objectName: "unsupportedDialogHint"
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                color: "#5f6368"
+                font.pixelSize: 12
+                text: "完整清单见「状态」页的未支持项一节。"
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                Button {
+                    objectName: "unsupportedDialogGotoStatusButton"
+                    text: "查看清单"
+                    onClicked: {
+                        unsupportedDialog.close()
+                        stack.currentIndex = root.pageIndex["error"]
+                    }
+                }
+                Button {
+                    objectName: "unsupportedDialogCloseButton"
+                    text: "知道了"
+                    onClicked: unsupportedDialog.close()
+                }
+            }
+        }
+        implicitHeight: unsupportedCol.implicitHeight + 90
     }
 }

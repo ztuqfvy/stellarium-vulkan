@@ -1,0 +1,264 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 85 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+StelFileMgr found install location "."
+CONFIGISO: original=/Users/ztuqfvy/Library/Application Support/Stellarium
+CONFIGISO: personal=/Users/ztuqfvy/Library/Application Support/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=个人版目录已存在 config.ini，跳过播种（用户改过的值优先）
+CONFIGISO: config=/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini
+System language (ISO 639 / ISO 3166): zh_CN
+Couldn't load translations for language  "en" in section "stellarium"
+Empty translation file for language  "en" in section "stellarium"
+Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+OpenGL module type: desktop OpenGL
+StelGLWidget constructor
+StelGraphicsScene constructor
+qt.qpa.openglcontext: Could not create NSOpenGLContext with shared context, falling back to unshared context.
+initializeGL(windowWidth = 1280, windowHeight = 720)
+OpenGL supported version:  "4.1 Metal - 91.7"
+Current Format:  QSurfaceFormat(version 4.1, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 32, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize -1, stencilBufferSize 8, samples 0, swapBehavior QSurfaceFormat::DoubleBuffer, swapInterval 0, colorSpace QColorSpace(), profile  QSurfaceFormat::CoreProfile)
+Initializing StelMainView
+Luminance textures are not supported
+Running in High Graphics Mode
+Maximum texture anisotropy: 16
+Maximum 2D texture size: 16384
+Driver version string: 4.1 Metal - 91.7
+GL vendor: Apple
+GL renderer: Apple M3
+GL Shading Language version: 4.10
+stel.OpenGLArray: Vertex Array Objects are supported
+Initial high-DPI scaling factor: 2
+Application language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures"
+Couldn't load translations for language  "zh_CN" in section "stellarium-sky"
+Empty translation file for language  "zh_CN" in section "stellarium-sky"
+Empty skyculture-independent translation file for language  "zh_CN"
+Sky language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-planetary-features"
+Empty translation file for language  "zh_CN" in section "stellarium-planetary-features"
+Planetary features language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-scripts"
+Empty translation file for language  "zh_CN" in section "stellarium-scripts"
+Scripts language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Sky culture description language: zh_CN
+Cache directory: /Users/ztuqfvy/Library/Caches/stellarium-vulkan/stelQuickUI
+Using HTTP proxy: "" "" "127.0.0.1" "60753"
+Loaded 252 countries
+Loaded 193 regions
+Loading Solar System data (1: planets and moons) ...
+Loading from: ./data/ssystem_major.ini
+Loaded 83 Solar System bodies from  ./data/ssystem_major.ini
+Solar System now has 83 entries.
+Loading Solar System data (2: minor bodies) ...
+Loading from: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 152637(152637)
+Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini section 66146(66146)
+minor body  "(66146)" has no IAU code in section  "66146(66146)"
+minor body  "(152637)" has no IAU code in section  "152637(152637)"
+Loaded 477 Solar System bodies from  /Users/ztuqfvy/Library/Application Support/Stellarium-quick/data/ssystem_minor.ini
+Solar System now has 560 entries.
+File ssystem_minor.ini is loaded successfully...
+ExtendedElements: loaded epoch tables for 4 asteroids from "./data/asteroid_elements.json" ( 0 not matched in ssystem_minor.ini)
+SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+qt.gui.imageio: libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Loading nomenclature for Solar system bodies ...
+Loaded 16058 / 16094 items of planetary surface nomenclature
+Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
+Loading star data ...
+Loading star catalog: ./stars/hip_gaia3/stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+Loading star catalog: ./stars/hip_gaia3/stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+Loading star catalog: ./stars/hip_gaia3/stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+Loading star catalog: ./stars/hip_gaia3/stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+Finished loading star catalogue data, max_geodesic_level: 3
+Loading scientific star designations from ./stars/hip_gaia3/name.fab
+Loaded 5060 / 5060 scientific designations
+Loading scientific star designations from ./stars/hip_gaia3/extra_name.fab
+Loaded 26200 / 26200 scientific designations
+Loading variable stars data from ./stars/hip_gaia3/gcvs.cat
+[...] GCVS 5.1-20250615
+Loaded 47323 / 47323 variable stars
+Loading double stars from ./stars/hip_gaia3/wds_hip_part.dat
+Loaded 22992 / 22992 double stars
+Loading cross-identification data from ./stars/hip_gaia3/cross-id.cat
+Loaded 327097 / 327097 cross-identification data records for stars
+Loading orbital parameters data for binary system from ./stars/hip_gaia3/binary_orbitparam.dat
+Loaded 15 / 15 orbital parameters data for binary system
+Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 159 Barium stars, and 220 have PM>1000mas/yr.
+navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+Loading DSO data ...
+[...] Stellarium DSO Catalog, version 3.23 (standard edition)
+Loaded 94899 DSO records
+Loading DSO name data ...
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+Loaded 1361 / 1388 DSO name records successfully
+No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+Loading DSO outline data ...
+Loaded 100 DSO outline records successfully
+Loading DSO discovery data ...
+Loaded 183 / 183 DSO discovery records successfully
+LandscapeMgr: initialized Cache for 100 MB.
+Loading star names from ./skycultures/common_star_names.fab
+Loaded 411 / 411 common star names
+Loaded 88 / 88 constellation records successfully for culture modern
+Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+Loading constellation boundary data ... 
+Loaded 781 constellation boundary segments
+Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install more star catalogs
+Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install more star catalogs
+Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
+Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
+Loaded 88 / 92 asterism records successfully for culture modern
+Initializing basic GL shaders... 
+Creating GUI ...
+Loading style file: :/graphicGui/normalStyle.css
+Loaded plugin "Exoplanets"
+[Exoplanets] Version of the format of the catalog: 1
+[Exoplanets] loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Exoplanets/exoplanets.json
+Loaded plugin "MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/MeteorShowers/MeteorShowers.json
+[MeteorShowersMgr] Version of the format of the catalog: 2
+Loaded plugin "Novae"
+[Novae] version of the catalog: 1
+[Novae] Loading catalog file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Novae/novae.json
+Loaded plugin "Oculars"
+Oculars::validateAndLoadIniFile() ocular.ini exists at: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Oculars/ocular.ini . Checking version...
+Oculars::validateAndLoadIniFile() found existing ini file version 3.1
+Loaded plugin "Satellites"
+[Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Satellites/satellites.json
+Satellite has invalid orbit: "DONGPO 01" "53453"
+Loaded plugin "SolarSystemEditor"
+Using the ssystem_minor.ini file that already exists in the user directory...
+Loaded 895910 discovery circumstances records for minor planets...
+SSE: Comet cross-index data: Overwriting entry for "453P"
+SSE: Comet cross-index data: Overwriting entry for "467P"
+SSE: Comet cross-index data: Overwriting entry for "465P"
+SSE: Comet cross-index data: Overwriting entry for "466P"
+SSE: Comet cross-index data: Overwriting entry for "468P"
+SSE: Comet cross-index data: Overwriting entry for "470P"
+SSE: Comet cross-index data: Overwriting entry for "472P"
+SSE: Comet cross-index data: Overwriting entry for "475P"
+SSE: Comet cross-index data: Overwriting entry for "477P"
+SSE: Comet cross-index data: Overwriting entry for "473P"
+SSE: Comet cross-index data: Overwriting entry for "476P"
+SSE: Comet cross-index data: Overwriting entry for "479P"
+SSE: Comet cross-index data: Overwriting entry for "480P"
+SSE: Comet cross-index data: Overwriting entry for "481P"
+Loaded 2570 discovery circumstances records for comets...
+OpenGL viewport size: 2560 x 1440
+Creating scene FBO with size 2560x1440
+LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
+stel.ObsLists: Starting with empty ObsList
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+QMacCGContext:: Unsupported paint engine type 13
+qt.widgets.styles.macos: drawPrimitive: QStyle::PE_Widget invalid (nullptr) graphics context
+ERRORPROBE: 错误/状态与未支持项探针：56 条读数（只读为主）
+ERRORPROBE: 布场：引擎 initialized=1｜QWidget 总数=11｜可见 QDialog=0｜配置文件=/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini｜配置键 771
+ERRORPROBE: Q1 ===== 资源路径面（StelFileMgr 七个目录 API）=====
+ERRORPROBE: Q1 用户目录 userDir = /Users/ztuqfvy/Library/Application Support/Stellarium-quick｜存在·可写｜条目 5
+ERRORPROBE: Q1 安装目录 installDir = .｜存在·可写｜条目 44
+ERRORPROBE: Q1 缓存目录 cacheDir = /Users/ztuqfvy/Library/Caches/stellarium-vulkan/stelQuickUI｜存在·可写｜条目 3
+ERRORPROBE: Q1 截图目录 screenshotDir：**空串**（API 返回空）
+ERRORPROBE: Q1 观测列表 obsListDir：**空串**（API 返回空）
+ERRORPROBE: Q1 语言目录 localeDir = /Users/ztuqfvy/qt_demo/stellarium_vulkan/build-release/src/ui/stelQuickUI.app/Contents/MacOS/../translations｜存在·可写｜条目 1
+ERRORPROBE: Q1 桌面目录 desktopDir = /Users/ztuqfvy/Desktop｜存在·可写｜条目 32
+ERRORPROBE: Q1 config.ini 的搜索路径命中（findFileInAllPaths）= 1 项：[/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini]（⚠️ 路径全表 `fileLocations` 是 private，只能用这个可观测代理）
+ERRORPROBE: Q2 隔离读数：getUserDir() = 「/Users/ztuqfvy/Library/Application Support/Stellarium-quick」｜以 `-quick` 结尾 = 是 ⇒ T36 隔离**生效**（同级目录，不是子目录）
+ERRORPROBE: Q2 原版目录（去掉 -quick）= 「/Users/ztuqfvy/Library/Application Support/Stellarium」｜存在=是｜可写=是（本探针**只读**，不触碰它）
+ERRORPROBE: Q3 ===== 关键文件（错误页/状态页要展示与跳转的目标）=====
+ERRORPROBE: Q3 配置文件 QSettings::fileName() = 「/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini」
+ERRORPROBE: Q3 日志文件 = /Users/ztuqfvy/Library/Application Support/Stellarium-quick/log.txt｜9884 B｜可读｜可写
+ERRORPROBE: Q3 config.ini（findFile Writable|File） = /Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini｜42895 B｜可读｜可写
+ERRORPROBE: Q3 config.ini（findFile New） = ./config.ini｜**不存在**
+ERRORPROBE: Q3 languages.tab：**空串**（未设/不可解析）
+ERRORPROBE: Q3 data/default_cfg.ini（播种源） = ./data/default_cfg.ini｜12721 B｜可读｜可写
+ERRORPROBE: Q4 ===== 失败面（错误页要展示的『可操作原因』的来路）=====
+ERRORPROBE: Q4 boot() 三处 fail：① findFile(config.ini) 双路（Writable|File → New）皆空；② 30s 内 initializeGL 未触发（StelApp::isInitialized()==false）；③ 『mainView 已存在但未 boot 完成』异常态。
+ERRORPROBE: Q4 start() 四道前置闸：未 boot / 已在运行（重复 start）/ 邮箱为空 / 渲染尺寸非法（<1）。
+ERRORPROBE: Q4 🔴 **第四处、且最凶的一处不在 boot() 里**：`StelFileMgr::init()` 在用户目录**不可创建**时走 `makeSureDirExistsAndIsWritable` 抛 `std::runtime_error` ⇒ `qFatal`（`src/core/StelFileMgr.cpp:90-92`）⇒ **SIGABRT，进程直接崩**，任何 UI 都没机会出现。⇒ 错误页要在 **boot() 里加预检**（init 之前判定用户目录可创建性），别去改引擎上游。
+ERRORPROBE: Q4 fail 消息形态（实测样例，来自 boot 的 fail() 文案）：『既找不到也建不出 config.ini（StelFileMgr::findFile 双路失败）。』⇒ 这类**可操作**原因是错误页正文的素材。
+ERRORPROBE: Q5 ===== 可注入性（判据要用**真实失败**驱动，不是注入桩）=====
+ERRORPROBE: Q5 STEL_USERDIR 环境变量 = 「」｜getUserDir() = 「/Users/ztuqfvy/Library/Application Support/Stellarium-quick」
+ERRORPROBE: Q5 `StelFileMgr.cpp:69-77` 读 STEL_USERDIR 覆盖 userDir，随后 `makeSureDirExistsAndIsWritable()`（`:87`）⇒ **把 STEL_USERDIR 指向『父路径不是目录』的位置**（如 `/dev/null/xxx`）即得**真实**的『用户目录不可创建』失败，无需产品开测试口子。
+ERRORPROBE: Q5 现有可控开关（T36/T41 先例）：STELQUICK_CFG_ISOLATE_OFF（跳过隔离）/ STELQUICK_CFG_MIGRATE_OFF（不播种）/ STELQUICK_HELP_TAKEOVER_OFF（不注册接管）。
+ERRORPROBE: Q5 UI 侧错误出口现状：**无** —— main.cpp 引导失败只做 `fprintf(stderr)` + `return 8`（静默退出）；QML 页面清单里没有错误/状态页（QML 现有 9 个业务页：天空/搜索/时间/地点/显示/快捷键/帮助/关于/诊断）
+ERRORPROBE: Q6 ===== 未接管动作 trigger() 实测（T41 只测过 F1）=====
+ERRORPROBE: Q6-a actionShow_AstroCalc_Window_Global：在册｜文本=「天文计算」｜键=「F10」｜接管=**否**
+ERRORPROBE: Q6-a trigger=true｜QWidget 11→708（**Δ697**）｜可见 QDialog 0→1（**Δ1**） ⇒ **老 QWidget 对话框真的弹出来了**
+ERRORPROBE: Q6-b actionShow_ObsList_Window_Global：在册｜文本=「观测列表」｜键=「⌥B」｜接管=**否**（🔴 T41 只处理了 9 个 actionShow_* 里的 6 个，**这一个从未被提及**）
+ERRORPROBE: Q6-b trigger=true｜QWidget 708→766（**Δ58**）｜可见 QDialog 0→1（**Δ1**） ⇒ **老 QWidget 对话框真的弹出来了**
+ERRORPROBE: Q6-c 收尾：已关可见 QDialog｜QWidget 总数 = 766（**只隐藏不销毁**，Δ 常驻是 `StelDialog` 的既有语义，T41 已记录）
+ERRORPROBE: Q7 ===== 未支持项真源（Windows 组全表 = 老 GUI 窗口入口的真源）=====
+ERRORPROBE: Q7 「Windows」组成员 10 个：
+ERRORPROBE: Q7   · actionShow_ScriptConsole_Window_Global｜文本=「脚本控制台窗口」｜键=「F12」｜接管=**否**
+ERRORPROBE: Q7   · actionShow_Help_Window_Global｜文本=「说明」｜键=「F1」｜接管=是
+ERRORPROBE: Q7   · actionShow_Configuration_Window_Global｜文本=「设置」｜键=「F2」｜接管=**否**
+ERRORPROBE: Q7   · actionShow_Search_Window_Global｜文本=「搜索」｜键=「F3」｜接管=是
+ERRORPROBE: Q7   · actionShow_SkyView_Window_Global｜文本=「星空及显示」｜键=「F4」｜接管=是
+ERRORPROBE: Q7   · actionShow_DateTime_Window_Global｜文本=「日期/时间」｜键=「F5」｜接管=是
+ERRORPROBE: Q7   · actionShow_Location_Window_Global｜文本=「所在地点」｜键=「F6」｜接管=是
+ERRORPROBE: Q7   · actionShow_Shortcuts_Window_Global｜文本=「快捷键窗口」｜键=「F7」｜接管=是
+ERRORPROBE: Q7   · actionShow_AstroCalc_Window_Global｜文本=「天文计算」｜键=「F10」｜接管=**否**
+ERRORPROBE: Q7   · actionShow_ObsList_Window_Global｜文本=「观测列表」｜键=「⌥B」｜接管=**否**
+ERRORPROBE: Q7 A-1.0『不做』三项对应：高级天文计算 = actionShow_AstroCalc_Window_Global（F10）｜脚本控制台 = actionShow_ScriptConsole_Window_Global（F12）｜全部插件设置 = 配置窗口 actionShow_Configuration_Window_Global（F2）内的插件页（老 GUI 无独立入口）。
+ERRORPROBE: Q7 legacy 手势 10 条（T41 已定，仍留在帮助页红字标注）：脚本控制台 3 + 天文计算 7 ⇒ 与上表同源，未支持项清单**引用**它们，不重复维护第二份。
+ERRORPROBE: Q7 T39 移交的不可搬控件 2 个（guiFontSize / screenButtonScale）也属未支持项（对 QML 视觉树零影响）。
+ERRORPROBE: Q8 QDesktopServices::openUrl 可用（Qt 基础 API，本地目录走 QUrl::fromLocalFile）｜剪贴板 = 可用
+ERRORPROBE: Q8 ⚠️ T41 的 `HelpModel::openExternal` 已建立**白名单制**先例；错误页的『打开日志目录』沿用同一策略（只允许已知路径，不接受任意 URL）。
+ERRORPROBE: Q8 探针**不真的调 openUrl** —— 会唤起 Finder 抢焦点，污染后续读数（T41 的交互腿教训：环境副作用要主动隔离）。
+ERRORPROBE: Q9 探针写入与自净：Q6 两次 trigger 造成 0 项写入（新增 无｜变化 无）⇒ 已按基线还原
+ERRORPROBE: Q9 零净写入自证：还原后配置键 771 → 771｜残差 0 项（**逐项相同** ⇒ 探针净写入为零）
+ERRORPROBE: Q9 🔴 **这条读数本身就是产品判据的素材**：不接管 ⇒ trigger 老窗口会写 `DialogSizes/*`；接管后 ⇒ 不弹窗、配置零变化。比 QWidget 计数更精细的『接管生效』独立证据通道（T42-C 采用）。
+ERRORPROBE: VERDICT=DONE

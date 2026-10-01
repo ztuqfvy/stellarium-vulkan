@@ -1,0 +1,94 @@
+环境：10:56  up 6 days, 12:39, 1 user, load averages: 2.88 3.80 4.21
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：42239912 B  2026-10-01 10:54 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=a15ec189fc5154709905aec26e9f6b4b
+config 零污染门：起跑 md5=ac15d17d004d2b1e10c1817bb60dea68
+──────── 正题 ERRORCHECK ×3（预期 rc=0 / 判据 15/15 / 红项空）────────
+  · run1 rc=0（ERRORCHECK: VERDICT=PASS；红项 []）
+  · run2 rc=0（ERRORCHECK: VERDICT=PASS；红项 []）
+  · run3 rc=0（ERRORCHECK: VERDICT=PASS；红项 []）
+  ✓ 正题 3/3 全绿（判据 15/15 × 3）
+  · run1 判据全文（见 docs/evidence/2026-10-01-t42-errors/mac/errorcheck-pos-run1.txt）：
+      ERRORCHECK: 状态与错误页自检：判据 15/15
+      ERRORCHECK:布场：配置文件 /Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini（771 键）｜QWidget 11｜可见 QDialog 0｜接管 10 个｜页栈 index 9
+      ERRORCHECK:[PASS] EC-01 资源路径表 8 行（应 8）｜problem 0（应 0）｜标签齐备=是
+      ERRORCHECK:[PASS] EC-02 用户目录以 `-quick` 结尾（T36 隔离运行期读数）：/Users/ztuqfvy/Library/Application Support/Stellarium-quick
+      ERRORCHECK:[PASS] EC-03 配置文件/日志文件就位：cfg=有(ok)｜log=有(ok)
+      ERRORCHECK:[PASS] EC-04 状态表 4 行（应 4）｜error 行 0
+      ERRORCHECK:[PASS] EC-05 引擎已引导 + 后端已注入 ⇒ hasError=0（应 false，无错时不该报错）｜headline「」
+      ERRORCHECK:[PASS] EC-06 未支持项 7 条（应 7：4 老窗口 + 插件设置 + legacy 手势 + T39 两控件）
+      ERRORCHECK:[PASS] EC-07 未支持项 4 个老窗口动作与注册表交叉验算：命中 4/4｜不符 无（清单与真源一致）
+      ERRORCHECK:[PASS] EC-08 接管表 10 个（应 10 = T41 的 6 + T42 的 4）｜缺 无
+      ERRORCHECK:[PASS] EC-09 4 个未支持动作逐个 trigger ⇒ QWidget Δ=0（应 0）｜提示出现 4/4（设置（F2）、天文计算（F10）、脚本控制台（F12）、观测列表（⌥B））｜配置写入 0 项（应 0）
+      ERRORCHECK:EC-10 收尾：判别对照造成的配置写入 0 项已按基线还原（新增 无）
+      ERRORCHECK:[PASS] EC-10 判别对照：撤销接管后 trigger ⇒ QWidget 11→708（Δ697>0，老对话框**真的会弹**）⇒ EC-09 的 Δ=0 是接管的功劳
+      ERRORCHECK:[PASS] EC-11 错误页控件（视觉树递归）：状态行 4/4｜路径行 8/8｜未支持行 7/7｜缺 无
+      ERRORCHECK:[PASS] EC-12 操作行 4 按钮存在且落点可达（几何覆盖判据）：4/4 可达
+      ERRORCHECK:[PASS] EC-13 真实点击「复制诊断信息」⇒ 剪贴板 1083 字符｜含版本行=是｜含未支持项小节=是
+      ERRORCHECK:[PASS] EC-15 openPath 白名单闸：未知 kind 拒收=1（应 true）
+      ERRORCHECK:[PASS] EC-14 复原：配置差异 0 项（应 0）｜接管 10 个（应 10）
+      ERRORCHECK: VERDICT=PASS
+──────── 失败腿 STEL_USERDIR=/dev/null/xxx ×2（预期 rc=0 / 判据 5/5 / VERDICT=PASS）────────
+  · run1 rc=0（ERRORCHECK: VERDICT=PASS；红项 []）
+  · run2 rc=0（ERRORCHECK: VERDICT=PASS；红项 []）
+  ✓ 失败腿 2/2 全绿（引导失败 ⇒ 错误页，真实失败路径不造假桩）
+──────── 负控 A STELQUICK_ERROR_TAKEOVER_OFF=1 ×2（预期 rc=5 / 12/15 / 红项 [EC-08,EC-09,EC-14]）────────
+  · run1 rc=5（ERRORCHECK: VERDICT=FAIL；红项 [EC-08,EC-09,EC-14]）
+  · run2 rc=5（ERRORCHECK: VERDICT=FAIL；红项 [EC-08,EC-09,EC-14]）
+  ✓ 负控 A 2/2 命中 [EC-08,EC-09,EC-14]
+  负控 A 的红是**预期**结果；读数：
+      ERRORCHECK:[FAIL] EC-08 接管表 6 个（应 10 = T41 的 6 + T42 的 4）｜缺 actionShow_Configuration_Window_Global,actionShow_AstroCalc_Window_Global,actionShow_ScriptConsole_Window_Global,actionShow_ObsList_Window_Global
+      ERRORCHECK:[FAIL] EC-09 4 个未支持动作逐个 trigger ⇒ QWidget Δ=1214（应 0）｜提示出现 4/4（）｜配置写入 1 项（应 0）｜FAIL 细节：actionShow_Configuration_Window_Global(QWidget Δ399); actionShow_Configuration_Window_Global(提示未出现/无功能名); actionShow_AstroCalc_Window_Global(QWidget Δ697); actionShow_AstroCalc_Window_Global(提示未出现/无功能名); actionShow_ScriptConsole_Window_Global(QWidget Δ60); actionShow_ScriptConsole_Window_Global(提示未出现/无功能名); actionShow_ObsList_Window_Global(QWidget Δ58); actionShow_ObsList_Window_Global(提示未出现/无功能名); 总 QWidget Δ1214（应 0 —— 老对话框会各建几十上百个）; 配置被写：DialogSizes/Configuration
+      ERRORCHECK:[FAIL] EC-14 复原：配置差异 0 项（应 0）｜接管 6 个（应 10）
+      ERRORCHECK: VERDICT=FAIL
+──────── 负控 B STELQUICK_ERROR_PATHS_OFF=1 ×2（预期 rc=5 / 10/15 / 红项 [EC-01,EC-02,EC-03,EC-04,EC-11]）────────
+  · run1 rc=5（ERRORCHECK: VERDICT=FAIL；红项 [EC-01,EC-02,EC-03,EC-04,EC-11]）
+  · run2 rc=5（ERRORCHECK: VERDICT=FAIL；红项 [EC-01,EC-02,EC-03,EC-04,EC-11]）
+  ✓ 负控 B 2/2 命中 [EC-01,EC-02,EC-03,EC-04,EC-11]
+  负控 B 的红是**预期**结果；读数：
+      ERRORCHECK:[FAIL] EC-01 资源路径表 0 行（应 8）｜problem 0（应 0）｜标签齐备=是
+      ERRORCHECK:[FAIL] EC-02 用户目录以 `-quick` 结尾（T36 隔离运行期读数）：
+      ERRORCHECK:[FAIL] EC-03 配置文件/日志文件就位：cfg=空()｜log=空()
+      ERRORCHECK:[FAIL] EC-04 状态表 4 行（应 4）｜error 行 1：配置目录
+      ERRORCHECK:[FAIL] EC-11 错误页控件（视觉树递归）：状态行 4/4｜路径行 8/8｜未支持行 7/7｜缺 pathRow_0,pathRow_1,pathRow_2,pathRow_3,pathRow_4,pathRow_5,pathRow_6,pathRow_7
+      ERRORCHECK: VERDICT=FAIL
+──────── 负控 C STELQUICK_ERROR_UNSUPPORTED_OFF=1 ×2（预期 rc=5 / 12/15 / 红项 [EC-06,EC-07,EC-11]）────────
+  · run1 rc=5（ERRORCHECK: VERDICT=FAIL；红项 [EC-06,EC-07,EC-11]）
+  · run2 rc=5（ERRORCHECK: VERDICT=FAIL；红项 [EC-06,EC-07,EC-11]）
+  ✓ 负控 C 2/2 命中 [EC-06,EC-07,EC-11]
+  负控 C 的红是**预期**结果；读数：
+      ERRORCHECK:[FAIL] EC-06 未支持项 0 条（应 7：4 老窗口 + 插件设置 + legacy 手势 + T39 两控件）
+      ERRORCHECK:[FAIL] EC-07 未支持项 4 个老窗口动作与注册表交叉验算：命中 0/4｜不符 无（清单与真源一致）
+      ERRORCHECK:[FAIL] EC-11 错误页控件（视觉树递归）：状态行 4/4｜路径行 8/8｜未支持行 7/7｜缺 unsupportedRow_0,unsupportedRow_1,unsupportedRow_2,unsupportedRow_3,unsupportedRow_4,unsupportedRow_5,unsupportedRow_6
+      ERRORCHECK: VERDICT=FAIL
+──────── 三腿正交定位（A∩B=[] 应空｜A∩C=[] 应空｜B∩C=[EC-11] 应恰 EC-11）────────
+  ✓ 三腿正交定位成立（接管域 / 路径域 / 清单域；EC-11 为共享 UI 行判据，子段可分）
+  ✓ 正题红项空集（[∅]）
+  ✓ config 零污染：全程 md5 一致（ac15d17d004d2b1e10c1817bb60dea68）
+regression-timecheck rc=0
+regression-returnuicheck rc=0
+regression-searchcheck rc=0
+regression-actioncheck rc=0
+regression-locatecheck rc=0
+regression-locate-uicheck rc=0
+regression-replaycheck rc=0
+regression-clockcheck rc=0
+regression-timeuicheck rc=0
+regression-locationcheck rc=0
+regression-toolbarcheck rc=0
+regression-timelinkcheck rc=0
+regression-configcheck rc=0
+regression-nightcheck rc=0
+regression-displaycheck rc=0
+regression-hidpicheck rc=0
+regression-shortcutcheck rc=0
+regression-helpcheck rc=0
+regression-interactcheck rc=0（18/18，窗口已激活）
+regression-a2-metal rc=0
+regression-dyn-engine-metal 3/3 PASS
+regression-dyn-stub-metal 3/3 PASS
+regression-s3-stela3 rc=0（旧形态）
+════════════════════════════════════════
+脚本层判据：8 通过 / 0 失败
+环境：11:05  up 6 days, 12:48, 1 user, load averages: 3.42 3.58 3.91
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：42239912 B  2026-10-01 10:54 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=a15ec189fc5154709905aec26e9f6b4b

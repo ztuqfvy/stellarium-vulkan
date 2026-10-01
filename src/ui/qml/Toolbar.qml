@@ -142,6 +142,12 @@ Rectangle {
                 text: "关于"
                 onClicked: toolbar.navigate("about")
             }
+            Button {
+                // T42：状态与错误页（资源路径 / 错误提示 / 未支持项清单）。
+                objectName: "navStatusButton"
+                text: "状态"
+                onClicked: toolbar.navigate("error")
+            }
 
             // 唯一 filler：把右侧信息顶到最右（见文件头坑②，别再加第二个）。
             Item { Layout.fillWidth: true }

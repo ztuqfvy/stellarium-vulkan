@@ -315,6 +315,14 @@ void ensureVulkanLoaderPath()
 #include "app/HelpProbe.hpp"
 #include "app/HelpModel.hpp"   // T41-B：帮助/版本/许可证数据面
 #include "app/HelpCheck.hpp"   // T41-C：帮助/版本/许可证自检
+// T42-A：错误/状态与未支持项**数据面探针**（资源路径七个目录 API 的实测值 + 存在性/
+// 可写性 / T36 隔离的运行期读数 / 关键文件（配置文件·日志）实际路径 / boot() 三处
+// fail 与 `StelFileMgr::init()` 的 qFatal 前置 / 🔴 未接管动作（F10·**Alt+B**）的
+// trigger 实测 —— T41 只实测过 F1，其余是推断 / 「未支持项」清单的注册表真源核对 /
+// openUrl·剪贴板的可操作性 / 零写入自证）。只报读数。
+#include "app/ErrorProbe.hpp"
+#include "app/ErrorModel.hpp"   // T42-B：错误/运行状态/资源路径/未支持项数据面
+#include "app/ErrorCheck.hpp"   // T42-C：状态与错误页自检（EC-01..EC-14 / 失败腿）
 // T36：配置目录隔离（引导期）与其自检。**引导期**那一半由 LiveSkyRuntime::boot()
 // 调用——位置即判据，别挪到 StelLogger / config.ini 之后。
 #include "app/ConfigIsolationCheck.hpp"
@@ -5310,6 +5318,11 @@ int main(int argc, char **argv)
     // 负控 A `STELQUICK_HELP_TAKEOVER_OFF=1`（main.cpp 接管注册段读它）
     // 负控 B `STELQUICK_HELP_LICENSE_OFF=1`（HelpModel::loadLicense 读它）。
     const bool helpCheck = qEnvironmentVariableIsSet("STELQUICK_HELP_CHECK");
+    // T42-A：错误/状态与未支持项数据面探针（只报读数，不打 PASS）。
+    const bool errorProbe = qEnvironmentVariableIsSet("STELQUICK_ERROR_PROBE");
+    // T42-C：状态与错误页自检（EC-01..EC-N）。⚠️ 它的装配**允许 boot 失败** ——
+    // "引导失败 ⇒ 错误页"正是判据腿之一（用 STEL_USERDIR 造真实失败）。
+    const bool errorCheck = qEnvironmentVariableIsSet("STELQUICK_ERROR_CHECK");
 
     // T20：**I-REP-02 全流程回放**自检（见下方 uiReplay*）——A-alpha 的出口测试。
     // 与 returnUiCheck 分开：那个验"返回这一环"，这个验"五环串起来能不能跑通"。
@@ -5323,24 +5336,34 @@ int main(int argc, char **argv)
     // 模式都会把它吞掉 ⇒ `LIVE_ENGINE=1 STELQUICK_PAGE=diag` 实测停在天空页，
     // 诊断页的运行时数据没法人眼验证 —— 显式指定 > 自动选择，这是常规语义）。
     const QString pageEnv = qEnvironmentVariable("STELQUICK_PAGE");
-    const QString startPage = !pageEnv.isEmpty()
-                                  ? pageEnv
-                                  : ((a2Check || dynCheck || longRun || returnUiCheck || replayCheck
-                                      || interactUiCheck || locProbe || toolProbe || toolCheck
-                                      || timeLinkProbe || timeLinkCheck || cfgCheck || nightProbe
-                                      || nightCheck || displayProbe || displayCheck
-                                      || hiDpiProbe || hiDpiCheck || shortcutProbe
-                                      || shortcutCheck || helpProbe || helpCheck
-                                      || qEnvironmentVariableIsSet("STELQUICK_LIVE")
-                                      || liveEngine)
-                                         ? QStringLiteral("sky")
-                                         : ((searchCheck || locateCheck || uiCheck)
-                                                ? QStringLiteral("search")
-                                                : ((timeCheck || timeUiCheck)
-                                                       ? QStringLiteral("time")
-                                                       : (locCheck
-                                                              ? QStringLiteral("location")
-                                                              : QStringLiteral("diag")))));
+    // 起始页优先级：**显式 STELQUICK_PAGE > 各模式默认**（"显式指定 > 自动选择"）。
+    //   · T42 ERRORCHECK ⇒ 「状态与错误」页（判据的多数断言要读这一页的控件）；
+    //   · 帧/交互类自检 ⇒ 天空页（必须先看到真实天空）；
+    //   · 搜索/定位/时间自检 ⇒ 各自页面；
+    //   · 其余（含纯手动启动）⇒ 诊断页。
+    // （T42 顺手把这串深层三元改成 if 链：加一支就要重新数括号，读起来也费劲。）
+    const bool skyFirst = a2Check || dynCheck || longRun || returnUiCheck || replayCheck
+                          || interactUiCheck || locProbe || toolProbe || toolCheck
+                          || timeLinkProbe || timeLinkCheck || cfgCheck || nightProbe
+                          || nightCheck || displayProbe || displayCheck
+                          || hiDpiProbe || hiDpiCheck || shortcutProbe
+                          || shortcutCheck || helpProbe || helpCheck
+                          || errorProbe
+                          || qEnvironmentVariableIsSet("STELQUICK_LIVE")
+                          || liveEngine;
+    QString startPage = QStringLiteral("diag");
+    if (!pageEnv.isEmpty())
+        startPage = pageEnv;
+    else if (errorCheck)
+        startPage = QStringLiteral("error");
+    else if (skyFirst)
+        startPage = QStringLiteral("sky");
+    else if (searchCheck || locateCheck || uiCheck)
+        startPage = QStringLiteral("search");
+    else if (timeCheck || timeUiCheck)
+        startPage = QStringLiteral("time");
+    else if (locCheck)
+        startPage = QStringLiteral("location");
 
     // 3. 加载 QML
     // T15 命令通路装配（加载前注入，QML 命令栏/Keys 直接绑定）：
@@ -5362,6 +5385,11 @@ int main(int argc, char **argv)
     // 这里先建对象，引导完成后由 `refresh()` 填（QML 用 `HelpModel.ready` 显示空态）。
     // GPL 全文来自 qrc（构造时读一次），与引擎无关。
     stelapp::HelpModel helpModel;
+    // T42-B：错误 / 运行状态 / 资源路径 / 未支持项 的只读数据面（同上惯例）。
+    // ⚠️ 它**不自己判定**引导成败与图形后端（判定只有一份）：
+    //    · 引导结果由本文件的 `boot()` 调用点用 `setBootResult()` 注入；
+    //    · 图形后端由 T39 的 `BackendInfo` 经 `setBackend()` 注入。
+    stelapp::ErrorModel errorModel;
     actionRouter.registerAction(QStringLiteral("app.togglePause"),
                                 { [&appFacade]() { appFacade.togglePause(); },
                                   nullptr,
@@ -5392,9 +5420,9 @@ int main(int argc, char **argv)
     // 静态库链进了本形态，`StelApp::getGui()` 非空 ⇒ 老宿主那 8 个窗口动作全都
     // 活着，`trigger()` 会**真的弹出老式对话框**（QWidget 总数 12 → 58）。
     // 这里只**声明接管**（ActionRouter 负责"命中就不转发引擎"），去哪一页归 QML。
-    // ⚠️ 只接管**有 QML 对应页**的动作：F2 设置 / F10 天文计算 / F12 脚本控制台
-    //    没有对应页 ⇒ 刻意不接管（记入 T42「未支持项」清单）—— 接管到不存在的页
-    //    只是把"弹老对话框"换成"按了没反应"，那是另一种骗人。
+    // ⚠️ 只接管**有 QML 对应页**的动作（见 `MainWindow.qml::hostActionPages`）。
+    //    没有对应页的 4 个（F2/F10/F12/⌥B）在下面 T42 段单独注册 —— T41 当时
+    //    刻意不接管，T42 改成"接管 + 弹明确提示"。
     // ⚠️ 负控 `STELQUICK_HELP_TAKEOVER_OFF=1` 跳过整段注册，用来证"接管相关的判据
     //    真的承重"（关掉后 F1 会恢复成"真的弹出老对话框"，判据必须红）。
     if (!qEnvironmentVariableIsSet("STELQUICK_HELP_TAKEOVER_OFF"))
@@ -5413,6 +5441,31 @@ int main(int argc, char **argv)
         std::printf("HELP: （负控）STELQUICK_HELP_TAKEOVER_OFF=1 —— 未注册任何接管\n");
     }
 
+    // ── T42：**没有 QML 页**的 4 个老窗口动作 → 接管 + 明确提示 ────────────────
+    // 出处：A-1.0 末行「高级天文计算、脚本控制台、全部插件设置 | 不做 | 默认不纳入 |
+    //   列入后续清单；需要时逐模块增加，**不静默打开旧对话框**」
+    // + 开发指导 `:230`「旧 UI **禁止作为隐式回退**…**未支持项有清单和明确提示**」。
+    // T41 当时的决定是"不接管"（理由：无对应页 ⇒ 接管 = 按了没反应，更糟）。
+    // T42 把这个两难解掉：**接管 + 弹一个明确的"未支持"提示** ——
+    //   既不再弹老对话框，也不是"没反应"。清单见状态页（`ErrorModel.unsupportedRows`）。
+    // T42-A 探针实测（**不接管时真的会弹**，据此才有必要改）：
+    //   F10 天文计算 ⇒ QWidget 11→708（Δ697）+ 可见 QDialog 0→1；
+    //   ⌥B 观测列表 ⇒ 708→766（Δ58）+ 可见 QDialog 0→1。
+    // ⚠️ 负控 `STELQUICK_ERROR_TAKEOVER_OFF=1` **只跳过这 4 个**（与 HELP 那个分开，
+    //    好让红项集合能定位到"未支持提示"这条腿）。
+    if (!qEnvironmentVariableIsSet("STELQUICK_ERROR_TAKEOVER_OFF"))
+    {
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_Configuration_Window_Global"), true);
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_AstroCalc_Window_Global"), true);
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_ScriptConsole_Window_Global"), true);
+        actionRouter.setHostTakeover(QStringLiteral("actionShow_ObsList_Window_Global"), true);
+        std::printf("T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示\n");
+    }
+    else
+    {
+        std::printf("T42: （负控）STELQUICK_ERROR_TAKEOVER_OFF=1 —— 这 4 个保持不接管\n");
+    }
+
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("appFacade"), &appFacade);
     engine.rootContext()->setContextProperty(QStringLiteral("ActionRouter"), &actionRouter);
@@ -5427,6 +5480,8 @@ int main(int argc, char **argv)
     engine.rootContext()->setContextProperty(QStringLiteral("ShortcutModel"), &shortcutModel);
     // T41-B：帮助/版本/许可证数据面（同上惯例）。
     engine.rootContext()->setContextProperty(QStringLiteral("HelpModel"), &helpModel);
+    // T42-B：状态与错误页的数据面（同上惯例：上下文属性，不做类型注册）。
+    engine.rootContext()->setContextProperty(QStringLiteral("ErrorModel"), &errorModel);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      []() { std::exit(2); }, Qt::QueuedConnection);
     engine.load(QUrl(QStringLiteral("qrc:/StelQuickUI/qml/MainWindow.qml")));
@@ -5487,7 +5542,7 @@ int main(int argc, char **argv)
     bool backendOk = false;
     bool backendChecked = false;
     auto checkBackendApi = [&window, backendInfo, &backendOk, &backendChecked,
-                            skyViewport, wantedApi]() {
+                            skyViewport, wantedApi, &errorModel]() {
         if (backendChecked)
             return;
         QSGRendererInterface *rif = window->rendererInterface();
@@ -5505,6 +5560,10 @@ int main(int argc, char **argv)
         if (skyViewport)
             skyViewport->applyBackendResult(name, backendOk);
         backendInfo->applyBackendResult(name, backendOk);
+        // T42：图形后端状态**单点**同步给错误/状态页的数据面 ——
+        // `ErrorModel` 不自己判定后端（判定只有上面这一份，T41 修 backendOk 的教训）。
+        errorModel.setBackend(backendOk, name, backendInfo->probeError());
+        errorModel.refresh();
 
         std::printf("STELQUICK: runtimeApi=%s backendOk=%d device=%s（判定来源=%s）\n",
                     name.toUtf8().constData(), backendOk ? 1 : 0,
@@ -6482,6 +6541,109 @@ int main(int argc, char **argv)
 #endif
     }
 
+    // T42-A 错误/状态与未支持项数据面探针（STELQUICK_ERROR_PROBE=1）。
+    // 任务出处是三处文档口径的**并集**：
+    //   ① A-1.0 第二格 `|资源路径、错误提示、渲染诊断、配置保存 | 最小 | 必须|`
+    //      —— T36 已做「配置保存」、T39 已做「渲染诊断」⇒ **本轮做余下两项**；
+    //   ② A5 行 `…夜视、**错误页**`；
+    //   ③ 开发指导 `:230`「**旧 UI 禁止作为隐式回退**…**未支持项有清单和明确提示**」
+    //      + A-1.0 末行「…**不静默打开旧对话框**」。
+    // 关注：资源路径七目录（**存在性与可写性分开报**）/ T36 隔离的运行期读数 /
+    // 配置文件与日志的实际路径（"打开日志"按钮的目标）/ boot() 三处 fail 与
+    // `StelFileMgr::init()` 的 **qFatal** 前置 / 🔴 未接管动作（F10 天文计算 ·
+    // **Alt+B 观察列表 —— T41 从未提到的那一个**）的 trigger 实测（T41 只实测过 F1，
+    // 其余是推断）/ 「未支持项」清单的注册表真源核对 / openUrl·剪贴板的可操作性 /
+    // 零写入自证。
+    // ⚠️ 只读为主：写入面仅 Q6 的两次受控 `trigger()`（老对话框到底弹不弹的唯一取证
+    //    手段），收尾按 Q9 核对配置逐项零变化。
+    if (errorProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("ERRORPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "ERRORPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("ERRORPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::ErrorProbe::run(
+            &app, &actionRouter,
+            [&app](const stelapp::ErrorProbe::Result &result) {
+                std::printf("ERRORPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("ERRORPROBE: %s\n", line.toUtf8().constData());
+                std::printf("ERRORPROBE: VERDICT=%s\n",
+                            result.unavailable ? "UNAVAILABLE" : "DONE");
+                std::fflush(stdout);
+                app.exit(result.unavailable ? 6 : 0);
+            });
+        const int rc = app.exec();
+        liveSkyRuntime.reset();
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T42-C 状态与错误页自检（STELQUICK_ERROR_CHECK=1）：判据 EC-01..EC-N。
+    // ⚠️ 与 T39/T40/T41 的自检装配有一个**关键差异：boot 允许失败** ——
+    //    "引导失败 ⇒ 错误页"正是本轮要验的东西之一。驱动手段是 `STEL_USERDIR`
+    //    指向**不可创建**的位置（T42-A 探针 Q5 实测的入口），走的是**真实失败路径**，
+    //    不造假桩。所以这里不 `return 6`，而是把结果注入 `ErrorModel` 后照常跑判据
+    //    （判据自己按"引擎在/不在"区分前提，不假装有引擎）。
+    // ⚠️ 本自检**刻意不起帧泵**：状态面全是静态量（路径、配置目录、引导结果、
+    //    未支持项），与帧无关 —— 少一个 Metal 环节少一份掉设备风险（T41-A 同款理由）。
+    if (errorCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("ERRORCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString bootError;
+        const bool engineBooted = liveSkyRuntime->boot(&bootError);
+        if (!engineBooted) {
+            std::fprintf(stderr,
+                         "ERRORCHECK: 引擎引导失败（若为 STEL_USERDIR 失败腿则属预期）：%s\n",
+                         bootError.toUtf8().constData());
+            liveSkyRuntime.reset();
+        }
+        errorModel.setBootResult(engineBooted, bootError);
+        errorModel.setBackend(backendInfo->backendOk(), backendInfo->runtimeApiName(),
+                              backendInfo->probeError());
+        errorModel.setFramePathAlive(false);
+        // 🔴 必须给 **QML 绑定的那个**实例喂数据（陷阱 86：自建副本 ≠ 接线实例）。
+        errorModel.refresh();
+
+        stelapp::ErrorCheck::run(
+            &app, window, &actionRouter, &errorModel, engineBooted,
+            [&app](const stelapp::ErrorCheck::Result &result) {
+                std::printf("ERRORCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("ERRORCHECK:%s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("ERRORCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("ERRORCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 5);
+            });
+        const int rc = app.exec();
+        liveSkyRuntime.reset();
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
     // T40-C 快捷键编辑自检（STELQUICK_SHORTCUT_CHECK=1）：判据 SC-01..SC-14。
     // 装配与 T39-C 一致（暖机 → boot → start）—— SC-12/13 要真实点击，窗口必须
     // 完整渲染。输出 `SHORTCUTCHECK:` 前缀；负控 WRITE_OFF / SAVE_OFF（见上方注释）。
@@ -7255,16 +7417,33 @@ int main(int argc, char **argv)
         if (!liveSkyRuntime->boot(&bootError)) {
             std::fprintf(stderr, "LIVESKY: 引擎引导失败：%s\n", bootError.toUtf8().constData());
             std::fflush(stderr);
-            return 8;
+            // ── T42：**不再静默退出**（这正是"错误提示"长期缺位的根源）────────────
+            // 原实现在这里只打 stderr + `return 8`：用户看到的是"窗口闪一下没了"，
+            // 没有任何可操作信息。改为把失败原因注入数据面 → 切到「状态与错误」页
+            // → 继续跑事件循环：用户能看到原因、建议、资源路径与日志入口。
+            errorModel.setBootResult(false, bootError);
+            window->setProperty("startPage", QStringLiteral("error"));
+            liveSkyRuntime.reset();
         }
-        // 手动查看模式：simRate 默认 0.02（1 天 / 50s，接近真实观感）
-        const stelapp::LiveSkyRuntime::Config engineCfg = engineConfigFromEnv(0.02);
-        skyViewport->setDegradeThreshold(qEnvironmentVariable("STELQUICK_DEGRADE_FPS", "15").toDouble());
-        QString startError;
-        if (!liveSkyRuntime->start(&frameMailbox, engineCfg, &startError)) {
-            std::fprintf(stderr, "LIVESKY: 帧泵启动失败：%s\n", startError.toUtf8().constData());
-            std::fflush(stderr);
-            return 8;
+        else
+        {
+            // 手动查看模式：simRate 默认 0.02（1 天 / 50s，接近真实观感）
+            const stelapp::LiveSkyRuntime::Config engineCfg = engineConfigFromEnv(0.02);
+            skyViewport->setDegradeThreshold(qEnvironmentVariable("STELQUICK_DEGRADE_FPS", "15").toDouble());
+            QString startError;
+            if (!liveSkyRuntime->start(&frameMailbox, engineCfg, &startError)) {
+                std::fprintf(stderr, "LIVESKY: 帧泵启动失败：%s\n", startError.toUtf8().constData());
+                std::fflush(stderr);
+                // 同上：帧泵起不来同样是"用户可感知的失败"，走同一条错误页通道。
+                errorModel.setBootResult(
+                    false, QStringLiteral("帧泵启动失败：%1").arg(startError));
+                window->setProperty("startPage", QStringLiteral("error"));
+                liveSkyRuntime.reset();
+            }
+            else
+            {
+                errorModel.setBootResult(true, QString());
+            }
         }
     }
 #endif
@@ -7375,6 +7554,10 @@ int main(int argc, char **argv)
     // GPL 全文与贡献者名单不依赖引擎，构造时就已经就绪。
     if (liveSkyRuntime)
         helpModel.refresh();
+
+    // T42-B：状态与错误页同理（资源路径要走 `StelFileMgr`）。⚠️ **无条件**刷新 ——
+    // 引导失败时正是这一页要说话的时候（那时 `liveSkyRuntime` 已被 reset）。
+    errorModel.refresh();
 
     const int rc = app.exec();
     liveSource.stop();   // 生产者停机先于邮箱析构（析构顺序：liveSource 在 frameMailbox 之后声明）

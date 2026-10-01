@@ -1,0 +1,19 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 82 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+ERRORCHECK: 引擎引导失败（若为 STEL_USERDIR 失败腿则属预期）：用户目录 /dev/null/xxx 无法创建：最近的已存在祖先 /dev/null 不是可写目录。
+ERRORCHECK: 状态与错误页自检：判据 5/5
+ERRORCHECK:失败腿布场：STEL_USERDIR=「/dev/null/xxx」｜引擎 initialized=0｜页栈 index 9
+ERRORCHECK:[PASS] EC-01 引导失败 ⇒ hasError=1（应 true）｜headline「引擎引导失败 —— 天空与时间等功能不可用」
+ERRORCHECK:[PASS] EC-02 错误详情非空=1｜提及不可创建的 STEL_USERDIR=1（应 true）｜detail「用户目录 /dev/null/xxx 无法创建：最近的已存在祖先 /dev/null 不是可写目录。」
+ERRORCHECK:[PASS] EC-03 错误块 UI：panel 可见=1｜headline 21 字符｜detail 50 字符
+ERRORCHECK:[PASS] EC-04 状态表首行「引擎引导」state=error（应 error）
+ERRORCHECK:[PASS] EC-05 引导失败时资源路径仍可展示：8 行（≥6 即算给出排查线索）
+ERRORCHECK: VERDICT=PASS
