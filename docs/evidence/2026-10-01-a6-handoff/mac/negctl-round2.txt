@@ -1,0 +1,47 @@
+起跑 md5（VS/DP/MC）：
+4b64e836f2e8e367001a7c1974738607 de3183b6ff4d9a3a1e211e692518cea0 f60346610189d9303669154d4e154e42 
+[A] 注入 freezeCanary=1
+──── 负控 A：rc=1 ｜ ════════ SCRIPT-RC=1  FAILED=1  PASS=3 ════════
+      ✓ T46 接口冻结清单可生成
+      ✗ T46 接口冻结校验（源码公开面 == 已冻结清单）
+      ✓ T46 硬性禁区：app 头文件与 QML 面零 GL/Vulkan 泄漏
+      ✓ T46 页面协议入口未变（7 属性 + SkyViewport）
+    红项 = T46 接口冻结校验（源码公开面 == 已冻结清单）|
+  [A] 恢复 md5=4b64e836f2e8e367001a7c1974738607
+[B] 注入 negProbe=1
+──── 负控 B：rc=1 ｜ ════════ SCRIPT-RC=1  FAILED=1  PASS=3 ════════
+      ✓ T46 接口冻结清单可生成
+      ✓ T46 接口冻结校验（源码公开面 == 已冻结清单）
+      ✗ T46 硬性禁区：app 头文件与 QML 面零 GL/Vulkan 泄漏
+      ✓ T46 页面协议入口未变（7 属性 + SkyViewport）
+    红项 = T46 硬性禁区：app 头文件与 QML 面零 GL/Vulkan 泄漏|
+  [B] 恢复 md5=de3183b6ff4d9a3a1e211e692518cea0
+[C] 改名 ErrorModel_NEGCTL=1
+──── 负控 C：rc=1 ｜ ════════ SCRIPT-RC=1  FAILED=2  PASS=2 ════════
+      ✓ T46 接口冻结清单可生成
+      ✗ T46 接口冻结校验（源码公开面 == 已冻结清单）
+      ✓ T46 硬性禁区：app 头文件与 QML 面零 GL/Vulkan 泄漏
+      ✗ T46 页面协议入口未变（7 属性 + SkyViewport）
+    红项 = T46 接口冻结校验（源码公开面 == 已冻结清单）|T46 页面协议入口未变（7 属性 + SkyViewport）|
+  [C] 恢复 md5=f60346610189d9303669154d4e154e42
+[D] 新增 src/ui/qml/NegProbePage.qml
+──── 负控 D：rc=1 ｜ ════════ SCRIPT-RC=1  FAILED=1  PASS=3 ════════
+      ✓ T46 接口冻结清单可生成
+      ✗ T46 接口冻结校验（源码公开面 == 已冻结清单）
+      ✓ T46 硬性禁区：app 头文件与 QML 面零 GL/Vulkan 泄漏
+      ✓ T46 页面协议入口未变（7 属性 + SkyViewport）
+    红项 = T46 接口冻结校验（源码公开面 == 已冻结清单）|
+/tmp/t46-neg.sh:47: no such file or directory: /usr/bin/test
+  [D] 删除后存在性=NO
+════ 恢复核对 ════
+  ✅ 三文件 md5 起跑==收尾（源码零残留）
+  git status（应只剩本次 T46 的有意改动）：
+ M docs/A6_HANDOFF_FREEZE.zh_CN.md
+ M docs/A6_INTERFACE_FREEZE.zh_CN.md
+ M docs/evidence/2026-10-01-a6-regress/mac/rc-summary.txt
+ M tools/a6-interface-freeze.sh
+ M tools/a6-verify.sh
+?? docs/evidence/2026-10-01-a6-handoff/
+?? docs/evidence/2026-10-01-a6-regress/mac/interface-freeze-check.txt
+?? docs/evidence/2026-10-01-a6-regress/mac/interface-freeze-regen.txt
+  干净收尾 rc=0 ｜ ════════ SCRIPT-RC=0  FAILED=0  PASS=4 ════════

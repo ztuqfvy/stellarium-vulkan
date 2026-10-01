@@ -415,24 +415,38 @@ if [[ "$TARGET" == "all" || "$TARGET" == "t45" ]]; then
   judge $? "T45 T36 CONFIGCHECK 未退化（rc=$?）"
 fi
 
-# ══ T46 接口冻结 + 硬性禁区自查 ═════════════════════════════════════════════
+# ══ T46 接口冻结 + 硬性禁区 + 页面协议 ══════════════════════════════════════
 if [[ "$TARGET" == "all" || "$TARGET" == "t46" ]]; then
-  echo "──────── T46 接口冻结刷新 + 硬性禁区 ────────" | tee -a "$R46/rc-summary.txt"
+  echo "──────── T46 接口冻结刷新 + 硬性禁区 + 页面协议 ────────" | tee -a "$R46/rc-summary.txt"
   if [[ -x tools/a6-interface-freeze.sh ]]; then
+    # (1) 刷新：把"冻结那一刻的公开面"落到证据目录（人读 + 留档）
     tools/a6-interface-freeze.sh > "$R46/interface-freeze-regen.txt" 2>&1
-    ifrc=$?
-    /usr/bin/grep -aE "禁区|GL|Vulkan|0 行|违规" "$R46/interface-freeze-regen.txt" \
-      | sed 's/^/      /' | /usr/bin/tail -12 | tee -a "$R46/rc-summary.txt" || true
-    judge $ifrc "T46 接口冻结刷新（rc=${ifrc}）"
+    judge $? "T46 接口冻结清单可生成"
+    # (2) **冻结校验**：源码公开面 == 已提交的冻结清单（忽略生成时间/HEAD 两行）。
+    #     这是"冻结"二字的兑现 —— 冻结之后有人偷改公开面，这里必须红。
+    tools/a6-interface-freeze.sh --check > "$R46/interface-freeze-check.txt" 2>&1
+    ifc=$?
+    /usr/bin/grep -aE 'IF-CHECK' "$R46/interface-freeze-check.txt" | sed 's/^/      /' \
+      | tee -a "$R46/rc-summary.txt" || true
+    judge $ifc "T46 接口冻结校验（源码公开面 == 已冻结清单）"
+    # (3) 硬性禁区：**取 §5 的机器可读行**（单一口径）。首版 t46 段自起一套
+    #     "按文件 + 不剥注释"的正则 ⇒ 把 ` * 禁止：不暴露 GL/Vulkan 句柄` 这类
+    #     **说明注释**判成泄漏（10 个文件假红），且该段从未跑过 = 藏在脚本里的坏判据。
+    fb=$(/usr/bin/grep -aE '^FORBIDDEN ' "$R46/interface-freeze-regen.txt" | /usr/bin/tail -1)
+    echo "  · $fb（须两处均 0）" | tee -a "$R46/rc-summary.txt"
+    judge $([[ "$fb" == *"app_hpp_hits=0"* && "$fb" == *"qml_hits=0"* ]] && echo 0 || echo 1) \
+      "T46 硬性禁区：app 头文件与 QML 面零 GL/Vulkan 泄漏"
   else
     judge 1 "T46 接口冻结脚本缺失或不可执行"
   fi
-  # 硬性禁区自查：app 侧头文件与 QML 文件里不得出现 GL/Vulkan 记号
-  gl=$(/usr/bin/grep -rlE "gl[A-Z]|GL_[A-Z]|Vk[A-Z]|VK_[A-Z]|vulkan|Vulkan" \
-    src/app/*.hpp src/ui/qml/*.qml 2>/dev/null | /usr/bin/wc -l | /usr/bin/tr -d ' ')
-  echo "  · 硬性禁区：app 头文件 + QML 命中 GL/Vulkan 记号的文件数 = ${gl}（须 0）" \
+  # (4) 页面协议入口（契约第 7 条"B 阶段不改页面协议"的**可核对面**）：
+  #     7 个上下文属性名 + SkyViewport 类型注册，不得增删改名。
+  proto=$(/usr/bin/grep -cE 'setContextProperty\(QStringLiteral\("(appFacade|ActionRouter|searchResults|objectInfo|ShortcutModel|HelpModel|ErrorModel)"\)' src/ui/main.cpp)
+  skyreg=$(/usr/bin/grep -cE 'qmlRegisterType<stelapp::SkyViewport>' src/ui/main.cpp)
+  echo "  · 页面协议入口：setContextProperty 命中 $proto/7；SkyViewport 注册 $skyreg/1" \
     | tee -a "$R46/rc-summary.txt"
-  judge $([[ "$gl" == "0" ]] && echo 0 || echo 1) "T46 硬性禁区：QML/app 面零 GL/Vulkan 泄漏"
+  judge $([[ "$proto" == "7" && "$skyreg" == "1" ]] && echo 0 || echo 1) \
+    "T46 页面协议入口未变（7 属性 + SkyViewport）"
 fi
 
 # ══ 回归：全部 24 套件 ══════════════════════════════════════════════════════
@@ -508,7 +522,16 @@ fi
 
 # ══ 收尾：config 零污染门 + 计划任务残留 + 汇总 ═════════════════════════════
 CFG_MD5_POST=$(md5 -q "$CFG" 2>/dev/null || echo "(missing)")
-if [[ "$CFG_MD5_PRE" == "$CFG_MD5_POST" ]]; then
+# ⚠️ 陷阱 110：**量具本身没跑通时不许打 ✅**。首版只比 pre==post ⇒ 两侧都是
+#    "(missing)"（如 `md5` 不在 PATH）时照样打"✅ 前后一致" —— 自证静默失效，
+#    而且是在"证明没有污染"这种**否定性结论**上失效（陷阱 79 的自证面变体）。
+#    判据：两侧都必须是 32 位 hex；否则 UNAVAILABLE —— 不洗绿、也不当红（第三态）。
+hex32() { [[ "$1" =~ ^[0-9a-f]{32}$ ]] }
+if ! hex32 "$CFG_MD5_PRE" || ! hex32 "$CFG_MD5_POST"; then
+  echo "config 零污染门：⚠️ UNAVAILABLE（量具未跑通 pre=$CFG_MD5_PRE post=$CFG_MD5_POST —— 检查 md5 是否在 PATH；**不记 PASS**）" \
+    | tee -a "$R46/rc-summary.txt"
+  FAILED=1
+elif [[ "$CFG_MD5_PRE" == "$CFG_MD5_POST" ]]; then
   echo "config 零污染门：✅ 前后一致（${CFG_MD5_POST}）" | tee -a "$R46/rc-summary.txt"
 else
   echo "config 零污染门：🔴 被污染！pre=$CFG_MD5_PRE post=$CFG_MD5_POST" | tee -a "$R46/rc-summary.txt"
