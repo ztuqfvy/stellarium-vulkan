@@ -1,8 +1,9 @@
-# 进度总览（截至 2026-09-30 深夜，**T41 后**盘点）
+# 进度总览（截至 2026-10-01，**T47 收口 = A-1.0 达成**盘点）
 
 > 口径基线：T34 收口提交 `9b04cdd` + T35 提交 `d68cc32` + W 支线 + **T36（A5 第一项）**
 > + **T37（A5 第二项：夜视闭环）** + **T38（显示参数）** + **T39（高 DPI + 渲染诊断）**
-> + **T40（快捷键编辑）** + **T41（帮助/版本/许可证）**。
+> + **T40（快捷键编辑）** + **T41（帮助/版本/许可证）** + **T42（状态/错误页，A5 收口）**
+> + **A6 回归与交接（T43–T47）**。
 > 上一版快照基线是 `9b04cdd`（T34 收口）；T33 见 `docs/T33_LOCATION_PAGE.zh_CN.md`，
 > **T34 见 `docs/T34_TOOLBAR.zh_CN.md`**，**T35 见 `docs/T35_TIMELINK.zh_CN.md`**，
 > **W-T34/W-T35 跨平台复验见 `docs/WT35_WINDOWS_RECHECK.zh_CN.md`**，
@@ -12,7 +13,9 @@
 > **T39 高 DPI + 渲染诊断见 `docs/T39_HIDPI.zh_CN.md`**，
 > **T40 快捷键编辑见 `docs/T40_SHORTCUTS.zh_CN.md`**，
 > **T41 帮助/版本/许可证见 `docs/T41_HELP.zh_CN.md`**，
-> **T42 状态/错误页见 `docs/T42_ERRORS.zh_CN.md`**。
+> **T42 状态/错误页见 `docs/T42_ERRORS.zh_CN.md`**，
+> **A6 六件套见 `docs/A6_*.zh_CN.md`**（帧桥统计 / 帧格式 / 交接冻结 / 动作台账 /
+> 出口终审 / 资源打包 / 接口冻结 + `T44_LIFECYCLE` / `T45_CONFIG_SAFETY`）。
 > 环境口径与 T17–T34 一致、**刻意不换**：macOS + Metal（`VK_DRIVER_FILES=MoltenVK`、
 > `QT_VULKAN_LIB`、`STELQUICK_GRAPHICS_API=metal`）；Windows 侧原生 Vulkan。
 > 本文是**单页快照**，细则看各 `docs/T*.zh_CN.md` 与 `docs/evidence/`。
@@ -29,8 +32,8 @@
 | A3 业务接口与输入路由 | AppFacade / ActionRouter / 模型 / 单一仿真时钟 / 键位路由 | ✅ 完成（T14–T17） |
 | **A4 核心交互页面（A-alpha）** | 工具栏、搜索、天体信息、时间、**地点**、拖动缩放、焦点管理 | ✅ **7/7 完成**（**T34 收口**，见 §2） |
 | **A5 设置与完整个人版 UI** | A-1.0 全部页面、**配置迁移**、夜视、错误页 | ✅ **完成**（**T36** 配置隔离/播种 + **T37** 夜视闭环 + **T38** 显示参数 + **T39** 高 DPI/渲染诊断 + **T40** 快捷键编辑 + **T41** 帮助/版本/许可证 + **T42** 状态/错误页 + "未支持项"清单，见 §6） |
-| A6 回归与交接 | 全量回归、帧桥统计、资源打包、接口冻结 | ⬜ 未开始 |
-| A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置 A6 或真机 |
+| **A6 回归与交接** | 全量回归、帧桥统计、生命周期、配置安全、资源打包、接口冻结、出口终审 | ✅ **完成**（**T43** 帧桥统计 + **T44** 生命周期 + **T45** 配置安全 + **T46** 接口冻结 + **T47** 全量回归 + A-1.0 出口 7 条终审，见 §6；**达成 A-1.0**） |
+| A7 平台适配（独立包） | 鸿蒙真机探测 / 打包分发 / Win·Linux 顺手验证 | ⬜ 前置真机；**W-T38..W-T41 Windows 复验待排期** |
 
 ---
 
@@ -73,7 +76,7 @@
 |---|---|---|---|
 | `A2CHECK` | 12 探针逐像素 | `STELQUICK_A2_CHECK` | 静态图管线；macOS 走 Metal（验收目标 Vulkan 受上游缺陷阻塞） |
 | `DYNCHECK` | 7（D1-C01..C07） | `STELQUICK_DYN_CHECK` | 双生产者：`STELQUICK_DYN_PRODUCER=engine\|test` |
-| `ACTIONCHECK` | 11（AC-01..AC-11） | `STELQUICK_ACTION_CHECK` | 命令单点 + 速率贯通 + 幂等 |
+| `ACTIONCHECK` | 12（AC-01..AC-11 + AC-12b 自净） | `STELQUICK_ACTION_CHECK` | 命令单点 + 速率贯通 + 幂等；AC-12b 保证注入动作翻回用户原值（TRAPS 112） |
 | `CLOCKCHECK` | 12（ST-01..ST-12） | `STELQUICK_CLOCK_CHECK` | 单一仿真时钟 |
 | `SEARCHCHECK` | 14（SRC-01..SRC-14） | `STELQUICK_SEARCH_CHECK` | 含纯逻辑腿 + 活引擎召回腿（1573 条全量池） |
 | `LOCATECHECK` | 15（LOC-01..LOC-15） | `STELQUICK_LOCATE_CHECK` | 定位/跟踪 |
@@ -102,6 +105,8 @@
 | （探针）`HELPPROBE` | 只报读数、**不打 PASS** | `STELQUICK_HELP_PROBE` | **T41-A** 帮助/版本/许可证探针（93 行读数：`src/gui/` 是否编进来 / 8 个窗口动作是否在册 / F1 `trigger()` 会不会弹老对话框 / 版本面五个来源 / `COPYING` 在不在 bundle 里 / 贡献者表规模与重复）。**推翻三处开工推断**——见陷阱 88/89 与 `docs/T41_HELP.zh_CN.md` §2 |
 | `ERRORCHECK` | **A 组 15 / B 组 5** | `STELQUICK_ERROR_CHECK`（失败腿加 `STEL_USERDIR=/dev/null/xxx`） | **T42-C** 状态与错误页（**两条腿同一二进制**，失败腿用 `STEL_USERDIR` 造**真实**失败）：A 组 = 路径表 8 行/problem 0 / `-quick` 后缀 / cfg+log 就位 / 状态表无 error / 无错不报错 / 未支持 7 条 / 注册表交叉验算 4/4 / 接管表 10 / **4 动作 trigger ⇒ Δ0+提示+配置零变化** / **判别对照**（撤销接管 ⇒ Δ697 真弹）/ UI 行 4/8/7 / 按钮几何可达 / 剪贴板诊断 / **openPath 白名单闸（EC-15）** / 复原。B 组 = hasError / detail 与注入原因一致 / 错误块 UI / 引导行=error / 失败时路径仍可展示。**负控三腿**（实跑写死）：`ERROR_TAKEOVER_OFF` 恰红 `[EC-08,09,14]`、`ERROR_PATHS_OFF` 恰红 `[EC-01..04,11]`、`ERROR_UNSUPPORTED_OFF` 恰红 `[EC-06,07,11]`；A∩B=A∩C=∅、B∩C={EC-11}（子段可分）；⚠️ `ERROR_OPEN_OFF` **不是负控**（红不了 = 不承重）。正题 3/3 `15/15`、失败腿 2/2 `5/5`、负控各 2/2；**config 零污染门**（脚本全程 md5） |
 | （探针）`ERRORPROBE` | 只报读数、**不打 PASS** | `STELQUICK_ERROR_PROBE` | **T42-A** 错误页探针（57 行读数：七目录事实 / 隔离运行期读数 / 关键文件 / 失败面 + `STEL_USERDIR` 可注入性 / 未接管动作 trigger 实测 / 未支持项真源 / 可操作性 / **Q9 净写入自证**）。**推翻 1**（老对话框写 `DialogSizes/*`）、**证实 1**（F10 Δ697 / ⌥B Δ58）、**发现 T41 遗漏 1**（⌥B 观测列表）——见 `docs/T42_ERRORS.zh_CN.md` §3 |
+| `LIFECHECK` | **13**（LF-02a..f / LF-03a..d / LF-04a..c） | `STELQUICK_LIFECYCLE_CHECK` | **T44** 生命周期（P-LIF-02/03/04 桌面判据面）：恢复首帧 / 尺寸世代（同尺寸重设 Δ=0）/ 重建收敛 / 最小化稳态 `windowStates()` 必含 `WindowMinimized`（LF-02f 钉死 hide() 代理）。**负控三条实跑写死**：NOSIZE⇒{03a,04a}｜NOSETTLE⇒{02b,03a,03c,04a,04c}｜HIDE⇒{02f}。⚠️ 陷阱 102：`delayAfter` 时序写反 ⇒ 改名 `waitBefore` |
+| `CFGHEALTHCHECK` | **12**（CH-01..CH-12） | `STELQUICK_CFGHEALTH_CHECK` | **T45** 配置健康：损坏五形态（截断/截尾/乱码/空洞/坏节名）全部 severity=3 + 引导修复（`.corrupt` 备份→重建）+ `none` sev=1 不误修 + 健康读**必须 `StelIniFormat`**（陷阱 103）。**负控四条写死**：ISOLATE_OFF(full@orig)⇒{CH-02,03,05,06}｜STATUS_OFF⇒{CH-03,04,05}｜REPAIR_OFF⇒rc=139（承重铁证）｜DRIFT⇒{CH-07} |
 
 一键复跑：`tools/t16-verify.sh` … **`tools/t41-verify.sh`**（每个任务一个，用法 `all N`；
 **`t33-verify.sh` 起含 `S3` 段**：旧宿主 `stellarium` 的进程内自检 `STELA3_CHECK`，
@@ -128,6 +133,15 @@ T41 动了 `ActionRouter::routeKey()`，正是 T40 SC-14 交互腿的路径）
 动了 `ActionRouter`（新增 `routeKey` 查表分支）与 `Toolbar.qml` ⇒ 必须证明 T40 那 14 条没被碰坏）。
 Windows 侧 `tools/windows/wt29…wt33-*.ps1`
 （`wt33-launch.ps1` 是给 `schtasks /it` 用的启动器，负责注入 `T33_PROBE_EXPECT`）。
+
+**A6 一键收口 = `tools/a6-verify.sh`**（2026-10-01 起）：
+`all`（T43 短窗 + T44 生命周期×2 + T45 形态矩阵×2 + 四条负控 + T46 冻结校验 +
+**24 套件回归** + INTERACT + A2 + DYN 双路 + S3 旧形态 + config 零污染门 + 计划任务残留扫描）；
+`longrun`（帧桥全量长跑 900+1800s，**独占环境 45 分钟**，与其它 target 互斥）；
+`t43` / `t44 2` / `t45 2` / `t46` / `regress` 分段可跑。
+配套 `tools/a6-lifecycle-100.sh`（P-LIF-01 进程级 ×100 ONESHOT）、
+`tools/a6-interface-freeze.sh`（`--check` = 冻结校验，清单 = `docs/A6_INTERFACE_FREEZE.zh_CN.md`）、
+`tools/a6-cfg-inject.sh`（配置形态注入器）。
 
 ---
 
@@ -523,9 +537,72 @@ A-1.0 第二格（资源路径 + 错误提示）与 A5「错误页」收口。�
 ⇒ T42 后 10）。定稿轮 **SCRIPT-RC=0 FAILED=0**：正题 3/3 `15/15` + 失败腿 2/2 `5/5` +
 负控各 2/2 恰中 + 回归 24 项全 rc=0（含 `helpcheck` 17/17、DYN 3/3+3/3、INTERACT 18/18）。
 
+### T43 A6-A 帧桥统计 + 性能三分账 —— ✅ **已完成**（`docs/T43_FRAME_BRIDGE.zh_CN.md` + `docs/A6_FRAME_BRIDGE_STATS.zh_CN.md`）
+
+两轮 45min 长跑（run1 有 agent 在场 = 污染对照 / run2 **零操作**）。**SL-C03 FAIL 七层判别全记录**
+（污染✗｜系统更新✗｜周期✗｜成段停顿✗｜环境字段✗｜临界排队✗｜采集口径✗）⇒ **铁证**：
+≥60ms 帧 0.51%→3.16%（6.5×），主干 p90 归一化三家一致 ⇒ T13..T42 产品代码偶发 GUI 线程尖峰
+（引擎产能没退化，Windows 无尾部）⇒ 二分立 **#160**（计划二前必做）。**管辖权裁定（陷阱 99）**：
+SL-C03 属 T13 B-LSR3 **不在 A-1.0 出口 7 条**；P-BRG-03=A2 冻结 40fps（42.87 PASS）⇒
+**P-BRG-01..04 全绿**。TRAPS 98（`grep -v '//'` 假绿）/ 99 / 100 / 101。
+
+### T44 A6-B 生命周期回归 P-LIF-01..04 —— ✅ **已完成**（`docs/T44_LIFECYCLE.zh_CN.md`）
+
+**A1 起挂的欠账清零**（`main.cpp` 的 hide() 关闭代理注释为证）。判据 **13 条全绿**
+（LF-02a..f / LF-03a..d / LF-04a..c，`STELQUICK_LIFECYCLE_CHECK=1`）；P-LIF-01 进程级 ×20 = 20/20
+（×100 ONESHOT 接线完整）；内存预算 32 MiB（4 轮实测 2×）。负控三条实跑写死
+（NOSIZE⇒{03a,04a}｜NOSETTLE⇒{02b,03a,03c,04a,04c}｜HIDE⇒{02f}）。🔴 **陷阱 102**：
+`delayAfter` 时序写反 ⇒ 采样在动作后 0ms ⇒ 一整套"互相矛盾"的读数；治法 = 改名 `waitBefore`。
+LF-02f 把 A1 的 hide() 代理钉死（真最小化 `windowStates()` 必含 `WindowMinimized`）。
+
+### T45 A6-C 配置/数据安全 P-CFG-01..04 —— ✅ **已完成**（`docs/T45_CONFIG_SAFETY.zh_CN.md`）
+
+`CFGHEALTHCHECK` **12 条** + 形态注入器 `a6-cfg-inject.sh`（7 形态，`readonly` 刻意移出矩阵 ——
+`findFile(New)` 会污染仓库根）+ 引导修复腿（`.corrupt` 备份→重建）。**负控四条两轮逐位一致写死**：
+ISOLATE_OFF(full@orig)⇒{CH-02,03,05,06}｜STATUS_OFF⇒{CH-03,04,05}（修复照常 —— "修复是正确性，
+不是可观测性"）｜**REPAIR_OFF⇒rc=139 无输出（修复腿承重铁证）**｜DRIFT⇒{CH-07}。
+🔴 **真缺陷 103**：健康读用了 plain `QSettings::IniFormat`，与引擎 `StelIniFormat` 对同一文件
+**分歧 83 键**（771 vs 688）⇒ 已改 `StelIniFormat`，"写 config.ini 必须 StelIniFormat"升为纪律。
+收口第一批曾把真实个人版 config 改写丢 81 键（零污染门抓住），已从 T42 备份恢复（用户值完整）；
+触发方未决=移交，5 组对照实验见 `docs/evidence/2026-10-01-a6-configsafety/mac/ANOMALY-config-rewrite-2026-10-01.md`。TRAPS **103–106**。
+
+### T46 A6-D 接口冻结 + 交接契约 —— ✅ **已完成**（`docs/A6_HANDOFF_FREEZE.zh_CN.md` + `docs/A6_INTERFACE_FREEZE.zh_CN.md`）
+
+🔴 **冻结清单此前不可信**：生成器只取第一个 `^class` ⇒ 5 处假类名（连 `AppFacade` 都不在清单上）
++ 2 处纯 struct 头整段漏项 ⇒ 修（跳前向声明 + 列全部顶层类型 + 认 struct 提字段）。
+新增 `--check` 冻结校验（对比范围止于实测读数之前 —— 陷阱 108）；t46 段重写为单一口径
+（旧正则按文件计数且不剥注释，命中 10 个"禁止暴露 GL/Vulkan 句柄"**说明注释**文件 ⇒ 必假红且从未跑过）。
+🔴 **零污染门量具自证修复**（陷阱 110）：`md5` 不在 PATH 时 pre==post 都是 `(missing)` 仍打 ✅
+⇒ 两侧须 32 位 hex，否则 UNAVAILABLE+rc=1。负控 A–D 两轮逐位一致（含 D 证冻结校验独立承重）。
+交接契约 7 项：5 完全达成 + 2 部分达成（残余明写：单命令固定场景快照、capabilities 具体项）。
+TRAPS **107–110**。
+
+### T47 A6-E 全量收口 + A-1.0 出口终审 —— ✅ **已完成**（`docs/A6_A1.0_EXIT_AUDIT.zh_CN.md`）
+
+`tools/a6-verify.sh all`（T43 短窗 + T44 ×2 + T45 矩阵×2 + 负控 + T46 + 24 套件 + INTERACT + A2 +
+DYN 双路 + S3 旧形态）+ `longrun` 长跑刷新帧桥统计 + **A-1.0 出口 7 条逐条终审**（7/7 达成）
++ 正式声明：**天空仍由旧 OpenGL 渲染，不得称天空已 Vulkan 化**（声明全文见出口审计文档）。
+
+**收口实测（2026-10-01，最终二进制 md5=4cf585dd）**：
+- `all` ⇒ **SCRIPT-RC=0 FAILED=0 PASS=12**：T43 短窗 11/11 全绿；T44 LIFECHECK 2/2 +
+  P-LIF-01 进程级 ×100；T45 矩阵 12/12 + 资源链接 + CONFIGCHECK；T46 四条（冻结校验
+  IF-CHECK OK）；24 套件回归全 rc=0（含 INTERACT 18/18）；**负控七条与台账逐位一致**
+  （T44 三条：NOSIZE⇒{LF-03a,LF-04a}｜NOSETTLE⇒{LF-02b,03a,03c,04a,04c}｜HIDE⇒{LF-02f}；
+  T45 四条：ISOLATE_OFF⇒{CH-02,03,05,06}｜STATUS_OFF⇒{CH-03,04,05}｜REPAIR_OFF⇒rc=139 无输出｜DRIFT⇒{CH-07}）；
+  **config 零污染门 ✅（56d81fb 前后一致）**。
+- `longrun` ⇒ **SL-C01..C11 全绿 VERDICT=PASS**：49.95 fps、p99 57.73 ≤60.06（**SL-C03 PASS**）、
+  丢弃 0、内存斜率双口径 0.024/−0.114、窗口暴露 1800/1800、报告已刷新。
+  **短窗红长跑绿的差异**留档 `T43 §6.1/§6.2`；#160 维持不变。
+- 收口过程中抓到并修复 **2 个真缺陷 + 1 个判据口径缺陷**（TRAPS 112/113）：
+  ① AC-12 端到端按键注入把用户 `viewing/flag_cardinal_points` 永久改写（判据不自净）
+  ⇒ 新增 **AC-12b 自净**（沿同路径翻回原值 + 断言末态==初值）；
+  ② SL-C07 单口径回归斜率在摆动噪声下两轮横跨门槛（0.756/1.931）⇒ **双口径交叉**
+  （回归+端点都超限才判增长）；③ T43 短窗判据与管辖权裁定不一致（必假红）⇒ 改
+  「允许集合」口径（11 条判据齐全 + 红项 ⊆ {SL-C03}，允许集合内红项如实打印）。
+
 ### 之后（按优先级）
 
-**A6（回归与交接、接口冻结）**—— A5 已清零。加固穿插：`LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算
+**A6（回归与交接、接口冻结）**—— ~~A5 已清零~~ **A6 已收口（T43–T47）**。加固穿插：`LOC-04 (b)` 帧延迟量化 → `REPEATCHECK` 就绪门预算
 → 捏合后首击；另加 T33 移交的 `findLocations` 排序（照 T21 完全匹配优先）、
 "负控 A 在 Windows 不复现"的定性、**T37-X4**（仿真冻结期间 fader 动画停摆）、
 **T37-X1**（夜视翻转引起 5 个工具栏按钮重绘，纯性能线索）、
@@ -535,6 +612,9 @@ A-1.0 第二格（资源路径 + 错误提示）与 A5「错误页」收口。�
 **W-T37 / W-T38 / W-T39 / W-T40 / W-T41 Windows 复验待排期**
 （T33/W-T35 已证明跨平台复验能逼出真缺陷 —— **T39 抓到的是 QML 侧真缺陷、T40 抓到的
 是在纯 Qt 行为面上的真缺陷（键名别名），跨平台复验最可能再抓出东西的地方**）。
+**#159** 恢复 Q-WIN-01..06 窗口交互套件进回归（先验能不能跑，T10 后形态大变）；
+**#160** 二分 SL-C03 尾部膨胀根因（**计划二开工前必做**）。
+**下一步主线 = 计划二（原生 Vulkan 天空）**，入口契约见 `docs/A6_HANDOFF_FREEZE.zh_CN.md`。
 
 
 

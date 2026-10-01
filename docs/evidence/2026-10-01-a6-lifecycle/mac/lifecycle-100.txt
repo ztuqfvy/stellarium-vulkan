@@ -1,0 +1,20 @@
+环境门：屏保 idleTime=0｜二进制 md5=4cf585dd6f9aabd038dd39b378422b20
+  … 10/100（ok=10 bad=0 timeout=0）
+  … 20/100（ok=20 bad=0 timeout=0）
+  … 30/100（ok=30 bad=0 timeout=0）
+  … 40/100（ok=40 bad=0 timeout=0）
+  … 50/100（ok=50 bad=0 timeout=0）
+  … 60/100（ok=60 bad=0 timeout=0）
+  … 70/100（ok=70 bad=0 timeout=0）
+  … 80/100（ok=80 bad=0 timeout=0）
+  … 90/100（ok=90 bad=0 timeout=0）
+  … 100/100（ok=100 bad=0 timeout=0）
+
+════ P-LIF-01 结论（×100）════
+成功（rc=0 且 VERDICT=PASS）：100 / 100
+失败：0（其中看门狗超时 0 轮 ⇒ 疑似死锁，见陷阱 50）
+首帧延迟（启动→首帧上屏，采样 100 轮）：min=1021ms｜median=1043ms｜p95=1080ms｜max=1092ms｜mean=1047.6ms
+总墙钟：205s（每轮均 2s）
+config 零污染门：✅ 前后一致（56d81fbf29583c2ce58b912f6d747d9f）
+VERDICT=PASS（进程级 ×100 无崩溃、无死锁；首帧每轮都上屏）
+⚠️ 本腿**不主张**「无悬空纹理」—— 那半句归 LF-03（进程内资源重建）

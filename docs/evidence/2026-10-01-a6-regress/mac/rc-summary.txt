@@ -1,16 +1,24 @@
-环境：16:25  up 6 days, 18:08, 1 user, load averages: 2.99 3.02 3.30
-环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
-二进制：42671128 B  2026-10-01 15:49 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=3954faeec5568542595540e44a6aace2
-config 零污染门：起跑 md5=c847cd85f3b12585e84ac6bb204b0187
-二进制 md5=3954faeec5568542595540e44a6aace2
-──────── T46 接口冻结刷新 + 硬性禁区 + 页面协议 ────────
-  ✓ T46 接口冻结清单可生成
-      IF-CHECK: OK（当前源码公开面与冻结清单逐字一致）
-  ✓ T46 接口冻结校验（源码公开面 == 已冻结清单）
-  · FORBIDDEN app_hpp_hits=0 qml_hits=0（须两处均 0）
-  ✓ T46 硬性禁区：app 头文件与 QML 面零 GL/Vulkan 泄漏
-  · 页面协议入口：setContextProperty 命中 7/7；SkyViewport 注册 1/1
-  ✓ T46 页面协议入口未变（7 属性 + SkyViewport）
-config 零污染门：✅ 前后一致（c847cd85f3b12585e84ac6bb204b0187）
+环境：18:58  up 6 days, 20:41, 1 user, load averages: 2.82 3.05 3.50
+环境注记：Spotlight 空闲
+二进制：42671128 B  2026-10-01 17:52 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=4cf585dd6f9aabd038dd39b378422b20
+config 零污染门：起跑 md5=56d81fbf29583c2ce58b912f6d747d9f
+二进制 md5=4cf585dd6f9aabd038dd39b378422b20
+──────── T43 全量长跑（900s 预热 + 1800s 测量）——期间勿编译勿跑别的 app ────────
+LONGRUN-RC=0
+STELLRUN: SL-C01 PASS 生产者零失败=是（测量段渲染 89888 帧 / 失败 0）；稳态实测 49.95 fps（下限 40）
+STELLRUN: SL-C02 PASS 稳态显示帧率 49.95 fps（下限 40）；显示帧号 74928 → 134819（窗口 1199s）
+STELLRUN: SL-C03 PASS 稳态上屏间隔（59923 帧）：mean 20.02 / p50 19.00 / p95 47.73 / p99 57.73 / max 108.19 ms；门槛 p99≤60.06、max 档占比 ≤0.01%（> 120.12ms 的帧）（共线程形态：p99 相对口径 3×帧间隔（60.06ms，天花板 100ms）+ max 占比口径）（vsync 下 16.7/33.4ms 混排属正常漏一帧，判据只管异常长停顿）
+STELLRUN: SL-C04 PASS 测量段邮箱：投递 89888 / 丢弃 0（须 0）
+STELLRUN: SL-C05 PASS 测量段上传 73810 次，增量均值 0.119ms（<5.0），全程最坏 24.29ms（<100）
+STELLRUN: SL-C06 PASS 测量段邮箱帧龄最大 45ms（<500）
+STELLRUN: SL-C07 PASS 稳态 phys_footprint 斜率（回归口径）0.024 / （端点口径）0.114 MiB/min —— 双口径都 > 上限 1.0 才判增长（负值=释放缓存不违规）；窗口内 2004.4 → 2006.7 MiB（增 2.3）
+STELLRUN: SL-C08 PASS 测量期间环境漂移 0 次违规（每 60s 复核；0 次才说明数据在合规环境取得）
+STELLRUN: SL-C09 PASS 测量段窗口暴露 1800/1800 个采样点（被遮挡/最小化时场景图降频，显示数据不可信）
+STELLRUN: SL-C10 PASS 测量段降级误报 0/1800 个采样点（0.000%，上限 1%）
+STELLRUN: SL-C11 PASS 稳态帧龄（11995 个 100ms 粒度样本）：mean 0.97 / p95 5.00 / p99 6.00 / max 45.00 ms（门槛 p95≤100）
+STELLRUN: VERDICT=PASS
+  ✓ T43 全量长跑 rc=0
+  · 报告刷新 rc=0 ⇒ docs/A6_FRAME_BRIDGE_STATS.zh_CN.md
+config 零污染门：✅ 前后一致（56d81fbf29583c2ce58b912f6d747d9f）
 残留进程自查：0 个 stelQuickUI
-════════ SCRIPT-RC=0  FAILED=0  PASS=4 ════════
+════════ SCRIPT-RC=0  FAILED=0  PASS=1 ════════

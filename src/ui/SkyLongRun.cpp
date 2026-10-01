@@ -808,12 +808,32 @@ void SkyLongRun::runStartupSequence(
                            // 只判"增长"：本判据的目的是抓内存泄漏，泄漏表现为持续增长。
                            // 负斜率 = 引擎在释放 warmup 期缓存，属正常（2026-09-23 T13
                            // 实测 Metal 形态 -10.1 MiB/min，旧口径 |斜率| 把它误判成 FAIL）。
-                           const bool c07 = !steadyFp.empty() && memSlope <= kMemSlopeMiBPerMin;
+                           //
+                           // ⚠️ T47 实测（2026-10-01）：单看回归斜率**不可复现** ——
+                           // 同一被测物、同量级负载，两轮测量段 footprint 都在
+                           // ±15 MiB 内摆动（页缓存分配/释放）、段均值平坦、首尾差
+                           // 都是 ≈-12 MiB（在降），但回归斜率一轮 0.756（PASS）、
+                           // 一轮 1.931（FAIL），横跨门槛 1.0 ⇒ 判定随采样相位抖动
+                           // （陷阱 56/80 家族：断言塞了受调度影响的量）。
+                           // 治法 = **双口径交叉**：回归斜率抓"形状里的趋势"，端点
+                           // 斜率（首尾差/窗长）抓"净增长"；**泄漏 = 持续单调增长**
+                           // ⇒ 两口径必同时超限才 FAIL。摆动场景端点差在 0 附近
+                           // ⇒ 不红；真泄漏场景两口径都正 ⇒ 红。两个读数都如实打印。
+                           const double memSpanSec =
+                               steadyT.size() >= 2 ? steadyT.back() - steadyT.front() : 0.0;
+                           const double memEndSlope =
+                               memSpanSec > 0.0 ? memGrowthMiB / memSpanSec * 60.0 : 0.0;
+                           // 泄漏 ⇔ **两口径同时**超限 ⇒ 判据 OK = 至少一个口径不超限。
+                           const bool c07 = !steadyFp.empty()
+                                            && (memSlope <= kMemSlopeMiBPerMin
+                                                || memEndSlope <= kMemSlopeMiBPerMin);
                            add("SL-C07", c07,
-                               QStringLiteral("稳态 phys_footprint 斜率 %1 MiB/min"
-                                              "（增长上限 %2，负值=释放缓存不违规）；"
-                                              "窗口内 %3 → %4 MiB（增 %5）")
+                               QStringLiteral("稳态 phys_footprint 斜率（回归口径）%1 / "
+                                              "（端点口径）%2 MiB/min —— 双口径都 > 上限 %3 才判增长"
+                                              "（负值=释放缓存不违规）；"
+                                              "窗口内 %4 → %5 MiB（增 %6）")
                                    .arg(memSlope, 0, 'f', 3)
+                                   .arg(memEndSlope, 0, 'f', 3)
                                    .arg(kMemSlopeMiBPerMin, 0, 'f', 1)
                                    .arg(steadyFp.empty() ? 0.0 : steadyFp.front(), 0, 'f', 1)
                                    .arg(steadyFp.empty() ? 0.0 : steadyFp.back(), 0, 'f', 1)

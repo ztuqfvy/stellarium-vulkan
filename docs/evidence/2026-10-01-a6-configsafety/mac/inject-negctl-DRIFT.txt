@@ -1,2 +1,4 @@
 [注入] form=none      target=personal 目录=/tmp/t45-negctl.CBmJKh/Stellarium-quick（**不放** config.ini，走产品兜底播种）
 [注入] form=none      target=personal 目录=/tmp/t45-negctl.aOxDkS/Stellarium-quick（**不放** config.ini，走产品兜底播种）
+[注入] form=none      target=personal 目录=/tmp/t45-negctl.lcPd4y/Stellarium-quick（**不放** config.ini，走产品兜底播种）
+[注入] form=none      target=personal 目录=/tmp/t45-negctl.muP1uz/Stellarium-quick（**不放** config.ini，走产品兜底播种）

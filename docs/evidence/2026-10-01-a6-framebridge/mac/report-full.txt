@@ -1,0 +1,5 @@
+── 生成中 ──────────────────────────────────────────────
+① 原 GL 基线        : docs/evidence/2026-09-22-stelt9-longrun-30min.txt
+② A 阶段组合        : /tmp/a6-longrun/full.log  [本轮复跑]
+✅ 复算一致性：两腿 rc=0（CSV 复算与日志结论逐位一致）
+── 完成：docs/A6_FRAME_BRIDGE_STATS.zh_CN.md（     167 行）

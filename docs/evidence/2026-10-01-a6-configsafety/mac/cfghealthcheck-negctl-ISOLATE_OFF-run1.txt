@@ -3,20 +3,20 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 83 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 75 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
 T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
 STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
 StelFileMgr found install location "."
-CONFIGISO: original=/tmp/t45-negctl.3gBj41/Stellarium
-CONFIGISO: personal=/tmp/t45-negctl.3gBj41/Stellarium
+CONFIGISO: original=/tmp/t45-negctl.fhsgmc/Stellarium
+CONFIGISO: personal=/tmp/t45-negctl.fhsgmc/Stellarium
 CONFIGISO: isolated=0
 CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
 CONFIGISO: note=(none)
 CONFIGISO: info=负控 STELQUICK_CFG_ISOLATE_OFF：隔离关闭
 CONFIGISO: configHealth severity=0 status=-1 bytes=-1 keys=-1 repaired=0 backup=(none) text=(none)
-CONFIGISO: config=/tmp/t45-negctl.3gBj41/Stellarium/config.ini
+CONFIGISO: config=/tmp/t45-negctl.fhsgmc/Stellarium/config.ini
 System language (ISO 639 / ISO 3166): zh_CN
 Couldn't load translations for language  "en" in section "stellarium"
 Empty translation file for language  "en" in section "stellarium"
@@ -79,8 +79,8 @@ Loading nomenclature for Solar system bodies ...
 Loaded 16058 / 16094 items of planetary surface nomenclature
 Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
 Could not find the starsConfig.json file: will copy the default one.
-Creating directory  "/tmp/t45-negctl.3gBj41/Stellarium/stars/hip_gaia3"
-Creates file  "/tmp/t45-negctl.3gBj41/Stellarium/stars/hip_gaia3/starsConfig.json"
+Creating directory  "/tmp/t45-negctl.fhsgmc/Stellarium/stars/hip_gaia3"
+Creates file  "/tmp/t45-negctl.fhsgmc/Stellarium/stars/hip_gaia3/starsConfig.json"
 Loading star data ...
 Loading star catalog: ./stars/hip_gaia3/stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
 Loading star catalog: ./stars/hip_gaia3/stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
@@ -125,37 +125,37 @@ Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152..
 Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
 Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
 Loaded 88 / 92 asterism records successfully for culture modern
-CustomObjectMgr: can't create a file: /tmp/t45-negctl.3gBj41/Stellarium/data/persistentCustomObjects.json
+CustomObjectMgr: can't create a file: /tmp/t45-negctl.fhsgmc/Stellarium/data/persistentCustomObjects.json
 Initializing basic GL shaders... 
 Creating GUI ...
 Loading style file: :/graphicGui/normalStyle.css
 Loaded plugin "Exoplanets"
-Creating directory  "/tmp/t45-negctl.3gBj41/Stellarium/modules/Exoplanets"
+Creating directory  "/tmp/t45-negctl.fhsgmc/Stellarium/modules/Exoplanets"
 [Exoplanets] No Exoplanets section exists in main config file - creating with defaults
-[Exoplanets] exoplanets.json does not exist - copying default catalog to /tmp/t45-negctl.3gBj41/Stellarium/modules/Exoplanets/exoplanets.json
-[Exoplanets] Default exoplanets.json to /tmp/t45-negctl.3gBj41/Stellarium/modules/Exoplanets/exoplanets.json
-[Exoplanets] loading catalog file: /tmp/t45-negctl.3gBj41/Stellarium/modules/Exoplanets/exoplanets.json
-stel.LocIP: Got location "Osaka, Ōsaka, Japan (34.6848, 135.514; Asia/Tokyo)" for IP "13.208.247.153"
+[Exoplanets] exoplanets.json does not exist - copying default catalog to /tmp/t45-negctl.fhsgmc/Stellarium/modules/Exoplanets/exoplanets.json
+[Exoplanets] Default exoplanets.json to /tmp/t45-negctl.fhsgmc/Stellarium/modules/Exoplanets/exoplanets.json
+[Exoplanets] loading catalog file: /tmp/t45-negctl.fhsgmc/Stellarium/modules/Exoplanets/exoplanets.json
+stel.LocIP: Got location "Singapore, , Singapore (1.2929, 103.855; Asia/Singapore)" for IP "13.251.102.108"
 Loaded plugin "MeteorShowers"
-Creating directory  "/tmp/t45-negctl.3gBj41/Stellarium/modules/MeteorShowers"
-[MeteorShowersMgr] Loading catalog file: /tmp/t45-negctl.3gBj41/Stellarium/modules/MeteorShowers/MeteorShowers.json
-[MeteorShowersMgr] Trying to restore the default catalog to "/tmp/t45-negctl.3gBj41/Stellarium/modules/MeteorShowers/MeteorShowers.json"
+Creating directory  "/tmp/t45-negctl.fhsgmc/Stellarium/modules/MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: /tmp/t45-negctl.fhsgmc/Stellarium/modules/MeteorShowers/MeteorShowers.json
+[MeteorShowersMgr] Trying to restore the default catalog to "/tmp/t45-negctl.fhsgmc/Stellarium/modules/MeteorShowers/MeteorShowers.json"
 [MeteorShowersMgr] The default catalog was copied!
 [MeteorShowersMgr] Version of the format of the catalog: 2
 Loaded plugin "Novae"
-Creating directory  "/tmp/t45-negctl.3gBj41/Stellarium/modules/Novae"
+Creating directory  "/tmp/t45-negctl.fhsgmc/Stellarium/modules/Novae"
 [Novae] no Novae section exists in main config file - creating with defaults
-[Novae] novae.json does not exist - copying default file to /tmp/t45-negctl.3gBj41/Stellarium/modules/Novae/novae.json
-[Novae] copied default novae.json to "/tmp/t45-negctl.3gBj41/Stellarium/modules/Novae/novae.json"
-[Novae] Loading catalog file: /tmp/t45-negctl.3gBj41/Stellarium/modules/Novae/novae.json
+[Novae] novae.json does not exist - copying default file to /tmp/t45-negctl.fhsgmc/Stellarium/modules/Novae/novae.json
+[Novae] copied default novae.json to "/tmp/t45-negctl.fhsgmc/Stellarium/modules/Novae/novae.json"
+[Novae] Loading catalog file: /tmp/t45-negctl.fhsgmc/Stellarium/modules/Novae/novae.json
 Loaded plugin "Oculars"
-Creating directory  "/tmp/t45-negctl.3gBj41/Stellarium/modules/Oculars"
-Oculars::validateAndLoadIniFile() copied default_ocular.ini to  "/tmp/t45-negctl.3gBj41/Stellarium/modules/Oculars/ocular.ini"
+Creating directory  "/tmp/t45-negctl.fhsgmc/Stellarium/modules/Oculars"
+Oculars::validateAndLoadIniFile() copied default_ocular.ini to  "/tmp/t45-negctl.fhsgmc/Stellarium/modules/Oculars/ocular.ini"
 Loaded plugin "Satellites"
-Creating directory  "/tmp/t45-negctl.3gBj41/Stellarium/modules/Satellites"
-[Satellites] satellites.json does not exist - copying default file to  /tmp/t45-negctl.3gBj41/Stellarium/modules/Satellites/satellites.json
-[Satellites] copied default satellites.json to  "/tmp/t45-negctl.3gBj41/Stellarium/modules/Satellites/satellites.json"
-[Satellites] loading catalogue file: /tmp/t45-negctl.3gBj41/Stellarium/modules/Satellites/satellites.json
+Creating directory  "/tmp/t45-negctl.fhsgmc/Stellarium/modules/Satellites"
+[Satellites] satellites.json does not exist - copying default file to  /tmp/t45-negctl.fhsgmc/Stellarium/modules/Satellites/satellites.json
+[Satellites] copied default satellites.json to  "/tmp/t45-negctl.fhsgmc/Stellarium/modules/Satellites/satellites.json"
+[Satellites] loading catalogue file: /tmp/t45-negctl.fhsgmc/Stellarium/modules/Satellites/satellites.json
 Satellite has invalid orbit: "COSMOS 1812" "17295"
 Satellite has invalid orbit: "IRIDIUM 51" "25262"
 Satellite has invalid orbit: "USA 224" "37348"
@@ -163,7 +163,6 @@ Satellite has invalid orbit: "TIANHUI 1-02" "38256"
 Satellite has invalid orbit: "FIRST-MOVE" "39439"
 Satellite has invalid orbit: "MCUBED-2" "39472"
 Satellite has invalid orbit: "LEMUR-2-JIN-LUEN" "43182"
-Satellite has invalid orbit: "SKYSAT-C13" "43802"
 Satellite has invalid orbit: "AL-FARABI 2" "43805"
 Satellite has invalid orbit: "SPACEBEE-7" "43816"
 Satellite has invalid orbit: "SHIELDS 1" "43850"
@@ -360,7 +359,6 @@ Satellite has invalid orbit: "LEMUR-2-MANO" "57390"
 Satellite has invalid orbit: "2023-104B" "57425"
 Satellite has invalid orbit: "STARLINK-30559" "58039"
 Satellite has invalid orbit: "STARLINK-30790" "58127"
-Satellite has invalid orbit: "TIGER-6" "58272"
 Satellite has invalid orbit: "TIGER-5" "58277"
 Satellite has invalid orbit: "PELICAN-3001" "58296"
 Satellite has invalid orbit: "BRO-10" "58331"
@@ -520,7 +518,6 @@ Satellite has invalid orbit: "STARLINK-35499" "66462"
 Satellite has invalid orbit: "STARLINK-35463" "66463"
 Satellite has invalid orbit: "STARLINK-35448" "66465"
 Satellite has invalid orbit: "STARLINK-35451" "66469"
-Satellite has invalid orbit: "STARLINK-35567" "66472"
 Satellite has invalid orbit: "STARLINK-35568" "66473"
 Satellite has invalid orbit: "STARLINK-35372" "66476"
 Satellite has invalid orbit: "STARLINK-35354" "66477"
@@ -625,7 +622,7 @@ Satellite has invalid orbit: "STARLINK-36147" "66987"
 Satellite has invalid orbit: "UNKNOWN" "81449"
 Satellite has invalid orbit: "UNKNOWN" "89161"
 Loaded plugin "SolarSystemEditor"
-Trying to copy ssystem_minor.ini to "/tmp/t45-negctl.3gBj41/Stellarium/data/ssystem_minor.ini"
+Trying to copy ssystem_minor.ini to "/tmp/t45-negctl.fhsgmc/Stellarium/data/ssystem_minor.ini"
 Loaded 895910 discovery circumstances records for minor planets...
 SSE: Comet cross-index data: Overwriting entry for "453P"
 SSE: Comet cross-index data: Overwriting entry for "467P"
@@ -646,10 +643,10 @@ OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
 CFGHEALTHCHECK: 配置健康自检（form=full）：判据 4/9｜1 项前提不齐（UNAVAILABLE，不记 FAIL）
-CFGHEALTHCHECK:  · 布场：form=full｜个人版目录 /tmp/t45-negctl.3gBj41/Stellarium｜config /tmp/t45-negctl.3gBj41/Stellarium/config.ini（23432 字节）｜引擎已引导=1｜窗口可见=1
-CFGHEALTHCHECK:  · 注入自证：form 不要求字节存活（引擎整体重写完整配置是预期）⇒ 自证=注入目标处存在非空文件（23432 字节）
-CFGHEALTHCHECK:  [PASS] CH-01 注入自证：form 不要求字节存活（引擎整体重写完整配置是预期）⇒ 自证=注入目标处存在非空文件（23432 字节）｜form=full（期望严重度 1 —— 只用于 ISOLATE_OFF 负控：把**完整**随包默认配置放进**原目录**（隔离关掉后产品用的就是那份）⇒ 与 none 同级：正常、**不许修**）
-CFGHEALTHCHECK:  [FAIL] CH-02 启动可恢复：引擎已引导=1｜隔离生效=0｜personalDir=/tmp/t45-negctl.3gBj41/Stellarium（应以 -quick 结尾）｜窗口可见=1｜引导修复=0（备份 (none)）｜⚠️ 不主张「回退默认」—— 那是 Qt 的语义（探针 Q2）；产品主张的是「**不修就起不来**，修了才起得来」
+CFGHEALTHCHECK:  · 布场：form=full｜个人版目录 /tmp/t45-negctl.fhsgmc/Stellarium｜config /tmp/t45-negctl.fhsgmc/Stellarium/config.ini（23431 字节）｜引擎已引导=1｜窗口可见=1
+CFGHEALTHCHECK:  · 注入自证：form 不要求字节存活（引擎整体重写完整配置是预期）⇒ 自证=注入目标处存在非空文件（23431 字节）
+CFGHEALTHCHECK:  [PASS] CH-01 注入自证：form 不要求字节存活（引擎整体重写完整配置是预期）⇒ 自证=注入目标处存在非空文件（23431 字节）｜form=full（期望严重度 1 —— 只用于 ISOLATE_OFF 负控：把**完整**随包默认配置放进**原目录**（隔离关掉后产品用的就是那份）⇒ 与 none 同级：正常、**不许修**）
+CFGHEALTHCHECK:  [FAIL] CH-02 启动可恢复：引擎已引导=1｜隔离生效=0｜personalDir=/tmp/t45-negctl.fhsgmc/Stellarium（应以 -quick 结尾）｜窗口可见=1｜引导修复=0（备份 (none)）｜⚠️ 不主张「回退默认」—— 那是 Qt 的语义（探针 Q2）；产品主张的是「**不修就起不来**，修了才起得来」
 CFGHEALTHCHECK:  [FAIL] CH-03 提示出口已接：configStatus=-1（-1=未探测 ⇒ 应为实测值）｜severity=0｜文案「」
 CFGHEALTHCHECK:  [SKIP] CH-04 产品读数 vs 磁盘事实：跳过 —— 未修复形态下 config.ini 在引导期被引擎重写（磁盘已变），磁盘上不是产品读的那份 ⇒ 前提不齐（不记 FAIL）
 CFGHEALTHCHECK:  [FAIL] CH-05 严重度 0（期望 1）—— 只用于 ISOLATE_OFF 负控：把**完整**随包默认配置放进**原目录**（隔离关掉后产品用的就是那份）⇒ 与 none 同级：正常、**不许修**

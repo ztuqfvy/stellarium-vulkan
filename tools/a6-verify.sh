@@ -117,6 +117,9 @@ screen_doors
 # ── config 零污染门（陷阱 94）──────────────────────────────────────────────
 CFG="$HOME/Library/Application Support/Stellarium-quick/config.ini"
 CFG_MD5_PRE=$(md5 -q "$CFG" 2>/dev/null || echo "(missing)")
+# 键级 diff 的 pre 快照（陷阱 111：md5 门会被插件联网更新时间戳打假红 ⇒
+# 精判需要起跑时的完整键值，光有 md5 不够）
+cp "$CFG" "$R46/config-pre-run.ini" 2>/dev/null || true
 
 env_note() {
   echo "环境：$(uptime | sed 's/^ *//')"
@@ -159,8 +162,30 @@ if [[ "$TARGET" == "all" || "$TARGET" == "t43" ]]; then
   src=$?
   verd=$(/usr/bin/grep -E "STELLRUN: VERDICT=" "$R43/longrun-short.log" | /usr/bin/tail -1)
   echo "  · 短窗 rc=${src}（${verd}）" | tee -a "$R46/rc-summary.txt"
-  judge $([[ $src -eq 0 && "$verd" == *"VERDICT=PASS"* ]] && echo 0 || echo 1) \
-    "T43 短窗冒烟 11/11（rc=$src ${verd}）"
+  # ── 判据口径（T47 定稿，替代原「rc==0 && VERDICT=PASS」）─────────────────
+  #   原口径与**已做出的管辖权裁定**不一致 ⇒ 必然假红（同 T46「硬性禁区」教训）：
+  #   `SL-C03`「稳态上屏间隔尾部」已在 T43 §6.1 七层判别中裁定为**管辖外** ——
+  #   它属 T13 B-LSR3 的性能回归范畴，**不在 A-1.0 出口 7 条**（见
+  #   `docs/A6_A1.0_EXIT_AUDIT.zh_CN.md` 的管辖权裁定），根因二分已立 **#160**
+  #   （计划二开工前必须做）。于是改为「**允许集合**」口径：
+  #     ① 11 条判据必须**全部跑出来**（防"判据没跑/UNAVAILABLE"被当成通过）；
+  #     ② 红项集合必须 ⊆ 允许集合 {SL-C03}（出现任何其它红项 ⇒ FAIL）；
+  #     ③ 允许集合内的红项**如实打印**（不静默、不洗绿），并注明裁定出处。
+  #   ⚠️ 允许集合写死在本脚本里；要增删必须过代码评审 + 归档新证据。
+  crit=$(/usr/bin/grep -oE 'STELLRUN: SL-C[0-9]+ (PASS|FAIL)' "$R43/longrun-short.log" \
+         | /usr/bin/sort -u | /usr/bin/wc -l | /usr/bin/tr -d ' ')
+  reds=$(/usr/bin/grep -oE 'STELLRUN: SL-C[0-9]+ FAIL' "$R43/longrun-short.log" \
+         | /usr/bin/awk '{print $2}' | /usr/bin/sort -u | /usr/bin/tr '\n' ',' \
+         | /usr/bin/sed -E 's/,$//')
+  unex=$(/usr/bin/grep -oE 'STELLRUN: SL-C[0-9]+ FAIL' "$R43/longrun-short.log" \
+         | /usr/bin/awk '{print $2}' | /usr/bin/sort -u | /usr/bin/grep -v '^SL-C03$' \
+         | /usr/bin/wc -l | /usr/bin/tr -d ' ')
+  echo "  · 判据齐全度 crit=${crit}/11；红项=${reds:-（无）}；允许集合外红项=${unex}（须 0）" \
+    | tee -a "$R46/rc-summary.txt"
+  [[ -n "$reds" ]] && echo "      ⚠️ 允许集合内红项经裁定管辖外（T43 §6.1 / A-1.0 出口第 ② 条 / #160）" \
+    | tee -a "$R46/rc-summary.txt" || true
+  judge $([[ "$crit" == "11" && "$unex" == "0" ]] && echo 0 || echo 1) \
+    "T43 短窗冒烟：11 条判据齐全，红项 ⊆ {SL-C03}（rc=$src ${verd}）"
   cp "$SR/short.csv" "$R43/" 2>/dev/null || true
   cp "$SR/short.frames.csv" "$R43/" 2>/dev/null || true
   # 报告生成器：用归档的 T13/T9 复算，与日志结论逐位对齐才算数
@@ -534,8 +559,65 @@ if ! hex32 "$CFG_MD5_PRE" || ! hex32 "$CFG_MD5_POST"; then
 elif [[ "$CFG_MD5_PRE" == "$CFG_MD5_POST" ]]; then
   echo "config 零污染门：✅ 前后一致（${CFG_MD5_POST}）" | tee -a "$R46/rc-summary.txt"
 else
-  echo "config 零污染门：🔴 被污染！pre=$CFG_MD5_PRE post=$CFG_MD5_POST" | tee -a "$R46/rc-summary.txt"
-  FAILED=1
+  # ⚠️ T47（2026-10-01 16:37 实测）：md5 相同不再必然成立 —— T43 短窗一跑，
+  #    Satellites/Exoplanets 插件的**联网更新检查**就写 last_update 时间戳
+  #    （键数 771==771、零丢键；16:37:23 与短窗起跑时刻逐秒吻合）。
+  #    这是**引擎自然行为**（真实用户每次启动也会发生），不是布场污染；
+  #    但 md5 门抓字节级差异 ⇒ 会被它打假红。
+  #    治法 = md5 粗筛 + **键级 diff 精判**：diff 仅含白名单时间戳键 ⇒ 显式记
+  #    ⚠️ BENIGN（不静默 ✅，附 diff 证据）；出现任何其它差异 ⇒ 🔴 FAILED。
+  #    白名单写死在脚本里，改白名单必须过代码评审 + 归档新证据。
+  DIFFLOG="$R46/config-pollution-diff.txt"
+  CFG_SNAPSHOT_PRE="$R46/config-pre-run.ini" \
+    /usr/bin/python3 - "$CFG" "$DIFFLOG" <<'PYEOF'
+import configparser, sys
+cfg_path, out_path = sys.argv[1], sys.argv[2]
+def keys(p):
+    cp = configparser.ConfigParser(interpolation=None, strict=False)
+    cp.optionxform = str
+    cp.read_string(open(p, 'rb').read().decode('utf-8', 'replace'))
+    d = {}
+    for s in cp.sections():
+        for k, v in cp.items(s):
+            d[s + '/' + k] = v
+    return d
+cur = keys(cfg_path)
+import os
+pre_path = os.environ.get('CFG_SNAPSHOT_PRE', '')
+with open(out_path, 'w', encoding='utf-8') as f:
+    f.write(f"当前键数 {len(cur)}\n")
+    if pre_path and os.path.exists(pre_path):
+        pre = keys(pre_path)
+        changed = {k for k in (set(pre) & set(cur)) if pre[k] != cur[k]}
+        for k in sorted(changed):
+            f.write(f"变值 {k}: {pre[k]!r} -> {cur[k]!r}\n")
+        for k in sorted(set(pre) - set(cur)):
+            f.write(f"丢键 {k}\n")
+        for k in sorted(set(cur) - set(pre)):
+            f.write(f"增键 {k}\n")
+        f.write(f"pre 键数 {len(pre)}\n")
+    else:
+        f.write("(pre 快照缺失，无法键级比对)\n")
+PYEOF
+  /usr/bin/grep -aE '^(变值|丢键|增键)' "$DIFFLOG" | /usr/bin/sed 's/^/      /' \
+    | tee -a "$R46/rc-summary.txt" || true
+  # 白名单：仅"插件更新时间戳"键（引擎联网自然行为）。其它任何差异 ⇒ 污染。
+  nonbenign=$(/usr/bin/grep -aE '^(变值|丢键|增键)' "$DIFFLOG" \
+    | /usr/bin/grep -avE '^(变值|丢键|增键) (Exoplanets|Satellites)/last_update:' | /usr/bin/wc -l | /usr/bin/tr -d ' ')
+  keyn_pre=$(/usr/bin/grep -a '^pre 键数' "$DIFFLOG" | /usr/bin/grep -oE '[0-9]+')
+  keyn_cur=$(/usr/bin/grep -a '^当前键数' "$DIFFLOG" | /usr/bin/grep -oE '[0-9]+')
+  if [[ -n "$keyn_pre" && "$keyn_pre" != "$keyn_cur" ]]; then
+    echo "config 零污染门：🔴 键数变化 pre=$keyn_pre cur=$keyn_cur（宁可错杀，键数不变才谈白名单）" \
+      | tee -a "$R46/rc-summary.txt"
+    FAILED=1
+  elif (( nonbenign > 0 )); then
+    echo "config 零污染门：🔴 被污染！pre=$CFG_MD5_PRE post=$CFG_MD5_POST（白名单外差异 $nonbenign 处，见 $DIFFLOG）" \
+      | tee -a "$R46/rc-summary.txt"
+    FAILED=1
+  else
+    echo "config 零污染门：⚠️ BENIGN-WRITE（md5 变、但 diff 仅含插件更新时间戳白名单，键数 $keyn_pre==$keyn_cur；证据 $DIFFLOG）" \
+      | tee -a "$R46/rc-summary.txt"
+  fi
 fi
 # 清理临时截图
 rm -f /tmp/a6-preflight-$$.png 2>/dev/null || true

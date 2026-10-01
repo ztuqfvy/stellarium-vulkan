@@ -1,0 +1,5 @@
+── 生成中 ──────────────────────────────────────────────
+① 原 GL 基线        : docs/evidence/2026-09-22-stelt9-longrun-30min.txt
+② A 阶段组合        : docs/evidence/2026-09-23-t13-live-longrun/18-official-run2-Metal-warm900+measure1800-PASS-11of11.log  [T13 归档（T42 之前形态 → **须以本轮复跑为准**）]
+✅ 复算一致性：两腿 rc=0（CSV 复算与日志结论逐位一致）
+── 完成：docs/A6_FRAME_BRIDGE_STATS.zh_CN.md（     167 行）

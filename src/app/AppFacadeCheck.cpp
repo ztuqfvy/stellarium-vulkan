@@ -290,6 +290,26 @@ void AppFacadeCheck::runStartupSequence(QCoreApplication *app,
                              && (cardinal->isChecked() != checked0);
             ctx->mark(QStringLiteral("AC-12 QML 键盘挂载点端到端（Q 键经窗口投递恰触发一次）：%1")
                           .arg(e2e ? QStringLiteral("OK") : QStringLiteral("FAIL")));
+            // ── AC-12b 自净（T47 补）─────────────────────────────────────────────
+            // 本条与 AC-5 的净效应不同：AC-5 是 **成对**翻转（末态 == 初态），
+            // 本条是**单次**翻走 ⇒ 末态 == 初态的**反面**。
+            // 而 `actionShow_Cardinal_Points` 的回调链是
+            //   `LandscapeMgr::setFlagShowCardinals` → `StelApp::immediateSave("viewing/flag_cardinal_points", b)`
+            // ⇒ **每次都写盘**。24 个套件全部跑在**真实用户目录**上（不设 STEL_USERDIR），
+            // 于是这条判据会把用户的显示开关**永久改写**。
+            // T47 实测：`a6-verify.sh all` 收尾零污染门红，diff 唯一非白名单项
+            // = `viewing/flag_cardinal_points: 'true' -> 'false'`（陷阱 112）。
+            // 纪律：判据的每个写动作都要自己擦屁股（陷阱 94 同族）—— 沿**同一路径**
+            // 再走一次翻回原值，并断言末态 == 初态（这样连"来回都落盘"也一并验了）。
+            if (cardinal->isChecked() != checked0)
+            {
+                const bool restored =
+                    router->routeKey(static_cast<int>(Qt::Key_Q), static_cast<int>(Qt::NoModifier))
+                    && cardinal->isChecked() == checked0;
+                ctx->mark(QStringLiteral("AC-12b 开关自净（注入后翻回用户原值 %1）：%2")
+                              .arg(checked0 ? QStringLiteral("true") : QStringLiteral("false"))
+                              .arg(restored ? QStringLiteral("OK") : QStringLiteral("FAIL")));
+            }
         }
     }
 

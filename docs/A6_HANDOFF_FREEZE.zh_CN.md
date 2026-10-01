@@ -75,7 +75,7 @@ tools/a6-interface-freeze.sh --check
 | 分句 | 现状 | 证据 |
 |---|---|---|
 | **单一 SkyViewport** | ✅ 全工程 QML 里只有**一处** `objectName: "skyViewport"`（`SkyTestPage.qml:24`） | `grep -rn 'objectName: "skyViewport"' src/ui/qml/` ⇒ 1 命中 |
-| **稳定 AppFacade** | ✅ 以 `setContextProperty("appFacade", …)` 注入（`main.cpp:5515`），T15 起未改名；命令一律走 `ActionRouter`（`:5516`） | `ACTIONCHECK` 11 条；冻结清单 §1（`ISimPacing` / `AppFacade` 两条顶层类型）+ §3（7 个入口名） |
+| **稳定 AppFacade** | ✅ 以 `setContextProperty("appFacade", …)` 注入（`main.cpp:5515`），T15 起未改名；命令一律走 `ActionRouter`（`:5516`） | `ACTIONCHECK` 12 条（含 AC-12b 自净）；冻结清单 §1（`ISimPacing` / `AppFacade` 两条顶层类型）+ §3（7 个入口名） |
 | **QML 无 GL/Vulkan 调用** | ✅ grep 门禁：`src/ui/qml/*.qml` 内无 `VulkanInstance`/`QSGRendererInterface`/`VkDevice`/`graphicsApi` 等记号 | 冻结清单 §5 机器可读行 `FORBIDDEN app_hpp_hits=0 qml_hits=0`（`t46` 段解析此行判定，**单一口径**） |
 
 > ⚠️ **门禁自身修过一次"假绿"**（陷阱 98，已实跑负控证实）：首版 §5 用
@@ -154,7 +154,7 @@ tools/a6-interface-freeze.sh --check
 
 | 要求 | 实现 | 判据 |
 |---|---|---|
-| **统一命令路由** | `ActionRouter`：QML/快捷键/工具栏**单点**入口；产品侧**零 C++ 语义复制**（按钮 → `trigger(<引擎 action id>)` → 引擎透传） | `ACTIONCHECK` 11 条（`STELQUICK_ACTION_CHECK`）；`docs/T34_TOOLBAR.zh_CN.md` |
+| **统一命令路由** | `ActionRouter`：QML/快捷键/工具栏**单点**入口；产品侧**零 C++ 语义复制**（按钮 → `trigger(<引擎 action id>)` → 引擎透传） | `ACTIONCHECK` 12 条（含 AC-12b 自净，`STELQUICK_ACTION_CHECK`）；`docs/T34_TOOLBAR.zh_CN.md` |
 | **唯一仿真时钟** | `StelClockController`：真源 `m_jd`，唯一写入 `jumpTo()`，速率留引擎 `timeSpeed`；`getJD()` 是**上一帧快照** | `CLOCKCHECK` 12 条；`docs/T16_SINGLE_SIM_CLOCK.zh_CN.md` |
 | **明确 QObject 归属** | 模型只持 `stableId`（`getType()+":"+getID()`），**不持引擎裸指针**；QML 不遍历模块单例 | 编码规范 §5 硬性禁区；`docs/T17_SEARCH_OBJECT_MODELS.zh_CN.md` |
 | **可复制状态结构** | 时间/地点/显示/夜视等的状态面均为**可复制值**（`Q_PROPERTY` / 只读数据面），跨线程按不可变快照传递 | `FrameMailbox`（不可变帧快照）；`ErrorModel`/`HelpModel`（只读数据面）；**结构体字段面自 T46 起进冻结清单**：`ViewportState`（6 字段）+ `ConfigIsolationReport`（16 字段，含 T45 的 `configSeverity`/`configRepaired`/`configCorruptBackup`） |

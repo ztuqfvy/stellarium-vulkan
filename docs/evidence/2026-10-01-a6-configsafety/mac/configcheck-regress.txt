@@ -3,7 +3,7 @@ QVulkanInstance already created; setExtensions() has no effect
 STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
 STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
 STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
-qt.qpa.fonts: Populating font family aliases took 85 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+qt.qpa.fonts: Populating font family aliases took 78 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
 ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
 HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
 T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
@@ -139,7 +139,7 @@ Oculars::validateAndLoadIniFile() ocular.ini exists at: /Users/ztuqfvy/Library/A
 Oculars::validateAndLoadIniFile() found existing ini file version 3.1
 Loaded plugin "Satellites"
 [Satellites] loading catalogue file: /Users/ztuqfvy/Library/Application Support/Stellarium-quick/modules/Satellites/satellites.json
-Satellite has invalid orbit: "DONGPO 01" "53453"
+Satellite has invalid orbit: "ISAT" "43879"
 Loaded plugin "SolarSystemEditor"
 Using the ssystem_minor.ini file that already exists in the user directory...
 Loaded 895910 discovery circumstances records for minor planets...
@@ -160,11 +160,6 @@ SSE: Comet cross-index data: Overwriting entry for "481P"
 Loaded 2570 discovery circumstances records for comets...
 OpenGL viewport size: 2560 x 1440
 Creating scene FBO with size 2560x1440
-Initializing planets GL shaders... 
-StelPainter: Warnings while linking transformShaderProgram shader program:
-WARNING: Could not find vertex shader attribute 'texCoord' to match BindAttributeLocation request.
-WARNING: Could not find vertex shader attribute 'normalIn' to match BindAttributeLocation request.
-
 LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
 CONFIGCHECK: 判据 8/8  VERDICT=PASS
 CONFIGCHECK:     引导记录：isolated=1 migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0 note=[] info=[个人版目录已存在 config.ini，跳过播种（用户改过的值优先）]
@@ -172,7 +167,7 @@ CONFIGCHECK:   ✓ CFG-01 隔离读数自洽：isolated=1 note=[] 独立重读 u
 CONFIGCHECK:   ✓ CFG-02 个人版目录独立：isDir=1 writable=1 与原目录同路径=0 是原目录子路径=0
 CONFIGCHECK:     读数：personalDir=/Users/ztuqfvy/Library/Application Support/Stellarium-quick；originalDir=/Users/ztuqfvy/Library/Application Support/Stellarium
 CONFIGCHECK:   ✓ CFG-03 配置写侧落点：QSettings::fileName()=/Users/ztuqfvy/Library/Application Support/Stellarium-quick/config.ini 落在 /Users/ztuqfvy/Library/Application Support/Stellarium-quick 之下=1、目录与原目录不重合=1
-CONFIGCHECK:   ✓ CFG-04 日志落点：personal/log.txt 存在=1 字节=10194 比 original/log.txt 新=1
+CONFIGCHECK:   ✓ CFG-04 日志落点：personal/log.txt 存在=1 字节=9879 比 original/log.txt 新=1
 CONFIGCHECK:   ✓ CFG-05 配置种子完整（原目录有配置）：原目录键数=768 个人版缺失=0（首个=-）个人版字节=42895
 CONFIGCHECK:   ✓ CFG-08 播种清单完整：原目录是目录=1 非瞬态文件=57 个人版缺失=0（首个=-）
 CONFIGCHECK:   ✓ CFG-06 写侧不触原目录：哨兵在个人版=1 在原目录=0（期望 1/0）原本无配置时也未被创建=1（哨兵已回收）
