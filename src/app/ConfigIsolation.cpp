@@ -11,6 +11,7 @@
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
+#include <QSettings>
 
 #include <cstdio>
 #include <exception>
@@ -185,6 +186,34 @@ ConfigIsolationReport bootstrapPersonalConfigDir()
         else
         {
             r.note = QStringLiteral("兜底拷贝 data/default_cfg.ini 失败：") + personalConfig;
+        }
+    }
+
+    // ── T45-B：引导期读一次 `QSettings::status()`（P-CFG-01 的"明确提示"）─────
+    //    探针 Q4b 证实的缺口：损坏配置 Qt 全静默 ⇒ 产品此前零提示出口。
+    //    唯一真相源在这读一次；ErrorModel 只转发（陷阱 86：自建副本 ≠ 被测实例）。
+    if (QFileInfo::exists(personalConfig))
+    {
+        QSettings cfg(personalConfig, QSettings::IniFormat);
+        cfg.sync();   // 惰性读 ⇒ 强制让 status() 定型（探针 Q2 的实测口径）
+        r.configStatus = int(cfg.status());
+        switch (cfg.status())
+        {
+        case QSettings::NoError:
+            r.configHealthText = QStringLiteral("正常");
+            break;
+        case QSettings::AccessError:
+            r.configHealthText =
+                QStringLiteral("配置文件不可写（改动无法保存）—— 检查文件权限");
+            break;
+        case QSettings::FormatError:
+            r.configHealthText =
+                QStringLiteral("配置文件格式异常（已按可读部分加载，其余回退默认）—— "
+                               "如需修复请从「状态与错误」页打开配置目录");
+            break;
+        default:
+            r.configHealthText = QStringLiteral("配置文件状态未知（status=%1）").arg(r.configStatus);
+            break;
         }
     }
 

@@ -1,0 +1,31 @@
+# P-LIF-01 ×20（替身生产者形态；每行 = 一轮）
+# run rc verdict firstFrameMs wallMs
+1 0 PASS 1146 2
+2 0 PASS 1161 2
+3 0 PASS 1162 2
+4 0 PASS 1116 2
+5 0 PASS 1136 2
+6 0 PASS 1143 3
+7 0 PASS 1167 2
+8 0 PASS 1134 2
+9 0 PASS 1135 2
+10 0 PASS 1159 2
+11 0 PASS 1127 2
+12 0 PASS 1127 2
+13 0 PASS 1141 2
+14 0 PASS 1138 2
+15 0 PASS 1142 2
+16 0 PASS 1173 2
+17 0 PASS 1120 2
+18 0 PASS 1274 2
+19 0 PASS 1139 2
+20 0 PASS 1124 2
+
+════ P-LIF-01 结论（×20）════
+成功（rc=0 且 VERDICT=PASS）：20 / 20
+失败：0（其中看门狗超时 0 轮 ⇒ 疑似死锁，见陷阱 50）
+首帧延迟（启动→首帧上屏，采样 20 轮）：min=1116ms｜median=1139ms｜p95=1173ms｜max=1274ms｜mean=1148.2ms
+总墙钟：41s（每轮均 2s）
+config 零污染门：✅ 前后一致（b1e4443b3a11f5a5243603f6d19da3bd）
+VERDICT=PASS（进程级 ×20 无崩溃、无死锁；首帧每轮都上屏）
+⚠️ 本腿**不主张**「无悬空纹理」—— 那半句归 LF-03（进程内资源重建）

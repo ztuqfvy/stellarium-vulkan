@@ -182,6 +182,9 @@ public:
     const LegacyReadbackInfo &readbackInfo() const;
     Stats stats() const;
     bool isInitialized() const;
+    //! 当前 attach 的邮箱（诊断用：T44-C 的"对象身份对账"—— host 投递成功而
+    //! mailbox 计数不涨时，第一怀疑是两边拿的不是同一个对象）。
+    FrameMailbox *attachedMailbox() const;
 
     struct Private;
 

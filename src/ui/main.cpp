@@ -256,6 +256,8 @@ void ensureVulkanLoaderPath()
 #include "ui/A2FrameCheck.hpp"
 #include "ui/DynFrameCheck.hpp"
 #include "ui/IFrameProducer.hpp"
+#include "ui/LifeCycleCheck.hpp"   // T44-C：生命周期回归自检（LF-02..LF-04）
+#include "ui/LifeCycleProbe.hpp"
 #include "ui/LiveFrameSource.hpp"
 #include "ui/SkyLongRun.hpp"
 #include "ui/quick/SkyViewport.hpp"
@@ -321,11 +323,15 @@ void ensureVulkanLoaderPath()
 // trigger 实测 —— T41 只实测过 F1，其余是推断 / 「未支持项」清单的注册表真源核对 /
 // openUrl·剪贴板的可操作性 / 零写入自证）。只报读数。
 #include "app/ErrorProbe.hpp"
+// T45-A：配置健康 / 资源链接数据面探针（P-CFG-01 的「明确提示」是否真有出口、
+// P-CFG-03 的资源链接是否完好）。只报读数。
+#include "app/ConfigHealthProbe.hpp"
 #include "app/ErrorModel.hpp"   // T42-B：错误/运行状态/资源路径/未支持项数据面
 #include "app/ErrorCheck.hpp"   // T42-C：状态与错误页自检（EC-01..EC-14 / 失败腿）
 // T36：配置目录隔离（引导期）与其自检。**引导期**那一半由 LiveSkyRuntime::boot()
 // 调用——位置即判据，别挪到 StelLogger / config.ini 之后。
 #include "app/ConfigIsolationCheck.hpp"
+#include "app/ConfigIsolation.hpp"   // T45-B：配置健康真源（configIsolationReport）
 // T19：改时间（A4 固定流程的"改时间"环）+ 自检。
 #include "app/TimeCheck.hpp"
 // T16：单一仿真时钟。控制器是 core 层的纯逻辑类（无 GL / 无 QObject），
@@ -5037,6 +5043,11 @@ int runEngineCoexistProbe(QGuiApplication *app, QQuickWindow *window)
 
 int main(int argc, char **argv)
 {
+    // T44：**进程起点墙钟**。P-LIF-01 的「启动 → 首帧上屏」计时必须从这里起算 ——
+    // 用探针/装配之后的时刻会把"引擎装配耗时"整段吃掉，名字叫"启动到首帧"却测了
+    // 别的东西（陷阱 65：判据条件必须与名字同义）。
+    // （`-Wno-unused-const-variable` 已在 flags 里 ⇒ 非 OneShot 构建不会因此报警。）
+    const qint64 stelProcessStartMs = qint64(QDateTime::currentMSecsSinceEpoch());
 #if defined(STELQUICK_HAS_ENGINE)
     // ── 静态库里的 qrc 必须显式初始化（2026-09-23 实测踩到）──────────────────
     // data/mainRes.qrc 与 data/gui/guiRes.qrc 由 QT_ADD_RESOURCES 编成
@@ -5320,6 +5331,18 @@ int main(int argc, char **argv)
     const bool helpCheck = qEnvironmentVariableIsSet("STELQUICK_HELP_CHECK");
     // T42-A：错误/状态与未支持项数据面探针（只报读数，不打 PASS）。
     const bool errorProbe = qEnvironmentVariableIsSet("STELQUICK_ERROR_PROBE");
+    // T44-A：生命周期数据面探针（STELQUICK_LIFECYCLE_PROBE=1）。测前先查事实：
+    // 最小化/恢复/尺寸切换对窗口暴露、帧推进、邮箱与视口世代的真实影响。
+    const bool lifeProbe = qEnvironmentVariableIsSet("STELQUICK_LIFECYCLE_PROBE");
+    // T45-A：配置健康 / 资源链接数据面探针（STELQUICK_CONFIG_HEALTH_PROBE=1）。
+    // 要还的账：P-CFG-01（损坏配置可恢复 + 明确提示）/ P-CFG-03（资源链接保护）。
+    const bool cfgHealthProbe = qEnvironmentVariableIsSet("STELQUICK_CONFIG_HEALTH_PROBE");
+    // T44-C：P-LIF-01 的**单次腿** —— 进程级「启动 → 首帧上屏 → 退出」计时。
+    // 由 tools/a6-lifecycle-100.sh 重复 N 次驱动（×100 的可行性依此预算）。
+    const bool lifeOneShot = qEnvironmentVariableIsSet("STELQUICK_LIFECYCLE_ONESHOT");
+    // T44-C：生命周期回归自检（STELQUICK_LIFECYCLE_CHECK=1）：判据 LF-02..LF-04，
+    // 进程内 ×100 三组（最小化/恢复、尺寸切换、组合序列）。见 ui/LifeCycleCheck.hpp。
+    const bool lifeCheck = qEnvironmentVariableIsSet("STELQUICK_LIFECYCLE_CHECK");
     // T42-C：状态与错误页自检（EC-01..EC-N）。⚠️ 它的装配**允许 boot 失败** ——
     // "引导失败 ⇒ 错误页"正是判据腿之一（用 STEL_USERDIR 造真实失败）。
     const bool errorCheck = qEnvironmentVariableIsSet("STELQUICK_ERROR_CHECK");
@@ -5349,6 +5372,9 @@ int main(int argc, char **argv)
                           || hiDpiProbe || hiDpiCheck || shortcutProbe
                           || shortcutCheck || helpProbe || helpCheck
                           || errorProbe
+                          || lifeProbe
+                          || lifeOneShot
+                          || lifeCheck
                           || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                           || liveEngine;
     QString startPage = QStringLiteral("diag");
@@ -5563,6 +5589,11 @@ int main(int argc, char **argv)
         // T42：图形后端状态**单点**同步给错误/状态页的数据面 ——
         // `ErrorModel` 不自己判定后端（判定只有上面这一份，T41 修 backendOk 的教训）。
         errorModel.setBackend(backendOk, name, backendInfo->probeError());
+        // T45-B：配置健康同步给错误/状态页 —— 真源是引导期（boot() 内
+        // `bootstrapPersonalConfigDir()`）的那一次 `QSettings::status()` 读取，
+        // 这里只转发（判定只有一份；探针 Q4b 证实此前该读数从未被产品路径消费）。
+        errorModel.setConfigHealth(stelapp::configIsolationReport().configStatus,
+                                   stelapp::configIsolationReport().configHealthText);
         errorModel.refresh();
 
         std::printf("STELQUICK: runtimeApi=%s backendOk=%d device=%s（判定来源=%s）\n",
@@ -6541,6 +6572,201 @@ int main(int argc, char **argv)
 #endif
     }
 
+    // T45-A 配置健康 / 资源链接数据面探针（STELQUICK_CONFIG_HEALTH_PROBE=1）。
+    // 出处：测试文档 §6.3 的 P-CFG-01（损坏配置 ⇒ 可恢复 + **明确提示**）与
+    //   P-CFG-03（资源链接保护）。T36 只做掉了 P-CFG-02 ⇒ 另两条一直没有判据。
+    // 关注：QSettings 对五种"损坏"形态的真实语义（决定 P-CFG-01 是把 Qt 的功劳
+    //   记在产品头上，还是产品真得有行为）/ 只读配置的写入语义 / **「明确提示」的
+    //   现有出口盘点**（这是判断 T45 要不要写产品的依据）/ 九个资源占位是符号链接
+    //   还是实体目录 / target 是否被改写。
+    // ⚠️ 写入面**全部落在 /tmp 的副本**上，绝不触碰个人版与原版的真实 config.ini；
+    //    收尾逐个删除并自报删除数（陷阱 90/94：只判不净残留）。
+    if (cfgHealthProbe) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("CFGHEALTHPROBE: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString producerError;
+        if (!liveSkyRuntime->boot(&producerError)) {
+            std::fprintf(stderr, "CFGHEALTHPROBE: 引擎引导失败：%s\n",
+                         producerError.toUtf8().constData());
+            std::printf("CFGHEALTHPROBE: VERDICT=UNAVAILABLE\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        stelapp::ConfigHealthProbe::run(
+            &app,
+            [&app](const stelapp::ConfigHealthProbe::Result &result) {
+                std::printf("CFGHEALTHPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("CFGHEALTHPROBE: %s\n", line.toUtf8().constData());
+                std::printf("CFGHEALTHPROBE: VERDICT=%s\n",
+                            result.unavailable ? "UNAVAILABLE" : "DONE");
+                std::fflush(stdout);
+                app.exit(result.unavailable ? 6 : 0);
+            });
+        const int rc = app.exec();
+        liveSkyRuntime.reset();
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
+    // T44-A 生命周期数据面探针（STELQUICK_LIFECYCLE_PROBE=1）。
+    // 出处：测试文档 §6.2 的 P-LIF-01..04，而 §6.4 的窗口自测里明写
+    //   `window->hide(); // 关闭代理：隐藏窗口（真·关闭重开见 P-LIF ×100 回归）`
+    //   ⇒ A1 起就挂着这笔账，A-1.0 出口第 3 条要求它还上。
+    // 关注：最小化让 isExposed 变不变 / 生产者是否照常产帧（邮箱攒不攒、丢不丢）/
+    // 恢复后帧号多久重新推进、几何是否回归 / `viewportGeneration` 是否**每次尺寸
+    // 变化恰好 +1**、**同尺寸重设是否假递增**（判据拿它当"重建发生"的证据前必须先
+    // 知道这条） / 窗口隐藏期间 `displayedFrameNumber` 这个**观测面本身**动不动
+    // （不动就分不清"窗口没推进"与"数据面停更"）。
+    // ⚠️ 用**替身生产者**而非真实引擎：P-LIF-01 要 ×100，而引擎真实预热 ~900s
+    //    （T9 实测）⇒ 100×900s 物理上不可行；生命周期验的是帧通路与窗口/场景图
+    //    资源的寿命，与"帧从哪来"无关。产品路径零改动（邮箱/视口/上传/上屏全真的）。
+    if (lifeProbe) {
+        if (!skyViewport) {
+            std::printf("LIFEPROBE: VERDICT=UNAVAILABLE（未找到 SkyViewport）\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        warmUpSceneGraph(window);
+        stelapp::LiveFrameSourceConfig lifeCfg;
+        lifeCfg.physicalSize = QSize(1280, 720);
+        lifeCfg.devicePixelRatio = 1.0;
+        lifeCfg.fps = 60.0;
+        lifeCfg.simRate = 1.0;
+        QString lifeErr;
+        stelapp::IFrameProducer *lifeProducer = nullptr;
+        if (liveSource.start(&frameMailbox, lifeCfg, &lifeErr))
+            lifeProducer = &liveSource;
+        else
+            std::fprintf(stderr, "LIFEPROBE: 替身生产者启动失败：%s\n",
+                         lifeErr.toUtf8().constData());
+        stelapp::LifeCycleProbe::run(
+            &app, window, &frameMailbox, lifeProducer,
+            [&app, &liveSource](const stelapp::LifeCycleProbe::Result &result) {
+                std::printf("LIFEPROBE: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("LIFEPROBE: %s\n", line.toUtf8().constData());
+                std::printf("LIFEPROBE: VERDICT=%s\n",
+                            !result.ran ? "UNAVAILABLE" : "DONE");
+                std::fflush(stdout);
+                liveSource.stop();
+                app.exit(result.ran ? 0 : 6);
+            });
+        const int rc = app.exec();
+        liveSource.stop();
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+    }
+
+    // T44-C：P-LIF-01 的**单次腿** —— 进程级「启动 → 首帧上屏 → 退出」计时
+    //   （STELQUICK_LIFECYCLE_ONESHOT=1）。×100 由 tools/a6-lifecycle-100.sh 驱动。
+    // 为什么用替身生产者：P-LIF-01 要 ×100，而引擎真实预热 ~900s（T9 实测）
+    //   ⇒ 100×900s 物理上不可行。本腿验的是**帧通路与窗口在进程级启停下的稳定性**
+    //   （无崩溃、无死锁），与"帧从哪来"无关。
+    // ⚠️ 诚实性声明：本腿**不含**引擎 GL 资源释放面 —— "无悬空纹理"那半句在进程级
+    //   是平凡真（进程退出即释放），归 LF-03 的进程内资源重建判据（见 T44 文档）。
+    if (lifeOneShot) {
+        if (!skyViewport) {
+            std::printf("LIFEONESHOT: VERDICT=UNAVAILABLE（未找到 SkyViewport）\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        warmUpSceneGraph(window);
+        stelapp::LiveFrameSourceConfig oneCfg;
+        oneCfg.physicalSize = QSize(1280, 720);
+        oneCfg.devicePixelRatio = 1.0;
+        oneCfg.fps = 60.0;
+        oneCfg.simRate = 1.0;
+        QString oneErr;
+        if (!liveSource.start(&frameMailbox, oneCfg, &oneErr))
+            std::fprintf(stderr, "LIFEONESHOT: 替身生产者启动失败：%s\n",
+                         oneErr.toUtf8().constData());
+        stelapp::LifeCycleProbe::runStartupOnce(
+            &app, window, stelProcessStartMs,
+            [&app, &liveSource](const stelapp::LifeCycleProbe::Result &result) {
+                std::printf("LIFEONESHOT: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("LIFEONESHOT: %s\n", line.toUtf8().constData());
+                std::printf("LIFEONESHOT: firstFrameReached=%d firstFrameMs=%lld\n",
+                            result.firstFrameReached ? 1 : 0,
+                            static_cast<long long>(result.firstFrameMs));
+                std::printf("LIFEONESHOT: VERDICT=%s\n",
+                            !result.ran ? "UNAVAILABLE"
+                                        : (result.firstFrameReached ? "PASS" : "FAIL"));
+                std::fflush(stdout);
+                liveSource.stop();
+                app.exit(result.firstFrameReached ? 0 : 5);
+            });
+        const int rc = app.exec();
+        liveSource.stop();
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+    }
+
+    // T44-C 生命周期回归自检（STELQUICK_LIFECYCLE_CHECK=1）：判据 LF-02..LF-04。
+    // 出处：测试文档 §8「A-1.0 出口」第 3 条（P-LIF-01…04 通过）；而这个欠账从 A1
+    //   就挂着 —— §6.4 的自测里 `window->hide();  // 关闭代理：隐藏窗口（真·关闭重开
+    //   见 P-LIF ×100 回归）`。`hide()` 只有"窗口不可见"一个语义，验不到场景图资源
+    //   重建、帧队列有界、恢复后帧号推进 ⇒ 本轮把它补上（判据表见 ui/LifeCycleCheck.hpp）。
+    // ⚠️ 用替身生产者：P-LIF 要 ×100，而引擎真实预热 ~900s（T9 实测）⇒ 100×900s
+    //    物理上不可行。产品路径零改动（邮箱/视口/上传/上屏全真的）。
+    // ⚠️ 诚实性声明：本组**不含**引擎 GL 资源释放面（进程级是平凡真）—— 那半句归
+    //    LF-03（进程内尺寸重建 ×100，验内存不无界增长）。见 T44 文档 §2.2。
+    if (lifeCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("LIFECHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        if (!skyViewport) {
+            std::printf("LIFECHECK: VERDICT=UNAVAILABLE（未找到 SkyViewport）\n");
+            std::fflush(stdout);
+            return 6;
+        }
+        warmUpSceneGraph(window);
+        stelapp::LiveFrameSourceConfig lifeChkCfg;
+        lifeChkCfg.physicalSize = QSize(1280, 720);
+        lifeChkCfg.devicePixelRatio = 1.0;
+        lifeChkCfg.fps = 60.0;
+        lifeChkCfg.simRate = 1.0;
+        QString lifeChkErr;
+        stelapp::IFrameProducer *lifeChkProducer = nullptr;
+        if (liveSource.start(&frameMailbox, lifeChkCfg, &lifeChkErr))
+            lifeChkProducer = &liveSource;
+        else
+            std::fprintf(stderr, "LIFECHECK: 替身生产者启动失败：%s\n",
+                         lifeChkErr.toUtf8().constData());
+        stelapp::LifeCycleCheck::run(
+            &app, window, &frameMailbox, lifeChkProducer,
+            [&app, &liveSource](const stelapp::LifeCycleCheck::Result &result) {
+                std::printf("LIFECHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("LIFECHECK:%s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("LIFECHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    liveSource.stop();
+                    app.exit(6);
+                    return;
+                }
+                std::printf("LIFECHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                liveSource.stop();
+                app.exit(result.pass ? 0 : 5);
+            });
+        const int rc = app.exec();
+        liveSource.stop();
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
     // T42-A 错误/状态与未支持项数据面探针（STELQUICK_ERROR_PROBE=1）。
     // 任务出处是三处文档口径的**并集**：
     //   ① A-1.0 第二格 `|资源路径、错误提示、渲染诊断、配置保存 | 最小 | 必须|`
@@ -6618,6 +6844,10 @@ int main(int argc, char **argv)
         errorModel.setBackend(backendInfo->backendOk(), backendInfo->runtimeApiName(),
                               backendInfo->probeError());
         errorModel.setFramePathAlive(false);
+        // T45-B：配置健康注入（boot 失败腿也注入 —— 失败时 configStatus=-1 ⇒
+        // 状态行如实报"不存在"，这本身就是失败腿判据的一部分）。
+        errorModel.setConfigHealth(stelapp::configIsolationReport().configStatus,
+                                   stelapp::configIsolationReport().configHealthText);
         // 🔴 必须给 **QML 绑定的那个**实例喂数据（陷阱 86：自建副本 ≠ 接线实例）。
         errorModel.refresh();
 
@@ -7557,6 +7787,9 @@ int main(int argc, char **argv)
 
     // T42-B：状态与错误页同理（资源路径要走 `StelFileMgr`）。⚠️ **无条件**刷新 ——
     // 引导失败时正是这一页要说话的时候（那时 `liveSkyRuntime` 已被 reset）。
+    // T45-B：配置健康同源转发（此时 boot 已跑过 ⇒ configIsolationReport 有效）。
+    errorModel.setConfigHealth(stelapp::configIsolationReport().configStatus,
+                               stelapp::configIsolationReport().configHealthText);
     errorModel.refresh();
 
     const int rc = app.exec();

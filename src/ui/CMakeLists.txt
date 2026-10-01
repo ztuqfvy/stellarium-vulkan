@@ -106,6 +106,12 @@ set(stelQuickUI_SOURCES
     # 消费侧全量计量长跑（P-BRG-01 验收）
     SkyLongRun.hpp
     SkyLongRun.cpp
+    # T44-A：生命周期（P-LIF-01..04）数据面探针
+    LifeCycleProbe.hpp
+    LifeCycleProbe.cpp
+    # T44-C：生命周期回归自检（LF-02..LF-04，×100 进程内循环）
+    LifeCycleCheck.hpp
+    LifeCycleCheck.cpp
     LegacyHostCheck.hpp
     LegacyHostCheck.cpp
     # T15 命令通路：QML → ActionRouter → AppFacade → 引擎（无引擎形态可编译 no-op）
@@ -217,6 +223,11 @@ set(stelQuickUI_SOURCES
     # 由 STEL_USERDIR 造真实引导失败驱动；负控 ERROR_TAKEOVER_OFF 等）。
     ../app/ErrorCheck.hpp
     ../app/ErrorCheck.cpp
+    # T45-A：配置健康 / 资源链接**数据面探针**（QSettings 对五种损坏形态的真实语义 /
+    # 只读配置写入语义 / 「明确提示」现有出口盘点 / 九个资源占位是链接还是实体目录）。
+    # 写入面全部落在 /tmp 副本，收尾逐个删除。
+    ../app/ConfigHealthProbe.hpp
+    ../app/ConfigHealthProbe.cpp
     # T19「改时间」环：往返恒等 / 与旧公式逐位一致 / UTC 方向 / 星空随动 / 不被拽回
     ../app/TimeCheck.hpp
     ../app/TimeCheck.cpp

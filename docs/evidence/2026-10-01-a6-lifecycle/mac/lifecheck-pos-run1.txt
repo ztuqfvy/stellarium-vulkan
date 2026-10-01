@@ -1,0 +1,52 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 97 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+LIFECHECK: 生命周期回归自检开跑（×100 ×3 组，delayMs=1500，收敛期 500/400/350ms）
+LIFECHECK: 生命周期回归自检：判据 13/13 通过（LF-02 ×100 / LF-03 ×100 / LF-04 ×100）
+LIFECHECK:布场：几何 960x640@375,255｜视口 ready=1 generation=2 displayed=98｜邮箱 投递=99 完整槽=3 sizeGen=2 帧龄=1ms｜footprint=313 MiB
+LIFECHECK:布场自证：帧流在（displayed +17）
+LIFECHECK:LF-02 轮 25 最小化稳态：visible=1 exposed=0 state=最小化｜几何 960x640@375,255
+LIFECHECK:LF-02 轮 25：960x640@375,255｜**本轮** displayed +65 投递 +65 丢弃 +0｜帧龄 8ms 槽 3｜state=正常 exposed=1｜**25 轮** rendered +1637 hostPub +1637 hostDrop +0
+LIFECHECK:LF-02 轮 50 最小化稳态：visible=1 exposed=0 state=最小化｜几何 960x640@375,255
+LIFECHECK:LF-02 轮 50：960x640@375,255｜**本轮** displayed +65 投递 +65 丢弃 +0｜帧龄 13ms 槽 3｜state=正常 exposed=1｜**25 轮** rendered +1647 hostPub +1647 hostDrop +0
+LIFECHECK:LF-02 轮 75 最小化稳态：visible=1 exposed=0 state=最小化｜几何 960x640@375,255
+LIFECHECK:LF-02 轮 75：960x640@375,255｜**本轮** displayed +67 投递 +67 丢弃 +0｜帧龄 10ms 槽 3｜state=正常 exposed=1｜**25 轮** rendered +1640 hostPub +1640 hostDrop +0
+LIFECHECK:LF-02 轮 100 最小化稳态：visible=1 exposed=0 state=最小化｜几何 960x640@375,255
+LIFECHECK:LF-02 轮 100：960x640@375,255｜**本轮** displayed +66 投递 +66 丢弃 +0｜帧龄 12ms 槽 3｜state=正常 exposed=1｜**25 轮** rendered +1643 hostPub +1643 hostDrop +0
+LIFECHECK:LF-03 轮 25：世代 26→27（本轮 dGen=1）｜**本轮** displayed +20 投递 +19 丢弃 +0 leased +487｜sizeGen 2 槽 3 年龄 12ms bytes/frame 3686400｜**25 轮** rendered +485 hostReq +485 hostPub +485 hostDrop +0｜exposed=1
+LIFECHECK:LF-03 轮 50：世代 51→52（本轮 dGen=1）｜**本轮** displayed +19 投递 +20 丢弃 +0 leased +483｜sizeGen 2 槽 3 年龄 1ms bytes/frame 3686400｜**25 轮** rendered +483 hostReq +483 hostPub +483 hostDrop +0｜exposed=1
+LIFECHECK:LF-03 轮 75：世代 76→77（本轮 dGen=1）｜**本轮** displayed +19 投递 +20 丢弃 +0 leased +489｜sizeGen 2 槽 3 年龄 3ms bytes/frame 3686400｜**25 轮** rendered +486 hostReq +486 hostPub +486 hostDrop +0｜exposed=1
+LIFECHECK:LF-03 轮 100：世代 101→102（本轮 dGen=1）｜**本轮** displayed +21 投递 +20 丢弃 +0 leased +489｜sizeGen 2 槽 3 年龄 8ms bytes/frame 3686400｜**25 轮** rendered +485 hostReq +485 hostPub +485 hostDrop +0｜exposed=1
+LIFECHECK:组合序列起始：几何已复原 960x640@375,255
+LIFECHECK:LF-04 轮 19（最小化支）：**本轮** 帧号 +68 投递 +68｜帧龄 9ms 槽 3｜state=正常 exposed=1｜**20 轮** rendered +835
+LIFECHECK:LF-04 轮 20（尺寸支）：世代 112→113｜**本轮** 帧号 +19 投递 +19｜帧龄 15ms 槽 3｜exposed=1｜**20 轮** rendered +19
+LIFECHECK:LF-04 轮 39（最小化支）：**本轮** 帧号 +67 投递 +67｜帧龄 9ms 槽 3｜state=正常 exposed=1｜**20 轮** rendered +855
+LIFECHECK:LF-04 轮 40（尺寸支）：世代 122→123｜**本轮** 帧号 +19 投递 +19｜帧龄 15ms 槽 3｜exposed=1｜**20 轮** rendered +19
+LIFECHECK:LF-04 轮 59（最小化支）：**本轮** 帧号 +70 投递 +69｜帧龄 13ms 槽 3｜state=正常 exposed=1｜**20 轮** rendered +858
+LIFECHECK:LF-04 轮 60（尺寸支）：世代 132→133｜**本轮** 帧号 +19 投递 +20｜帧龄 7ms 槽 3｜exposed=1｜**20 轮** rendered +20
+LIFECHECK:LF-04 轮 79（最小化支）：**本轮** 帧号 +66 投递 +66｜帧龄 17ms 槽 3｜state=正常 exposed=1｜**20 轮** rendered +851
+LIFECHECK:LF-04 轮 80（尺寸支）：世代 142→143｜**本轮** 帧号 +20 投递 +21｜帧龄 5ms 槽 3｜exposed=1｜**20 轮** rendered +21
+LIFECHECK:LF-04 轮 99（最小化支）：**本轮** 帧号 +67 投递 +68｜帧龄 5ms 槽 3｜state=正常 exposed=1｜**20 轮** rendered +853
+LIFECHECK:LF-04 轮 100（尺寸支）：世代 152→153｜**本轮** 帧号 +20 投递 +19｜帧龄 5ms 槽 3｜exposed=1｜**20 轮** rendered +19
+LIFECHECK:收尾：窗口已还原到布场态（几何 960x640@375,255 / state=正常）
+LIFECHECK:[PASS] LF-02a — 最小化/恢复 ×100：帧队列有界且不积压（完整槽峰值 3 ≤ 3；最新帧年龄峰值 16ms ≤ 300ms —— 单靠槽位数是平凡真）｜增量 min=0 中位=66 max=128
+LIFECHECK:[PASS] LF-02b — 最小化/恢复 ×100：帧号每轮推进（最长连续零推进 1，零推进轮 1/100；收敛期 500/400ms）
+LIFECHECK:[PASS] LF-02c — 最小化/恢复 ×100：视口全程 ready（最小化期间对象不被拆）
+LIFECHECK:[PASS] LF-02d — 最小化/恢复 ×100：每轮恢复后几何回归基线 960x640@375,255
+LIFECHECK:[PASS] LF-02e — 最小化/恢复 ×100：phys_footprint 313 → 309 MiB（增 -1，预算 32）
+LIFECHECK:[PASS] LF-02f — 最小化/恢复 ×100：**窗口态真的进过「最小化」**（不是 hide() 代理）—— 最小化阶段窗口态 = 最小化，恢复后 = 正常
+LIFECHECK:[PASS] LF-03a — 尺寸切换 ×100：世代递增 100 次（要求 ≥ 99 = 留 1% 容差）｜sizeGen 恒 2（真源是**帧**尺寸世代，替身生产者出图尺寸固定 ⇒ 不动是预期）
+LIFECHECK:[PASS] LF-03b — 尺寸切换 ×100：世代单调不减（无回退）
+LIFECHECK:[PASS] LF-03c — 尺寸切换 ×100：切换后帧号仍推进（最长连续零推进 0，零推进轮 0/100；收敛期 350ms）｜增量 min=17 中位=19 max=21
+LIFECHECK:[PASS] LF-03d — 尺寸切换 ×100：phys_footprint 307 → 325 MiB（增 18，预算 32）
+LIFECHECK:[PASS] LF-04a — 组合序列 ×100：尺寸切换支世代仍递增（50 次）
+LIFECHECK:[PASS] LF-04b — 组合序列 ×100：队列仍有界（完整槽峰值 3，最新帧年龄峰值 25ms）+ 视口仍 ready
+LIFECHECK:[PASS] LF-04c — 组合序列 ×100：帧号仍推进（最长连续零推进 1，零推进轮 3/100）｜增量 min=0 中位=65 max=87
+LIFECHECK: VERDICT=PASS

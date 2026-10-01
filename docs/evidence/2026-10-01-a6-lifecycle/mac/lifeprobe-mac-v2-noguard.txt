@@ -1,0 +1,37 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 97 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+LIFEPROBE: 生命周期数据面探针开跑（delayMs=1500）
+LIFEPROBE: 生命周期数据面探针：24 条读数（只读，无 PASS 判定）
+LIFEPROBE: Q0 布场：几何 960x640@375,255｜visible=1 exposed=1 state=正常｜视口 ready=1 generation=2 uploads=128 displayed=130｜邮箱 投递=130 丢弃=0 完整槽=3 sizeGen=2 帧龄=9ms｜生产者=已装配
+LIFEPROBE: Q1 最小化后：visible=1（前 1）exposed=0（前 1）state=最小化（前 正常）｜几何 960x640@375,255（前 960x640@375,255）
+LIFEPROBE: Q2 最小化→采样**这 1200ms 窗口内**的增量：显示帧号 +0｜投递 +133｜丢弃 +0｜上传 +0｜完整槽 3→3｜世代 2｜帧龄 4ms（生产者 独立线程，窗口状态不影响它）
+LIFEPROBE: Q7 观测面自证：窗口 hidden 期间 displayedFrameNumber 是否变化 —— 本条读数即为该问题的答案（+0）；后续每轮都复读，用于区分「窗口不推进」与「数据面停更」
+LIFEPROBE: Q7b 视口 ready=1（最小化期间视口对象是否仍就绪）
+LIFEPROBE: Q3 恢复：**首帧延迟 591ms**（30ms 粒度轮询 1 次；-1 = 1.5s 内未推进）｜visible=1（前 1）exposed=1（前 0）state=正常｜几何 960x640@375,255（基线 960x640@375,255，回归=是）｜帧号 130→296
+LIFEPROBE: Q3b 恢复后稳态（+1s）：投递 +111 丢弃 +0 完整槽 3（≤3 才有界）帧龄 10ms｜上传 +109｜世代 2
+LIFEPROBE: Q4 尺寸 +40x+30 ⇒ 1000x670@375,255｜世代 2→2（Δ=0）｜sizeGen 2→2｜帧号 +33 上传 +33｜**切换后首帧延迟 0ms**
+LIFEPROBE: Q4 尺寸 +80x+60 ⇒ 1040x700@375,255｜世代 2→3（Δ=1）｜sizeGen 2→2｜帧号 +34 上传 +33｜**切换后首帧延迟 0ms**
+LIFEPROBE: Q4 尺寸 +120x+90 ⇒ 1080x730@375,255｜世代 3→4（Δ=1）｜sizeGen 2→2｜帧号 +33 上传 +33｜**切换后首帧延迟 0ms**
+LIFEPROBE: Q4 尺寸 +160x+120 ⇒ 1120x760@375,255｜世代 4→5（Δ=1）｜sizeGen 2→2｜帧号 +34 上传 +33｜**切换后首帧延迟 0ms**
+LIFEPROBE: Q4b-1 **同尺寸 setGeometry**：世代 5→6（Δ=1）｜帧号 +55｜（Δ=0 也可能是被 Qt 短路，见 Q4b-2）
+LIFEPROBE: Q4b-2 **同尺寸 resize**：世代 6→6（Δ=0）｜sizeGen 2→2｜帧号 +54｜**Δ=0 才能拿世代当「重建发生」的证据**
+LIFEPROBE: Q4c 几何复原 ⇒ 960x640@375,255（基线 960x640@375,255）｜世代 7｜帧号 +66
+LIFEPROBE: Q6c 轮 5 最小化稳态：state=最小化 visible=1 exposed=0
+LIFEPROBE: Q6c 轮 10 最小化稳态：state=最小化 visible=1 exposed=0
+LIFEPROBE: Q6c 轮 15 最小化稳态：state=最小化 visible=1 exposed=0
+LIFEPROBE: Q6c 轮 20 最小化稳态：state=最小化 visible=1 exposed=0
+LIFEPROBE: Q6 ×20 快速最小化/恢复（每轮 900ms = 最小化 500 + 恢复后 400）：帧号增量 min=112 max=119 均值=115.8｜**零推进轮数=0**（>0 说明存在「恢复后再不推进」的轮）｜**真的进到「最小化」态的轮数=20/20**（<20 ⇒ 动作被竞速/吞掉）
+LIFEPROBE: Q6a 每轮增量序列：[117, 116, 116, 112, 117, 113, 117, 116, 116, 116, 114, 116, 117, 116, 119, 114, 117, 114, 116, 117]
+LIFEPROBE: Q6b 循环末：几何 960x640@375,255｜世代 7｜完整槽 3｜丢弃 0｜帧龄 16ms
+LIFEPROBE: Q8 探针自身耗时 53281ms（进程级「启动→退出」墙钟由外部脚本量，×100 预算见 tools/a6-verify.sh）
+LIFEPROBE: Q9 世代序列（尺寸逐次变化）：[2, 3, 4, 5]｜恢复首帧 0ms｜尺寸切换首帧序列 [0, 0, 0, 0] ms（均 30ms 粒度轮询，-1=1.5s 内未推进）
+LIFEPROBE: 收尾：窗口已还原到布场态（几何 960x640@375,255 / state=正常）
+LIFEPROBE: VERDICT=DONE

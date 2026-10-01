@@ -536,4 +536,6 @@ const LegacyReadbackInfo &LegacySkyHost::readbackInfo() const { return d->readba
 
 bool LegacySkyHost::isInitialized() const { return d->initialized; }
 
+FrameMailbox *LegacySkyHost::attachedMailbox() const { return d->mailbox; }
+
 } // namespace stelapp

@@ -29,6 +29,14 @@ struct ProducerCounters
     quint64 rendered = 0;   //!< 成功产出并投递的帧数
     quint64 failed = 0;     //!< 渲染失败次数（健康判据要求恒为 0）
     double fps = 0.0;       //!< 生产者自报的实测速率（仅诊断，不参与判据）
+
+    // ── host 侧透传（T44-C 二分仪器；替身实现填真值，其余实现可留 0）──────
+    //    rendered 涨而 hostPublished 不涨 ⇒ 帧**产了但没进邮箱**（publish 路径）；
+    //    hostRequested 不涨 ⇒ 生产者线程根本没在跑。两者把"谁停了"钉死。
+    quint64 hostRequested = 0;         //!< renderOneFrame 被调用次数
+    quint64 hostPublished = 0;         //!< host 侧"成功投递到邮箱"计数
+    quint64 hostDroppedByMailbox = 0;  //!< host 侧"被邮箱拒收"计数
+    quint64 hostMailboxAddr = 0;       //!< host 实际 attach 的邮箱地址（对象身份对账）
 };
 
 class IFrameProducer

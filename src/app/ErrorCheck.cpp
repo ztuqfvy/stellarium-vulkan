@@ -296,7 +296,7 @@ void ErrorCheck::run(QCoreApplication *app,
                               QStringLiteral("EC-09"), QStringLiteral("EC-10"),
                               QStringLiteral("EC-11"), QStringLiteral("EC-12"),
                               QStringLiteral("EC-13"), QStringLiteral("EC-14"),
-                              QStringLiteral("EC-15")};
+                              QStringLiteral("EC-15"), QStringLiteral("EC-16")};
         for (const QString &id : ids)
             ctx->items.append(qMakePair(id, false));
 
@@ -352,11 +352,30 @@ void ErrorCheck::run(QCoreApplication *app,
             for (const QVariant &v : rows)
                 if (v.toMap().value(QStringLiteral("state")).toString() == QLatin1String("error"))
                     bad << v.toMap().value(QStringLiteral("label")).toString();
-            c->mark(rows.size() == 4 && c->model->statusProblemCount() == 0,
-                    QStringLiteral("EC-04 状态表 %1 行（应 4）｜error 行 %2%3")
+            c->mark(rows.size() == 5 && c->model->statusProblemCount() == 0,
+                    QStringLiteral("EC-04 状态表 %1 行（应 5：T45-B 加「配置文件」行）｜error 行 %2%3")
                         .arg(rows.size()).arg(c->model->statusProblemCount())
                         .arg(bad.isEmpty() ? QString()
                                            : QStringLiteral("：") + bad.join(QStringLiteral(","))));
+
+            // EC-16（T45-B）：「配置文件」行存在且 ok 态 —— P-CFG-01"明确提示"出口的
+            // 常态半边（损坏半边不在此跑：造损坏要写真实配置，判据只保证**行存在、
+            // 真源是引导期读取、且正常时是 ok**；损坏形态由探针 Q2 的五形态读数背书）。
+            QString cfgState, cfgText;
+            for (const QVariant &v : rows)
+                // ⚠️ 必须用 QStringLiteral：QLatin1String 把 const char* 按 Latin-1 解读，
+                //   而"配置文件"是 UTF-8 字节 ⇒ 与 QStringLiteral 生成的 QString 永不相等，
+                //   行明明在却报"无此行"（2026-10-01 实测踩到；EC-04/EC-11 只数行数所以没暴露）。
+                if (v.toMap().value(QStringLiteral("label")).toString()
+                        == QStringLiteral("配置文件"))
+                {
+                    cfgState = v.toMap().value(QStringLiteral("state")).toString();
+                    cfgText = v.toMap().value(QStringLiteral("value")).toString();
+                }
+            c->mark(cfgState == QLatin1String("ok") && !cfgText.isEmpty(),
+                    QStringLiteral("EC-16 配置文件行：state=%1 text「%2」（真源=引导期 "
+                                   "QSettings::status()，T45-B）")
+                        .arg(cfgState.isEmpty() ? QStringLiteral("（无此行）") : cfgState, cfgText));
 
             c->mark(!c->model->hasError() && c->model->errorHeadline().isEmpty(),
                     QStringLiteral("EC-05 引擎已引导 + 后端已注入 ⇒ hasError=%1（应 false，"
@@ -561,7 +580,7 @@ void ErrorCheck::run(QCoreApplication *app,
             // 确保停在错误页（前一节的 trigger 不会切页，但显式保险）
             c->window->setProperty("__noop", false);
             QStringList missing;
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < 5; ++i)
                 if (byName(c->window, QStringLiteral("errorStatusRow_%1").arg(i)).isEmpty())
                     missing << QStringLiteral("statusRow_%1").arg(i);
             for (int i = 0; i < 8; ++i)
@@ -571,8 +590,8 @@ void ErrorCheck::run(QCoreApplication *app,
                 if (byName(c->window, QStringLiteral("errorUnsupportedRow_%1").arg(i)).isEmpty())
                     missing << QStringLiteral("unsupportedRow_%1").arg(i);
             c->mark(missing.isEmpty(),
-                    QStringLiteral("EC-11 错误页控件（视觉树递归）：状态行 4/4｜路径行 8/8｜"
-                                   "未支持行 7/7｜缺 %1")
+                    QStringLiteral("EC-11 错误页控件（视觉树递归）：状态行 5/5（T45-B +配置文件行）｜"
+                                   "路径行 8/8｜未支持行 7/7｜缺 %1")
                         .arg(missing.isEmpty() ? QStringLiteral("无")
                                                : missing.join(QStringLiteral(","))));
 

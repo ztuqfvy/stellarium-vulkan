@@ -74,6 +74,10 @@ public:
     void setBackend(bool ok, const QString &apiName, const QString &probeError);
     //! 帧通路是否在投帧（可选注入；未启引擎时为 false）。
     void setFramePathAlive(bool alive);
+    //! 配置健康注入（T45-B）：真源是 `ConfigIsolationReport::configStatus`（引导期
+    //! 唯一一次 `QSettings::status()` 读取），本类**只转发**，不自查（陷阱 86）。
+    //! @p status < 0 = 未探测（无 config.ini / 引擎形态外）。
+    void setConfigHealth(int status, const QString &healthText);
 
     Q_INVOKABLE void refresh();
     //! 打开白名单内的路径（kind ∈ log / config / userDir / installDir / cacheDir）。
@@ -124,6 +128,9 @@ private:
     QString m_backendName;
     QString m_backendError;
     bool m_frameAlive = false;
+    bool m_cfgInjected = false;
+    int m_cfgStatus = -1;
+    QString m_cfgHealthText;
 
     QString m_errorHeadline;
     QString m_errorDetail;

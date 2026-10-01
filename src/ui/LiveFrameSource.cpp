@@ -199,6 +199,13 @@ ProducerCounters LiveFrameSource::counters() const
     c.rendered = m_rendered.load();
     c.failed = m_failed.load();
     c.fps = m_measuredFps.load();
+    // T44-C 二分仪器：host 侧计数透传 —— rendered 涨而 hostPublished 不涨 ⇒
+    // 帧"产了但没进邮箱"，故障在 publish 路径而不是生产循环。
+    const LegacySkyHost::Stats hs = m_host->stats();
+    c.hostRequested = hs.requested;
+    c.hostPublished = hs.published;
+    c.hostDroppedByMailbox = hs.droppedByMailbox;
+    c.hostMailboxAddr = reinterpret_cast<quint64>(m_host->attachedMailbox());
     return c;
 }
 

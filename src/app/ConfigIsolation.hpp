@@ -86,6 +86,18 @@ struct ConfigIsolationReport
     //! **降级/异常**说明（空串 = 一切正常）。非空时表示隔离过程真出了问题
     //! （如 `setUserDir` 抛异常、兜底拷贝失败），判据 CFG-01 据此报红。
     QString note;
+    //! ── T45-B：引导期**配置健康**读数（P-CFG-01 的"明确提示"产品缺口）──────
+    //! 探针实测（T45-A Q2）：QSettings 对**五种损坏形态全部静默 NoError**、
+    //! 回退默认是 Qt 行为 ⇒ 产品唯一该负责的是"把异常**说出来**"。引导路径上
+    //! 此前**从未读过** `QSettings::status()`（探针 Q4b 代码事实），这三个字段
+    //! 就是补的那一次读取，唯一真相源在此，`ErrorModel` 只转发不自查。
+    //! `configStatus`：QSettings::Status 的 int 值（0=NoError 1=AccessError
+    //! 3=FormatError）；**-1 = 未探测**（config.ini 不存在 / 引擎形态外）。
+    int configStatus = -1;
+    //! 人类可读判读（空串 = 未探测）。**非致命**：损坏时回退默认照常跑，
+    //! 提示走错误页**状态行**（error）+ 诊断文本，**不进** errorHeadline
+    //! —— headline 只留给"引擎起不来"这类致命错（决定记入 T45 文档 §4）。
+    QString configHealthText;
     //! **正常**流程说明（"个人版里已有 config.ini ⇒ 跳过播种"、"负控生效"、
     //! "原目录不存在 ⇒ 无可播种"）。与 note 的差别是**语义**，不是内容：
     //! info 非空**不影响任何判据**。
