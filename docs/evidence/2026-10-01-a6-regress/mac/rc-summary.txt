@@ -1,6 +1,6 @@
-环境：16:23  up 6 days, 18:06, 1 user, load averages: 2.96 2.96 3.32
+环境：16:25  up 6 days, 18:08, 1 user, load averages: 2.99 3.02 3.30
 环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
-二进制：42671128 B  Oct 1 15:49  md5=3954faeec5568542595540e44a6aace2
+二进制：42671128 B  2026-10-01 15:49 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=3954faeec5568542595540e44a6aace2
 config 零污染门：起跑 md5=c847cd85f3b12585e84ac6bb204b0187
 二进制 md5=3954faeec5568542595540e44a6aace2
 ──────── T46 接口冻结刷新 + 硬性禁区 + 页面协议 ────────

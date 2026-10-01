@@ -2,8 +2,8 @@
 
 > **本文件由 `tools/a6-interface-freeze.sh` 从头文件原文生成**，不要手工编辑。
 > 冻结含义见 `docs/A6_HANDOFF_FREEZE.zh_CN.md` §「冻结口径」。
-> 生成时间：2026-10-01 16:23:21 CST
-> 仓库 HEAD：ad28257
+> 生成时间：2026-10-01 16:25:19 CST
+> 仓库 HEAD：fd911b6
 
 ---
 

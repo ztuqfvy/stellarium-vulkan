@@ -6,7 +6,7 @@
 #       tools/a6-verify.sh t43            （帧桥短窗 + 报告生成器刷新）
 #       tools/a6-verify.sh t44 2          （生命周期 P-LIF ×2）
 #       tools/a6-verify.sh t45 2          （配置/数据安全 P-CFG ×2）
-#       tools/a6-verify.sh t46            （接口冻结刷新 + 硬性禁区自查）
+#       tools/a6-verify.sh t46            （接口冻结刷新 + --check 冻结校验 + 硬性禁区 + 页面协议）
 #       tools/a6-verify.sh regress        （只跑相邻 24 套件）
 #
 # 证据落 docs/evidence/2026-10-01-a6-framebridge/mac/（T43）、
