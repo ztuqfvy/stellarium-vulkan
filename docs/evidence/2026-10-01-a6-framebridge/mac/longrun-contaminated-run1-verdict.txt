@@ -1,0 +1,20 @@
+STELLRUN: 生产者=engine(真实引擎)
+STELLRUN: 环境前置通过（Now drawing from 'AC Power'，低电量模式关）
+STELLRUN: 生产者由调用方装配，本跑只负责计量
+STELLRUN: 预热 900 秒开始（生产者名义 50.0 fps，1280x720）
+STELLRUN: 测量 1800 秒开始（预热段数据保留在 CSV，统计不含）
+STELLRUN: 消费侧长跑：预热 900s + 测量 1800s；稳态显示 44.13 fps / 生产 44.15 fps；上屏间隔 p95 56.47ms / p99 74.90ms；丢弃 0；内存斜率 0.111 MiB/min；帧龄 p95 1.00ms / max 107.00ms
+STELLRUN: SL-C01 PASS 生产者零失败=是（测量段渲染 79172 帧 / 失败 0）；稳态实测 44.15 fps（下限 40）
+STELLRUN: SL-C02 PASS 稳态显示帧率 44.13 fps（下限 40）；显示帧号 64711 → 117625（窗口 1199s）
+STELLRUN: SL-C03 FAIL 稳态上屏间隔（52215 帧）：mean 22.99 / p50 20.15 / p95 56.47 / p99 74.90 / max 210.91 ms；门槛 p99≤67.98、max 档占比 ≤0.01%（> 135.96ms 的帧）（共线程形态：p99 相对口径 3×帧间隔（67.98ms，天花板 100ms）+ max 占比口径）（vsync 下 16.7/33.4ms 混排属正常漏一帧，判据只管异常长停顿）
+STELLRUN: SL-C04 PASS 测量段邮箱：投递 79172 / 丢弃 0（须 0）
+STELLRUN: SL-C05 PASS 测量段上传 70681 次，增量均值 0.170ms（<5.0），全程最坏 89.77ms（<100）
+STELLRUN: SL-C06 PASS 测量段邮箱帧龄最大 59ms（<500）
+STELLRUN: SL-C07 PASS 稳态 phys_footprint 斜率 0.111 MiB/min（增长上限 1.0，负值=释放缓存不违规）；窗口内 2133.5 → 2139.9 MiB（增 6.4）
+STELLRUN: SL-C08 PASS 测量期间环境漂移 0 次违规（每 60s 复核；0 次才说明数据在合规环境取得）
+STELLRUN: SL-C09 PASS 测量段窗口暴露 1800/1800 个采样点（被遮挡/最小化时场景图降频，显示数据不可信）
+STELLRUN: SL-C10 PASS 测量段降级误报 0/1800 个采样点（0.000%，上限 1%）
+STELLRUN: SL-C11 PASS 稳态帧龄（11995 个 100ms 粒度样本）：mean 0.43 / p95 1.00 / p99 4.00 / max 107.00 ms（门槛 p95≤100）
+STELLRUN: SL-INFO 逐秒 CSV：/tmp/a6-longrun/full.csv（2700 行）
+STELLRUN: SL-INFO 逐帧上屏 CSV：/tmp/a6-longrun/full.frames.csv（116452 行）
+STELLRUN: VERDICT=FAIL

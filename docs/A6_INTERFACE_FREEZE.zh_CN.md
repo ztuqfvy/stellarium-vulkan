@@ -1,0 +1,439 @@
+# A6 接口冻结清单（QML 与 C++ 的公开面）
+
+> **本文件由 `tools/a6-interface-freeze.sh` 从头文件原文生成**，不要手工编辑。
+> 冻结含义见 `docs/A6_HANDOFF_FREEZE.zh_CN.md` §「冻结口径」。
+> 生成时间：2026-10-01 11:32:33 CST
+> 仓库 HEAD：97306ba
+
+---
+
+## 1. 数据面 / 命令面（`src/app/`）
+
+这一层是**计划二必须接过的东西**：QML 只通过它们与旧引擎对话。
+
+#### `ActionRouter`
+
+_头文件：`src/app/ActionRouter.hpp`_
+
+**QML 可调用方法（Q_INVOKABLE）**
+
+```
+bool trigger(const QString &actionId);
+bool isAvailable(const QString &actionId) const;
+QStringList actionIds() const;
+QString actionTitle(const QString &actionId) const;
+bool routeKey(int key, int modifiers);
+bool canDispatchToSky() const;
+bool isHostTakeover(const QString &actionId) const
+```
+
+#### `ISimPacing`
+
+_头文件：`src/app/AppFacade.hpp`_
+
+**QML 可见属性（Q_PROPERTY）**
+
+```
+bool simulationPaused READ simulationPaused WRITE setSimulationPaused NOTIFY simulationPausedChanged
+double timeRate READ timeRate WRITE setTimeRate NOTIFY timeRateChanged
+double fieldOfView READ fieldOfView WRITE setFieldOfView NOTIFY fieldOfViewChanged
+bool tracking READ isTracking NOTIFY trackingChanged
+QString trackedName READ trackedName NOTIFY trackingChanged
+QString lastLocateRefusal READ lastLocateRefusal NOTIFY lastLocateRefusalChanged
+// **必须是 Q_PROPERTY**：QML 绑定里写 `appFacade.lastTimeRefusal === "ok"` 时，
+QString lastTimeRefusal READ lastTimeRefusal NOTIFY lastTimeRefusalChanged
+//! **刻意不做 Q_PROPERTY**：JD 每帧都在变（HostDriven 帧泵），挂 NOTIFY
+double timeRate ...
+//! 刻意不写成 Q_PROPERTY：QML 侧用 `model: searchResults` 直接消费模型本体，
+//! **必须是 Q_PROPERTY**（同 lastTimeRefusal 的理由）：QML 绑定里写
+QString lastLocationRefusal READ lastLocationRefusal NOTIFY lastLocationRefusalChanged
+//! 开关本体是引擎 StelAction（连着各模块的 bool Q_PROPERTY），命令路径已经
+//! 为什么是"revision token"而不是每个开关一个 Q_PROPERTY：12 个开关是
+//! **固定清单**，若逐个 Q_PROPERTY 会把通知矩阵翻 12 倍；而 QML 绑定真正
+Q_PROPERTY(int displayTogglesRevision READ displayTogglesRevision NOTIFY
+Q_PROPERTY(double starRelativeScale READ starRelativeScale WRITE setStarRelativeScale
+Q_PROPERTY(double starAbsoluteScale READ starAbsoluteScale WRITE setStarAbsoluteScale
+Q_PROPERTY(double starMagnitudeLimit READ starMagnitudeLimit WRITE setStarMagnitudeLimit
+Q_PROPERTY(bool starMagnitudeLimitEnabled READ starMagnitudeLimitEnabled
+Q_PROPERTY(double lightPollutionLuminance READ lightPollutionLuminance
+double minFieldOfView READ minFieldOfView NOTIFY displayParametersChanged
+double maxFieldOfView READ maxFieldOfView NOTIFY displayParametersChanged
+QString projectionTypeKey READ projectionTypeKey NOTIFY displayParametersChanged
+QString projectionTypeName READ projectionTypeName NOTIFY displayParametersChanged
+double starRelativeScaleMin READ starRelativeScaleMin CONSTANT
+double starRelativeScaleMax READ starRelativeScaleMax CONSTANT
+double starAbsoluteScaleMin READ starAbsoluteScaleMin CONSTANT
+double starAbsoluteScaleMax READ starAbsoluteScaleMax CONSTANT
+double starMagnitudeLimitMin READ starMagnitudeLimitMin CONSTANT
+double starMagnitudeLimitMax READ starMagnitudeLimitMax CONSTANT
+double lightPollutionMin READ lightPollutionMin CONSTANT
+double lightPollutionMax READ lightPollutionMax CONSTANT
+//! 🔴 **必须是 Q_PROPERTY，不能是 Q_INVOKABLE**（T38-C DP-06 抓到的**产品缺陷**）：
+Q_PROPERTY(QStringList projectionTypeKeys READ projectionTypeKeys
+//! `unknown-projection`）。**必须是 Q_PROPERTY**（同 lastTimeRefusal 的理由：
+QString lastDisplayRefusal READ lastDisplayRefusal NOTIFY lastDisplayRefusalChanged
+//! Q_PROPERTY + NOTIFY，但 **T39-A 探针实测四条**决定了本层怎么写：
+Q_PROPERTY(int screenFontSize READ screenFontSize WRITE setScreenFontSize
+Q_PROPERTY(int guiFontSize READ guiFontSize WRITE setGuiFontSize
+Q_PROPERTY(double screenButtonScale READ screenButtonScale WRITE setScreenButtonScale
+double screenScale READ screenScale NOTIFY displayParametersChanged
+double guiScale READ guiScale NOTIFY displayParametersChanged
+Q_PROPERTY(double devicePixelsPerPixel READ devicePixelsPerPixel
+int screenFontSizeMin READ screenFontSizeMin CONSTANT
+int screenFontSizeMax READ screenFontSizeMax CONSTANT
+int guiFontSizeMin READ guiFontSizeMin CONSTANT
+int guiFontSizeMax READ guiFontSizeMax CONSTANT
+double screenButtonScaleMin READ screenButtonScaleMin CONSTANT
+double screenButtonScaleMax READ screenButtonScaleMax CONSTANT
+int screenFontSizeDefault READ screenFontSizeDefault CONSTANT
+```
+
+**QML 可调用方法（Q_INVOKABLE）**
+
+```
+//   只有它是属性才会拿到**字符串**并建立依赖；若只声明成 方法，
+double julianDay() const;
+double utcOffsetHours() const;
+QString localDateTimeText() const;
+QString utcDateTimeText() const;
+int localDateTimeField(int which) const;
+bool setJulianDay(double jd);
+bool setLocalDateTime(int y, int m, int d, int h, int min, int s);
+void setTimeNow();
+QString lastTimeRefusal() const { return m_timeRefusal; }
+QString timeRefusalText() const;
+double modifiedJulianDay() const;
+bool setModifiedJulianDay(double mjd);
+QString dateCalendarToken() const;
+QString dateCalendarText() const;
+QString timeZoneId() const;
+bool useCustomTimeZone() const;
+bool useDST() const;
+QStringList availableTimeZoneIds() const;
+bool setTimeZoneId(const QString &tz);
+void setUseCustomTimeZone(bool on);
+void setUseDST(bool on);
+QString timeRateText() const;
+QString timeDirection() const;
+void zoomIn();    //!< 视场 ×0.8
+void zoomOut();   //!< 视场 ×1.25
+void togglePause() { setSimulationPaused(!m_simulationPaused); }
+void wheelZoom(int dx, int dy, int modifiers);
+void pinchZoom(double scale);
+void skyMousePress(double x, double y, double viewportWidth,
+void skyMouseRelease(double x, double y, double viewportWidth,
+void skyMouseMove(double x, double y, double viewportWidth,
+int searchObjects(const QString &query, int maxItems = 20);
+bool selectSearchResult(int row);
+bool selectByStableId(const QString &stableId);
+void clearSelection();
+bool locateSelected(bool track = true);
+bool setTracking(bool on);
+void toggleTracking() { setTracking(!isTracking()); }
+QString locateRefusalText() const;
+QString locationName() const;
+QString locationId() const;
+double locationLatitude() const;
+double locationLongitude() const;
+double locationAltitudeMeters() const;
+QString locationPlanet() const;
+QString locationTimeZone() const;
+bool setLocationById(const QString &id);
+bool setLocationByCoordinates(double latitudeDeg, double longitudeDeg,
+//! 声明成 方法会读到**函数对象**，比较恒 false。
+QString lastLocationRefusal() const { return m_locationRefusal; }
+QString locationRefusalText() const;
+QStringList findLocations(const QString &query, int maxItems = 20) const;
+bool actionChecked(const QString &actionId) const;
+bool actionIsCheckable(const QString &actionId) const;
+QString actionText(const QString &actionId) const;
+//! 🔴 **必须是 Q_PROPERTY，不能是 **（T38-C DP-06 抓到的**产品缺陷**）：
+//!   ⚠️ 同族但**不同病**：T19 那个是"在绑定里读到函数对象、比较恒 false"
+QString projectionKeyName(const QString &key) const;
+bool setProjectionTypeKey(const QString &key);
+```
+
+#### `ErrorModel`
+
+_头文件：`src/app/ErrorModel.hpp`_
+
+**QML 可见属性（Q_PROPERTY）**
+
+```
+bool ready READ ready NOTIFY refreshed
+bool hasError READ hasError NOTIFY refreshed
+QString errorHeadline READ errorHeadline NOTIFY refreshed
+QString errorDetail READ errorDetail NOTIFY refreshed
+QString errorHint READ errorHint NOTIFY refreshed
+QVariantList statusRows READ statusRows NOTIFY refreshed
+int statusProblemCount READ statusProblemCount NOTIFY refreshed
+QVariantList pathRows READ pathRows NOTIFY refreshed
+int pathProblemCount READ pathProblemCount NOTIFY refreshed
+QVariantList unsupportedRows READ unsupportedRows NOTIFY refreshed
+int unsupportedCount READ unsupportedCount NOTIFY refreshed
+QString appName READ appName CONSTANT
+QString fullVersion READ fullVersion CONSTANT
+QString logPath READ logPath NOTIFY refreshed
+QString configPath READ configPath NOTIFY refreshed
+QString userDir READ userDir NOTIFY refreshed
+```
+
+**QML 可调用方法（Q_INVOKABLE）**
+
+```
+void refresh();
+bool openPath(const QString &kind);
+QString buildDiagnostics() const;
+bool copyDiagnostics();
+```
+
+#### `QQuickWindow`
+
+_头文件：`src/app/FrameCompare.hpp`_
+
+（无 QML 可见面：纯 C++ 内部类）
+
+#### `HelpModel`
+
+_头文件：`src/app/HelpModel.hpp`_
+
+**QML 可见属性（Q_PROPERTY）**
+
+```
+QVariantList gestures READ gestures NOTIFY contentChanged
+int gestureCount READ gestureCount NOTIFY contentChanged
+int legacyGestureCount READ legacyGestureCount NOTIFY contentChanged
+QVariantList webLinks READ webLinks NOTIFY contentChanged
+QVariantList versionRows READ versionRows NOTIFY contentChanged
+QVariantList systemRows READ systemRows NOTIFY contentChanged
+QStringList contributors READ contributors NOTIFY contentChanged
+int contributorCount READ contributorCount NOTIFY contentChanged
+QString appName READ appName NOTIFY contentChanged
+QString fullVersion READ fullVersion NOTIFY contentChanged
+QString copyrightText READ copyrightText NOTIFY contentChanged
+bool ready READ ready NOTIFY contentChanged
+QString licenseText READ licenseText NOTIFY licenseChanged
+bool licenseLoaded READ licenseLoaded NOTIFY licenseChanged
+QString licenseError READ licenseError NOTIFY licenseChanged
+int licenseLineCount READ licenseLineCount NOTIFY licenseChanged
+QString licenseResourcePath READ licenseResourcePath NOTIFY licenseChanged
+```
+
+**QML 可调用方法（Q_INVOKABLE）**
+
+```
+void refresh();
+bool openExternal(const QString &url);
+bool isAllowedExternalUrl(const QString &url) const;
+bool loadLicense();
+```
+
+#### `ObjectInfoModel`
+
+_头文件：`src/app/ObjectInfoModel.hpp`_
+
+**QML 可见属性（Q_PROPERTY）**
+
+```
+bool hasSelection READ hasSelection NOTIFY selectionChanged
+QString displayName READ displayName NOTIFY selectionChanged
+QString englishName READ englishName NOTIFY selectionChanged
+QString objectType READ objectType NOTIFY selectionChanged
+QString typeName READ typeName NOTIFY selectionChanged
+QString stableId READ stableId NOTIFY selectionChanged
+QString infoText READ infoText NOTIFY selectionChanged
+QVariantMap infoMap READ infoMap NOTIFY selectionChanged
+bool engineReady READ engineReady NOTIFY engineReadyChanged
+```
+
+**QML 可调用方法（Q_INVOKABLE）**
+
+```
+bool refresh();
+bool selectByStableId(const QString &stableId);
+void clearSelection();
+```
+
+#### `PinyinIndex`
+
+_头文件：`src/app/PinyinIndex.hpp`_
+
+（无 QML 可见面：纯 C++ 内部类）
+
+#### `SearchRanker`
+
+_头文件：`src/app/SearchRanker.hpp`_
+
+（无 QML 可见面：纯 C++ 内部类）
+
+#### `SearchResultsModel`
+
+_头文件：`src/app/SearchResultsModel.hpp`_
+
+**QML 可见属性（Q_PROPERTY）**
+
+```
+bool searching READ searching NOTIFY searchingChanged
+int count READ count NOTIFY countChanged
+QString lastQuery READ lastQuery NOTIFY lastQueryChanged
+QString emptyReason READ emptyReason NOTIFY emptyReasonChanged
+```
+
+**QML 可调用方法（Q_INVOKABLE）**
+
+```
+quint32 search(const QString &query, int maxItems = 20);
+void clear();
+QString stableIdAt(int row) const;
+QString nameAt(int row) const;
+QString englishNameAt(int row) const;
+QString typeNameAt(int row) const;
+```
+
+#### `ShortcutModel`
+
+_头文件：`src/app/ShortcutModel.hpp`_
+
+**QML 可见属性（Q_PROPERTY）**
+
+```
+QString filter READ filter WRITE setFilter NOTIFY filterChanged
+int count READ count NOTIFY countChanged
+int totalCount READ totalCount NOTIFY countChanged
+int conflictCount READ conflictCount NOTIFY conflictCountChanged
+int customizedCount READ customizedCount NOTIFY countChanged
+QString statusText READ statusText NOTIFY statusTextChanged
+bool statusOk READ statusOk NOTIFY statusTextChanged
+bool engineReady READ engineReady NOTIFY countChanged
+```
+
+**QML 可调用方法（Q_INVOKABLE）**
+
+```
+QString keySequenceFromEvent(int key, int modifiers) const;
+bool isModifierKey(int key) const;
+bool isValidKeySequence(const QString &seq) const;
+QString normalizeKeySequence(const QString &seq) const;
+QString groupTitle(const QString &groupKey) const;
+bool setKey(int row, int which, const QString &seq);
+bool restoreDefault(int row);
+bool restoreAll();
+void refresh();
+bool rowCustomized(int row) const;
+QString rowActionId(int row) const;
+```
+
+---
+
+## 2. 渲染/宿主面（`src/ui/quick/`）
+
+这一层把帧邮箱接到 Qt Quick 场景图。**计划二会把它换掉**（改为原生 Vulkan 天空），
+因此冻结的重点是它**对外**暴露了什么（页面协议），而不是内部实现。
+
+#### `FrameMailbox`
+
+_头文件：`src/ui/quick/BackendInfo.hpp`_
+
+**QML 可见属性（Q_PROPERTY）**
+
+```
+QString deviceName READ deviceName CONSTANT
+QString vulkanVersion READ vulkanVersion CONSTANT
+QString driverVersion READ driverVersion CONSTANT
+QString probeError READ probeError CONSTANT
+bool portabilityDriver READ portabilityDriver CONSTANT
+QString runtimeApiName READ runtimeApiName NOTIFY runtimeApiNameChanged
+bool backendOk READ backendOk NOTIFY backendOkChanged
+bool tbTokenBindingOff READ tbTokenBindingOff CONSTANT
+bool tbClickOff READ tbClickOff CONSTANT
+bool tbLayoutBreak READ tbLayoutBreak CONSTANT
+bool nightEffectOff READ nightEffectOff CONSTANT
+quint64 frameNumber READ frameNumber NOTIFY refreshed
+quint64 framesPublished READ framesPublished NOTIFY refreshed
+quint64 framesDropped READ framesDropped NOTIFY refreshed
+quint64 framesLeased READ framesLeased NOTIFY refreshed
+int completeSlots READ completeSlots NOTIFY refreshed
+int slotCapacity READ slotCapacity NOTIFY refreshed
+int readersHeld READ readersHeld NOTIFY refreshed
+qint64 latestFrameAgeMs READ latestFrameAgeMs NOTIFY refreshed
+qint64 bytesPerFrame READ bytesPerFrame NOTIFY refreshed
+quint32 sizeGeneration READ sizeGeneration NOTIFY refreshed
+bool runtimeDiagAvailable READ runtimeDiagAvailable NOTIFY refreshed
+```
+
+**QML 可调用方法（Q_INVOKABLE）**
+
+```
+void refresh();
+```
+
+#### `QSGImageNode`
+
+_头文件：`src/ui/quick/SkyViewport.hpp`_
+
+**QML 可见属性（Q_PROPERTY）**
+
+```
+QString backend READ backend NOTIFY backendChanged
+bool ready READ ready NOTIFY readyChanged
+QString errorMessage READ errorMessage NOTIFY backendFailed
+quint32 viewportGeneration READ viewportGeneration NOTIFY viewportGenerationChanged
+quint64 displayedFrameNumber READ displayedFrameNumber NOTIFY displayedFrameNumberChanged
+double displayedFps READ displayedFps NOTIFY statsChanged
+bool degraded READ degraded NOTIFY degradedChanged
+Q_PROPERTY(qreal degradeThreshold READ degradeThreshold WRITE setDegradeThreshold
+quint64 uploadCount READ uploadCount NOTIFY statsChanged
+qreal uploadMeanMs READ uploadMeanMs NOTIFY statsChanged
+qreal uploadMaxMs READ uploadMaxMs NOTIFY statsChanged
+```
+
+---
+
+## 3. 注入 QML 的上下文属性（页面协议的实际入口）
+
+来自 `src/ui/main.cpp` 的 `setContextProperty` / `qmlRegisterType`。
+**B 阶段不得改这些名字与语义**（契约第 7 条：预留通道，不改页面协议）。
+
+```
+engine.rootContext()->setContextProperty(QStringLiteral("ActionRouter"), &actionRouter);
+engine.rootContext()->setContextProperty(QStringLiteral("ErrorModel"), &errorModel);
+engine.rootContext()->setContextProperty(QStringLiteral("HelpModel"), &helpModel);
+engine.rootContext()->setContextProperty(QStringLiteral("ShortcutModel"), &shortcutModel);
+engine.rootContext()->setContextProperty(QStringLiteral("appFacade"), &appFacade);
+engine.rootContext()->setContextProperty(QStringLiteral("objectInfo"),
+engine.rootContext()->setContextProperty(QStringLiteral("searchResults"),
+qmlRegisterType<stelapp::SkyViewport>("StelQuickUI", 1, 0, "SkyViewport");
+```
+
+---
+
+## 4. QML 文件清单（页面协议的消费侧）
+
+```
+AboutPage.qml
+DiagnosticPage.qml
+DisplayPage.qml
+ErrorPage.qml
+HelpPage.qml
+LocationPage.qml
+MainWindow.qml
+SearchPage.qml
+ShortcutsPage.qml
+SkyTestPage.qml
+TimePage.qml
+Toolbar.qml
+```
+
+---
+
+## 5. 硬性禁区自查（编码规范 §5，违反即打回）
+
+CI 化的 grep 门禁要查三条：`src/app/` 头文件无 GL/Vulkan 类型；
+`src/ui/qml/` 无 GL/Vulkan 调用；QML 不持旧引擎裸指针。本脚本给出**当前实测**：
+
+```
+── src/app/*.hpp 里出现 GL/Vulkan 记号的行（应为 0）：
+(0 行)
+── src/ui/qml/*.qml 里出现 GL/Vulkan 记号的行（应为 0）：
+(0 行)
+```
