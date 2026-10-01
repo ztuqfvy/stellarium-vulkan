@@ -1,0 +1,9 @@
+Q-WIN 窗口交互回归（Vulkan 验收形态）  2026-10-01 21:19:51
+二进制：42671128 B  md5=4cf585dd6f9aabd038dd39b378422b20
+环境门：预检截图 /tmp/qwin-preflight-91150.png（异常时人工查看全屏遮挡 —— 见陷阱 93）
+环境门：屏保 idleTime=0｜负载 2.37 2.80 2.73
+负控：三档 × Metal 后端（预期 none 也 PASS ⇒ 证「必须 Vulkan」这条归因）
+  ✓ NEG 后端判别：Metal + none ⇒ rc=0 VERDICT=PASS（期望 PASS ⇒ 证明该 workaround 在 Metal 路径上不参与）
+
+──────── Q-WIN 判据 （负控）1/1 ────────
+QWIN VERDICT=PASS

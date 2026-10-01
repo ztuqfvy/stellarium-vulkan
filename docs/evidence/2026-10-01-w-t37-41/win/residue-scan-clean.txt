@@ -1,0 +1,151 @@
+=== win-residue-scan.ps1  mode=CLEAN  stagedir=C:\temp ===
+  -Match        = t37w-*, wt37-*, wt37-41-*, wtcleanup.ps1, wt-cleanup-report.txt
+  -HistoryMatch = t*w-*, wt*-*, win-suites.ps1, win-longrun.ps1, judge-diag.ps1, t17-win-*, t18-win-*, t20-win-*, t33wneg-*
+
+--- 1. scheduled tasks (Stel*) ---
+  none
+
+--- 2. leftover processes (stel*) ---
+  none
+
+--- 3. staging dir inventory (
+  total = 115   this round = 11   earlier rounds = 86   not ours = 18
+  [this round -- WILL BE REMOVED]
+    DIR  t37w-suites
+    FILE t37w-build-manifest.txt
+    FILE t37w-build.log
+    FILE t37w-build.rc
+    FILE t37w-launch.err.txt
+    FILE t37w-launch.log
+    FILE t37w-launch.out.txt
+    FILE wt-cleanup-report.txt
+    FILE wt37-src.tgz
+    FILE wt37-src2.tgz
+    FILE wtcleanup.ps1
+  [earlier rounds -- REPORTED ONLY, never removed by this script]
+    DIR  t29w-dyn-suites  09/29/2026 13:09:02
+    DIR  t29w-suites  09/29/2026 12:19:31
+    DIR  t29w-suites-round1  09/29/2026 12:02:59
+    DIR  t30w-suites  09/29/2026 16:34:35
+    DIR  t31w-diag-keep  09/29/2026 18:57:40
+    DIR  t31w-suites  09/29/2026 19:09:40
+    DIR  t31w-suites-round3  09/29/2026 18:46:46
+    DIR  t32w-suites  09/29/2026 19:46:44
+    DIR  t33w-suites  09/29/2026 22:33:26
+    DIR  t33w-suites-before  09/29/2026 22:21:08
+    DIR  t33wneg-suites  09/29/2026 22:40:01
+    DIR  t35w-suites  09/30/2026 12:58:59
+    FILE judge-diag.ps1  09/30/2026 12:39:36
+    FILE t17-win-build.log  09/24/2026 12:11:02
+    FILE t17-win-build.rc  09/24/2026 12:11:02
+    FILE t18-win-30min.csv  09/24/2026 13:01:45
+    FILE t18-win-30min.csv.frames.csv  09/24/2026 13:01:45
+    FILE t18-win-30min.rc.txt  09/24/2026 13:01:45
+    FILE t18-win-30min.txt  09/24/2026 13:01:45
+    FILE t18-win-longrun.ps1  09/24/2026 12:15:39
+    FILE t20-win-build.log  09/28/2026 16:46:00
+    FILE t20-win-build.rc  09/28/2026 16:46:00
+    FILE t29w-build-manifest.txt  09/29/2026 12:14:03
+    FILE t29w-build.log  09/29/2026 12:14:03
+    FILE t29w-build.rc  09/29/2026 12:14:03
+    FILE t29w-pull.log  09/29/2026 13:14:15
+    FILE t29w-pull.ps1  09/29/2026 13:13:59
+    FILE t29w-pull2.log  09/29/2026 12:13:38
+    FILE t29w-win-30min.csv  09/29/2026 13:05:34
+    FILE t29w-win-30min.csv.frames.csv  09/29/2026 13:05:34
+    FILE t29w-win-30min.err.txt  09/29/2026 12:46:45
+    FILE t29w-win-30min.head.txt  09/29/2026 13:05:35
+    FILE t29w-win-30min.out.txt  09/29/2026 13:05:35
+    FILE t29w-win-30min.rc.txt  09/29/2026 13:05:35
+    FILE t29w-win-suites-v2.ps1  09/29/2026 12:43:06
+    FILE t29w-win-suites-v3.ps1  09/29/2026 12:43:33
+    FILE t29w-win-suites.ps1  09/29/2026 13:07:00
+    FILE t30w-build-manifest.txt  09/29/2026 16:23:10
+    FILE t30w-build.log  09/29/2026 16:23:10
+    FILE t30w-build.rc  09/29/2026 16:23:09
+    FILE t30w-pull.log  09/29/2026 16:27:57
+    FILE t31w-build-manifest.txt  09/29/2026 18:14:17
+    FILE t31w-build.log  09/29/2026 18:14:17
+    FILE t31w-build.rc  09/29/2026 18:14:17
+    FILE t31w-diag.ps1  09/29/2026 18:00:16
+    FILE t31w-full.cmd  09/29/2026 18:59:52
+    FILE t31w-negdiag.cmd  09/29/2026 18:50:04
+    FILE t31w-parse.ps1  09/29/2026 17:49:40
+    FILE t31w-pull.log  09/29/2026 18:13:45
+    FILE t31w-pull.ps1  09/29/2026 17:49:02
+    FILE t31w-repro.ps1  09/29/2026 18:48:35
+    FILE t31w-suites.ps1  09/29/2026 19:01:07
+    FILE t32w-build-manifest.txt  09/29/2026 19:31:32
+    FILE t32w-build.log  09/29/2026 19:31:32
+    FILE t32w-build.rc  09/29/2026 19:31:32
+    FILE t32w-full.cmd  09/29/2026 19:37:51
+    FILE t32w-full.log  09/29/2026 19:46:56
+    FILE t32w-probe.cmd  09/29/2026 19:34:59
+    FILE t32w-probe.log  09/29/2026 19:35:14
+    FILE t33w-build-manifest.txt  09/29/2026 22:21:36
+    FILE t33w-build.log  09/29/2026 22:21:36
+    FILE t33w-build.rc  09/29/2026 22:21:36
+    FILE t33w-launch.log  09/29/2026 22:33:36
+    FILE t35w-build-manifest.txt  09/30/2026 12:26:44
+    FILE t35w-build.log  09/30/2026 12:26:44
+    FILE t35w-build.rc  09/30/2026 12:26:44
+    FILE t35w-launch.log  09/30/2026 12:59:10
+    FILE t35w-pull.log  09/30/2026 12:20:35
+    FILE win-longrun.ps1  09/29/2026 11:53:46
+    FILE win-suites.ps1  09/29/2026 12:30:52
+    FILE wt32-build.ps1  09/29/2026 19:29:05
+    FILE wt32-pull.ps1  09/29/2026 19:29:05
+    FILE wt32-suites.ps1  09/29/2026 19:34:15
+    FILE wt33-build.ps1  09/29/2026 22:02:20
+    FILE wt33-launch.ps1  09/29/2026 22:08:20
+    FILE wt33-pull.ps1  09/29/2026 21:47:47
+    FILE wt33-suites.ps1  09/29/2026 22:21:17
+    FILE wt35-build.ps1  09/30/2026 12:19:46
+    FILE wt35-filelist.txt  09/30/2026 12:17:45
+    FILE wt35-launch.ps1  09/30/2026 12:21:09
+    FILE wt35-pull.ps1  09/30/2026 12:19:44
+    FILE wt35-srclist.ps1  09/30/2026 12:18:09
+    FILE wt35-srclist2.ps1  09/30/2026 12:19:19
+    FILE wt35-suites.ps1  09/30/2026 12:45:07
+    FILE wt35-win-md5.txt  09/30/2026 12:18:10
+    FILE wt35-win-objhash.txt  09/30/2026 12:20:19
+  [not matched by any project pattern -- LEFT ALONE]
+    FILE build.ps1
+    FILE cjpm_err.txt
+    FILE cjpm_out.txt
+    FILE err2.txt
+    FILE out2.txt
+    FILE probe.out
+    FILE pull.ps1
+    FILE pull2.ps1
+    FILE tang_err.txt
+    FILE tang_err2.txt
+    FILE tang_err3.txt
+    FILE tang_err4.txt
+    FILE tang_out.txt
+    FILE tang_out2.txt
+    FILE tang_out3.txt
+    FILE tang_out4.txt
+    FILE tang_run.txt
+    FILE win-residue-scan.ps1
+
+--- 4. removal (this round only) ---
+  removed t37w-suites
+  removed t37w-build-manifest.txt
+  removed t37w-build.log
+  removed t37w-build.rc
+  removed t37w-launch.err.txt
+  removed t37w-launch.log
+  removed t37w-launch.out.txt
+  removed wt-cleanup-report.txt
+  removed wt37-src.tgz
+  removed wt37-src2.tgz
+  removed wtcleanup.ps1
+
+--- 5. after ---
+  staging items now = 104   this-round artifacts remaining = 0
+  StelQC_* tasks remaining = 0
+  stel* processes remaining = 0
+  RESIDUE-VERDICT = CLEAN
+
+SCAN-DONE

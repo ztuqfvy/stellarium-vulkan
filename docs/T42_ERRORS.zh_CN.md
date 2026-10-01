@@ -99,4 +99,6 @@ T41 只接管 6 个有 QML 页的动作，F2/F10/F12 刻意不接管（无对应
 
 ## 8. 下一步
 
-A-1.0 全部格子与 A5 清零 ⇒ **A6（回归与交接、接口冻结）**。移交项不变：T37-X4（冻结期 fader 停摆）、T37-X1（夜视翻转 5 按钮重绘）、`NightModeCheck` 噪声口径、T33 `findLocations` 排序、W-T37..W-T41 Windows 复验、`LOC-04(b)` 帧延迟量化。
+A-1.0 全部格子与 A5 清零 ⇒ **A6（回归与交接、接口冻结）**。移交项不变：T37-X4（冻结期 fader 停摆）、T37-X1（夜视翻转 5 按钮重绘）、`NightModeCheck` 噪声口径、T33 `findLocations` 排序、`LOC-04(b)` 帧延迟量化。
+（~~W-T37..W-T41 Windows 复验~~ —— ✅ **已完成**（2026-10-01「尾巴攻坚」，
+见 `docs/WT37_41_WINDOWS_VERIFY.zh_CN.md`）；~~Q-WIN-01..06~~ 亦已恢复进回归。）

@@ -1,0 +1,3 @@
+wt37-41-launch.ps1 : suite=C:\temp\wt37-41-suites.ps1  at 2026-10-01T22:10:57.8456957+08:00
+launcher child output: C:\temp\t37w-launch.out.txt (stdout) / C:\temp\t37w-launch.err.txt (stderr)  -- raw bytes, no transcoding
+launcher exit=8

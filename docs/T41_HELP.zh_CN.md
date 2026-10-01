@@ -189,5 +189,8 @@ SC-14 交互腿的路径，与 T40 把 `hidpicheck` 纳入回归同理）是最�
 ## 9. 下一步
 
 **T42 错误页 + "未支持项"清单**（A-1.0 最后一格）→ A6（回归与交接、接口冻结）。
-待排期：W-T37/T38/T39/T40 Windows 复验、`LOC-04(b)` 帧延迟量化、T37-X1/X4、
-`NightModeCheck` 噪声口径、T33 `findLocations` 排序。
+待排期：`LOC-04(b)` 帧延迟量化、T37-X1/X4、`NightModeCheck` 噪声口径、T33 `findLocations` 排序。
+（W-T37/T38/T39/T40/**T41** Windows 复验 —— ✅ **已完成**（2026-10-01，
+见 `docs/WT37_41_WINDOWS_VERIFY.zh_CN.md`）：`HELPCHECK 17/17 PASS ×2`，两组负控红项
+`{HC-14,15,16}` / `{HC-04,13}` **与 mac 逐位一致**；判据侧修掉两条 Windows 假红
+（`HC-05` MSVC `__FILE__` 反斜杠、`HC-13` CRLF 行尾，TRAPS 116/117）—— **修的是仪器**。）

@@ -1,0 +1,22 @@
+环境：21:16  up 6 days, 23 hrs, 1 user, load averages: 3.76 3.06 2.80
+环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
+二进制：42671128 B  2026-10-01 17:52 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=4cf585dd6f9aabd038dd39b378422b20
+config 零污染门：起跑 md5=56d81fbf29583c2ce58b912f6d747d9f
+二进制 md5=4cf585dd6f9aabd038dd39b378422b20
+──────── #159 Q-WIN-01..06 窗口交互回归（Vulkan 验收形态）────────
+  ✓ QW-01 放大 24 步：rc=0（须 0）
+  ✓ QW-02 缩小 24 步：maxStallMs=46 maxResizeMs=43（门 250ms）
+  ✓ QW-03 隐藏/显示 ×3：阶段 1/2 完成=1/1，maxResizeMs=43（门 250ms）
+  ✓ QW-04 帧间隔连续：maxFrameGapMs=60（门 250ms）｜VERDICT=PASS
+  ✓ QW-05 启停开销：rc=0 wall=5.73s（5s 目标，额外开销须 ≤1s）
+  ✓ QW-06 三档（none 复现故障 ∧ transaction-off PASS ∧ basic-loop 两轮一致）
+──────── Q-WIN 判据 6/6 ────────
+QWIN VERDICT=PASS
+  ✓ Q-WIN-01..06 正题 6/6
+  ✓ NEG 后端判别：Metal + none ⇒ rc=0 VERDICT=PASS（期望 PASS ⇒ 证明该 workaround 在 Metal 路径上不参与）
+──────── Q-WIN 判据 （负控）1/1 ────────
+QWIN VERDICT=PASS
+  ✓ Q-WIN 负控（证「必须 Vulkan」的判别力）
+config 零污染门：✅ 前后一致（56d81fbf29583c2ce58b912f6d747d9f）
+残留进程自查：0 个 stelQuickUI
+════════ SCRIPT-RC=0  FAILED=0  PASS=2 ════════

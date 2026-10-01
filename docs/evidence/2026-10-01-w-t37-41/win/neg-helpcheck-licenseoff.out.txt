@@ -1,0 +1,41 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+CONFIGISO: original=C:\Users\ztuqfvy\AppData\Roaming\Stellarium
+CONFIGISO: personal=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=���˰�Ŀ¼�Ѵ��� config.ini���������֣��û��Ĺ���ֵ���ȣ�
+CONFIGISO: configHealth severity=1 status=0 bytes=27063 keys=479 repaired=0 backup=(none) text=������479 ����
+CONFIGISO: config=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick/config.ini
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461315.09586，时钟=HostDriven）
+HELPCHECK: 帮助/版本/许可证自检：判据 15/17
+HELPCHECK: 布场：配置 C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick/config.ini（479 键）｜可见顶层 StelMainView｜versionRows 9 行｜贡献者 245｜手势 23（legacy 10）｜接管 10 个｜判据步延迟 2500ms
+HELPCHECK: [PASS] HC-01 版本行：9 行｜完整版本「26.1.274-cf738bb [main]」== StelUtils｜Git 修订一致｜applicationVersion「」≠ 完整版本（源分离）
+HELPCHECK: [PASS] HC-02 系统行：6 行｜OS「Windows 10 Version 22H2」｜Qt 编译期==运行期==6.11.2
+HELPCHECK: [PASS] HC-03 贡献者：245（原表 246）｜无重复｜首项「adalava」（大小写不敏感排序）｜非 ASCII 名在场
+HELPCHECK: [FAIL] HC-04 许可证内容：loaded=0｜0 行｜含 GPL 标题与 Version 2
+HELPCHECK: [PASS] HC-05 许可证资源：:/StelQuickUI/COPYING｜md5 == 磁盘 COPYING（一致）
+HELPCHECK: [PASS] HC-06 手势表：23 条（sky 13 + legacy 10）｜scope 全合法
+HELPCHECK: [PASS] HC-07 外链：7 条全 https｜白名单内放行｜表外 URL 必拒
+HELPCHECK: [PASS] HC-08 键名平台化：至少一条含 NativeText 修饰键「Ctrl+」（键名由 C++ 生成的物证）
+HELPCHECK: [PASS] HC-09 导航按钮：navHelpButton/navAboutButton 在场｜原有 8 个导航按钮一个不少
+HELPCHECK: 切页：真实点击 navHelpButton ⇒ pageStack.currentIndex=7
+HELPCHECK: [PASS] HC-10 帮助页控件：手势行 23/23｜外链行 7/7｜可见 legacy 标记 10/10｜跳转按钮与摘要在场
+HELPCHECK: [PASS] HC-11 跳转快捷键页：点击后 index=6（期望 6）｜点回帮助 index=7（期望 7）
+HELPCHECK: 切页：真实点击 navAboutButton ⇒ pageStack.currentIndex=8
+HELPCHECK: [PASS] HC-12 关于页控件：版本行 9/9｜系统行 6/6｜贡献者 delegate 8 条、首条「1.  adalava」
+HELPCHECK: HC-13 预滚：滚动了（contentY → 459）
+HELPCHECK: [FAIL] HC-13 许可证端到端：Dialog visible=1｜UI 文本 0 字符 vs 数据面 0 字符（归一化行尾后不一致）
+HELPCHECK: [PASS] HC-14 接管表：10 个 == 预期 10（T42 后全量，actionShow_AstroCalc_Window_Global,actionShow_Configuration_Window_Global,actionShow_DateTime_Window_Global,actionShow_Help_Window_Global,actionShow_Location_Window_Global,actionShow_ObsList_Window_Global,actionShow_ScriptConsole_Window_Global,actionShow_Search_Window_Global,actionShow_Shortcuts_Window_Global,actionShow_SkyView_Window_Global）｜T42 四动作（F2/F10/F12/⌥B）已接管=1
+HELPCHECK: 切页：真实点击 navSkyButton ⇒ pageStack.currentIndex=1
+HELPCHECK: [PASS] HC-15 接管生效（trigger）：triggered=1｜hostActionRequested Δ=1（0→1）｜index=7｜QWidget 11→11（Δ0，应为 0）
+HELPCHECK: [PASS] HC-15 判别对照：撤销接管后 trigger ⇒ QWidget 11→57（Δ46>0，老对话框真的弹出）⇒ 正题的 Δ=0 是接管的功劳；已关对话框并恢复接管
+HELPCHECK: [PASS] HC-16 键盘路径：routeKey(F1) 命中=1｜hostActionRequested Δ=1（1→2）｜index=7｜QWidget Δ=0（应为 0）
+HELPCHECK: [PASS] HC-17 复原：配置指纹差异 0（应为 0，本自检全程只读）｜可见顶层回基线（基线 StelMainView）
+HELPCHECK: VERDICT=FAIL

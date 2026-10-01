@@ -241,8 +241,9 @@ A5 余下：
   NC-05 的有界容忍来源）⇒ 疑 fader dt 取自被冻结时钟或宿主 update 调度问题；
 - **T37-X1**：夜视翻转引起 5 个工具栏按钮重绘（疑 T34 绑定首算 race）—— 功能
   正确、纯性能线索；
-- **Windows 复验（W-T37）**：待排期。T33/W-T35 已证明跨平台复验能逼出真缺陷
-  （`flagUseCTZ` 判据前提只在用户 config 里成立，TRAPS 44）。
+- **Windows 复验（W-T37）**：✅ **已完成**（2026-10-01，见 `docs/WT37_41_WINDOWS_VERIFY.zh_CN.md`）
+  —— `NIGHTCHECK 6/6 PASS ×2`、负控 `EFF_OFF` 红项 `{NC-03②}` 与 mac 逐位一致，
+  **零跨平台差异**（T39 的 `HP-00` 是唯一 FINDING，与夜视无关）。
 
 ---
 

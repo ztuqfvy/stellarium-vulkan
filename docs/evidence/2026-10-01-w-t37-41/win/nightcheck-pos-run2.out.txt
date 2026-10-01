@@ -1,0 +1,53 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+CONFIGISO: original=C:\Users\ztuqfvy\AppData\Roaming\Stellarium
+CONFIGISO: personal=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=���˰�Ŀ¼�Ѵ��� config.ini���������֣��û��Ĺ���ֵ���ȣ�
+CONFIGISO: configHealth severity=1 status=0 bytes=27063 keys=479 repaired=0 backup=(none) text=������479 ����
+CONFIGISO: config=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick/config.ini
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461315.09134，时钟=HostDriven）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+LIVESKY: simScale -> 1.000（引擎仿真时钟）
+NIGHTCHECK: 夜视自检：判据 6/6
+NIGHTCHECK:   初值：夜视=0 对照量(actionShow_Constellation_Lines)=0 大气=1；已冻结仿真 + 对照量置关 + **大气置关**（隔离引擎夜视反应里的『大气层退场』项，NC-03① 的前提）
+NIGHTCHECK:   T37-X2 冻结静置 #0：帧号=125 JD=2461315.091338 非黑=0.9930 哈希=34a683ca33326a99（首采定基）
+NIGHTCHECK:   T37-X2 冻结静置 #1：帧号=140 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   T37-X2 冻结静置 #2：帧号=156 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   T37-X2 冻结静置 #3：帧号=171 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   T37-X2 冻结静置 #4：帧号=187 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   T37-X2 冻结静置 #5：帧号=201 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   参考帧A 上游：有效 帧号=217 尺寸=1280x720 非黑=0.9930 哈希=34a683ca33326a99
+NIGHTCHECK:   参考帧A 下游：有效 帧号=—（下游无帧号概念） 尺寸=960x640 非黑=0.9951 哈希=e26e62760d9f234a  视口矩形=(0,100)-(959,639)
+NIGHTCHECK:   NC-02 读数：上游 [差异像素=0（逐位相同，哈希相同）]；下游 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   [PASS] NC-02 噪声底低于容差（占比<0.1% ∧ 通道差≤2；实测上游 0.029%/Δ1、下游 0.019%/Δ1 —— 引擎渲染在冻结下有亚 LSB 抖动）—— 后续像素判据的口径有效
+NIGHTCHECK:   [PASS] NC-01(开) trigger(actionShow_Night_Mode) ⇒ executed=1 引擎 getter 0→1（getter 独立回读，非 actionChecked 复述）
+NIGHTCHECK:   T37-X2 夜视翻转后 #6：帧号=263 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   T37-X2 夜视翻转后 #7：帧号=279 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   T37-X2 夜视翻转后 #8：帧号=294 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   T37-X2 夜视翻转后 #9：帧号=309 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   T37-X2 夜视翻转后 #10：帧号=325 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   T37-X2 夜视翻转后 #11：帧号=340 JD=2461315.091338 非黑=0.9930 vs首采 [差异像素=0（逐位相同，哈希相同）]
+NIGHTCHECK:   NC-03 读数：上游 [差异像素=0（逐位相同，哈希相同）]；下游视口内 [差异像素=515575/518400（99.455%） 最大通道差=255 平均通道差=10.2239 哈希不同 包围盒=(0,100)-(959,639) 高度8带=65280/64320/65280/64281/64370/62607/65117/64320]
+NIGHTCHECK:   [PASS] NC-03① 上游引擎帧低于噪声容差（夜视是 Qt Quick 侧实现，引擎渲染路径未被触碰）
+NIGHTCHECK:   [PASS] NC-03② 下游视口内差异像素比例=0.9946（门 0.90）平均通道差=10.22（门 1.0）—— 效果真的生效了（伪证守门 = NC-03①）
+NIGHTCHECK:   判别对照量 actionShow_Constellation_Lines 已置开（原值 0）；**夜视仍保持开启**
+NIGHTCHECK:   NC-04 读数：对照 OFF↔ON 上游 [差异像素=8624/921600（0.936%） 最大通道差=130 平均通道差=0.5741 哈希不同 包围盒=(0,0)-(1279,453) 高度8带=1712/1739/2036/2111/1019/7/0/0]
+NIGHTCHECK:   [PASS] NC-04 判别对照：同一方法对 actionShow_Constellation_Lines 开关测出**超出噪声容差**的差异（差异像素=8624，占比 0.0094 ≥ 门 0.0010）—— 证明比较方法活着，NC-03① 不是假绿
+NIGHTCHECK:   写入步：对照量还原=1 夜视还原（getter 现值 0）
+NIGHTCHECK:   NC-05 读数：复原帧上游 [有效 帧号=492 尺寸=1280x720 非黑=0.9930 哈希=8fe8f9f6d838b533]
+NIGHTCHECK:   NC-05 定位：复原帧上游 vs 参考帧B [差异像素=7250/921600（0.787%） 最大通道差=5 平均通道差=0.0136 哈希不同 包围盒=(0,0)-(1279,453) 高度8带=1484/1461/1730/1731/840/4/0/0]
+NIGHTCHECK:   NC-05 定位：复原帧上游 vs 对照ON帧 [差异像素=8622/921600（0.936%） 最大通道差=127 平均通道差=0.5607 哈希不同 包围盒=(0,0)-(1279,453) 高度8带=1712/1739/2036/2109/1019/7/0/0]
+NIGHTCHECK:   NC-05 定位：对照量现值=0（期望 0） 夜视现值=0（期望 0）
+NIGHTCHECK:   NC-05 读数：复原帧下游 [有效 帧号=—（下游无帧号概念） 尺寸=960x640 非黑=0.9951 哈希=bb2ab803b170ba27]
+NIGHTCHECK:   NC-05 读数：复原帧 vs 参考帧B（视口内）[差异像素=5077/518400（0.979%） 最大通道差=4 平均通道差=0.0134 哈希不同 包围盒=(0,100)-(959,436) 高度8带=1037/1031/1234/1189/586/0/0/0]
+NIGHTCHECK:   [PASS] NC-05 复原：引擎 getter 回初值 ∧ 视口内无全帧级红移（占比 0.0098 < 0.5，均值 0.01 < 20）—— 效果可逆，一次夜视不是永久损伤（星线 fader 余辉有界容忍，T37-X4）
+NIGHTCHECK:   收尾：对照量还原（见 S9） 大气还原=1 仿真暂停还原=1
+NIGHTCHECK: VERDICT=PASS

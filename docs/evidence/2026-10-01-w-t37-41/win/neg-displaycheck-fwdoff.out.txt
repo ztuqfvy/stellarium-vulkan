@@ -1,0 +1,56 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+CONFIGISO: original=C:\Users\ztuqfvy\AppData\Roaming\Stellarium
+CONFIGISO: personal=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=���˰�Ŀ¼�Ѵ��� config.ini���������֣��û��Ĺ���ֵ���ȣ�
+CONFIGISO: configHealth severity=1 status=0 bytes=27063 keys=479 repaired=0 backup=(none) text=������479 ����
+CONFIGISO: config=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick/config.ini
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461315.09425，时钟=HostDriven）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+LIVESKY: simScale -> 1.000（引擎仿真时钟）
+DISPLAYCHECK: 显示参数自检：判据 13/14
+DISPLAYCHECK: 初值：relativeStarScale=1 absoluteStarScale=1 lightPollutionLuminance=0.000143438 customStarMagLimit=6.5 flagStarMagnitudeLimit=false fov=60 projection=ProjectionStereographic
+DISPLAYCHECK: 布场：已冻结仿真 + 大气置关（原值 开）—— 星等/亮度的视觉效应只在星星可见时存在
+DISPLAYCHECK: 参考帧A（上游）：有效 帧号=448 尺寸=1280x720 非黑=0.9930 哈希=bcf4441ab59dfe82
+DISPLAYCHECK: 噪声底读数（同状态两帧）：差异像素=0（逐位相同，哈希相同）
+DISPLAYCHECK:   [PASS] DP-00 噪声底门：冻结后同状态两帧**静定**（实测 差异像素=0（逐位相同，哈希相同）；噪声判据取 **幅度** Δ≤2，不取面积 —— 实测抖动面积会随场景状态变）—— 后续像素判据的口径有效
+DISPLAYCHECK:   [PASS] DP-01 状态面往返：5 项 façade 写 → **引擎 getter 独立回读**一致（rel=2.5 abs=2 lp=0.001 mag=8 flag=true）
+DISPLAYCHECK:   [PASS] DP-02 范围闸：写 99 ⇒ 引擎收到上界 5（不是 99）∧ refusal=out-of-range；写回合法值 ⇒ refusal=ok —— 引擎 setter 不夹取，闸门在 façade
+DISPLAYCHECK: DP-03 逐 key 读数：ProjectionPerspective=ProjectionPerspective(maxFov 120.0); ProjectionStereographic=ProjectionStereographic(maxFov 235.0); ProjectionFisheye=ProjectionFisheye(maxFov 360.0); ProjectionOrthographic=ProjectionOrthographic(maxFov 180.0); ProjectionEqualArea=ProjectionEqualArea(maxFov 360.0); ProjectionHammer=ProjectionHammer(maxFov 185.0); ProjectionMollweide=ProjectionMollweide(maxFov 185.0); ProjectionSinusoidal=ProjectionSinusoidal(maxFov 185.0); ProjectionMercator=ProjectionMercator(maxFov 270.0); ProjectionMiller=ProjectionMiller(maxFov 270.0); ProjectionCylinder=ProjectionCylinder(maxFov 185.0); ProjectionCylinderFill=ProjectionCylinderFill(maxFov 180.0)
+DISPLAYCHECK:   [PASS] DP-03 投影：12/12 个 key 往返一致 ∧ maxFov 取到 6 个不同值（235.0/270.0/360.0/180.0/185.0/120.0）⇒ 上限是**投影的函数**，滑块上限必须跟着它走
+DISPLAYCHECK:   [PASS] DP-04 白名单闸：写乱码 ⇒ accepted=false ∧ 引擎 key ProjectionCylinderFill→ProjectionCylinderFill（未变）∧ refusal=unknown-projection —— 引擎自己会**静默兜底 Stereographic**，闸门挡住它
+DISPLAYCHECK:   [PASS] DP-05 lastDisplayRefusal 是 Q_PROPERTY=true ∧ 有 NOTIFY=true（QML 绑定才比得出字符串）
+DISPLAYCHECK: DP-06 视觉树扫描：单件 7/7 找到；proj_* 共 12 个；displayProjectionRepeater.count=12
+DISPLAYCHECK:   [PASS] DP-06 UI 控件齐备：7 个单件全找到 ∧ 12 个投影按钮全找到（**走视觉树递归** —— Repeater delegate 的 QObject 父链是空的，findChild 扫不到）
+DISPLAYCHECK: DP-07 已由**引擎侧**把 relativeStarScale 写成 3.25（不经 façade）⇒ 下一拍看 UI 滑块跟不跟
+DISPLAYCHECK:   [FAIL] DP-07 绑定腿：引擎侧改 3.25 ⇒ UI 滑块 value=1（UI 必须跟引擎，否则面板停在首帧）
+DISPLAYCHECK: DP-07 后已**全量还原**显示参数到初值台账（帧级判据的基准必须干净）
+DISPLAYCHECK: 参考帧A'（**全量还原后**）：有效 帧号=517 尺寸=1280x720 非黑=0.9930 哈希=bcf4441ab59dfe82 亮像素(≥96)=3733
+DISPLAYCHECK: DP-08 已 setFieldOfViewNow(30)（原 60）
+DISPLAYCHECK: DP-08 帧读数（视场 60→30）：差异像素=905435/921600（98.246%） 最大通道差=254 平均通道差=8.3655 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=114835/114868/115007/114797/111104/106561/113076/115187
+DISPLAYCHECK:   [PASS] DP-08 视场生效（成对）：改视场后上游帧差异占比 0.9825 ≥ 门 0.01
+DISPLAYCHECK: 判别对照：已 trigger(actionShow_Atmosphere)（回读放下一步）
+DISPLAYCHECK: 判别对照帧读数：差异像素=916275/921600（99.422%） 最大通道差=249 平均通道差=9.5928 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=114623/112887/113252/114789/115195/115200/115134/115195
+DISPLAYCHECK:   [PASS] DP-08b 判别对照（承重）：同一方法对 actionShow_Atmosphere 测出差异占比 0.9942 ≥ 门 0.01 ⇒ 方法活着，DP-08 的差异不是「测不出东西」的假绿
+DISPLAYCHECK: 对照量还原核对（大气回原值，基线=触发前帧 fov30）：差异像素=538252/921600（58.404%） 最大通道差=4 平均通道差=0.8127 哈希不同 包围盒=(0,0)-(1279,572) 高度8带=114525/114692/111212/90192/61485/39469/6677/0 亮像素=5638 （**非判据**，只报读数）
+DISPLAYCHECK: DP-09 已还原视场并切 ProjectionFisheye（抓帧放下一步）
+DISPLAYCHECK: DP-09 帧读数（投影 ProjectionStereographic→Fisheye）：差异像素=614750/921600（66.705%） 最大通道差=254 平均通道差=2.2965 哈希不同 包围盒=(0,0)-(1279,719) 高度8带=74522/79941/82488/83530/87257/86205/67679/53128
+DISPLAYCHECK:   [PASS] DP-09 投影生效（成对）：key 已是 Fisheye ∧ 上游帧差异占比 0.6670 ≥ 门 0.01
+DISPLAYCHECK: DP-10 LOW：已开手动极限星等并压到下界 0（原设定 6.5，原开关 false）
+DISPLAYCHECK: DP-10 LOW 帧(1)：亮像素(≥96)=1008
+DISPLAYCHECK:   [PASS] DP-10a 静置对照（承重）：**状态不变**时连抓两帧，亮像素 1008→1008（漂移 0 ≤ 门 100）⇒ 计数在噪声下稳定 ⇒ 下一步的跳变不是抖动凑出来的
+DISPLAYCHECK: DP-10 HIGH 帧：亮像素=3733（LOW=1008，差=2725）；HIGH vs 参考帧A'：差异像素=0（逐位相同，哈希相同） ⇒ 初值本身即「全开」；LOW vs 参考帧A'：差异像素=12615/921600（1.369%） 最大通道差=253 平均通道差=0.6741 哈希不同 包围盒=(0,0)-(1279,463) 高度8带=2037/3001/2924/2893/1679/81/0/0
+DISPLAYCHECK:   [PASS] DP-10b 星等截断生效（成对 · 方向量）：极限星等 0↔15 使亮像素1008↔3733（差 2725 ≥ 门 500）⇒ 星表截断确实跟着设定值走。用**方向量**而不是全图占比：星点像素占比天然小、会被地面/背景稀释；LOW↔HIGH 成对**不依赖初值长什么样**，方向单一
+DISPLAYCHECK: 收尾：已全量还原（核对放下一步）
+DISPLAYCHECK: DP-11 复原帧读数：差异像素=0（逐位相同，哈希相同）
+DISPLAYCHECK:   [PASS] DP-11 复原：引擎 getter 全回初值=true ∧ 复原帧 vs 参考帧A' 差异占比 0.0000（低于噪声容差=true）
+DISPLAYCHECK: 收尾：大气还原=1 仿真暂停还原=1 JD 还原=1
+DISPLAYCHECK: VERDICT=FAIL

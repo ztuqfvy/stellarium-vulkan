@@ -7,7 +7,8 @@
 #       tools/a6-verify.sh t44 2          （生命周期 P-LIF ×2）
 #       tools/a6-verify.sh t45 2          （配置/数据安全 P-CFG ×2）
 #       tools/a6-verify.sh t46            （接口冻结刷新 + --check 冻结校验 + 硬性禁区 + 页面协议）
-#       tools/a6-verify.sh regress        （只跑相邻 24 套件）
+#       tools/a6-verify.sh regress        （只跑相邻 24 套件 + Q-WIN）
+#       tools/a6-verify.sh qwin           （只跑 #159 Q-WIN-01..06，Vulkan 口径）
 #
 # 证据落 docs/evidence/2026-10-01-a6-framebridge/mac/（T43）、
 #        docs/evidence/2026-10-01-a6-lifecycle/mac/（T44）、
@@ -543,6 +544,24 @@ if [[ "$TARGET" == "all" || "$TARGET" == "regress" ]]; then
   rc=$?; [[ $rc -ne 0 ]] && regress_fail=1
   echo "regression-s3-stela3 rc=${rc}（旧形态）" | tee -a "$R46/rc-summary.txt"
   judge $regress_fail "回归：24 套件 + INTERACT + A2 + DYN×2 + S3 全部 rc=0"
+fi
+
+# ══ #159 Q-WIN-01..06 窗口交互回归（测试文档 §6.4）═══════════════════════════
+# 为什么单独一段而不是塞进上面的 for 循环：**后端口径不同**。上面 24 套件
+# 刻意用 Metal（与 t17..t42 一致），而 Q-WIN 必须走 **Vulkan 验收形态** ——
+# QW-06 判的正是 MoltenVK 路径上的 Metal 图层锁 workaround，Metal 后端下
+# 三档全 PASS（含 none）＝ 测空气。逐条证据见 tools/qwin-check.sh 头注。
+# 本段直接调 qwin-check.sh（它自己 unset STELQUICK_GRAPHICS_API），不复制逻辑。
+if [[ "$TARGET" == "all" || "$TARGET" == "qwin" || "$TARGET" == "regress" ]]; then
+  echo "──────── #159 Q-WIN-01..06 窗口交互回归（Vulkan 验收形态）────────" | tee -a "$R46/rc-summary.txt"
+  QW_OUT="$R46" zsh tools/qwin-check.sh pos > "$R46/qwin-pos-console.txt" 2>&1
+  rc=$?
+  /usr/bin/grep -E "^  (✓|✗)|Q-WIN 判据|QWIN VERDICT" "$R46/qwin-pos-console.txt" | tee -a "$R46/rc-summary.txt" || true
+  judge $rc "Q-WIN-01..06 正题 6/6"
+  QW_OUT="$R46" zsh tools/qwin-check.sh negctl > "$R46/qwin-negctl-console.txt" 2>&1
+  rc=$?
+  /usr/bin/grep -E "^  (✓|✗)|Q-WIN 判据|QWIN VERDICT" "$R46/qwin-negctl-console.txt" | tee -a "$R46/rc-summary.txt" || true
+  judge $rc "Q-WIN 负控（证「必须 Vulkan」的判别力）"
 fi
 
 # ══ 收尾：config 零污染门 + 计划任务残留 + 汇总 ═════════════════════════════

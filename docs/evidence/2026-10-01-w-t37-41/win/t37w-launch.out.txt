@@ -1,0 +1,112 @@
+[t37w] suites start 2026-10-01T22:10:58.1182144+08:00
+repo HEAD = cf738bb
+script md5 = 98e0986c6fc52a596a66737af49dcb87
+THIS BOX'S repo HEAD CAN LIE (no github reachability -> tree updated by scp).
+Trust the SRC md5 lines below, not the HEAD above.
+SRC src\app\NightModeCheck.cpp md5=efb7e45f5b3c385cdd9de3d89cbf6328
+SRC src\app\NightModeCheck.hpp md5=b8e609eb37d14a1512f31b7463b649a6
+SRC src\app\NightModeProbe.cpp md5=751bec82be81ab554b06e228a7bbe38b
+SRC src\app\NightModeProbe.hpp md5=20af6b6e4dd1d2b685c6d11c11d33088
+SRC src\ui\shaders\nightmode.frag md5=21a279dcac341bcbd823cdc2d11c892a
+SRC src\app\DisplayCheck.cpp md5=3c823cf94632f6957a395938114a274d
+SRC src\app\DisplayCheck.hpp md5=3b467aa821ef36ec995f17a1970f8353
+SRC src\app\HiDpiCheck.cpp md5=1ce7dc822cc97b81d18b3d6fb238348f
+SRC src\app\HiDpiCheck.hpp md5=32310d7b9c207903b32a66b1660ed2d0
+SRC src\app\ShortcutCheck.cpp md5=17a7272a7743392a0d12152fe75458a3
+SRC src\app\ShortcutCheck.hpp md5=08c9d7d1295db4647fa8e410b404f77a
+SRC src\app\HelpCheck.cpp md5=68035036de42e83a8559aca7f7289948
+SRC src\app\HelpCheck.hpp md5=bbe72b9e4985968197818e824e671c5e
+SRC src\app\AppFacade.cpp md5=3f044d101ac62d403edfe085652ca7a1
+SRC src\app\AppFacade.hpp md5=3035a041587665b9060fb0033b0f7a93
+SRC src\ui\quick\BackendInfo.cpp md5=2668f79bf5e4b717fb60e796b9383ed5
+SRC src\ui\quick\BackendInfo.hpp md5=370b26db984a062e45cb19d5e23f254b
+SRC src\ui\main.cpp md5=f60346610189d9303669154d4e154e42
+SRC src\ui\LiveSkyRuntime.cpp md5=8f30c56787584e75e13e82d28edc713a
+SRC src\ui\qml\DisplayPage.qml md5=48a99c5613eaf8379b623c9b6e69a9ac
+SRC src\ui\qml\DiagnosticPage.qml md5=de3183b6ff4d9a3a1e211e692518cea0
+SRC src\ui\qml\ShortcutsPage.qml md5=2f0dd6f6b9c19dd2a80a7be5caf08de4
+SRC src\ui\qml\HelpPage.qml md5=aa84ddc7fbdb0b977376c80281e25fb9
+SRC src\ui\qml\AboutPage.qml md5=3f31398e5daa56a04420a985edeecfff
+SRC src\ui\qml\Toolbar.qml md5=d07d64c8a263a8e2ae28bae5fbdfe964
+SRC src\ui\qml\MainWindow.qml md5=129404dccaf2c7722a556ee84ea2711e
+SRC src\ui\CMakeLists.txt md5=5d7b96115e65459d86fbbabd7f9b462b
+exe = E:\Qt_demo\stellarium-vulkan\build-win\src\ui\Release\stelQuickUI.exe
+exe size = 30790144 B   mtime = 2026-10-01T22:01:00.5921944+08:00
+exe md5  = 1AFBDE023DE5EC85BA5A9BE479D81A73
+---- positive suites ----
+SUITE nightcheck-pos-run1  rc=0  elapsed=21.6s  var=STELQUICK_NIGHT_CHECK
+  NIGHTCHECK run1: rc=0 judge=6/6 verdict=PASS reds=0 -> OK
+SUITE nightcheck-pos-run2  rc=0  elapsed=21.7s  var=STELQUICK_NIGHT_CHECK
+  NIGHTCHECK run2: rc=0 judge=6/6 verdict=PASS reds=0 -> OK
+SUITE displaycheck-pos-run1  rc=0  elapsed=27s  var=STELQUICK_DISPLAY_CHECK
+  DISPLAYCHECK run1: rc=0 judge=14/14 verdict=PASS reds=0 -> OK
+SUITE displaycheck-pos-run2  rc=0  elapsed=27s  var=STELQUICK_DISPLAY_CHECK
+  DISPLAYCHECK run2: rc=0 judge=14/14 verdict=PASS reds=0 -> OK
+SUITE hidpicheck-pos-run1  rc=6  elapsed=32.7s  var=STELQUICK_HIDPI_CHECK
+  HIDPICHECK run1: rc=6 judge=10/11 verdict=INCONCLUSIVE reds=1 -> BAD
+    red ids: {HP-00}
+    expected: rc=0 judge=12/12 VERDICT=PASS reds=0
+SUITE hidpicheck-pos-run2  rc=6  elapsed=32.6s  var=STELQUICK_HIDPI_CHECK
+  HIDPICHECK run2: rc=6 judge=10/11 verdict=INCONCLUSIVE reds=1 -> BAD
+    red ids: {HP-00}
+    expected: rc=0 judge=12/12 VERDICT=PASS reds=0
+SUITE shortcutcheck-pos-run1  rc=0  elapsed=15.3s  var=STELQUICK_SHORTCUT_CHECK
+  SHORTCUTCHECK run1: rc=0 judge=15/15 verdict=PASS reds=0 -> OK
+SUITE shortcutcheck-pos-run2  rc=0  elapsed=15.4s  var=STELQUICK_SHORTCUT_CHECK
+  SHORTCUTCHECK run2: rc=0 judge=15/15 verdict=PASS reds=0 -> OK
+SUITE helpcheck-pos-run1  rc=0  elapsed=15.7s  var=STELQUICK_HELP_CHECK
+  HELPCHECK run1: rc=0 judge=17/17 verdict=PASS reds=0 -> OK
+SUITE helpcheck-pos-run2  rc=0  elapsed=15.7s  var=STELQUICK_HELP_CHECK
+  HELPCHECK run2: rc=0 judge=17/17 verdict=PASS reds=0 -> OK
+
+---- negative controls (mac baseline; a different red set is a FINDING) ----
+SUITE neg-nightcheck-effoff  rc=10  elapsed=21.6s  var=STELQUICK_NIGHT_CHECK
+  nightcheck-effoff: rc=10 judge=5/6 verdict=FAIL reds=1  [mac: rc=10 judge=5/6 verdict=FAIL] live=4
+    red ids: {NC-03?}
+  REDSET-OK   nightcheck-effoff  {NC-03?}
+SUITE neg-displaycheck-gateoff  rc=10  elapsed=27.1s  var=STELQUICK_DISPLAY_CHECK
+  displaycheck-gateoff: rc=10 judge=12/14 verdict=FAIL reds=2  [mac: rc=10 judge=12/14 verdict=FAIL] live=4
+    red ids: {DP-02,DP-04}
+  REDSET-OK   displaycheck-gateoff  {DP-02,DP-04}
+SUITE neg-displaycheck-fwdoff  rc=10  elapsed=27.1s  var=STELQUICK_DISPLAY_CHECK
+  displaycheck-fwdoff: rc=10 judge=13/14 verdict=FAIL reds=1  [mac: rc=10 judge=13/14 verdict=FAIL] live=4
+    red ids: {DP-07}
+  REDSET-OK   displaycheck-fwdoff  {DP-07}
+SUITE neg-hidpicheck-gateoff  rc=6  elapsed=32.7s  var=STELQUICK_HIDPI_CHECK
+  hidpicheck-gateoff: rc=6 judge=7/11 verdict=INCONCLUSIVE reds=7  [mac: rc=10 judge=9/12 verdict=FAIL] live=4
+    red ids: {HP-00,HP-02,HP-02,HP-03,HP-03,HP-04,HP-04}
+    BAD: the negative control did not go red at all -- the criterion is not biting here
+  FINDING-EXTRA   hidpicheck-gateoff  red-but-not-on-mac {HP-00}  <-- platform-bound or real defect
+SUITE neg-hidpicheck-fwdoff  rc=6  elapsed=32.9s  var=STELQUICK_HIDPI_CHECK
+  hidpicheck-fwdoff: rc=6 judge=8/11 verdict=INCONCLUSIVE reds=3  [mac: rc=10 judge=10/12 verdict=FAIL] live=4
+    red ids: {HP-00,HP-07,HP-08}
+    BAD: the negative control did not go red at all -- the criterion is not biting here
+  FINDING-EXTRA   hidpicheck-fwdoff  red-but-not-on-mac {HP-00}  <-- platform-bound or real defect
+SUITE neg-shortcutcheck-writeoff  rc=10  elapsed=15.3s  var=STELQUICK_SHORTCUT_CHECK
+  shortcutcheck-writeoff: rc=10 judge=8/15 verdict=FAIL reds=7  [mac: rc=10 judge=8/15 verdict=FAIL] live=2
+    red ids: {SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13}
+  REDSET-OK   shortcutcheck-writeoff  {SC-05a,SC-05b,SC-07,SC-08,SC-09,SC-11,SC-13}
+SUITE neg-shortcutcheck-saveoff  rc=10  elapsed=15.4s  var=STELQUICK_SHORTCUT_CHECK
+  shortcutcheck-saveoff: rc=10 judge=12/15 verdict=FAIL reds=3  [mac: rc=10 judge=12/15 verdict=FAIL] live=2
+    red ids: {SC-05b,SC-09,SC-11}
+  REDSET-OK   shortcutcheck-saveoff  {SC-05b,SC-09,SC-11}
+SUITE neg-helpcheck-takeoveroff  rc=10  elapsed=15.8s  var=STELQUICK_HELP_CHECK
+  helpcheck-takeoveroff: rc=10 judge=14/17 verdict=FAIL reds=4  [mac: rc=10 judge=14/17 verdict=FAIL] live=2
+    red ids: {HC-14,HC-15,HC-15,HC-16}
+  REDSET-OK   helpcheck-takeoveroff  {HC-14,HC-15,HC-16}
+SUITE neg-helpcheck-licenseoff  rc=10  elapsed=15.7s  var=STELQUICK_HELP_CHECK
+  helpcheck-licenseoff: rc=10 judge=15/17 verdict=FAIL reds=2  [mac: rc=10 judge=15/17 verdict=FAIL] live=2
+    red ids: {HC-04,HC-13}
+  REDSET-OK   helpcheck-licenseoff  {HC-04,HC-13}
+
+---- Q-WIN-01..05 (window interaction regression, test doc 6.4) ----
+SUITE qwin-windowtest  rc=0  elapsed=4.5s  var=STELQUICK_WINDOW_TEST
+  qwin-windowtest rc=0
+    WINDOWTEST: ?? steps=54 maxStallMs=19 maxResizeMs=11 maxFrameGapMs=63 ??=250ms VERDICT=PASS
+    Q-WIN-01/02 maxStallMs=19 maxResizeMs=11  (threshold 250ms)
+    Q-WIN-04 maxFrameGapMs=63  (threshold 250ms)
+  qwin-autotest rc=0 wall=6.3s  (mac: 5.37s, budget 5..7s)
+
+VERDICT: bad=4 findings=2
+NOTE: findings are cross-platform red-set differences -- REPORT them, do not retry them away.
+done 

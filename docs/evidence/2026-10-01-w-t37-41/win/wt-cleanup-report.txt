@@ -1,0 +1,29 @@
+=== 1. schtasks leftovers (StelQC_*) BEFORE ===
+  no StelQC_* tasks
+=== 2. stelQuickUI / stelQ processes BEFORE ===
+  no stelQuickUI process
+=== 3. C:\temp wt37-41 artifacts ===
+  wt37-41-build.ps1  4711 B  10/01/2026 21:31:36
+  wt37-41-launch.ps1  2317 B  10/01/2026 21:31:36
+  wt37-41-parsecheck.ps1  1283 B  10/01/2026 21:22:33
+  wt37-41-run.ps1  3182 B  10/01/2026 22:10:49
+  wt37-41-status.ps1  3528 B  10/01/2026 21:22:33
+  wt37-41-stop.ps1  1745 B  10/01/2026 21:52:09
+  wt37-41-suites.ps1  24899 B  10/01/2026 22:10:49
+=== 4. C:\temp out dirs (wt37-41-out*) ===
+  none
+=== 5. CLEANUP ===
+  removed file wt37-41-build.ps1
+  removed file wt37-41-launch.ps1
+  removed file wt37-41-parsecheck.ps1
+  removed file wt37-41-run.ps1
+  removed file wt37-41-status.ps1
+  removed file wt37-41-stop.ps1
+  removed file wt37-41-suites.ps1
+=== 6. AFTER ===
+  no StelQC_* tasks
+  no stelQuickUI process
+  C:\temp wt37-41-* remaining = 0
+  C:\temp wt37-41* dirs remaining = 0
+=== 7. engine user dir quick check (not touched) ===
+  quick user dir exists = True

@@ -1,0 +1,11 @@
+STELQUICK: macOS 渲染兼容模式 = basic-loop
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 78 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+WINDOWTEST: 开始（放大 24 步 → 缩小 24 步 → 隐藏/显示 3 次）
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=Apple M3（判定来源=信号/兜底）
+WINDOWTEST: 预热 3 帧完成，开始测量

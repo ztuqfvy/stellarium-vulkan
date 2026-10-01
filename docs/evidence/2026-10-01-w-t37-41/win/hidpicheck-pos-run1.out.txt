@@ -1,0 +1,62 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+CONFIGISO: original=C:\Users\ztuqfvy\AppData\Roaming\Stellarium
+CONFIGISO: personal=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=���˰�Ŀ¼�Ѵ��� config.ini���������֣��û��Ĺ���ֵ���ȣ�
+CONFIGISO: configHealth severity=1 status=0 bytes=27063 keys=479 repaired=0 backup=(none) text=������479 ����
+CONFIGISO: config=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick/config.ini
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461315.09221，时钟=HostDriven）
+LIVESKY: simScale -> 0.000（引擎仿真时钟）
+LIVESKY: simScale -> 1.000（引擎仿真时钟）
+HIDPICHECK: 高 DPI 自检：INCONCLUSIVE（1 条测不出，10/11 过）
+HIDPICHECK: 初值：screenFontSize=13 guiFontSize=13 screenButtonScale=100 ｜dpp=1 screenScale=1 guiScale=1
+HIDPICHECK: 布场：仿真冻结 已由判据置停｜JD 钉夜（2461315.3382 → 2461000.4167）（帧静定 —— 像素比较前提；大气**不动**：探针已证夜间布场下天空文本可见且效应 4.054%）
+HIDPICHECK: 噪声底帧①：有效 帧号=447 尺寸=1280x720 非黑=1.0000 哈希=d3c735b9805b3950
+HIDPICHECK: 噪声底帧②：有效 帧号=472 尺寸=1280x720 非黑=1.0000 哈希=4749eb612e672eb1
+HIDPICHECK: [FAIL] HP-00 噪声底门：同状态两帧差异 差异像素=1722/921600（0.187%） 最大通道差=27 平均通道差=0.0065 哈希不同 包围盒=(5,0)-(1271,449) 高度8带=562/372/371/295/122/0/0/0 超出容差（Δ≤2）⇒ 帧没静定 ⇒ 后续像素判据不可信
+HIDPICHECK: [NA ] HP-09 噪声底门没过，帧级判据不做（⇒ 整套 INCONCLUSIVE）
+HIDPICHECK: HP-00 判别对照：帧② → +2500ms 帧③ 差异 差异像素=1704/921600（0.185%） 最大通道差=31 平均通道差=0.0066 哈希不同 包围盒=(5,0)-(1270,449) 高度8带=552/387/333/321/111/0/0/0 ⇒ 仍在变 ⇒ 渲染非确定或有持续变化源
+HIDPICHECK: HP-01 已 façade 写 screenFontSize=33（回读放下一步）
+HIDPICHECK: [PASS] HP-01 引擎面往返：façade 写 33 ⇒ façade 读回 33 ∧ 引擎 getter 独立回读 33
+HIDPICHECK: HP-02 已写 99（超上限，回读放下一步）
+HIDPICHECK: [PASS] HP-02 范围闸（上沿）：写 99 ⇒ façade=50 ∧ 引擎=50 ∧ refusal=out-of-range（原版 SpinBox 上限 50）
+HIDPICHECK: HP-02 已写 0（超下限，回读放下一步）
+HIDPICHECK: [PASS] HP-02 范围闸（下沿）：写 0 ⇒ façade=5 ∧ 引擎=5（原版 SpinBox 下限 5）
+HIDPICHECK: HP-03 已写 guiFontSize=99（回读放下一步）
+HIDPICHECK: [PASS] HP-03 范围闸（上沿）：写 99 ⇒ façade=50 ∧ 引擎=50（原版 SpinBox 上限 50）
+HIDPICHECK: HP-03 已写 0（回读放下一步）
+HIDPICHECK: [PASS] HP-03 范围闸（下沿）：写 0 ⇒ façade=7 ∧ 引擎=7（原版 SpinBox 下限 7）
+HIDPICHECK: HP-04 已写 screenButtonScale=999（回读放下一步）
+HIDPICHECK: [PASS] HP-04 范围闸（上沿）：写 999 ⇒ façade=200 ∧ 引擎=200（⚠️ [50,200] 是产品自定 —— 原版只有配置键）
+HIDPICHECK: HP-04 已写 0（回读放下一步）
+HIDPICHECK: [PASS] HP-04 范围闸（下沿）：写 0 ⇒ façade=50 ∧ 引擎=50
+HIDPICHECK: [PASS] HP-05 派生量算术验算：screenScale 引擎 1 vs 独立算 dpp(1)×字号/13 = 1｜guiScale 引擎 1 vs 1（差均 <1e-6）
+HIDPICHECK: [PASS] HP-06 控件齐备：滑块 from=5/to=50/value=13 vs façade 范围 [5,50]/当前 13 ∧ 三个 objectName 全部找到
+HIDPICHECK: HP-07 已引擎侧写 screenFontSize=30（读 UI 放下一步）
+HIDPICHECK: [PASS] HP-07 绑定腿：引擎侧写 30 ⇒ UI 滑块 value=30 跟随（守 T15：绑定必须真的读属性）
+HIDPICHECK: HP-08 已真实点击 navDisplayButton（等切页 → 下一步点滑块）
+HIDPICHECK: HP-08 滑块在视口外（sceneY=651，窗口高 640）⇒ 已滚所属 Flickable contentY 0→331
+HIDPICHECK: HP-08 滑块已进视口（sceneY=651）
+HIDPICHECK: HP-08 已真实点击滑块 70% 位置（scene=616.8,320）—— clickAt 返回 true｜点击后 UI value=37（点前 30；value 变了说明 press 到了滑块）
+HIDPICHECK: HP-08 前半：真实点击 ⇒ façade=37（点前 30）⇒ onMoved 通路活
+HIDPICHECK: HP-08 后半：引擎侧已写 25（读 UI 放下一步）
+HIDPICHECK: [PASS] HP-08 交互后绑定仍活：真实点击交互后，引擎侧写 25 ⇒ UI 滑块 value=25 跟随 —— Qt 6 Slider 若交互打破绑定，只有这条才测得出（T38 DP-07 没交互过）
+HIDPICHECK: screenFontSize 已还原为 13；已切回天空页
+HIDPICHECK: HP-09 已写 screenFontSize=40（抓帧放下一步 —— 等待挂在写步）
+HIDPICHECK: HP-09 字号 40 帧：有效 帧号=940 尺寸=1280x720 非黑=1.0000 哈希=61c52fbdd82579f5
+HIDPICHECK: vs 参考帧：差异像素=34136/921600（3.704%） 最大通道差=243 平均通道差=2.4659 哈希不同 包围盒=(2,0)-(1273,502) 高度8带=8276/5503/5129/4323/5220/5685/0/0
+HIDPICHECK: [PASS] HP-09 字号帧效应（成对）：字号 13→40 ⇒ 上游帧差异占比 0.0370 ≥ 门 0.01 —— 探针实测本效应 4.054%、噪声 0
+HIDPICHECK: HP-09 还原后帧：有效 帧号=976 尺寸=1280x720 非黑=1.0000 哈希=b4fcfba31f4a5bc6
+HIDPICHECK: vs 参考帧（判别对照）：差异像素=1747/921600（0.190%） 最大通道差=30 平均通道差=0.0062 哈希不同 包围盒=(5,0)-(1271,449) 高度8带=565/398/363/328/93/0/0/0
+HIDPICHECK:   🔴 还原后未回噪声级 ⇒ 效应另有来源，HP-09 的读数存疑
+HIDPICHECK: [PASS] HP-10 诊断数据面健康：published=1011 dropped=0 completeSlots=3/3 readersHeld=0 bytesPerFrame=3686400 vs 独立验算 宽1280×高720×4=3686400
+HIDPICHECK: [PASS] HP-11 复原：screenFontSize=13（初值 13）guiFontSize=13（13）screenButtonScale=100（100）｜仿真已恢复 开
+HIDPICHECK: VERDICT=INCONCLUSIVE

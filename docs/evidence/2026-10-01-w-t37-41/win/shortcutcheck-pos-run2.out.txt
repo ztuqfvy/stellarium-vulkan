@@ -1,0 +1,43 @@
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=NVIDIA GeForce RTX 4060 api=1.4.325 driver=79.296.0 portability_driver=0 portability_enum_ext=1 err=
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+STELQUICK: runtimeApi=Vulkan backendOk=1 device=NVIDIA GeForce RTX 4060（判定来源=信号/兜底）
+CONFIGISO: original=C:\Users\ztuqfvy\AppData\Roaming\Stellarium
+CONFIGISO: personal=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=���˰�Ŀ¼�Ѵ��� config.ini���������֣��û��Ĺ���ֵ���ȣ�
+CONFIGISO: configHealth severity=1 status=0 bytes=27063 keys=479 repaired=0 backup=(none) text=������479 ����
+CONFIGISO: config=C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick/config.ini
+LIVESKY: 引擎引导完成（0ms，GL 3.3 core=1 renderer="NVIDIA GeForce RTX 4060/PCIe/SSE2"）
+LIVESKY: 帧泵已启动（1280x720，名义 50.0 fps，JD 速率 0.1000 天/秒，起点 JD=2461315.09315，时钟=HostDriven）
+SHORTCUTCHECK: 快捷键自检：判据 15/15
+SHORTCUTCHECK: 布场：模型 447 行（引擎 447 动作）｜配置 C:/Users/ztuqfvy/AppData/Roaming/Stellarium-quick/config.ini｜shortcuts 组基线 0 项
+SHORTCUTCHECK: 布场：SC 靶 row0=actionSwitch_Equatorial_Mount｜row1=actionSave_Copy_Object_Information_Global
+SHORTCUTCHECK: [PASS] SC-01 表完整性：模型 447 vs 引擎 447 动作｜分组 15 vs 15
+SHORTCUTCHECK: [PASS] SC-02 行数据抽样（10 行）：逐项一致
+SHORTCUTCHECK: [PASS] SC-03 customized 口径（全表 447 行）：与引擎判据一致
+SHORTCUTCHECK: SC-04 判别对照：QKeySequence("PageUp") 直构=「∅空」⇒ 别名键名确实静默变空，生成器口径成立
+SHORTCUTCHECK: [PASS] SC-04 键名生成：6 样本恒等｜修饰键中间态=✓｜别名对照=✓
+SHORTCUTCHECK: SC-05 写入步：setKey(row0, 主, 「Ctrl+Alt+Shift+F9」) 返回 true｜模型状态=「「赤道仪/经纬仪切换」主键 → Ctrl+Alt+Shift+F9」
+SHORTCUTCHECK: [PASS] SC-05a 改键写引擎：引擎「Ctrl+Alt+Shift+F9」== 新键 ✓
+SHORTCUTCHECK: [PASS] SC-05b 改键落盘：磁盘原样「Ctrl+Alt+Shift+F9 ""」⇒ 首段「Ctrl+Alt+Shift+F9」序列语义 == 新键 ✓
+SHORTCUTCHECK: [PASS] SC-06 不写穿：改键后非 shortcuts 组差异数 = 0（基线 479 键）
+SHORTCUTCHECK: SC-07 冲突写入步：setKey(row1, 主, 同键) 返回 true
+SHORTCUTCHECK: [PASS] SC-07 冲突检测：撞键后 count=2（row0=红 row1=红）｜消解后 count=0 ⇒ 检出与消解都成立
+SHORTCUTCHECK: [PASS] SC-08 恢复默认：row0 的 conf 项被剔除=是｜row1 自定义键「Ctrl+Alt+Shift+F8」保留=是 ⇒ 单个恢复不冲别人（探针⑦产品级复验）
+SHORTCUTCHECK: [PASS] SC-09 空串移除：引擎键空=是｜磁盘项在=是 原样「"" ""」(2 段)｜复刻构造解析全部回解为空=是
+SHORTCUTCHECK: SC-10 物证：QKeySequence("PageUp") count=1｜toString=「∅空」
+SHORTCUTCHECK: [PASS] SC-10 非法键名闸：「PageUp」被拒=是｜引擎键「」未变=是｜状态文本非空=是（防止手拼键名静默变删除）
+SHORTCUTCHECK: [PASS] SC-11 全部恢复：此前 2 个被改 ⇒ 之后 0 个｜磁盘 shortcuts 组 0 项 ⇒ 清干净
+SHORTCUTCHECK: SC-12 切页步：真实点击 navShortcutsButton ⇒ 已投递
+SHORTCUTCHECK: [PASS] SC-12 UI 控件齐备：9 个控件全部在场（已真实点击导航切页）
+SHORTCUTCHECK: SC-13 布场：window->isActive=1｜activeFocusItem=navShortcutsButton
+SHORTCUTCHECK: SC-13 写入步：点击前引擎键=「Ctrl+M」
+SHORTCUTCHECK: SC-13 写入步：已真实点击 shortcutPrimary_0 并注入 Ctrl+Alt+Shift+F7（读 UI 放下一步）
+SHORTCUTCHECK: [PASS] SC-13 UI 交互端到端：引擎键=「Ctrl+Alt+Shift+F7」✓｜UI 按钮文字=「Ctrl+Alt+Shift+F7」✓
+SHORTCUTCHECK: [PASS] SC-14 复原：整本指纹 vs 基线差异数 = 0（含 shortcuts 组） ⇒ 用户配置零污染 ✓
+SHORTCUTCHECK: VERDICT=PASS

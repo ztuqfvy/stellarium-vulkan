@@ -335,6 +335,22 @@ void HiDpiCheck::run(QCoreApplication *app,
         c->refFrame = b;
     }});
 
+    // ── S3b：噪声底**判别对照**（W-T41 跨平台复验 2026-10-01）────────────────
+    // Windows 上 HP-00 红（差异 0.178% / Δ32，包围盒 (5,0)-(1271,449) = 上半屏），
+    // mac 实测为 0；两轮逐位一致 ⇒ 不是随机抖动，是系统性的"帧间在变"。
+    // 这条判别对照把两种解释分开：
+    //   收敛不足（等更久就一样）  vs  渲染本身非确定 / 有持续变化源（永远不一样）
+    // 只在 HP-00 红时才有信息量；绿时它只是再证一次噪声为 0，措辞保持中性。
+    steps->append({2500, [](Ctx *c) {
+        const FrameSample c3 = framecmp::grabUpstream(c->mailbox);
+        const DiffStats d3 = framecmp::diffOf(c->refFrame, c3);   // refFrame 此刻 = 帧②
+        c->note(QStringLiteral("HP-00 判别对照：帧② → +2500ms 帧③ 差异 %1 ⇒ %2")
+                    .arg(framecmp::diffText(d3))
+                    .arg(belowNoise(d3)
+                             ? QStringLiteral("已静定（原红若发生属收敛不足）")
+                             : QStringLiteral("仍在变 ⇒ 渲染非确定或有持续变化源")));
+    }});
+
     // ── S4：HP-01 写（façade 写 33）────────────────────────────────────────
     steps->append({300, [](Ctx *c) {
         c->facade->setScreenFontSize(33);

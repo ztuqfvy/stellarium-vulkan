@@ -639,6 +639,23 @@ void ShortcutCheck::run(QCoreApplication *app,
             c->markNa(QStringLiteral("SC-13 无窗口"));
             return;
         }
+        // 布场（W-T41 跨平台复验 2026-10-01）：无头/后台会话里 QQuickWindow 可能
+        // **从未被激活**，此时 QQuickWindowPrivate::deliverKeyEvent 没有可路由的
+        // activeFocusItem，合成键盘事件会**静默消失**。Windows 实测症状正是如此：
+        // 点击生效、UI 已进捕获态（按钮显示「按键…（Esc 取消）」），但引擎键纹丝不动
+        // ⇒ SC-13 假红。先请求激活；并把可观测状态打进 note —— 万一仍失败，
+        // 这行就是判据自己的判别依据（不是"重试到绿"）。
+        c->window->requestActivate();
+        QCoreApplication::processEvents();
+        {
+            QQuickItem *afi = c->window->activeFocusItem();
+            c->note(QStringLiteral("SC-13 布场：window->isActive=%1｜activeFocusItem=%2")
+                        .arg(c->window->isActive() ? 1 : 0)
+                        .arg(afi ? (afi->objectName().isEmpty()
+                                        ? QString::fromLatin1(afi->metaObject()->className())
+                                        : afi->objectName())
+                                 : QStringLiteral("(null)")));
+        }
         QQuickItem *root = c->window->contentItem();
         const QVector<QQuickItem *> btn =
             collectByObjectName(root, QStringLiteral("shortcutPrimary_0"));
@@ -680,6 +697,20 @@ void ShortcutCheck::run(QCoreApplication *app,
                                     : btn.first()->property("text").toString();
         const bool engineOk = (after == QStringLiteral("Ctrl+Alt+Shift+F7"));
         const bool uiOk = (btnText == after);
+        if (!engineOk)
+        {
+            // 判别依据：注入之后捕获器是否真的持有焦点。若这里显示的不是
+            // shortcutKeyCatcher，则"键没被收到"是**事件路由**问题，而不是改键逻辑
+            // 的问题 —— 这两种解释的处置完全不同，不能糊在一起。
+            QQuickItem *afi = c->window->activeFocusItem();
+            c->note(QStringLiteral("SC-13 诊断：注入后 window->isActive=%1｜activeFocusItem=%2"
+                                   "（捕获器 objectName = shortcutKeyCatcher）")
+                        .arg(c->window->isActive() ? 1 : 0)
+                        .arg(afi ? (afi->objectName().isEmpty()
+                                        ? QString::fromLatin1(afi->metaObject()->className())
+                                        : afi->objectName())
+                                 : QStringLiteral("(null)")));
+        }
         c->mark(engineOk && uiOk,
                 QStringLiteral("SC-13 UI 交互端到端：引擎键=「%1」%2｜UI 按钮文字=「%3」%4")
                     .arg(after,

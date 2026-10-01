@@ -522,7 +522,12 @@ void HelpCheck::run(QCoreApplication *app,
             else
                 why = QStringLiteral("资源 %1 打不开：%2").arg(res, rf.errorString());
         }
-        const QString thisFile = QStringLiteral(__FILE__);
+        // ⚠️ 跨平台（W-T41 复验 2026-10-01）：MSVC 的 __FILE__ 是 `E:\a\b\src\app\HelpCheck.cpp`
+        //    反斜杠形态，直接 indexOf("/src/app/...") 恒 -1 ⇒ 判据在 Windows 上**假红**
+        //    （实测报"__FILE__ 不是预期的 /src/app/ 形态"）。归一化到正斜杠后再推根；
+        //    正斜杠路径 Qt 在 Windows 上照样打得开。
+        const QString thisFile =
+            QStringLiteral(__FILE__).replace(QLatin1Char('\\'), QLatin1Char('/'));
         const int pos = thisFile.indexOf(QLatin1String("/src/app/HelpCheck.cpp"));
         if (hc05 && pos > 0)
         {
@@ -784,14 +789,27 @@ void HelpCheck::run(QCoreApplication *app,
             collectByObjectName(c->window->contentItem(), QStringLiteral("aboutLicenseTextArea"));
         if (!area.isEmpty())
             uiText = area.first()->property("text").toString();
-        const bool textOk = uiText == c->model->licenseText() && !uiText.isEmpty();
+        // ⚠️ 跨平台行尾（W-T41 复验 2026-10-01）：licenseText 是 qrc 资源的**原样**字节
+        //    （HelpModel: QString::fromUtf8(readAll())，不做行尾规范化）。Windows 检出下
+        //    COPYING 是 CRLF ⇒ 数据面 18332 字符；而 UI 走 TextArea(QTextDocument) 会把
+        //    \r\n 归一化成 \n ⇒ 读回 17992 字符。逐字比较因而在 Windows 上**假红**，
+        //    差额正好 340 = \r 个数。口径：比较**归一化行尾后**的内容，并把两侧原始
+        //    长度都打进 note —— 只归一化平台行尾，不藏任何实质差异。
+        auto normEol = [](const QString &s) {
+            QString t = s;
+            t.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+            return t;
+        };
+        const bool textOk =
+            !uiText.isEmpty() && normEol(uiText) == normEol(c->model->licenseText());
         // 关掉（恢复现场）
         QMetaObject::invokeMethod(dialog, "close");
         c->mark(visible && textOk,
-                QStringLiteral("HC-13 许可证端到端：Dialog visible=%1｜UI 文本 %2 字符 "
-                               "== 数据面 licenseText（%3）")
+                QStringLiteral("HC-13 许可证端到端：Dialog visible=%1｜UI 文本 %2 字符 vs "
+                               "数据面 %3 字符（归一化行尾后%4）")
                     .arg(visible)
                     .arg(uiText.size())
+                    .arg(c->model->licenseText().size())
                     .arg(textOk ? QStringLiteral("一致") : QStringLiteral("不一致")));
     }});
 

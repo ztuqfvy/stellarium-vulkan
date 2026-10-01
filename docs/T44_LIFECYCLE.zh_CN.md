@@ -251,7 +251,7 @@ P-LIF-01 要求 ×100 ⇒ 100 × 900s ≈ **25 小时**，还只是预热，不�
 | Q-WIN-03 | 隐藏/显示循环 ×3（**关闭/重开代理**） | 恢复后画面正确，无停滞 |
 | Q-WIN-04 | 帧间隔连续性 | `maxFrameGapMs ≤ 250ms` |
 | Q-WIN-05 | 启停开销 | `STELQUICK_AUTOTEST_SECONDS=5` 墙钟 ≈ 5s（额外 ≤ 1s） |
-| Q-WIN-06 | 渲染循环配置回归 | `none`（**必须 FAIL — 用于证伪**）/ `transaction-off`（PASS）/ `basic-loop`（PASS） |
+| Q-WIN-06 | 渲染循环配置回归 | `none`（**必须复现故障 — 整机卡死**，非判据行变红）/ `transaction-off`（必须 PASS）/ `basic-loop`（**已知不兼容，非逃生门**） |
 
 **现状：源码在，`tools/` 里没有任何脚本跑它（`grep -rln WINDOW_TEST tools/` 零命中）。**
 ⇒ 这六条自 A1 起就**没有进过任何收口脚本**，是"判据写了但没人执行"的状态。
