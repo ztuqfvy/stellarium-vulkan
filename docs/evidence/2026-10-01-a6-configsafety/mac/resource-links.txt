@@ -1,0 +1,34 @@
+════ A6 资源链接完整性检查（P-CFG-03）════
+清单：docs/vulkan/source-manifest.json｜生成于 2026-09-17T06:51:55.720Z
+源快照：/Users/ztuqfvy/qt_demo/stellarium/stellarium
+
+── 1. 资源占位（9 项）
+  ✓ models         链接 → /Users/ztuqfvy/qt_demo/stellarium/stellarium/models｜target mtime 2026-06-18 10:38:20｜清单文件数 45
+  ✓ textures       链接 → /Users/ztuqfvy/qt_demo/stellarium/stellarium/textures｜target mtime 2026-06-18 10:38:23｜清单文件数 109
+  ✓ landscapes     链接 → /Users/ztuqfvy/qt_demo/stellarium/stellarium/landscapes｜target mtime 2026-06-18 10:39:50｜清单文件数 703
+  ✓ skycultures    链接 → /Users/ztuqfvy/qt_demo/stellarium/stellarium/skycultures｜target mtime 2026-06-18 10:39:50｜清单文件数 1291
+  ✓ nebulae        链接 → /Users/ztuqfvy/qt_demo/stellarium/stellarium/nebulae｜target mtime 2026-06-18 10:38:20｜清单文件数 682
+  ✓ stars          链接 → /Users/ztuqfvy/qt_demo/stellarium/stellarium/stars｜target mtime 2026-06-18 10:38:23｜清单文件数 15
+  ✓ atmosphere     链接 → /Users/ztuqfvy/qt_demo/stellarium/stellarium/atmosphere｜target mtime 2026-06-18 10:38:20｜清单文件数 313
+  ✓ scenery3d      链接 → /Users/ztuqfvy/qt_demo/stellarium/stellarium/scenery3d｜target mtime 2026-06-18 10:39:50｜清单文件数 135
+  ✓ po             链接 → /Users/ztuqfvy/qt_demo/stellarium/stellarium/po｜target mtime 2026-06-18 10:39:50｜清单文件数 857
+  小结：符号链接 9 / 实体 0 / 缺失 0（期望 9/0/0）
+
+── 1b. 仓库根下全部符号链接（清单外的也列出）
+  符号链接共 12 个（清单内 9，清单外 3）
+  · plugins        → /Users/ztuqfvy/qt_demo/stellarium/stellarium/plugins
+  · scripts        → /Users/ztuqfvy/qt_demo/stellarium/stellarium/scripts
+  · util           → /Users/ztuqfvy/qt_demo/stellarium/stellarium/util
+  ✓ data/ = 实体副本（正确）
+
+── 2. materialize 临时残骸
+  ✓ 无 .materialize-* 残骸
+
+── 3. git 是否在资源路径下报改动（链接被写会在这里露头）
+  ✓ 资源路径下 0 处改动
+
+── 4. 全量 sha256（未启用；加 --deep 才跑）
+  提示：内容级校验也可直接跑 `node tools/source-snapshot.mjs verify`
+
+════ 结论 ════
+  VERDICT=PASS（资源链接结构完好；materialize 临时残骸 0；资源路径无 git 改动）

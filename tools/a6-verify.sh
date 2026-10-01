@@ -273,22 +273,136 @@ fi
 
 # ══ T45 配置/数据安全 P-CFG-01..04 ══════════════════════════════════════════
 if [[ "$TARGET" == "all" || "$TARGET" == "t45" ]]; then
-  echo "──────── T45 配置健康 CFGHEALTHCHECK ×${RUNS}（预期 rc=0 / 全绿）────────" \
+  echo "──────── T45 配置健康 CFGHEALTHCHECK 形态矩阵（7 形态 ×${RUNS}）────────" \
     | tee -a "$R46/rc-summary.txt"
-  if suite_ready STELQUICK_CONFIG_HEALTH_CHECK; then
-  ok=0
-  for i in $(seq 1 $RUNS); do
-    run_suite "$R45/cfghealthcheck-pos-run$i.txt" env STELQUICK_CONFIG_HEALTH_CHECK=1 "$BIN"
-    rc=$?
-    verd=$(/usr/bin/grep -E "CFGHEALTHCHECK: VERDICT=" "$R45/cfghealthcheck-pos-run$i.txt" | /usr/bin/tail -1)
-    line=$(/usr/bin/grep -E "CFGHEALTHCHECK: .*判据 [0-9]+/[0-9]+" "$R45/cfghealthcheck-pos-run$i.txt" | /usr/bin/tail -1)
-    echo "  · run$i rc=${rc}（${verd}；${line}）" | tee -a "$R46/rc-summary.txt"
-    if [[ $rc -eq 0 && "$verd" == *"VERDICT=PASS"* ]]; then (( ok++ ))
-    else judge 1 "T45 run$i 不绿（rc=$rc ${verd}）"; fi
+  if suite_ready STELQUICK_CFGHEALTH_CHECK; then
+  # 形态 × 期望严重度（**期望值的证据** = T45-A 探针 Q2 五形态实测 + Q3b；
+  # 逐条理由写在 ui/ConfigHealthCheck.hpp 的形态表里）。表驱动而非各自 if ——
+  # 加形态只改这两行，避免"漏跑一个形态而没人发现"。
+  FORMS=(none truncate badline badutf8 binary empty)
+  SEVS=(1 3 3 3 3 3)
+  # ⚠️ `readonly` 形态**刻意不进矩阵**：个人版配置不可写 ⇒ 引擎
+  #   `findFile("config.ini", Writable|File)` 落空（fileFlagsCheck 的 Writable 门）
+  #   ⇒ 落到**安装目录**用 `New` 兜底新建 `./config.ini` ⇒ 该形态测到的不是
+  #   "个人版只读"，而且会污染仓库根与**后续 run**。机制与处置见 T45 文档 §6.5 残余。
+  #   产品侧"不可写 ⇒ severity 3"的判定仍在（`QFileInfo::isWritable()`），但无端到端 run。
+  nf=0; nokall=0
+  for k in $(seq 1 ${#FORMS[@]}); do
+    FORM=${FORMS[$k]}; ESEV=${SEVS[$k]}
+    for i in $(seq 1 $RUNS); do
+      (( nf++ ))
+      ROOT=$(mktemp -d /tmp/t45-cfghealth.XXXXXX)
+      tools/a6-cfg-inject.sh "$FORM" "$ROOT" >> "$R45/inject-$FORM-run$i.txt" 2>&1
+      EXPECT_BYTES=""; EXPECT_SHA256=""
+      source "$ROOT/inject.env"
+      LOG="$R45/cfghealthcheck-$FORM-run$i.txt"
+      # ⚠️ STEL_USERDIR 指到**临时目录** ⇒ 个人版目录推出到临时目录 ⇒ 真实用户配置零触碰。
+      #   STELQUICK_BOOTLOG 指回本 run 的日志本身，判据据此做"诊断页 ↔ 启动日志"对照。
+      run_suite "$LOG" env "STEL_USERDIR=$ROOT/Stellarium" "STELQUICK_BOOTLOG=$LOG" \
+        STELQUICK_CFGHEALTH_CHECK=1 "STELQUICK_CFGHEALTH_FORM=$FORM" \
+        "STELQUICK_CFGHEALTH_EXPECT_BYTES=$EXPECT_BYTES" \
+        "STELQUICK_CFGHEALTH_EXPECT_SHA256=$EXPECT_SHA256" "$BIN"
+      rc=$?
+      verd=$(/usr/bin/grep -aE "CFGHEALTHCHECK: VERDICT=" "$LOG" | /usr/bin/tail -1)
+      summ=$(/usr/bin/grep -aE "CFGHEALTHCHECK: .*判据 [0-9]+/[0-9]+" "$LOG" | /usr/bin/tail -1)
+      sev=$(/usr/bin/grep -a "CONFIGISO: configHealth" "$LOG" | /usr/bin/tail -1 \
+            | /usr/bin/sed -E 's/.*severity=([0-9-]+).*/\1/')
+      echo "  · form=${FORM}(期望 sev=${ESEV}) run$i rc=${rc} sev观测=${sev:-?} ${verd}" \
+        | tee -a "$R46/rc-summary.txt"
+      echo "      ${summ}" | tee -a "$R46/rc-summary.txt"
+      if [[ $rc -eq 0 && "$verd" == *"VERDICT=PASS"* && "$sev" == "$ESEV" ]]; then (( nokall++ ))
+      else judge 1 "T45 form=${FORM} run$i 不绿（rc=$rc sev=${sev:-?} 期望=${ESEV} ${verd}）"; fi
+      /bin/chmod -R u+w "$ROOT" 2>/dev/null
+      /bin/rm -rf "$ROOT"
+      # 起停间隔：本形态矩阵是**连续起停**，测前多份跑偏记录都栽在这
+      #（`VK_ERROR_DEVICE_LOST` / `Failed to build or resize swapchain`，
+      #  陷阱 50）。**与配置无关**：同一形态重复跑时 rc 在 0 与 139 之间摆动。
+      # 故留出沉降时间，别让判据替环境背锅。
+      sleep "${A6_SETTLE_SEC:-8}"
+    done
   done
-  judge $([[ $ok -eq $RUNS ]] && echo 0 || echo 1) "T45 配置健康 $ok/$RUNS 全绿"
+  judge $([[ $nokall -eq $nf ]] && echo 0 || echo 1) \
+    "T45 配置健康形态矩阵 $nokall/$nf 全绿（6 形态：none/truncate/badline/badutf8/binary/empty）"
+  # 卫生门：引擎的 `findFile("config.ini", New)` 会在**安装目录**兜底新建一份
+  # （本轮形态矩阵不含只读形态 ⇒ 不该发生）。若出现 ⇒ 它既污染仓库、又会污染后续 run
+  # （下一轮的 findFile 会先命中它）⇒ 记账 + 清理。**先证明它没被 git 跟踪**才敢删。
+  if [[ -f "$PWD/config.ini" ]]; then
+    if git ls-files --error-unmatch config.ini > /dev/null 2>&1; then
+      judge 1 "T45 卫生：仓库根出现 config.ini 且它是**被跟踪文件**（不许自动删）—— 请人工检查"
+    else
+      judge 1 "T45 卫生：仓库根出现未被跟踪的 config.ini（引擎安装目录兜底新建）—— 已清理"
+      /bin/rm -f "$PWD/config.ini"
+    fi
+  fi
+  # ── 负控：期望值**实跑出来再写死**（陷阱 87）。每组只开一个开关，红项集合必须
+  #    **互不相同且与关掉的东西一一对应**（否则说明判据在互相搭便车）。
+  #    条目格式 `<envvar>=1:<组名>:<形态>[@orig]`（`@orig` ⇒ 注入到**原目录**）：
+  #      ISOLATE_OFF + full@orig ⇒ 关 T36 隔离 ⇒ product 用**原目录**；
+  #        那份必须放**完整**配置（form=full）引擎才起得来 —— 放 none 的话测到的是
+  #        "没配置 ⇒ 崩"（T45-A 已证空用户目录 SIGSEGV），与"隔离关掉"这个被测命题
+  #        不是一回事 ⇒ 期望红项 = {CH-02}（isolated=0）
+  #      STATUS_OFF  + truncate ⇒ 关"健康报告"（修复照常）⇒ 严重度/原始读数退成 0/-1
+  #      REPAIR_OFF  + truncate ⇒ 关"引导修复"⇒ **引擎应崩**（rc≠0、无 VERDICT）
+  #      DRIFT       + none     ⇒ 打印探针行后改诊断面 ⇒ 与启动日志漂移
+  #    ⚠️ 期望红项集合**实跑出来再写死**（陷阱 87）；两轮逐位一致才落笔。
+  #       2026-10-01 实跑（round1 / round2 **逐位一致**，二进制 = ConfigHealthCheck 含
+  #       `full` 形态的"字节不必存活"分支）：
+  #         ISOLATE_OFF + full@orig  rc=5 红项={CH-02,CH-03,CH-05,CH-06} SKIP={CH-04}
+  #                                  （isolated=0 ⇒ CH-02 必须红；健康读整段被跳过 ⇒
+  #                                   status=-1/severity=0 ⇒ CH-03/CH-05 红；
+  #                                   CH-04 因"产品读的那份文件已不存在"而 SKIP）
+  #         STATUS_OFF  + truncate   rc=5 红项={CH-03,CH-04,CH-05}       SKIP={}
+  #                                  （修复照常 repaired=1；只有报告被关）
+  #         REPAIR_OFF  + truncate   rc=139 **无任何判据输出**            ← 修复腿承重的铁证
+  #                                  （severity=3 status=2 keys=99 repaired=0 ⇒ 引擎 SIGSEGV）
+  #         DRIFT       + none       rc=5 红项={CH-07}                   SKIP={CH-04}
+  #       四组红项集合**互不相同**且与关掉的东西一一对应（否则说明判据在搭便车，陷阱 22）。
+  if [[ -n "${A6_T45_NEGCTL:-}" ]]; then
+    nk=0
+    for trip in ${=A6_T45_NEGCTL}; do
+      envvar="${trip%%:*}"; rest="${trip#*:}"
+      base="${rest%%:*}"; FORM="${rest##*:}"
+      TGT=personal
+      if [[ "$FORM" == *"@orig" ]]; then FORM="${FORM%@orig}"; TGT=original; fi
+      # 形如 `<env>=1:NAME`（没有第三个冒号段）⇒ 形态缺省 none。
+      if [[ -z "$FORM" || "$FORM" == "$rest" ]]; then FORM=none; fi
+      (( nk++ ))
+      ROOT=$(mktemp -d /tmp/t45-negctl.XXXXXX)
+      tools/a6-cfg-inject.sh "$FORM" "$ROOT" "$TGT" >> "$R45/inject-negctl-$base.txt" 2>&1
+      EXPECT_BYTES=""; EXPECT_SHA256=""
+      source "$ROOT/inject.env"
+      LOG="$R45/cfghealthcheck-negctl-$base-run1.txt"
+      run_suite "$LOG" env "STEL_USERDIR=$ROOT/Stellarium" "STELQUICK_BOOTLOG=$LOG" \
+        "$envvar" \
+        STELQUICK_CFGHEALTH_CHECK=1 "STELQUICK_CFGHEALTH_FORM=$FORM" \
+        "STELQUICK_CFGHEALTH_EXPECT_BYTES=$EXPECT_BYTES" \
+        "STELQUICK_CFGHEALTH_EXPECT_SHA256=$EXPECT_SHA256" "$BIN"
+      nrc=$?
+      verd=$(/usr/bin/grep -aE "CFGHEALTHCHECK: VERDICT=" "$LOG" | /usr/bin/tail -1)
+      reds=$(/usr/bin/grep -aE "CFGHEALTHCHECK: +\[FAIL\] " "$LOG" \
+             | /usr/bin/sed -E 's/.*\[FAIL\] (CH-[0-9]+).*/\1/' | /usr/bin/sort -u \
+             | /usr/bin/tr '\n' ',' | sed 's/,$//')
+      echo "  · 负控 $base（form=$FORM）rc=$nrc ${verd}" | tee -a "$R46/rc-summary.txt"
+      echo "      负控 $base 红项 = ${reds:-（无判据输出 —— 见台账：REPAIR_OFF 的期望就是崩）}" \
+        | tee -a "$R46/rc-summary.txt"
+      /bin/chmod -R u+w "$ROOT" 2>/dev/null
+      /bin/rm -rf "$ROOT"
+      # 连续起停 Metal 掉设备（陷阱 50）⇒ 与形态矩阵同款收敛期。
+      sleep "${A6_SETTLE_SEC:-8}"
+    done
+    if (( nk == 0 )); then
+      judge 1 "T45 负控枚举失败（A6_T45_NEGCTL 已设但 0 组被解析）—— 不许静默跳过"
+    else
+      echo "  ⚠️ A6_T45_NEGCTL 已跑（$nk 组）：**红项集合须与台账写死值逐位一致**，请人工核对" \
+        | tee -a "$R46/rc-summary.txt"
+    fi
   else
-    notready STELQUICK_CONFIG_HEALTH_CHECK
+    echo "  · T45 负控未跑（未设 A6_T45_NEGCTL）—— 收口时必须跑，见 T45 文档 §负控" \
+      | tee -a "$R46/rc-summary.txt"
+    judge 1 "T45 负控未跑：期望值须实跑写死（陷阱 87）"
+  fi
+  else
+    notready STELQUICK_CFGHEALTH_CHECK
   fi
   # 资源链接判据（P-CFG-03）：脚本自带 rc 语义 0=PASS / 1=FAIL（与套件就绪无关）
   echo "──────── T45 资源链接占位校验 ────────" | tee -a "$R46/rc-summary.txt"

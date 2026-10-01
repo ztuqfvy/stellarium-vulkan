@@ -112,6 +112,9 @@ set(stelQuickUI_SOURCES
     # T44-C：生命周期回归自检（LF-02..LF-04，×100 进程内循环）
     LifeCycleCheck.hpp
     LifeCycleCheck.cpp
+    # T45-C：配置健康/数据安全自检（P-CFG-01 损坏配置可恢复+明确提示 / P-CFG-04 诊断页一致）
+    ConfigHealthCheck.hpp
+    ConfigHealthCheck.cpp
     LegacyHostCheck.hpp
     LegacyHostCheck.cpp
     # T15 命令通路：QML → ActionRouter → AppFacade → 引擎（无引擎形态可编译 no-op）

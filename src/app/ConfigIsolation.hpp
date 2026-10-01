@@ -94,8 +94,31 @@ struct ConfigIsolationReport
     //! `configStatus`：QSettings::Status 的 int 值（0=NoError 1=AccessError
     //! 3=FormatError）；**-1 = 未探测**（config.ini 不存在 / 引擎形态外）。
     int configStatus = -1;
-    //! 人类可读判读（空串 = 未探测）。**非致命**：损坏时回退默认照常跑，
-    //! 提示走错误页**状态行**（error）+ 诊断文本，**不进** errorHeadline
+    //! 引导期读到的**原始事实**（判据的对照量：产品报的读数必须与判据自己读文件
+    //! 的结果一致 ⇒ 见 `ConfigHealthCheck` CH-04）。-1 = 未探测。
+    qint64 configFileBytes = -1;
+    int configParsedKeys = -1;
+    //! **严重度**：0=未探测 1=正常 2=警告 3=错误。
+    //! ⚠️ 裁定点**唯一**在本文件 —— `ErrorModel` 只把严重度渲染成状态行，
+    //! **不重新判定**（陷阱 86 的精神：同一事实只许有一份判定）。
+    int configSeverity = 0;
+    //! ── T45-B2：**引导修复**腿（P-CFG-01 的"启动可恢复"）────────────────────
+    //! 🔴 实测（2026-10-01）：个人版 config.ini 变成"**不可用**"（格式异常 /
+    //! 解析不出任何键，含 0 字节）时，引擎 **SIGSEGV（rc=139）**，崩在
+    //! `LandscapeMgr: initialized Cache for 100 MB.` 之后 —— 与头注里
+    //! "空用户目录"那条**同一个崩点**。⇒ "损坏"不只是显示问题：不修就起不来。
+    //! 处置 = 备份用户原始字节（`*.corrupt[.n]`）后重建为随包默认配置
+    //! （上游 `src/main.cpp:398-403` 的 `copyDefaultConfigFile()` 只覆盖"文件不存在"，
+    //!  本处把它扩到"存在但不可用"）。修复**先于**健康报告，但报告里的
+    //! `configFileBytes` / `configParsedKeys` 是**修复之前**的读数
+    //! —— 健康行描述的是"发现时是什么样"（判据 CH-05 依赖这一点）。
+    bool configRepaired = false;
+    //! 损坏文件的备份路径（未修复时为空串）。判据 CH-01 用它做**注入自证**：
+    //! 注入的字节应当完整躺在备份里（既证明判的确实是脚本造的那份，也证明
+    //! 修复**没丢用户的原始字节**）。
+    QString configCorruptBackup;
+    //! 人类可读判读（空串 = 未探测）。**非致命**：损坏时回退默认/引导修复照常跑，
+    //! 提示走错误页**状态行**（error/warn）+ 诊断文本，**不进** errorHeadline
     //! —— headline 只留给"引擎起不来"这类致命错（决定记入 T45 文档 §4）。
     QString configHealthText;
     //! **正常**流程说明（"个人版里已有 config.ini ⇒ 跳过播种"、"负控生效"、

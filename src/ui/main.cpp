@@ -257,6 +257,7 @@ void ensureVulkanLoaderPath()
 #include "ui/DynFrameCheck.hpp"
 #include "ui/IFrameProducer.hpp"
 #include "ui/LifeCycleCheck.hpp"   // T44-C：生命周期回归自检（LF-02..LF-04）
+#include "ui/ConfigHealthCheck.hpp"   // T45-C：配置健康/数据安全自检（CH-01..CH-08）
 #include "ui/LifeCycleProbe.hpp"
 #include "ui/LiveFrameSource.hpp"
 #include "ui/SkyLongRun.hpp"
@@ -5212,6 +5213,20 @@ int main(int argc, char **argv)
                 probeResult.portabilityEnumerationExt ? 1 : 0,
                 probeResult.error.toUtf8().constData());
     std::fflush(stdout);
+    // T45-C 负控 `STELQUICK_CFGHEALTH_DRIFT=1`：在**打印完探针行之后**改掉诊断面的
+    // deviceName ⇒ 制造"启动日志与诊断页漂移"，用来证明 CH-07 的对照**有牙齿**
+    //（否则"两处一致"可能只是因为两边都从同一个即刻状态读、永远不会分叉）。
+    // 这是**判据牙齿**的负控，不是产品缺陷开关；正题恒不设。
+    if (qEnvironmentVariableIsSet("STELQUICK_CFGHEALTH_DRIFT")) {
+        stelapp::VulkanProbeResult drifted = probeResult;
+        drifted.deviceName += QStringLiteral("-DRIFT");
+        backendInfo->applyProbe(drifted);
+        std::printf("STELQUICK: [负控] CFGHEALTH_DRIFT：诊断面 deviceName 已改为「%s」"
+                    "（启动日志仍为「%s」）\n",
+                    drifted.deviceName.toUtf8().constData(),
+                    probeResult.deviceName.toUtf8().constData());
+        std::fflush(stdout);
+    }
 #else
     backendInfo->applyProbeUnavailable(
         QStringLiteral("本构建未启用 VkDeviceProbe（STELQUICK_VULKAN_PROBE=OFF，鸿蒙交叉编译）"));
@@ -5343,6 +5358,9 @@ int main(int argc, char **argv)
     // T44-C：生命周期回归自检（STELQUICK_LIFECYCLE_CHECK=1）：判据 LF-02..LF-04，
     // 进程内 ×100 三组（最小化/恢复、尺寸切换、组合序列）。见 ui/LifeCycleCheck.hpp。
     const bool lifeCheck = qEnvironmentVariableIsSet("STELQUICK_LIFECYCLE_CHECK");
+    // T45-C：配置健康/数据安全自检（STELQUICK_CFGHEALTH_CHECK=1）：判据 CH-01..CH-08。
+    // 损坏形态由外层脚本经 STEL_USERDIR 重定向到临时目录后注入（见装配段注释）。
+    const bool cfgHealthCheck = qEnvironmentVariableIsSet("STELQUICK_CFGHEALTH_CHECK");
     // T42-C：状态与错误页自检（EC-01..EC-N）。⚠️ 它的装配**允许 boot 失败** ——
     // "引导失败 ⇒ 错误页"正是判据腿之一（用 STEL_USERDIR 造真实失败）。
     const bool errorCheck = qEnvironmentVariableIsSet("STELQUICK_ERROR_CHECK");
@@ -5375,6 +5393,7 @@ int main(int argc, char **argv)
                           || lifeProbe
                           || lifeOneShot
                           || lifeCheck
+                          || cfgHealthCheck
                           || qEnvironmentVariableIsSet("STELQUICK_LIVE")
                           || liveEngine;
     QString startPage = QStringLiteral("diag");
@@ -5592,7 +5611,7 @@ int main(int argc, char **argv)
         // T45-B：配置健康同步给错误/状态页 —— 真源是引导期（boot() 内
         // `bootstrapPersonalConfigDir()`）的那一次 `QSettings::status()` 读取，
         // 这里只转发（判定只有一份；探针 Q4b 证实此前该读数从未被产品路径消费）。
-        errorModel.setConfigHealth(stelapp::configIsolationReport().configStatus,
+        errorModel.setConfigHealth(stelapp::configIsolationReport().configSeverity,
                                    stelapp::configIsolationReport().configHealthText);
         errorModel.refresh();
 
@@ -6767,6 +6786,65 @@ int main(int argc, char **argv)
 #endif
     }
 
+    // T45-C 配置健康/数据安全自检（STELQUICK_CFGHEALTH_CHECK=1）：判据 CH-01..CH-08。
+    // 出处：测试文档 §8「A-1.0 出口」第 4 条（P-CFG-01…04 通过）。T36 只做掉 P-CFG-02
+    //   （路径隔离），P-CFG-01（**损坏**配置可恢复 + 明确提示）与 P-CFG-04（诊断页与
+    //   启动日志一致）一直没有判据 —— T36 的产品侧只想过"没有 config.ini"，没想过
+    //   "有但坏了"（T45-A Q4b 代码事实）。
+    // ⚠️ 损坏字节由**外层脚本**注入：脚本设 `STEL_USERDIR=<临时目录>/Stellarium`，
+    //    个人版目录于是推出到 `<临时目录>/Stellarium-quick`（临时目录！），真实用户
+    //    配置一字节都不碰。产品侧**刻意不**带 `CFG_INJECT` 这类开关 —— 出货二进制
+    //    不该有"往用户配置里写垃圾"的代码（见 ui/ConfigHealthCheck.hpp 头注）。
+    // ⚠️ `boot()` **允许失败**：损坏配置起不来本身就是 P-CFG-01 的结论（CH-02 判它），
+    //    不能把它当成仪器故障吞掉。所以这里不 return 6。
+    if (cfgHealthCheck) {
+#if !defined(STELQUICK_HAS_ENGINE) || !defined(STELQUICK_WIDGETS_HOST)
+        std::printf("CFGHEALTHCHECK: VERDICT=UNAVAILABLE（需要合流形态构建）\n");
+        std::fflush(stdout);
+        return 6;
+#else
+        warmUpSceneGraph(window);
+        liveSkyRuntime = std::make_unique<stelapp::LiveSkyRuntime>();
+        QString cfgBootError;
+        const bool cfgEngineBooted = liveSkyRuntime->boot(&cfgBootError);
+        if (!cfgEngineBooted) {
+            std::fprintf(stderr,
+                         "CFGHEALTHCHECK: 引擎引导失败（损坏配置形态下属被测行为）：%s\n",
+                         cfgBootError.toUtf8().constData());
+            liveSkyRuntime.reset();
+        }
+        errorModel.setBootResult(cfgEngineBooted, cfgBootError);
+        errorModel.setBackend(backendInfo->backendOk(), backendInfo->runtimeApiName(),
+                              backendInfo->probeError());
+        errorModel.setFramePathAlive(false);
+        // 真源是引导期 ConfigIsolation 的**严重度**判定（只渲染，不重判 —— 陷阱 86）。
+        errorModel.setConfigHealth(stelapp::configIsolationReport().configSeverity,
+                                   stelapp::configIsolationReport().configHealthText);
+        errorModel.refresh();
+
+        stelapp::ConfigHealthCheck::run(
+            &app, window, backendInfo, &errorModel, cfgEngineBooted,
+            [&app](const stelapp::ConfigHealthCheck::Result &result) {
+                std::printf("CFGHEALTHCHECK: %s\n", result.summary.toUtf8().constData());
+                for (const QString &line : result.details)
+                    std::printf("CFGHEALTHCHECK:%s\n", line.toUtf8().constData());
+                if (result.unavailable) {
+                    std::printf("CFGHEALTHCHECK: VERDICT=UNAVAILABLE\n");
+                    std::fflush(stdout);
+                    app.exit(6);
+                    return;
+                }
+                std::printf("CFGHEALTHCHECK: VERDICT=%s\n", result.pass ? "PASS" : "FAIL");
+                std::fflush(stdout);
+                app.exit(result.pass ? 0 : 5);
+            });
+        const int rc = app.exec();
+        liveSkyRuntime.reset();
+        std::fflush(nullptr);
+        _exit(backendOk ? rc : 3);
+#endif
+    }
+
     // T42-A 错误/状态与未支持项数据面探针（STELQUICK_ERROR_PROBE=1）。
     // 任务出处是三处文档口径的**并集**：
     //   ① A-1.0 第二格 `|资源路径、错误提示、渲染诊断、配置保存 | 最小 | 必须|`
@@ -6846,7 +6924,7 @@ int main(int argc, char **argv)
         errorModel.setFramePathAlive(false);
         // T45-B：配置健康注入（boot 失败腿也注入 —— 失败时 configStatus=-1 ⇒
         // 状态行如实报"不存在"，这本身就是失败腿判据的一部分）。
-        errorModel.setConfigHealth(stelapp::configIsolationReport().configStatus,
+        errorModel.setConfigHealth(stelapp::configIsolationReport().configSeverity,
                                    stelapp::configIsolationReport().configHealthText);
         // 🔴 必须给 **QML 绑定的那个**实例喂数据（陷阱 86：自建副本 ≠ 接线实例）。
         errorModel.refresh();
@@ -7788,7 +7866,7 @@ int main(int argc, char **argv)
     // T42-B：状态与错误页同理（资源路径要走 `StelFileMgr`）。⚠️ **无条件**刷新 ——
     // 引导失败时正是这一页要说话的时候（那时 `liveSkyRuntime` 已被 reset）。
     // T45-B：配置健康同源转发（此时 boot 已跑过 ⇒ configIsolationReport 有效）。
-    errorModel.setConfigHealth(stelapp::configIsolationReport().configStatus,
+    errorModel.setConfigHealth(stelapp::configIsolationReport().configSeverity,
                                stelapp::configIsolationReport().configHealthText);
     errorModel.refresh();
 

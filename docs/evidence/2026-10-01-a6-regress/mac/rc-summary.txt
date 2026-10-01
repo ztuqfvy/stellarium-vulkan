@@ -1,22 +1,52 @@
-环境：14:39  up 6 days, 16:23, 1 user, load averages: 5.28 4.91 4.60
+环境：15:50  up 6 days, 17:33, 1 user, load averages: 5.97 6.19 7.81
 环境注记：⚠️ Spotlight 批量索引正在运行（mdbulkimport）——实测负载毒源 （T37-X2 撕裂帧 / T37-X3 引导挂死）。正题若不绿，先停索引再重跑。
-二进制：42628408 B  2026-10-01 14:39 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=5637ed377462775a81ff0cfde3669b90
-config 零污染门：起跑 md5=b1e4443b3a11f5a5243603f6d19da3bd
-二进制 md5=5637ed377462775a81ff0cfde3669b90
-──────── T44 生命周期 LIFECHECK ×1（预期 rc=0 / 全绿 / 红项空）────────
-  · run1 rc=0（LIFECHECK: VERDICT=PASS；LIFECHECK: 生命周期回归自检：判据 13/13 通过（LF-02 ×100 / LF-03 ×100 / LF-04 ×100）；红项 []）
-  ✓ T44 生命周期 1/1 全绿
-──────── T44 P-LIF-01 进程级 ×20 ────────
-      成功（rc=0 且 VERDICT=PASS）：20 / 20
-      失败：0（其中看门狗超时 0 轮 ⇒ 疑似死锁，见陷阱 50）
-      首帧延迟（启动→首帧上屏，采样 20 轮）：min=1116ms｜median=1139ms｜p95=1173ms｜max=1274ms｜mean=1148.2ms
-      config 零污染门：✅ 前后一致（b1e4443b3a11f5a5243603f6d19da3bd）
-      VERDICT=PASS（进程级 ×20 无崩溃、无死锁；首帧每轮都上屏）
-  ✓ T44 P-LIF-01 进程级 ×20（rc=0）
-  · 负控 NOSIZE run1 rc=5
-      负控 NOSIZE 红项 = LF-03a,LF-04a  · 负控 NOSETTLE run1 rc=5
-      负控 NOSETTLE 红项 = LF-02b,LF-03a,LF-03c,LF-04a,LF-04c  · 负控 HIDE run1 rc=5
-      负控 HIDE 红项 = LF-02f  ⚠️ A6_T44_NEGCTL 已跑（3 组）：**红项集合须与台账写死值逐位一致**，请人工核对
-config 零污染门：✅ 前后一致（b1e4443b3a11f5a5243603f6d19da3bd）
+二进制：42671128 B  2026-10-01 15:49 ./build-release/src/ui/stelQuickUI.app/Contents/MacOS/stelQuickUI  md5=3954faeec5568542595540e44a6aace2
+config 零污染门：起跑 md5=c847cd85f3b12585e84ac6bb204b0187
+二进制 md5=3954faeec5568542595540e44a6aace2
+──────── T45 配置健康 CFGHEALTHCHECK 形态矩阵（7 形态 ×2）────────
+  · form=none(期望 sev=1) run1 rc=0 sev观测=1 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=none）：判据 8/9｜1 项前提不齐（UNAVAILABLE，不记 FAIL）
+  · form=none(期望 sev=1) run2 rc=0 sev观测=1 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=none）：判据 8/9｜1 项前提不齐（UNAVAILABLE，不记 FAIL）
+  · form=truncate(期望 sev=3) run1 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=truncate）：判据 9/9
+  · form=truncate(期望 sev=3) run2 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=truncate）：判据 9/9
+  · form=badline(期望 sev=3) run1 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=badline）：判据 9/9
+  · form=badline(期望 sev=3) run2 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=badline）：判据 9/9
+  · form=badutf8(期望 sev=3) run1 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=badutf8）：判据 9/9
+  · form=badutf8(期望 sev=3) run2 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=badutf8）：判据 9/9
+  · form=binary(期望 sev=3) run1 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=binary）：判据 9/9
+  · form=binary(期望 sev=3) run2 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=binary）：判据 9/9
+  · form=empty(期望 sev=3) run1 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=empty）：判据 9/9
+  · form=empty(期望 sev=3) run2 rc=0 sev观测=3 CFGHEALTHCHECK: VERDICT=PASS
+      CFGHEALTHCHECK: 配置健康自检（form=empty）：判据 9/9
+  ✓ T45 配置健康形态矩阵 12/12 全绿（6 形态：none/truncate/badline/badutf8/binary/empty）
+  · 负控 ISOLATE_OFF（form=full）rc=5 CFGHEALTHCHECK: VERDICT=FAIL
+      负控 ISOLATE_OFF 红项 = CH-02,CH-03,CH-05,CH-06
+  · 负控 STATUS_OFF（form=truncate）rc=5 CFGHEALTHCHECK: VERDICT=FAIL
+      负控 STATUS_OFF 红项 = CH-03,CH-04,CH-05
+  · 负控 REPAIR_OFF（form=truncate）rc=139 
+      负控 REPAIR_OFF 红项 = （无判据输出 —— 见台账：REPAIR_OFF 的期望就是崩）
+  · 负控 DRIFT（form=none）rc=5 CFGHEALTHCHECK: VERDICT=FAIL
+      负控 DRIFT 红项 = CH-07
+  ⚠️ A6_T45_NEGCTL 已跑（4 组）：**红项集合须与台账写死值逐位一致**，请人工核对
+──────── T45 资源链接占位校验 ────────
+      
+      ── 4. 全量 sha256（未启用；加 --deep 才跑）
+        提示：内容级校验也可直接跑 `node tools/source-snapshot.mjs verify`
+      
+      ════ 结论 ════
+        VERDICT=PASS（资源链接结构完好；materialize 临时残骸 0；资源路径无 git 改动）
+  ✓ T45 资源链接占位校验（rc=0；0=PASS）
+  ✓ T45 T36 CONFIGCHECK 未退化（rc=0）
+config 零污染门：✅ 前后一致（c847cd85f3b12585e84ac6bb204b0187）
 残留进程自查：0 个 stelQuickUI
-════════ SCRIPT-RC=0  FAILED=0  PASS=2 ════════
+════════ SCRIPT-RC=0  FAILED=0  PASS=3 ════════

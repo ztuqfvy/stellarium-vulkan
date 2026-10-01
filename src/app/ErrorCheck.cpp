@@ -358,9 +358,9 @@ void ErrorCheck::run(QCoreApplication *app,
                         .arg(bad.isEmpty() ? QString()
                                            : QStringLiteral("：") + bad.join(QStringLiteral(","))));
 
-            // EC-16（T45-B）：「配置文件」行存在且 ok 态 —— P-CFG-01"明确提示"出口的
-            // 常态半边（损坏半边不在此跑：造损坏要写真实配置，判据只保证**行存在、
-            // 真源是引导期读取、且正常时是 ok**；损坏形态由探针 Q2 的五形态读数背书）。
+            // EC-16（T45-B/B2）：「配置文件」行存在且 ok 态 —— P-CFG-01"明确提示"出口的
+            // 常态半边（**损坏半边移到 `CFGHEALTHCHECK` CH-01..CH-08**：造损坏必须写
+            // 真实文件，本套件不起引擎、也不该碰真实配置 ⇒ 只保证"行存在 + 正常时是 ok"）。
             QString cfgState, cfgText;
             for (const QVariant &v : rows)
                 // ⚠️ 必须用 QStringLiteral：QLatin1String 把 const char* 按 Latin-1 解读，
@@ -374,7 +374,7 @@ void ErrorCheck::run(QCoreApplication *app,
                 }
             c->mark(cfgState == QLatin1String("ok") && !cfgText.isEmpty(),
                     QStringLiteral("EC-16 配置文件行：state=%1 text「%2」（真源=引导期 "
-                                   "QSettings::status()，T45-B）")
+                                   "ConfigIsolation 的严重度判定，T45-B/B2）")
                         .arg(cfgState.isEmpty() ? QStringLiteral("（无此行）") : cfgState, cfgText));
 
             c->mark(!c->model->hasError() && c->model->errorHeadline().isEmpty(),

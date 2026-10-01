@@ -125,10 +125,10 @@ void ErrorModel::setBackend(bool ok, const QString &apiName, const QString &prob
 
 void ErrorModel::setFramePathAlive(bool alive) { m_frameAlive = alive; }
 
-void ErrorModel::setConfigHealth(int status, const QString &healthText)
+void ErrorModel::setConfigHealth(int severity, const QString &healthText)
 {
     m_cfgInjected = true;
-    m_cfgStatus = status;
+    m_cfgSeverity = severity;
     m_cfgHealthText = healthText;
 }
 
@@ -248,26 +248,26 @@ void ErrorModel::rebuildStatus()
             st == QLatin1String("ok") ? QStringLiteral("ok") : QStringLiteral("error")));
     }
 
-    // ── T45-B：「配置文件」行（P-CFG-01 的"明确提示"出口）───────────────────
-    //    真源 = 引导期 ConfigIsolation 的那次 QSettings::status() 读取（只转发）。
+    // ── T45-B/B2：「配置文件」行（P-CFG-01 的"明确提示"出口）─────────────────
+    //    真源 = 引导期 `ConfigIsolation` 的配置健康判定（**严重度**，只渲染）。
     //    损坏**不致命**（回退默认照常跑）⇒ 不进 errorHeadline，只标状态行。
     if (!m_cfgInjected)
         m_statusRows.append(statusRow(QStringLiteral("配置文件"), QStringLiteral("未探测"),
                                       QStringLiteral("info")));
-    else if (m_cfgStatus < 0)
-        m_statusRows.append(statusRow(QStringLiteral("配置文件"), QStringLiteral("不存在"),
-                                      QStringLiteral("warn")));
-    else if (m_cfgStatus == 0)
-        m_statusRows.append(statusRow(QStringLiteral("配置文件"),
-                                      m_cfgHealthText.isEmpty() ? QStringLiteral("正常")
-                                                                : m_cfgHealthText,
-                                      QStringLiteral("ok")));
     else
-        m_statusRows.append(statusRow(QStringLiteral("配置文件"),
-                                      m_cfgHealthText.isEmpty()
-                                          ? QStringLiteral("异常（status=%1）").arg(m_cfgStatus)
-                                          : m_cfgHealthText,
-                                      QStringLiteral("error")));
+    {
+        const char *st = m_cfgSeverity <= 0 ? "info"
+                         : m_cfgSeverity == 1 ? "ok"
+                         : m_cfgSeverity == 2 ? "warn"
+                                              : "error";
+        m_statusRows.append(statusRow(
+            QStringLiteral("配置文件"),
+            m_cfgHealthText.isEmpty()
+                ? (m_cfgSeverity == 1 ? QStringLiteral("正常")
+                                      : QStringLiteral("未探测（severity=%1）").arg(m_cfgSeverity))
+                : m_cfgHealthText,
+            QString::fromLatin1(st)));
+    }
 
     m_statusRows.append(statusRow(QStringLiteral("天空帧通路"),
                                   m_frameAlive ? QStringLiteral("在投帧")

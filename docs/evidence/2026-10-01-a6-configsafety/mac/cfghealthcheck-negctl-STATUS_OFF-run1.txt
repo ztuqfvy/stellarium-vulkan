@@ -1,0 +1,660 @@
+STELQUICK: macOS 渲染兼容模式 = transaction-off
+QVulkanInstance already created; setExtensions() has no effect
+STELQUICK: 诊断对照模式——请求后端 Metal（非验收配置）
+STELQUICK: 宿主形态 = QApplication（Widgets，A3 引擎共存前置）
+STELQUICK: probe ok=1 device=Apple M3 api=1.1.357 driver=0.2.2210 portability_driver=1 portability_enum_ext=1 err=
+qt.qpa.fonts: Populating font family aliases took 84 ms. Replace uses of missing font family "Monospace" with one that exists to avoid this cost. 
+ACTIONCHECK: widget QAction 分发已拆除（合流形态，键盘经 ActionRouter 单点路由）
+HELP: 已接管 6 个老式窗口动作（F1/F3/F4/F5/F6/F7）
+T42: 已接管 4 个无 QML 页的老窗口动作（F2/F10/F12/Alt+B）⇒ 改弹未支持提示
+STELQUICK: runtimeApi=Metal backendOk=1 device=Apple M3（判定来源=信号/兜底）
+StelFileMgr found install location "."
+CONFIGISO: original=/tmp/t45-negctl.FzyyiJ/Stellarium
+CONFIGISO: personal=/tmp/t45-negctl.FzyyiJ/Stellarium-quick
+CONFIGISO: isolated=1
+CONFIGISO: migration=skipped files=0 bytes=0 skippedExisting=0 defaultConfigSeeded=0
+CONFIGISO: note=(none)
+CONFIGISO: info=个人版目录已存在 config.ini，跳过播种（用户改过的值优先）
+CONFIGISO: configHealth severity=0 status=-1 bytes=-1 keys=-1 repaired=1 backup=/tmp/t45-negctl.FzyyiJ/Stellarium-quick/config.ini.corrupt text=负控 STELQUICK_CFG_STATUS_OFF：未读配置健康（但引导修复腿照常工作 —— 修复是正确性，不是可观测性）
+CONFIGISO: config=/tmp/t45-negctl.FzyyiJ/Stellarium-quick/config.ini
+System language (ISO 639 / ISO 3166): zh_CN
+Couldn't load translations for language  "en" in section "stellarium"
+Empty translation file for language  "en" in section "stellarium"
+Default surface format:  QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize -1, greenBufferSize -1, blueBufferSize -1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::DefaultSwapBehavior, swapInterval 1, colorSpace QColorSpace(), profile  QSurfaceFormat::NoProfile)
+OpenGL module type: desktop OpenGL
+StelGLWidget constructor
+StelGraphicsScene constructor
+qt.qpa.openglcontext: Could not create NSOpenGLContext with shared context, falling back to unshared context.
+initializeGL(windowWidth = 1280, windowHeight = 720)
+OpenGL supported version:  "4.1 Metal - 91.7"
+Current Format:  QSurfaceFormat(version 4.1, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 32, redBufferSize 8, greenBufferSize 8, blueBufferSize 8, alphaBufferSize -1, stencilBufferSize 8, samples 0, swapBehavior QSurfaceFormat::DoubleBuffer, swapInterval 0, colorSpace QColorSpace(), profile  QSurfaceFormat::CoreProfile)
+Initializing StelMainView
+Luminance textures are not supported
+Running in High Graphics Mode
+Maximum texture anisotropy: 16
+Maximum 2D texture size: 16384
+Driver version string: 4.1 Metal - 91.7
+GL vendor: Apple
+GL renderer: Apple M3
+GL Shading Language version: 4.10
+stel.OpenGLArray: Vertex Array Objects are supported
+Initial high-DPI scaling factor: 2
+Application language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures"
+Couldn't load translations for language  "zh_CN" in section "stellarium-sky"
+Empty translation file for language  "zh_CN" in section "stellarium-sky"
+Empty skyculture-independent translation file for language  "zh_CN"
+Sky language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-planetary-features"
+Empty translation file for language  "zh_CN" in section "stellarium-planetary-features"
+Planetary features language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-scripts"
+Empty translation file for language  "zh_CN" in section "stellarium-scripts"
+Scripts language: zh_CN
+Couldn't load translations for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Empty translation file for language  "zh_CN" in section "stellarium-skycultures-descriptions"
+Sky culture description language: zh_CN
+Cache directory: /Users/ztuqfvy/Library/Caches/stellarium-vulkan/stelQuickUI
+Using HTTP proxy: "" "" "127.0.0.1" "49801"
+Loaded 252 countries
+Loaded 193 regions
+Loading Solar System data (1: planets and moons) ...
+Loading from: ./data/ssystem_major.ini
+Loaded 83 Solar System bodies from  ./data/ssystem_major.ini
+Solar System now has 83 entries.
+Loading Solar System data (2: minor bodies) ...
+Loading from: ./data/ssystem_minor.ini
+Minor body  (152637) has incomplete data (missing iau_designation or minor_planet_number) in ./data/ssystem_minor.ini section 152637(152637)
+Minor body  (66146) has incomplete data (missing iau_designation or minor_planet_number) in ./data/ssystem_minor.ini section 66146(66146)
+minor body  "(66146)" has no IAU code in section  "66146(66146)"
+minor body  "(152637)" has no IAU code in section  "152637(152637)"
+Loaded 627 Solar System bodies from  ./data/ssystem_minor.ini
+Solar System now has 710 entries.
+File ssystem_minor.ini is loaded successfully...
+ExtendedElements: loaded epoch tables for 4 asteroids from "./data/asteroid_elements.json" ( 0 not matched in ssystem_minor.ini)
+SolarSystem: We have configured 0 threads (plus main thread) for computePositions().
+qt.gui.imageio: libpng warning: iCCP: profile 'ICC profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Loading nomenclature for Solar system bodies ...
+Loaded 16058 / 16094 items of planetary surface nomenclature
+Cannot find these planetary objects to assign nomenclature items: Arrokoth, Dactyl, Didymos, Dimorphos, Dinkinesh, Donaldjohanson
+Could not find the starsConfig.json file: will copy the default one.
+Creating directory  "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/stars/hip_gaia3"
+Creates file  "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/stars/hip_gaia3/starsConfig.json"
+Loading star data ...
+Loading star catalog: ./stars/hip_gaia3/stars_0_0v0_21.cat - 0_0v0_21; 5046 entries
+Loading star catalog: ./stars/hip_gaia3/stars_1_0v0_16.cat - 1_0v0_16; 21612 entries
+Loading star catalog: ./stars/hip_gaia3/stars_2_0v0_17.cat - 2_0v0_17; 141738 entries
+Loading star catalog: ./stars/hip_gaia3/stars_3_0v0_10.cat - 3_0v0_10; 418129 entries
+Finished loading star catalogue data, max_geodesic_level: 3
+Loading scientific star designations from ./stars/hip_gaia3/name.fab
+Loaded 5060 / 5060 scientific designations
+Loading scientific star designations from ./stars/hip_gaia3/extra_name.fab
+Loaded 26200 / 26200 scientific designations
+Loading variable stars data from ./stars/hip_gaia3/gcvs.cat
+[...] GCVS 5.1-20250615
+Loaded 47323 / 47323 variable stars
+Loading double stars from ./stars/hip_gaia3/wds_hip_part.dat
+Loaded 22992 / 22992 double stars
+Loading cross-identification data from ./stars/hip_gaia3/cross-id.cat
+Loaded 327097 / 327097 cross-identification data records for stars
+Loading orbital parameters data for binary system from ./stars/hip_gaia3/binary_orbitparam.dat
+Loaded 15 / 15 orbital parameters data for binary system
+Lists of stars: 118205 HIP stars, 22992 are binaries, 6572 variable (600 Algol-type, 209 Cepheids), 316 Carbon stars, 159 Barium stars, and 220 have PM>1000mas/yr.
+navigation/preset_sky_time is a double - treating as jday: 2451514.25001
+Loading DSO data ...
+[...] Stellarium DSO Catalog, version 3.23 (standard edition)
+qt.gui.imageio: libpng warning: iCCP: profile 'icc': 'GRAY': Gray color space not permitted on RGB PNG
+Loaded 94899 DSO records
+Loading DSO name data ...
+Loaded 1361 / 1388 DSO name records successfully
+No position data for 27 objects: PGC 2798, PGC 2907, PGC 23521, PGC 28759, PGC 29167, PGC 34658, PGC 42102, PGC 44750, PGC 54559, PGC 59117, PGC 59858, PGC 59953, PGC 69018, PGC 69877, PGC 73957, PGC 95597, PGC 100170, PGC 100170, PGC 119230, PGC 1000714, PGC 1436754, PGC 1694462, PGC 2822840, PGC 2826829, PGC 3098124, SNRG 194.7+00.4, SNRG 201.1+08.3
+Loading DSO outline data ...
+Loaded 100 DSO outline records successfully
+Loading DSO discovery data ...
+Loaded 183 / 183 DSO discovery records successfully
+LandscapeMgr: initialized Cache for 100 MB.
+Loading star names from ./skycultures/common_star_names.fab
+Loaded 411 / 411 common star names
+Loaded 88 / 88 constellation records successfully for culture modern
+Cultural Sky Partition: Loaded partitions: QList(12, 3, 2, 5) 12 names,  12 symbols. 0 link stars.  ""
+Loading constellation boundary data ... 
+Loaded 781 constellation boundary segments
+Possible error in asterism "TA4": can't find star Gaia DR3 1233876351043694464... skipping asterism, please install more star catalogs
+Possible error in asterism "TA6": can't find star Gaia DR3 2569872520258433152... skipping asterism, please install more star catalogs
+Possible error in asterism "TA9": can't find star Gaia DR3 3530241707454156544... skipping asterism, please install more star catalogs
+Possible error in asterism "TA12": can't find star Gaia DR3 4472807013960674944... skipping asterism, please install more star catalogs
+Loaded 88 / 92 asterism records successfully for culture modern
+CustomObjectMgr: can't create a file: /tmp/t45-negctl.FzyyiJ/Stellarium-quick/data/persistentCustomObjects.json
+Initializing basic GL shaders... 
+Creating GUI ...
+Loading style file: :/graphicGui/normalStyle.css
+Loaded plugin "Exoplanets"
+Creating directory  "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Exoplanets"
+[Exoplanets] No Exoplanets section exists in main config file - creating with defaults
+[Exoplanets] exoplanets.json does not exist - copying default catalog to /tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Exoplanets/exoplanets.json
+[Exoplanets] Default exoplanets.json to /tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Exoplanets/exoplanets.json
+[Exoplanets] loading catalog file: /tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Exoplanets/exoplanets.json
+stel.LocIP: Got location "Osaka, Ōsaka, Japan (34.6848, 135.514; Asia/Tokyo)" for IP "13.208.247.153"
+Loaded plugin "MeteorShowers"
+Creating directory  "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/MeteorShowers"
+[MeteorShowersMgr] Loading catalog file: /tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/MeteorShowers/MeteorShowers.json
+[MeteorShowersMgr] Trying to restore the default catalog to "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/MeteorShowers/MeteorShowers.json"
+[MeteorShowersMgr] The default catalog was copied!
+[MeteorShowersMgr] Version of the format of the catalog: 2
+Loaded plugin "Novae"
+Creating directory  "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Novae"
+[Novae] no Novae section exists in main config file - creating with defaults
+[Novae] novae.json does not exist - copying default file to /tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Novae/novae.json
+[Novae] copied default novae.json to "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Novae/novae.json"
+[Novae] Loading catalog file: /tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Novae/novae.json
+Loaded plugin "Oculars"
+Creating directory  "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Oculars"
+Oculars::validateAndLoadIniFile() copied default_ocular.ini to  "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Oculars/ocular.ini"
+Loaded plugin "Satellites"
+Creating directory  "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Satellites"
+[Satellites] satellites.json does not exist - copying default file to  /tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Satellites/satellites.json
+[Satellites] copied default satellites.json to  "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Satellites/satellites.json"
+[Satellites] loading catalogue file: /tmp/t45-negctl.FzyyiJ/Stellarium-quick/modules/Satellites/satellites.json
+Satellite has invalid orbit: "COSMOS 1812" "17295"
+Satellite has invalid orbit: "IRIDIUM 51" "25262"
+Satellite has invalid orbit: "USA 224" "37348"
+Satellite has invalid orbit: "TIANHUI 1-02" "38256"
+Satellite has invalid orbit: "FIRST-MOVE" "39439"
+Satellite has invalid orbit: "MCUBED-2" "39472"
+Satellite has invalid orbit: "LEMUR-2-JIN-LUEN" "43182"
+Satellite has invalid orbit: "SKYSAT-C13" "43802"
+Satellite has invalid orbit: "AL-FARABI 2" "43805"
+Satellite has invalid orbit: "SPACEBEE-7" "43816"
+Satellite has invalid orbit: "SHIELDS 1" "43850"
+Satellite has invalid orbit: "ZHUHAI-1 03C" "44537"
+Satellite has invalid orbit: "STARLINK-1019" "44724"
+Satellite has invalid orbit: "STARLINK-1031" "44736"
+Satellite has invalid orbit: "STARLINK-1043" "44748"
+Satellite has invalid orbit: "STARLINK-1046" "44751"
+Satellite has invalid orbit: "STARLINK-1053" "44758"
+Satellite has invalid orbit: "STARLINK-1060" "44765"
+Satellite has invalid orbit: "STARLINK-1068" "44772"
+Satellite has invalid orbit: "STARLINK-1159" "45057"
+Satellite has invalid orbit: "STARLINK-1171" "45062"
+Satellite has invalid orbit: "STARLINK-1151" "45081"
+Satellite has invalid orbit: "STARLINK-1143" "45179"
+Satellite has invalid orbit: "STARLINK-1234" "45190"
+Satellite has invalid orbit: "STARLINK-1210" "45207"
+Satellite has invalid orbit: "STARLINK-1301" "45361"
+Satellite has invalid orbit: "STARLINK-1305" "45377"
+Satellite has invalid orbit: "STARLINK-1272" "45386"
+Satellite has invalid orbit: "STARLINK-1280" "45388"
+Satellite has invalid orbit: "STARLINK-1283" "45389"
+Satellite has invalid orbit: "STARLINK-1255" "45399"
+Satellite has invalid orbit: "STARLINK-1278" "45408"
+Satellite has invalid orbit: "STARLINK-1298" "45413"
+Satellite has invalid orbit: "STARLINK-1318" "45416"
+Satellite has invalid orbit: "STARLINK-1329" "45531"
+Satellite has invalid orbit: "STARLINK-1294" "45551"
+Satellite has invalid orbit: "STARLINK-1357" "45565"
+Satellite has invalid orbit: "STARLINK-1366" "45569"
+Satellite has invalid orbit: "STARLINK-1320" "45572"
+Satellite has invalid orbit: "STARLINK-1347" "45586"
+Satellite has invalid orbit: "STARLINK-1452" "45669"
+Satellite has invalid orbit: "STARLINK-1453" "45670"
+Satellite has invalid orbit: "STARLINK-1456" "45673"
+Satellite has invalid orbit: "STARLINK-1457" "45674"
+Satellite has invalid orbit: "STARLINK-1402" "45685"
+Satellite has invalid orbit: "STARLINK-1398" "45699"
+Satellite has invalid orbit: "STARLINK-1411" "45706"
+Satellite has invalid orbit: "STARLINK-1474" "45738"
+Satellite has invalid orbit: "STARLINK-1484" "45756"
+Satellite has invalid orbit: "STARLINK-1568" "46080"
+Satellite has invalid orbit: "STARLINK-1585" "46117"
+Satellite has invalid orbit: "STARLINK-1593" "46119"
+Satellite has invalid orbit: "STARLINK-1621" "46127"
+Satellite has invalid orbit: "STARLINK-1622" "46128"
+Satellite has invalid orbit: "STARLINK-1623" "46129"
+Satellite has invalid orbit: "STARLINK-1624" "46130"
+Satellite has invalid orbit: "STARLINK-1625" "46131"
+Satellite has invalid orbit: "STARLINK-1596" "46141"
+Satellite has invalid orbit: "STARLINK-1667" "46155"
+Satellite has invalid orbit: "STARLINK-1545" "46156"
+Satellite has invalid orbit: "STARLINK-1627" "46168"
+Satellite has invalid orbit: "STARLINK-1633" "46171"
+Satellite has invalid orbit: "STARLINK-1635" "46172"
+Satellite has invalid orbit: "ION-MK01" "46274"
+Satellite has invalid orbit: "STARLINK-1654" "46326"
+Satellite has invalid orbit: "STARLINK-1686" "46328"
+Satellite has invalid orbit: "STARLINK-1719" "46331"
+Satellite has invalid orbit: "STARLINK-1738" "46336"
+Satellite has invalid orbit: "STARLINK-1750" "46337"
+Satellite has invalid orbit: "STARLINK-1759" "46340"
+Satellite has invalid orbit: "STARLINK-1764" "46343"
+Satellite has invalid orbit: "STARLINK-1765" "46344"
+Satellite has invalid orbit: "STARLINK-1547" "46347"
+Satellite has invalid orbit: "STARLINK-1575" "46349"
+Satellite has invalid orbit: "STARLINK-1653" "46352"
+Satellite has invalid orbit: "STARLINK-1707" "46359"
+Satellite has invalid orbit: "STARLINK-1726" "46362"
+Satellite has invalid orbit: "STARLINK-1724" "46375"
+Satellite has invalid orbit: "STARLINK-1742" "46376"
+Satellite has invalid orbit: "STARLINK-1770" "46383"
+Satellite has invalid orbit: "STARLINK-1771" "46384"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3B" "46454"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3C" "46455"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3I" "46461"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3J" "46462"
+Satellite has invalid orbit: "STARLINK-1648" "46533"
+Satellite has invalid orbit: "STARLINK-1663" "46535"
+Satellite has invalid orbit: "STARLINK-1678" "46538"
+Satellite has invalid orbit: "STARLINK-1676" "46556"
+Satellite has invalid orbit: "STARLINK-1679" "46557"
+Satellite has invalid orbit: "STARLINK-1681" "46559"
+Satellite has invalid orbit: "STARLINK-1714" "46562"
+Satellite has invalid orbit: "STARLINK-1730" "46563"
+Satellite has invalid orbit: "STARLINK-1733" "46564"
+Satellite has invalid orbit: "STARLINK-1735" "46565"
+Satellite has invalid orbit: "STARLINK-1741" "46567"
+Satellite has invalid orbit: "STARLINK-1677" "46576"
+Satellite has invalid orbit: "STARLINK-1683" "46578"
+Satellite has invalid orbit: "STARLINK-1712" "46581"
+Satellite has invalid orbit: "STARLINK-1728" "46582"
+Satellite has invalid orbit: "STARLINK-1736" "46585"
+Satellite has invalid orbit: "STARLINK-1746" "46588"
+Satellite has invalid orbit: "STARLINK-1797" "46698"
+Satellite has invalid orbit: "STARLINK-1810" "46709"
+Satellite has invalid orbit: "STARLINK-1817" "46715"
+Satellite has invalid orbit: "STARLINK-1820" "46717"
+Satellite has invalid orbit: "STARLINK-1830" "46727"
+Satellite has invalid orbit: "STARLINK-1848" "46740"
+Satellite has invalid orbit: "STARLINK-1892" "46743"
+Satellite has invalid orbit: "STARLINK-1894" "46744"
+Satellite has invalid orbit: "STARLINK-1905" "46746"
+Satellite has invalid orbit: "STARLINK-1911" "46749"
+Satellite has invalid orbit: "STARLINK-1928" "46758"
+Satellite has invalid orbit: "STARLINK-1832" "46780"
+Satellite has invalid orbit: "STARLINK-1835" "46782"
+Satellite has invalid orbit: "STARLINK-1882" "46784"
+Satellite has invalid orbit: "STARLINK-1893" "46786"
+Satellite has invalid orbit: "STARLINK-1931" "46790"
+Satellite has invalid orbit: "STARLINK-1934" "46792"
+Satellite has invalid orbit: "STARLINK-1942" "46794"
+Satellite has invalid orbit: "STARLINK-1843" "47133"
+Satellite has invalid orbit: "ASTROCAST-0103" "47487"
+Satellite has invalid orbit: "STARLINK-1958" "47559"
+Satellite has invalid orbit: "STARLINK-1964" "47565"
+Satellite has invalid orbit: "STARLINK-1965" "47566"
+Satellite has invalid orbit: "STARLINK-1967" "47568"
+Satellite has invalid orbit: "STARLINK-1975" "47573"
+Satellite has invalid orbit: "STARLINK-1991" "47587"
+Satellite has invalid orbit: "STARLINK-1997" "47592"
+Satellite has invalid orbit: "STARLINK-2021" "47604"
+Satellite has invalid orbit: "STARLINK-1645" "47622"
+Satellite has invalid orbit: "STARLINK-1655" "47623"
+Satellite has invalid orbit: "STARLINK-1669" "47624"
+Satellite has invalid orbit: "STARLINK-2019" "47641"
+Satellite has invalid orbit: "STARLINK-2032" "47649"
+Satellite has invalid orbit: "STARLINK-2058" "47667"
+Satellite has invalid orbit: "STARLINK-2065" "47672"
+Satellite has invalid orbit: "STARLINK-2095" "47679"
+Satellite has invalid orbit: "STARLINK-2116" "47724"
+Satellite has invalid orbit: "STARLINK-2171" "47754"
+Satellite has invalid orbit: "WILDTRACKCUBE-SIMBA" "47941"
+Satellite has invalid orbit: "STARLINK-2488" "48145"
+Satellite has invalid orbit: "STARLINK-2582" "48460"
+Satellite has invalid orbit: "ICEYE-X11" "48918"
+Satellite has invalid orbit: "ASTROCAST-0201" "48954"
+Satellite has invalid orbit: "ASTROCAST-0203" "48955"
+Satellite has invalid orbit: "NAPA-2" "48963"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3D02" "49005"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3D03" "49006"
+Satellite has invalid orbit: "XINGSHIDAI 10" "49007"
+Satellite has invalid orbit: "STARLINK-3083" "49158"
+Satellite has invalid orbit: "STARLINK-3269" "50194"
+Satellite has invalid orbit: "STARLINK-3255" "50201"
+Satellite has invalid orbit: "INSPIRESAT 1" "51657"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 03D14" "51831"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 03D16" "51834"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 03D11" "51835"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 03D15" "51839"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 03D10" "51840"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 03D12" "51841"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 03D18" "51844"
+Satellite has invalid orbit: "STRIX-BETA" "51847"
+Satellite has invalid orbit: "LYNK TOWER 1" "52162"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3D04" "52389"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3D05" "52390"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3D06" "52391"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 3D30" "52447"
+Satellite has invalid orbit: "STARLINK-4078" "52689"
+Satellite has invalid orbit: "NUSAT-28 (ALICE LEE)" "52747"
+Satellite has invalid orbit: "NUSAT-31 (RUBY PAYNE-S)" "52752"
+Satellite has invalid orbit: "STARLINK-4349" "53044"
+Satellite has invalid orbit: "YAOGAN-35 03A" "53316"
+Satellite has invalid orbit: "DONGPO 06" "53447"
+Satellite has invalid orbit: "DONGPO 03" "53450"
+Satellite has invalid orbit: "DONGPO 04" "53451"
+Satellite has invalid orbit: "STARLINK-4361" "53493"
+Satellite has invalid orbit: "STARLINK-4646" "53737"
+Satellite has invalid orbit: "STARLINK-4720" "53800"
+Satellite has invalid orbit: "STARLINK-4639" "53971"
+Satellite has invalid orbit: "STARLINK-5190" "54092"
+Satellite has invalid orbit: "JILIN-1 GAOFEN 03D54" "54254"
+Satellite has invalid orbit: "JIAOTONG 5 (HEAD-2H)" "54691"
+Satellite has invalid orbit: "ICEYE-X21" "55049"
+Satellite has invalid orbit: "STARLINK-5546" "55632"
+Satellite has invalid orbit: "GHOST-1" "56195"
+Satellite has invalid orbit: "KEPLER-21" "56218"
+Satellite has invalid orbit: "OUTPOST MISSION 1" "56226"
+Satellite has invalid orbit: "STARLINK-6256" "56401"
+Satellite has invalid orbit: "STARLINK-6284" "56403"
+Satellite has invalid orbit: "OTTER PUP" "56933"
+Satellite has invalid orbit: "ICEYE-X30" "56947"
+Satellite has invalid orbit: "TOMORROW-R2" "56962"
+Satellite has invalid orbit: "DROID.001" "56965"
+Satellite has invalid orbit: "NUSAT-43 (R DIENG-KUNTZ)" "56968"
+Satellite has invalid orbit: "2023-085B" "57005"
+Satellite has invalid orbit: "2023-085G" "57010"
+Satellite has invalid orbit: "2023-085H" "57011"
+Satellite has invalid orbit: "2023-085P" "57017"
+Satellite has invalid orbit: "2023-085AF" "57033"
+Satellite has invalid orbit: "NANOZOND 1 (RS49S)" "57190"
+Satellite has invalid orbit: "LEMUR-2-MANO" "57390"
+Satellite has invalid orbit: "2023-104B" "57425"
+Satellite has invalid orbit: "STARLINK-30559" "58039"
+Satellite has invalid orbit: "STARLINK-30790" "58127"
+Satellite has invalid orbit: "TIGER-6" "58272"
+Satellite has invalid orbit: "TIGER-5" "58277"
+Satellite has invalid orbit: "PELICAN-3001" "58296"
+Satellite has invalid orbit: "BRO-10" "58331"
+Satellite has invalid orbit: "STARLINK-30960" "58456"
+Satellite has invalid orbit: "BANE" "58465"
+Satellite has invalid orbit: "LILIUM-1" "58467"
+Satellite has invalid orbit: "2023-189B" "58503"
+Satellite has invalid orbit: "INTUITION-1" "58565"
+Satellite has invalid orbit: "STARLINK-31079" "58598"
+Satellite has invalid orbit: "MDQUBESAT-2" "58665"
+Satellite has invalid orbit: "STARLINK-31271" "58827"
+Satellite has invalid orbit: "LEMUR-2-OBA-NI-JESU" "58902"
+Satellite has invalid orbit: "2024-024G" "58923"
+Satellite has invalid orbit: "COSMOS 2575" "58929"
+Satellite has invalid orbit: "SENTRY" "59140"
+Satellite has invalid orbit: "TRANSPORTER-10AW" "59142"
+Satellite has invalid orbit: "STARLINK-31761" "59615"
+Satellite has invalid orbit: "2024-085B" "59678"
+Satellite has invalid orbit: "2024-095C" "59812"
+Satellite has invalid orbit: "2024-095D" "59813"
+Satellite has invalid orbit: "STARLINK-11143" "59953"
+Satellite has invalid orbit: "STARLINK-31867" "60139"
+Satellite has invalid orbit: "2024-125C" "60205"
+Satellite has invalid orbit: "SATORO-T2" "60477"
+Satellite has invalid orbit: "FLOCK 4BE-16" "60483"
+Satellite has invalid orbit: "FLOCK 4BE-33" "60502"
+Satellite has invalid orbit: "FLOCK 4BE-10" "60503"
+Satellite has invalid orbit: "FLOCK 4BE-8" "60515"
+Satellite has invalid orbit: "TROOP-F2" "60557"
+Satellite has invalid orbit: "PICO-02C023" "60564"
+Satellite has invalid orbit: "STARLINK-32272" "60735"
+Satellite has invalid orbit: "STARLINK-11270" "60999"
+Satellite has invalid orbit: "HORIZON (RS59S)" "61757"
+Satellite has invalid orbit: "ARCTICSAT 1 (RS74S)" "61762"
+Satellite has invalid orbit: "RUZAEVKA 390 (RS44S)" "61766"
+Satellite has invalid orbit: "TUSUR GO (RS78S)" "61782"
+Satellite has invalid orbit: "STARLINK-32547" "61919"
+Satellite has invalid orbit: "STARLINK-11337" "61940"
+Satellite has invalid orbit: "STARLINK-11353" "61941"
+Satellite has invalid orbit: "STARLINK-11320" "61942"
+Satellite has invalid orbit: "STARLINK-11421" "61945"
+Satellite has invalid orbit: "STARLINK-11410" "61946"
+Satellite has invalid orbit: "STARLINK-11390" "61947"
+Satellite has invalid orbit: "STARLINK-11424" "61949"
+Satellite has invalid orbit: "STARLINK-11423" "61950"
+Satellite has invalid orbit: "STARLINK-11262" "62009"
+Satellite has invalid orbit: "STARLINK-11326" "62010"
+Satellite has invalid orbit: "STARLINK-11330" "62011"
+Satellite has invalid orbit: "STARLINK-11385" "62014"
+Satellite has invalid orbit: "STARLINK-11411" "62018"
+Satellite has invalid orbit: "STARLINK-11404" "62019"
+Satellite has invalid orbit: "STARLINK-11378" "62020"
+Satellite has invalid orbit: "STARLINK-11426" "62058"
+Satellite has invalid orbit: "STARLINK-11473" "62060"
+Satellite has invalid orbit: "STARLINK-11470" "62062"
+Satellite has invalid orbit: "STARLINK-11427" "62063"
+Satellite has invalid orbit: "STARLINK-11474" "62065"
+Satellite has invalid orbit: "STARLINK-11463" "62066"
+Satellite has invalid orbit: "STARLINK-11472" "62067"
+Satellite has invalid orbit: "STARLINK-11303" "62096"
+Satellite has invalid orbit: "STARLINK-32524" "62159"
+Satellite has invalid orbit: "STARLINK-11490" "62219"
+Satellite has invalid orbit: "STARLINK-11483" "62223"
+Satellite has invalid orbit: "STARLINK-11471" "62225"
+Satellite has invalid orbit: "STARLINK-11475" "62226"
+Satellite has invalid orbit: "STARLINK-11481" "62230"
+Satellite has invalid orbit: "STARLINK-11371" "62879"
+Satellite has invalid orbit: "STARLINK-11619" "63272"
+Satellite has invalid orbit: "HADES-ICM" "63492"
+Satellite has invalid orbit: "STARLINK-11626" "63556"
+Satellite has invalid orbit: "STARLINK-34230" "64137"
+Satellite has invalid orbit: "STARLINK-34488" "64604"
+Satellite has invalid orbit: "STARLINK-34516" "64605"
+Satellite has invalid orbit: "STARLINK-34073" "64606"
+Satellite has invalid orbit: "STARLINK-34569" "64610"
+Satellite has invalid orbit: "STARLINK-34494" "64611"
+Satellite has invalid orbit: "STARLINK-34521" "64612"
+Satellite has invalid orbit: "STARLINK-34469" "64615"
+Satellite has invalid orbit: "STARLINK-34413" "64616"
+Satellite has invalid orbit: "STARLINK-34415" "64618"
+Satellite has invalid orbit: "STARLINK-34416" "64619"
+Satellite has invalid orbit: "STARLINK-34620" "64803"
+Satellite has invalid orbit: "STARLINK-34647" "64904"
+Satellite has invalid orbit: "STARLINK-34273" "64905"
+Satellite has invalid orbit: "STARLINK-34713" "64906"
+Satellite has invalid orbit: "STARLINK-34702" "64908"
+Satellite has invalid orbit: "STARLINK-34687" "64909"
+Satellite has invalid orbit: "STARLINK-34718" "64911"
+Satellite has invalid orbit: "STARLINK-34636" "64915"
+Satellite has invalid orbit: "STARLINK-34611" "64918"
+Satellite has invalid orbit: "STARLINK-34699" "64921"
+Satellite has invalid orbit: "STARLINK-34643" "64923"
+Satellite has invalid orbit: "STARLINK-34727" "65025"
+Satellite has invalid orbit: "STARLINK-35022" "65409"
+Satellite has invalid orbit: "STARLINK-34992" "65412"
+Satellite has invalid orbit: "STARLINK-34411" "65414"
+Satellite has invalid orbit: "STARLINK-35146" "65421"
+Satellite has invalid orbit: "STARLINK-35040" "65480"
+Satellite has invalid orbit: "STARLINK-35166" "65499"
+Satellite has invalid orbit: "STARLINK-35114" "65502"
+Satellite has invalid orbit: "STARLINK-35072" "65505"
+Satellite has invalid orbit: "STARLINK-35184" "65506"
+Satellite has invalid orbit: "STARLINK-35163" "65507"
+Satellite has invalid orbit: "1998-067XK" "65731"
+Satellite has invalid orbit: "STARLINK-35238" "65841"
+Satellite has invalid orbit: "YOTSUBA-KULOVER" "65941"
+Satellite has invalid orbit: "BOTAN" "65942"
+Satellite has invalid orbit: "E-KAGAKU-1" "65943"
+Satellite has invalid orbit: "STARLINK-35496" "66114"
+Satellite has invalid orbit: "STARLINK-35468" "66118"
+Satellite has invalid orbit: "STARLINK-35653" "66122"
+Satellite has invalid orbit: "STARLINK-35645" "66124"
+Satellite has invalid orbit: "STARLINK-35525" "66134"
+Satellite has invalid orbit: "STARLINK-35592" "66136"
+Satellite has invalid orbit: "STARLINK-35576" "66137"
+Satellite has invalid orbit: "STARLINK-35549" "66139"
+Satellite has invalid orbit: "STARLINK-35740" "66210"
+Satellite has invalid orbit: "STARLINK-35626" "66233"
+Satellite has invalid orbit: "STARLINK-35454" "66236"
+Satellite has invalid orbit: "STARLINK-35480" "66242"
+Satellite has invalid orbit: "STARLINK-35495" "66243"
+Satellite has invalid orbit: "STARLINK-35503" "66245"
+Satellite has invalid orbit: "STARLINK-35434" "66246"
+Satellite has invalid orbit: "STARLINK-35416" "66248"
+Satellite has invalid orbit: "STARLINK-35486" "66253"
+Satellite has invalid orbit: "STARLINK-34650" "66258"
+Satellite has invalid orbit: "STARLINK-35801" "66265"
+Satellite has invalid orbit: "STARLINK-35056" "66266"
+Satellite has invalid orbit: "STARLINK-35745" "66271"
+Satellite has invalid orbit: "STARLINK-35713" "66278"
+Satellite has invalid orbit: "STARLINK-35727" "66281"
+Satellite has invalid orbit: "STARLINK-35774" "66283"
+Satellite has invalid orbit: "STARLINK-35799" "66290"
+Satellite has invalid orbit: "STARLINK-35798" "66292"
+Satellite has invalid orbit: "STARLINK-34615" "66321"
+Satellite has invalid orbit: "STARLINK-35407" "66334"
+Satellite has invalid orbit: "STARLINK-35477" "66338"
+Satellite has invalid orbit: "STARLINK-35639" "66382"
+Satellite has invalid orbit: "STARLINK-35690" "66383"
+Satellite has invalid orbit: "STARLINK-35661" "66387"
+Satellite has invalid orbit: "STARLINK-35647" "66388"
+Satellite has invalid orbit: "STARLINK-35672" "66394"
+Satellite has invalid orbit: "STARLINK-35691" "66404"
+Satellite has invalid orbit: "STARLINK-35617" "66422"
+Satellite has invalid orbit: "STARLINK-35555" "66425"
+Satellite has invalid orbit: "STARLINK-35611" "66427"
+Satellite has invalid orbit: "STARLINK-35610" "66428"
+Satellite has invalid orbit: "STARLINK-35533" "66429"
+Satellite has invalid orbit: "STARLINK-35439" "66431"
+Satellite has invalid orbit: "STARLINK-35502" "66435"
+Satellite has invalid orbit: "STARLINK-35327" "66439"
+Satellite has invalid orbit: "STARLINK-35405" "66440"
+Satellite has invalid orbit: "STARLINK-35334" "66450"
+Satellite has invalid orbit: "STARLINK-35449" "66459"
+Satellite has invalid orbit: "STARLINK-35132" "66461"
+Satellite has invalid orbit: "STARLINK-35499" "66462"
+Satellite has invalid orbit: "STARLINK-35463" "66463"
+Satellite has invalid orbit: "STARLINK-35448" "66465"
+Satellite has invalid orbit: "STARLINK-35451" "66469"
+Satellite has invalid orbit: "STARLINK-35567" "66472"
+Satellite has invalid orbit: "STARLINK-35568" "66473"
+Satellite has invalid orbit: "STARLINK-35372" "66476"
+Satellite has invalid orbit: "STARLINK-35354" "66477"
+Satellite has invalid orbit: "STARLINK-35654" "66483"
+Satellite has invalid orbit: "STARLINK-34733" "66487"
+Satellite has invalid orbit: "STARLINK-35673" "66492"
+Satellite has invalid orbit: "STARLINK-35907" "66498"
+Satellite has invalid orbit: "STARLINK-35897" "66501"
+Satellite has invalid orbit: "STARLINK-35917" "66503"
+Satellite has invalid orbit: "STARLINK-35444" "66511"
+Satellite has invalid orbit: "STARLINK-35366" "66512"
+Satellite has invalid orbit: "STARLINK-35931" "66519"
+Satellite has invalid orbit: "STARLINK-35915" "66521"
+Satellite has invalid orbit: "STARLINK-35946" "66522"
+Satellite has invalid orbit: "STARLINK-35687" "66524"
+Satellite has invalid orbit: "STARLINK-35935" "66527"
+Satellite has invalid orbit: "STARLINK-35933" "66529"
+Satellite has invalid orbit: "STARLINK-35914" "66532"
+Satellite has invalid orbit: "STARLINK-35707" "66533"
+Satellite has invalid orbit: "STARLINK-35976" "66534"
+Satellite has invalid orbit: "STARLINK-35796" "66541"
+Satellite has invalid orbit: "STARLINK-35833" "66542"
+Satellite has invalid orbit: "STARLINK-35315" "66543"
+Satellite has invalid orbit: "STARLINK-35728" "66544"
+Satellite has invalid orbit: "STARLINK-36031" "66593"
+Satellite has invalid orbit: "STARLINK-35978" "66601"
+Satellite has invalid orbit: "STARLINK-36063" "66606"
+Satellite has invalid orbit: "STARLINK-36039" "66612"
+Satellite has invalid orbit: "STARLINK-36040" "66614"
+Satellite has invalid orbit: "STARLINK-35936" "66620"
+Satellite has invalid orbit: "STARLINK-35902" "66626"
+Satellite has invalid orbit: "STARLINK-35965" "66631"
+Satellite has invalid orbit: "STARLINK-35967" "66634"
+Satellite has invalid orbit: "STARLINK-35926" "66642"
+Satellite has invalid orbit: "STARLINK-36051" "66793"
+Satellite has invalid orbit: "STARLINK-36062" "66794"
+Satellite has invalid orbit: "STARLINK-36099" "66797"
+Satellite has invalid orbit: "STARLINK-36041" "66798"
+Satellite has invalid orbit: "STARLINK-36044" "66799"
+Satellite has invalid orbit: "STARLINK-36080" "66801"
+Satellite has invalid orbit: "STARLINK-35565" "66803"
+Satellite has invalid orbit: "STARLINK-36038" "66804"
+Satellite has invalid orbit: "STARLINK-36049" "66805"
+Satellite has invalid orbit: "STARLINK-36069" "66806"
+Satellite has invalid orbit: "STARLINK-35979" "66809"
+Satellite has invalid orbit: "STARLINK-36046" "66810"
+Satellite has invalid orbit: "STARLINK-36042" "66813"
+Satellite has invalid orbit: "STARLINK-35984" "66814"
+Satellite has invalid orbit: "STARLINK-35985" "66815"
+Satellite has invalid orbit: "STARLINK-35995" "66817"
+Satellite has invalid orbit: "STARLINK-35994" "66818"
+Satellite has invalid orbit: "STARLINK-35966" "66821"
+Satellite has invalid orbit: "STARLINK-35958" "66822"
+Satellite has invalid orbit: "STARLINK-35957" "66823"
+Satellite has invalid orbit: "STARLINK-35896" "66824"
+Satellite has invalid orbit: "STARLINK-35898" "66826"
+Satellite has invalid orbit: "STARLINK-35982" "66828"
+Satellite has invalid orbit: "STARLINK-35858" "66833"
+Satellite has invalid orbit: "STARLINK-35840" "66834"
+Satellite has invalid orbit: "STARLINK-35886" "66838"
+Satellite has invalid orbit: "STARLINK-36094" "66851"
+Satellite has invalid orbit: "STARLINK-36090" "66855"
+Satellite has invalid orbit: "STARLINK-36072" "66856"
+Satellite has invalid orbit: "STARLINK-35844" "66880"
+Satellite has invalid orbit: "STARLINK-35912" "66882"
+Satellite has invalid orbit: "STARLINK-35947" "66883"
+Satellite has invalid orbit: "STARLINK-36057" "66884"
+Satellite has invalid orbit: "STARLINK-35954" "66885"
+Satellite has invalid orbit: "STARLINK-35900" "66886"
+Satellite has invalid orbit: "STARLINK-35925" "66887"
+Satellite has invalid orbit: "STARLINK-35919" "66888"
+Satellite has invalid orbit: "1998-067XT" "66907"
+Satellite has invalid orbit: "1998-067XU" "66908"
+Satellite has invalid orbit: "SILVERSAT" "66909"
+Satellite has invalid orbit: "1998-067XW" "66910"
+Satellite has invalid orbit: "1998-067XX" "66911"
+Satellite has invalid orbit: "STARLINK-35942" "66926"
+Satellite has invalid orbit: "STARLINK-36121" "66940"
+Satellite has invalid orbit: "STARLINK-36089" "66947"
+Satellite has invalid orbit: "STARLINK-35999" "66951"
+Satellite has invalid orbit: "STARLINK-36122" "66952"
+Satellite has invalid orbit: "STARLINK-35879" "66960"
+Satellite has invalid orbit: "STARLINK-35761" "66961"
+Satellite has invalid orbit: "STARLINK-36133" "66963"
+Satellite has invalid orbit: "STARLINK-36067" "66965"
+Satellite has invalid orbit: "STARLINK-36139" "66966"
+Satellite has invalid orbit: "STARLINK-36136" "66967"
+Satellite has invalid orbit: "STARLINK-36152" "66968"
+Satellite has invalid orbit: "STARLINK-35703" "66970"
+Satellite has invalid orbit: "STARLINK-35678" "66971"
+Satellite has invalid orbit: "STARLINK-34846" "66972"
+Satellite has invalid orbit: "STARLINK-35778" "66973"
+Satellite has invalid orbit: "STARLINK-35780" "66974"
+Satellite has invalid orbit: "STARLINK-35777" "66975"
+Satellite has invalid orbit: "STARLINK-35772" "66976"
+Satellite has invalid orbit: "STARLINK-35770" "66977"
+Satellite has invalid orbit: "STARLINK-35787" "66978"
+Satellite has invalid orbit: "STARLINK-36113" "66982"
+Satellite has invalid orbit: "STARLINK-36103" "66985"
+Satellite has invalid orbit: "STARLINK-36135" "66986"
+Satellite has invalid orbit: "STARLINK-36147" "66987"
+Satellite has invalid orbit: "UNKNOWN" "81449"
+Satellite has invalid orbit: "UNKNOWN" "89161"
+Loaded plugin "SolarSystemEditor"
+Trying to copy ssystem_minor.ini to "/tmp/t45-negctl.FzyyiJ/Stellarium-quick/data/ssystem_minor.ini"
+Loaded 895910 discovery circumstances records for minor planets...
+SSE: Comet cross-index data: Overwriting entry for "453P"
+SSE: Comet cross-index data: Overwriting entry for "467P"
+SSE: Comet cross-index data: Overwriting entry for "465P"
+SSE: Comet cross-index data: Overwriting entry for "466P"
+SSE: Comet cross-index data: Overwriting entry for "468P"
+SSE: Comet cross-index data: Overwriting entry for "470P"
+SSE: Comet cross-index data: Overwriting entry for "472P"
+SSE: Comet cross-index data: Overwriting entry for "475P"
+SSE: Comet cross-index data: Overwriting entry for "477P"
+SSE: Comet cross-index data: Overwriting entry for "473P"
+SSE: Comet cross-index data: Overwriting entry for "476P"
+SSE: Comet cross-index data: Overwriting entry for "479P"
+SSE: Comet cross-index data: Overwriting entry for "480P"
+SSE: Comet cross-index data: Overwriting entry for "481P"
+Loaded 2570 discovery circumstances records for comets...
+OpenGL viewport size: 2560 x 1440
+Creating scene FBO with size 2560x1440
+LIVESKY: 引擎引导完成（0ms，GL 4.1 core=1 renderer="Apple M3"）
+CFGHEALTHCHECK: 配置健康自检（form=truncate）：判据 6/9
+CFGHEALTHCHECK:  · 布场：form=truncate｜个人版目录 /tmp/t45-negctl.FzyyiJ/Stellarium-quick｜config /tmp/t45-negctl.FzyyiJ/Stellarium-quick/config.ini（23432 字节）｜引擎已引导=1｜窗口可见=1
+CFGHEALTHCHECK:  · 注入自证：**引导修复**：注入字节完整搬到了 config.ini.corrupt（字节 5088 + sha256 8f7230bbf27e82f5）
+CFGHEALTHCHECK:  [PASS] CH-01 注入自证：**引导修复**：注入字节完整搬到了 config.ini.corrupt（字节 5088 + sha256 8f7230bbf27e82f5）｜form=truncate（期望严重度 3 —— 默认配置前 40% ⇒ 99 键 < 252 ⇒ **不完整** ⇒ 引导修复（实测不修则 139））
+CFGHEALTHCHECK:  [PASS] CH-02 启动可恢复：引擎已引导=1｜隔离生效=1｜personalDir=/tmp/t45-negctl.FzyyiJ/Stellarium-quick（应以 -quick 结尾）｜窗口可见=1｜引导修复=1（备份 config.ini.corrupt）｜⚠️ 不主张「回退默认」—— 那是 Qt 的语义（探针 Q2）；产品主张的是「**不修就起不来**，修了才起得来」
+CFGHEALTHCHECK:  [FAIL] CH-03 提示出口已接：configStatus=-1（-1=未探测 ⇒ 应为实测值）｜severity=0｜文案「负控 STELQUICK_CFG_STATUS_OFF：未读配置健康（但引导修复腿照常工作 —— 修复是正确性，不是可观测性）」
+CFGHEALTHCHECK:  [FAIL] CH-04 产品读数 vs 磁盘事实：引导期 bytes=-1｜判据现读 5088（/tmp/t45-negctl.FzyyiJ/Stellarium-quick/config.ini.corrupt）｜引导期 keys=-1（不重算严重度 —— 那是自建副本，陷阱 86）
+CFGHEALTHCHECK:  [FAIL] CH-05 严重度 0（期望 3）—— 默认配置前 40% ⇒ 99 键 < 252 ⇒ **不完整** ⇒ 引导修复（实测不修则 139）
+CFGHEALTHCHECK:  [PASS] CH-06 状态行渲染：行存在=1｜state=info（应由 severity=0 映射为 info）｜value「负控 STELQUICK_CFG_STATUS_OFF：未读配置健康（但引导修复腿照常工作 —— 修复是正确性，不是可观测性）」（应 == 引导期文案）
+CFGHEALTHCHECK:  [PASS] CH-07 诊断页 ↔ 启动日志（P-CFG-04，6 项）：device「Apple M3」api「1.1.357」driver「0.2.2210」runtimeApi「Metal」portability=1 backendOk=1｜逐项相同｜⚠️ 只证「两处渲染一致」，不证探针结论正确
+CFGHEALTHCHECK:  [PASS] CH-08 诊断面**不含**交换链信息（样本 = BackendInfo 的 23 个 Q_PROPERTY）：命中 0 项 —— 交换链属 QML/Vulkan 后端，产品侧拿不到（契约第 1 条禁止 QML 侧接触 Vulkan 记号）⇒ P-CFG-04 的「交换链」一项如实记 **N/A**，不得编近似量充数（陷阱 67/75）
+CFGHEALTHCHECK:  [PASS] CH-09 引导修复（该修必须修）：repaired=1｜备份存在=1（config.ini.corrupt）｜注入字节完整搬入备份=1
+CFGHEALTHCHECK: VERDICT=FAIL
